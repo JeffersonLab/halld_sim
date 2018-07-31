@@ -21,9 +21,6 @@ BUILDSWIG = ARGUMENTS.get('BUILDSWIG', 0)
 # Get platform-specific name
 osname = os.getenv('BMS_OSNAME', 'build')
 
-# Make sure HALLD_HOME is set (needed for python module builds)
-if not os.getenv('HALLD_HOME'): os.environ['HALLD_HOME'] = Dir('#/..').abspath
-
 # Get architecture name
 arch = ROOT_CFLAGS = subprocess.Popen(["uname"], stdout=subprocess.PIPE).communicate()[0].strip()
 
@@ -119,9 +116,6 @@ sbms.ApplyPlatformSpecificSettings(env, arch)
 sbms.ApplyPlatformSpecificSettings(env, osname)
 
 
-
-# "external" packages (aka xstream)
-SConscript('external/SConscript', variant_dir=".%s/external" % (osname), exports='env osname', duplicate=0)
 
 # build libraries
 SConscript('libraries/SConscript', variant_dir=".%s/libraries" % (osname), exports='env osname', duplicate=0)
