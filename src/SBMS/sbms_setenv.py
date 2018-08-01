@@ -137,13 +137,10 @@ def mk_setenv_csh(env):
 	str += '\n'
 
 	# AMPTOOLS
-	amptools   = os.getenv('AMPTOOLS')	
-	ampplotter = os.getenv('AMPPLOTTER')	
+	amptools = os.getenv('AMPTOOLS')	
 	if amptools != None:
 		str += '# AMPTOOLS\n'
 		str += 'setenv AMPTOOLS %s\n' % amptools
-		if ampplotter != None:
-			str += 'setenv AMPPLOTTER %s\n' % ampplotter
 		str += '\n'
 
 	# CERNLIB
@@ -172,23 +169,17 @@ def mk_setenv_csh(env):
 	
 	# EVIO
 	evioroot = os.getenv('EVIOROOT')
-	if evioroot != None:
+        if evioroot != None:
 		str += '# EVIO\n'
 		str += 'setenv EVIOROOT %s\n' % evioroot
 		str += 'setenv %s ${EVIOROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
 	
 	# ET
 	etroot = os.getenv('ETROOT')
-	if etroot != None:
+        if etroot != None:
 		str += '# ET\n'
-		str += 'setenv ETROOT %s\n' % etroot
-		str += 'setenv %s ${ETROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
-	
-	# SQLITECPP
-	sqlitecpp = os.getenv('SQLITECPP_HOME')
-	if sqlitecpp != None:
-		str += '# SQLITECPP\n'
-		str += 'setenv SQLITECPP_HOME %s\n' % sqlitecpp
+                str += 'setenv ETROOT %s\n' % etroot
+                str += 'setenv %s ${ETROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
 
 	# Make sure output directory exists
 	try:
@@ -321,12 +312,9 @@ def mk_setenv_bash(env):
 
 	# AMPTOOLS
 	amptools = os.getenv('AMPTOOLS')	
-	ampplotter = os.getenv('AMPPLOTTER')	
 	if amptools != None:
 		str += '# AMPTOOLS\n'
 		str += 'export AMPTOOLS=%s\n' % amptools
-		if ampplotter != None:
-			str += 'export AMPPLOTTER=%s\n' % ampplotter
 		str += '\n'
 
 	# CERNLIB
@@ -354,24 +342,18 @@ def mk_setenv_bash(env):
 	str += '\n'
 
 	# EVIO
-	evioroot = os.getenv('EVIOROOT')
-	if evioroot != None:
+        evioroot = os.getenv('EVIOROOT')
+        if evioroot != None:
 		str += '# EVIO\n'
-		str += 'export EVIOROOT=%s\n' % evioroot
-		str += 'export %s=${EVIOROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
+        	str += 'export EVIOROOT=%s\n' % evioroot
+        	str += 'export %s=${EVIOROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
 
-	# ET
-	etroot = os.getenv('ETROOT')
-	if etroot != None:
+        # ET
+        etroot = os.getenv('ETROOT')
+        if etroot != None:
 		str += '# ET\n'
-		str += 'export ETROOT=%s\n' % etroot
-		str += 'export %s=${ETROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
-
-	# SQLITECPP
-	sqlitecpp = os.getenv('SQLITECPP_HOME')
-	if sqlitecpp != None:
-		str += '# SQLITECPP\n'
-		str += 'export SQLITECPP_HOME=%s\n' % sqlitecpp
+        	str += 'export ETROOT=%s\n' % etroot
+        	str += 'export %s=${ETROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
 
 	# Make sure output directory exists
 	try:
