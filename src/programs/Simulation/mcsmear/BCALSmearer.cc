@@ -681,13 +681,7 @@ void BCALSmearer::CopyBCALHitsToHDDM(map<int, fADCHitList> &fADCHits,
       // so we can offset the times now to ensure they are positive before the conversion, then
       // fix the offset layer in the hit factories.  Also, any hit that still has a negative time
       // will be ignored.
-      // float INTEGRAL_TO_PEAK=12.8;
-      // float SIPM_NPIXELS=57600;
-      // float INTEGRAL_2V_PIXELS= 24000;   // number of pixels in integral for Peak=2V (4095 counts)
-      // cout << " BCALSmearer: INTEGRAL_TO_PEAK=" <<  bcal_config->INTEGRAL_TO_PEAK 
-      // << " SIPM_NPIXELS=" << bcal_config->SIPM_NPIXELS 
-      // << " INTEGRAL_2V_PIXELS=" <<  bcal_config->INTEGRAL_2V_PIXELS << endl;
-      // cout << " BCALSmear: NO_SIPM_SATURATION=" << bcal_config->NO_SIPM_SATURATION << endl;
+
       for (unsigned int i = 0; i < hitlist.uphits.size(); i++) {
       	int integer_time = round((hitlist.uphits[i].t-bcal_config->BCAL_BASE_TIME_OFFSET)/bcal_config->BCAL_NS_PER_ADC_COUNT);
       	if (integer_time >= 0){
@@ -697,15 +691,15 @@ void BCALSmearer::CopyBCALHitsToHDDM(map<int, fADCHitList> &fADCHits,
 	    double pulse_peak = integral/bcal_config->integral_to_peak[0][hitlist.sumlayer-1];
 	    if (!bcal_config->NO_SIPM_SATURATION) {
 	      double integral_true = integral;
-	      double pulse_peak_true = integral_true/bcal_config->integral_to_peak[0][hitlist.sumlayer-1];
+	      // double pulse_peak_true = integral_true/bcal_config->integral_to_peak[0][hitlist.sumlayer-1];
 	      double Mpixels = bcal_config->sipm_npixels[0][hitlist.sumlayer-1];
-	      double Npixels_true = round(bcal_config->integral_2V_pixels[0][hitlist.sumlayer-1]*pulse_peak_true/4095.);
+	      double Npixels_true = round(bcal_config->pixel_per_count[0][hitlist.sumlayer-1]*integral_true);
 	      double Npixels_measured = round(Mpixels*(1-exp(-Npixels_true/Mpixels)));
-	      pulse_peak = round(4095*Npixels_measured/bcal_config->integral_2V_pixels[0][hitlist.sumlayer-1]);
-	      integral = pulse_peak*bcal_config->integral_to_peak[0][hitlist.sumlayer-1];
+	      integral = round(Npixels_measured/bcal_config->pixel_per_count[0][hitlist.sumlayer-1]);
+	      pulse_peak = integral/bcal_config->integral_to_peak[0][hitlist.sumlayer-1];
+	      // cout << "End=0, Layer=" << hitlist.sumlayer << " Mpixels=" << Mpixels << " Npixels_true=" << Npixels_true << " Npixels_measured=" << Npixels_measured 
+	      //    << " pulse_peak=" << pulse_peak << " integral_true=" << integral_true << " integral=" << integral << endl;
 	    }
-	    // cout << "Layer=" << hitlist.sumlayer << " Mpixels=" << Mpixels << " Npixels_true=" << Npixels_true << " Npixels_measured=" << Npixels_measured 
-            //      << " pulse_peak_true=" << pulse_peak_true << " pulse_peak=" << pulse_peak << " integral=" << integral << endl;
 	    if (pulse_peak > 4095) pulse_peak=4095;
 
 	    // fADC saturation based on waveforms from data
@@ -735,15 +729,15 @@ void BCALSmearer::CopyBCALHitsToHDDM(map<int, fADCHitList> &fADCHits,
 	    double pulse_peak = integral/bcal_config->integral_to_peak[1][hitlist.sumlayer-1];
 	    if (!bcal_config->NO_SIPM_SATURATION) {
 	      double integral_true = integral;
-	      double pulse_peak_true = integral_true/bcal_config->integral_to_peak[1][hitlist.sumlayer-1];
+	      // double pulse_peak_true = integral_true/bcal_config->integral_to_peak[1][hitlist.sumlayer-1];
 	      double Mpixels = bcal_config->sipm_npixels[1][hitlist.sumlayer-1];
-	      double Npixels_true = round(bcal_config->integral_2V_pixels[1][hitlist.sumlayer-1]*pulse_peak_true/4095.);
+	      double Npixels_true = round(bcal_config->pixel_per_count[1][hitlist.sumlayer-1]*integral_true);
 	      double Npixels_measured = round(Mpixels*(1-exp(-Npixels_true/Mpixels)));
-	      pulse_peak = round(4095*Npixels_measured/bcal_config->integral_2V_pixels[1][hitlist.sumlayer-1]);
-	      integral = pulse_peak*bcal_config->integral_to_peak[1][hitlist.sumlayer-1];
+	      integral = round(Npixels_measured/bcal_config->pixel_per_count[1][hitlist.sumlayer-1]);
+	      pulse_peak = integral/bcal_config->integral_to_peak[1][hitlist.sumlayer-1];
+	      // cout << "End=1, Layer=" << hitlist.sumlayer << " Mpixels=" << Mpixels << " Npixels_true=" << Npixels_true << " Npixels_measured=" << Npixels_measured 
+              //    << " pulse_peak=" << pulse_peak << " integral_true=" << integral_true << " integral=" << integral << endl;
 	    }
-	    // cout << "Layer=" << hitlist.sumlayer << " Mpixels=" << Mpixels << " Npixels_true=" << Npixels_true << " Npixels_measured=" << Npixels_measured 
-            //      << " pulse_peak_true=" << pulse_peak_true << " pulse_peak=" << pulse_peak << " integral=" << integral << endl;
 	    if (pulse_peak > 4095) pulse_peak=4095;
 	    
 	    // fADC saturation based on waveforms from data
@@ -948,7 +942,7 @@ bcal_config_t::bcal_config_t(JEventLoop *loop)
 	   int layer = (saturation_SiPM_pars[i])["LAYER"] - 1;
 	   integral_to_peak[end][layer] = (saturation_SiPM_pars[i])["INTEGRAL_TO_PEAK"];
 	   sipm_npixels[end][layer] = (saturation_SiPM_pars[i])["SIPM_NPIXELS"];
-	   integral_2V_pixels[end][layer] = (saturation_SiPM_pars[i])["INTEGRAL_2V_PIXELS"];
+	   pixel_per_count[end][layer] = (saturation_SiPM_pars[i])["PIXEL_PER_COUNT"];
    } 
 
 
