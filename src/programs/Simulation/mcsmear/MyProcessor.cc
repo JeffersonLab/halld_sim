@@ -167,7 +167,6 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 
         // load the CCDB context
         DApplication* locDApp = dynamic_cast<DApplication*>(japp);
-        //DGeometry *dgeom=locDApp->GetDGeometry(locRunNumber);
         JCalibration* jcalib = locDApp->GetJCalibration(locRunNumber);
     
         string context = jcalib->GetContext();
