@@ -1090,5 +1090,10 @@ def AddCobrems(env):
 	env.AppendUnique(LIBPATH = ["%s/%s/lib" % (cobrems_home, env['OSNAME'])])
 	env.AppendUnique(LIBS    = 'AMPTOOLS_MCGEN')
 	env.AppendUnique(CCFLAGS = pyincludes.rstrip().split())
+	# BOOST is required by cobrems and if it is not installed in /usr or /usr/local then we must get it from the environment
+	boost_root = os.getenv('BOOST_ROOT')
+	if boost_root != None:
+		env.AppendUnique(CPPPATH = [boost_root + "/include"])
+
 
 
