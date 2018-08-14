@@ -15,6 +15,7 @@
 #include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
 
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
+#include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_amp.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
@@ -189,6 +190,7 @@ int main( int argc, char* argv[] ){
 
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( ThreePiAngles() );
+	AmpToolsInterface::registerAmplitude( TwoPiAngles() );
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
 	AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
@@ -200,7 +202,8 @@ int main( int argc, char* argv[] ){
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
 	// generate over a range of mass
-	GammaPToNPartP resProd( threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, seed );
+	// start with threshold or lowMass, whichever is higher
+	GammaPToNPartP resProd( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, seed );
 
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
