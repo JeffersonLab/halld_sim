@@ -62,7 +62,7 @@ static float DIFFUSION_COEFF  =   1.1e-6; // cm^2/s --> 200 microns at 1 cm
 static float FDC_TIME_WINDOW = 1000.0; //time window for accepting FDC hits, ns
 static float GAS_GAIN = 8e4;
 
-static float drift_table[400];  // time-to-distance bale
+static float drift_table[1000];  // time-to-distance table
 static float bscale[2]; // scale factors for B-dependence of drift time
 static float lorentz_parms[4]; // parameters for modeling shift of avalanche along wire due to Lorentz force
 
