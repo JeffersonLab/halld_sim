@@ -62,6 +62,11 @@ static float DIFFUSION_COEFF  =   1.1e-6; // cm^2/s --> 200 microns at 1 cm
 static float FDC_TIME_WINDOW = 1000.0; //time window for accepting FDC hits, ns
 static float GAS_GAIN = 8e4;
 
+static float drift_table[400];  // time-to-distance bale
+static float bscale[2]; // scale factors for B-dependence of drift time
+static float lorentz_parms[4]; // parameters for modeling shift of avalanche along wire due to Lorentz force
+
+
 // Note by RTJ:
 // This constant "MAX_HITS" is a convenience constant
 // that I introduced to help with preallocating arrays
@@ -333,8 +338,7 @@ void AddFDCCathodeHits(int PackNo,float xwire,float avalanche_y,float tdrift,
 
 // Add wire information
 int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
-		   float xwire,float xyz[3],float dE,float t,float bscale[],
-		   float lorentz_parms[],float drift_table[],float *tdrift){
+		   float xwire,float xyz[3],float dE,float t,float *tdrift){
  
   // Generate 2 random numbers from a Gaussian distribution
   // 
@@ -491,10 +495,7 @@ void hitForwardDC (float xin[4], float xout[4],
   float xoutlocal[3];
   float dradius=0;
   float alpha,sinalpha,cosalpha;
-  float drift_table[400];  // time-to-distance bale
-  float bscale[2]; // scale factors for B-dependence of drift time
-  float lorentz_parms[4]; // parameters for modeling shift of avalanche along wire due to Lorentz force
-
+ 
   if (!initializedx){
       mystr_t strings[250];
       float values[250];
@@ -885,8 +886,7 @@ void hitForwardDC (float xin[4], float xout[4],
       */
       if (sqrt(xlocal[0]*xlocal[0]+xlocal[1]*xlocal[1])
           >=wire_dead_zone_radius[PackNo]){     
-        if (AddFDCAnodeHit(ahits,layer,ipart,track,xwire,xlocal,dE,t,bscale,
-			   lorentz_parms,drift_table,&tdrift)){
+        if (AddFDCAnodeHit(ahits,layer,ipart,track,xwire,xlocal,dE,t,&tdrift)){
           AddFDCCathodeHits(PackNo,xwire,xlocal[1],tdrift,n_p,track,ipart,
                 chamber,module,layer,global_wire_number);
         }
@@ -910,8 +910,7 @@ void hitForwardDC (float xin[4], float xout[4],
         */
         if (sqrt(xlocal[0]*xlocal[0]+xlocal[1]*xlocal[1])
             >=wire_dead_zone_radius[PackNo]){       
-          if (AddFDCAnodeHit(ahits,layer,ipart,track,xwire,xlocal,dE,t,bscale,
-			     lorentz_parms,drift_table,&tdrift)){
+          if (AddFDCAnodeHit(ahits,layer,ipart,track,xwire,xlocal,dE,t,&tdrift)){
         AddFDCCathodeHits(PackNo,xwire,xlocal[1],tdrift,n_p,track,ipart,
                   chamber,module,layer,global_wire_number);
           }
