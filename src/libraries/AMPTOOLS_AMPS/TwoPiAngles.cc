@@ -80,7 +80,8 @@ TwoPiAngles::calcAmplitude( GDouble** pKin ) const {
         GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	
 	// vector meson production from K. Schilling et. al.
-	GDouble Pgamma = 0.4;
+	//GDouble Pgamma = 0.4;
+	GDouble Pgamma = 0.3695; // values from makePolValsV4 for angle 0
 	
 	GDouble W = 0.5*(1. - rho000) + 0.5*(3.*rho000 - 1.)*cosTheta*cosTheta - sqrt(2.)*rho100*sin2Theta*cos(phi) - rho1m10*sinSqTheta*cos(2.*phi);
 	
