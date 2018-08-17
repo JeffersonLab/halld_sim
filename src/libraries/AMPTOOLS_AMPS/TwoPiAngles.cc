@@ -16,7 +16,7 @@
 TwoPiAngles::TwoPiAngles( const vector< string >& args ) :
 UserAmplitude< TwoPiAngles >( args )
 {
-	assert( args.size() == 9 );
+	assert( args.size() == 11 );
 	
 	rho000  = AmpParameter( args[0] );
 	rho100  = AmpParameter( args[1] );
@@ -30,6 +30,10 @@ UserAmplitude< TwoPiAngles >( args )
 	rho102  = AmpParameter( args[7] );
 	rho1m12 = AmpParameter( args[8] );
 
+	polAngle = AmpParameter( args[9] );
+
+	polFraction = atof(args[10].c_str());
+
 	// need to register any free parameters so the framework knows about them
 	registerParameter( rho000 );
 	registerParameter( rho100 );
@@ -42,6 +46,8 @@ UserAmplitude< TwoPiAngles >( args )
 
 	registerParameter( rho102 );
 	registerParameter( rho1m12 );
+
+	registerParameter( polAngle );
 }
 
 
@@ -76,12 +82,11 @@ TwoPiAngles::calcAmplitude( GDouble** pKin ) const {
 
         GDouble phi = angles.Phi();
 
-        TVector3 eps(1.0, 0.0, 0.0); // beam polarization vector
+        TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // beam polarization vector
         GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	
 	// vector meson production from K. Schilling et. al.
-	//GDouble Pgamma = 0.4;
-	GDouble Pgamma = 0.3695; // values from makePolValsV4 for angle 0
+	GDouble Pgamma = polFraction;
 	
 	GDouble W = 0.5*(1. - rho000) + 0.5*(3.*rho000 - 1.)*cosTheta*cosTheta - sqrt(2.)*rho100*sin2Theta*cos(phi) - rho1m10*sinSqTheta*cos(2.*phi);
 	
