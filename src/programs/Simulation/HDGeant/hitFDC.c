@@ -621,17 +621,17 @@ void hitForwardDC (float xin[4], float xout[4],
   if ((wire1>WIRES_PER_PLANE && wire2==WIRES_PER_PLANE) ||
       (wire2>WIRES_PER_PLANE && wire1==WIRES_PER_PLANE)) 
     wire1=wire2=WIRES_PER_PLANE;  
-  if ((wire1==0 && wire2 == 1) || (wire1==1 && wire2== 0)){
+  if ((wire1<1 && wire2==1) || (wire1==1 && wire2<1)){
     wire1=wire2=1;
   }
   // Make sure at least one wire number is valid
   if (wire1>WIRES_PER_PLANE&&wire2>WIRES_PER_PLANE) return;
-  if (wire1==0 && wire2==0) return;
+  if (wire1<1 && wire2<1) return;
 
   if (wire1>WIRES_PER_PLANE) wire1=wire2;
   else if (wire2>WIRES_PER_PLANE) wire2=wire1;
-  if (wire1==0) wire1=wire2;
-  else if (wire2==0) wire2=wire1;
+  if (wire1<1) wire1=wire2;
+  else if (wire2<1) wire2=wire1;
 
   dwire = (wire1 < wire2)? 1 : -1;
   alpha = atan2(xoutlocal[0]-xinlocal[0],xoutlocal[2]-xinlocal[2]);
@@ -814,23 +814,13 @@ void hitForwardDC (float xin[4], float xout[4],
     float tdrift=0;
 
     if (controlparams_.driftclusters==0){
-      float zrange=x1[2]-x0[2];
-      float tany=(x1[1]-x0[1])/zrange;
-      float tanx=(x1[0]-x0[0])/zrange;
-      float dz=ANODE_CATHODE_SPACING-dradius*sign*sinalpha;
-#if 0      
-      dz+=wire_dz_offset[global_wire_number];
-#endif
-      xlocal[0]=x0[0]+tanx*dz;
-      if (fabs(xlocal[0]-xwire)>0.5){
-        xlocal[0]=x1[0];
-        xlocal[1]=x1[1];
-        xlocal[2]=x1[2];
-      }
-      else{
-        xlocal[1]=x0[1]+tany*dz;
-        xlocal[2]=x0[2]+dz;
-      }
+      double dx[3] = {x1[0]-x0[0], x1[1]-x0[1], x1[2]-x0[2]};
+      double a = -((x0[0] - xwire) * dx[0] + x0[2] * dx[2]) /
+                  (dx[0] * dx[0] + dx[2] * dx[2] + 1e-99);
+      a = (a < 0)? 0 : (a > 1)? 1 : a;
+      xlocal[0]=x0[0]+a*dx[0];
+      xlocal[1]=x0[1]+a*dx[1];
+      xlocal[2]=x0[2]+a*dx[2];
       
       /* If the cluster position is within the wire-deadened region of the 
          detector, skip this cluster 

@@ -15,6 +15,7 @@
 #include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
 
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
+#include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_amp.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
@@ -52,12 +53,14 @@ int main( int argc, char* argv[] ){
 	
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 9.0;
-	double beamLowE   = lowMass + 0.937;
+	double beamLowE   = 3.0;
 	double beamHighE  = 12.0;
-	
-	int runNum = 9001;
+
+	int runNum = 30731;
 	unsigned int seed = 0;
 
+	double lowT = 0.0;
+	double highT = 12.0;
 	double slope = 6.0;
 
 	int nEvents = 10000;
@@ -107,25 +110,33 @@ int main( int argc, char* argv[] ){
 		if (arg == "-t"){
                         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
                         else  slope = atof( argv[++i] ); }
+		if (arg == "-tmin"){
+                        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+                        else  lowT = atof( argv[++i] ); }
+		if (arg == "-tmax"){
+                        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+                        else  highT = atof( argv[++i] ); }
 		if (arg == "-d"){
 			diag = true; }
 		if (arg == "-f"){
 			genFlat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
-			cout << "\t -c  <file>\t Config file" << endl;
-			cout << "\t -o  <name>\t ROOT file output name" << endl;
-			cout << "\t -hd <name>\t HDDM file output name [optional]" << endl;
-			cout << "\t -l  <value>\t Low edge of mass range (GeV) [optional]" << endl;
-			cout << "\t -u  <value>\t Upper edge of mass range (GeV) [optional]" << endl;
-			cout << "\t -n  <value>\t Minimum number of events to generate [optional]" << endl;
-			cout << "\t -m  <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
-                        cout << "\t -p  <value>\t Coherent peak photon energy [optional]" << endl;
-                        cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
-                        cout << "\t -b  <value>\t Maximum photon energy to simulate events [optional]" << endl;
-			cout << "\t -r  <value>\t Run number assigned to generated events [optional]" << endl;
-			cout << "\t -s  <value>\t Random number seed initialization [optional]" << endl;
-			cout << "\t -t  <value>\t Momentum transfer slope [optional]" << endl;
+			cout << "\t -c    <file>\t Config file" << endl;
+			cout << "\t -o    <name>\t ROOT file output name" << endl;
+			cout << "\t -hd   <name>\t HDDM file output name [optional]" << endl;
+			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
+			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
+			cout << "\t -n    <value>\t Minimum number of events to generate [optional]" << endl;
+			cout << "\t -m    <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
+                        cout << "\t -p    <value>\t Coherent peak photon energy [optional]" << endl;
+                        cout << "\t -a    <value>\t Minimum photon energy to simulate events [optional]" << endl;
+                        cout << "\t -b    <value>\t Maximum photon energy to simulate events [optional]" << endl;
+			cout << "\t -r    <value>\t Run number assigned to generated events [optional]" << endl;
+			cout << "\t -s    <value>\t Random number seed initialization [optional]" << endl;
+			cout << "\t -t    <value>\t Momentum transfer slope [optional]" << endl;
+			cout << "\t -tmin <value>\t Minimum momentum transfer [optional]" << endl;
+			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
 			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl;
 			exit(1);
@@ -189,6 +200,7 @@ int main( int argc, char* argv[] ){
 
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( ThreePiAngles() );
+	AmpToolsInterface::registerAmplitude( TwoPiAngles() );
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
 	AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
@@ -200,7 +212,8 @@ int main( int argc, char* argv[] ){
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
 	// generate over a range of mass
-	GammaPToNPartP resProd( threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, seed );
+	// start with threshold or lowMass, whichever is higher
+	GammaPToNPartP resProd( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, lowT, highT, seed );
 
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 

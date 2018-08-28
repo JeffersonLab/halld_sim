@@ -56,6 +56,10 @@ private:
   AmpParameter rho102;
   AmpParameter rho1m12;
 
+  AmpParameter polAngle;
+
+  double polFraction;
+
 };
 
 #endif

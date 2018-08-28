@@ -18,6 +18,8 @@ m_type( type ),
 m_lowMass( 0 ),
 m_highMass( 0 ),
 m_slope( slope ),
+m_lowT( 0 ),
+m_highT( 12 ),
 m_lastWeight( 1. )
 {	
   kMproton=ParticleMass(Proton);
@@ -44,6 +46,13 @@ ProductionMechanism::setMassRange( double low, double high ){
 	m_highMass = high;
 }
 
+void
+ProductionMechanism::setTRange( double low, double high ){
+	
+	m_lowT = low;
+	m_highT = high;
+}
+
 void 
 ProductionMechanism::setGeneratorType( Type type ){
   
@@ -54,43 +63,46 @@ ProductionMechanism::setGeneratorType( Type type ){
 TLorentzVector
 ProductionMechanism::produceResonance( const TLorentzVector& beam ){
 
-
-	TLorentzVector target( 0, 0, 0, kMproton );
-	
-	TLorentzRotation lab2cmBoost( -( target + beam ).BoostVector() );
-	TLorentzRotation cm2labBoost( ( target + beam ).BoostVector() );
-	
-	double cmEnergy = ( lab2cmBoost * ( target + beam ) ).E();
-	double beamMomCM = cmMomentum( cmEnergy, beam.M(), target.M() );
-
-	// double exptMax = exp(-1.)/m_slope;   // Elton 8/19/2016.  t*exp(Bt)
-        double exptMax = 1;   // remove factor of t for rho production (no spin flip). set this value for exp(Bt)
+  TLorentzVector target( 0, 0, 0, kMproton );
   
+  TLorentzRotation lab2cmBoost( -( target + beam ).BoostVector() );
+  TLorentzRotation cm2labBoost( ( target + beam ).BoostVector() );
   
-  double t, tMax, resMass, resMomCM;
-
+  double cmEnergy = ( lab2cmBoost * ( target + beam ) ).E();
+  double beamMomCM = cmMomentum( cmEnergy, beam.M(), target.M() );
+  
+  // double exptMax = exp(-1.)/m_slope;   // Elton 8/19/2016.  t*exp(Bt)
+  double exptMax = 1;   // remove factor of t for rho production (no spin flip). set this value for exp(Bt)
+  
+  double t, tMin, tMax, resMass, resMomCM;
+  
   do {
     do // the resonance mass cannot be larger than CM energy - proton mass
       resMass = generateMass();
     while ( cmEnergy < resMass + m_recMass );
     resMomCM  = cmMomentum( cmEnergy, resMass, m_recMass );
-  
+    
+    tMin = 0;
     tMax = 4. * beamMomCM * resMomCM;
-    t = random( 0, tMax ); 
+    
+    double tlow(tMin), thigh(tMax);
+    if ( tMin < m_lowT ) tlow=m_lowT;
+    if ( m_highT < tMax) thigh=m_highT;
+    t = random( tlow, thigh ); 
   } 
   // while( random( 0., exptMax ) > t*exp(-m_slope*t) );   // Elton 8/19/2016.  t*exp(Bt)
-	while( random( 0., exptMax ) > exp(-m_slope*t) );   // remove factor of t for rho production (no spin flip). Set this line for exp(Bt)
-	
-	TVector3 resonanceMomCM;
-	resonanceMomCM.SetMagThetaPhi( resMomCM,
-                              acos( 1. - 2.*t/tMax ),
-                              random( -kPi, kPi ) );
-	
-	TLorentzVector resonanceCM( resonanceMomCM, 
-                               sqrt( resonanceMomCM.Mag2() +
+  while( random( 0., exptMax ) > exp(-m_slope*t) );   // remove factor of t for rho production (no spin flip). Set this line for exp(Bt)
+  
+  TVector3 resonanceMomCM;
+  resonanceMomCM.SetMagThetaPhi( resMomCM,
+				 acos( 1. - 2.*t/tMax ),
+				 random( -kPi, kPi ) );
+  
+  TLorentzVector resonanceCM( resonanceMomCM, 
+			      sqrt( resonanceMomCM.Mag2() +
                                     resMass * resMass ) );
-	
-	return cm2labBoost * resonanceCM;
+  
+  return cm2labBoost * resonanceCM;
 }
 TLorentzVector
 ProductionMechanism::produceResonanceZ ( const TLorentzVector& beam){

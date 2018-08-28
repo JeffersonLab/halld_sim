@@ -95,15 +95,25 @@ def mk_setenv_csh(env):
 	str += 'setenv PATH ${JANA_HOME}/bin:${PATH}\n'
 	str += '\n'
 
-	# HALLD
-	str += '# HALLD\n'
-	str += 'setenv HALLD_HOME %s\n' % halld_home
+	# HALLD recon
+	str += '# HALLD recon\n'
+	str += 'setenv HALLD_RECON_HOME %s\n' % os.getenv('HALLD_RECON_HOME', '$HOME/gluex_recon')
 	str += 'setenv BMS_OSNAME %s\n' % env['OSNAME']
-	str += 'setenv PATH ${HALLD_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
-	str += 'setenv JANA_PLUGIN_PATH ${HALLD_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
+	str += 'setenv PATH ${HALLD_RECON_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
+	str += 'setenv JANA_PLUGIN_PATH ${HALLD_RECON_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
 	# python support
-	str += 'setenv %s ${HALLD_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
-	str += 'setenv PYTHONPATH ${HALLD_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
+	str += 'setenv %s ${HALLD_RECON_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
+	str += 'setenv PYTHONPATH ${HALLD_RECON_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
+	str += '\n'
+
+	# HALLD sim
+	str += '# HALLD sim\n'
+	str += 'setenv HALLD_SIM_HOME %s\n' % halld_home
+	str += 'setenv PATH ${HALLD_SIM_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
+	str += 'setenv JANA_PLUGIN_PATH ${HALLD_SIM_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
+	# python support
+	str += 'setenv %s ${HALLD_SIM_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
+	str += 'setenv PYTHONPATH ${HALLD_SIM_HOME}/${BMS_OSNAME}/lib/python2:${PYTHONPATH}\n'
 	str += '\n'
 
 	# CCDB
@@ -269,15 +279,25 @@ def mk_setenv_bash(env):
 	str += 'export PATH=${JANA_HOME}/bin:${PATH}\n'
 	str += '\n'
 
-	# HALLD
-	str += '# HALLD\n'
-	str += 'export HALLD_HOME=%s\n' % halld_home
+	# HALLD recon
+	str += '# HALLD recon\n'
+	str += 'export HALLD_RECON_HOME=%s\n' % os.getenv('HALLD_RECON_HOME', '$HOME/gluex_recon')
 	str += 'export BMS_OSNAME=%s\n' % env['OSNAME']
-	str += 'export PATH=${HALLD_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
-	str += 'export JANA_PLUGIN_PATH=${HALLD_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
+	str += 'export PATH=${HALLD_RECON_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
+	str += 'export JANA_PLUGIN_PATH=${HALLD_RECON_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
 	# python support
-	str += 'export %s=${HALLD_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
-	str += 'export PYTHONPATH=${HALLD_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
+	str += 'export %s=${HALLD_RECON_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
+	str += 'export PYTHONPATH=${HALLD_RECON_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
+	str += '\n'
+
+	# HALLD sim
+	str += '# HALLD sim\n'
+	str += 'export HALLD_SIM_HOME=%s\n' % halld_home
+	str += 'export PATH=${HALLD_SIM_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
+	str += 'export JANA_PLUGIN_PATH=${HALLD_SIM_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
+	# python support
+	str += 'export %s=${HALLD_SIM_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
+	str += 'export PYTHONPATH=${HALLD_SIM_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
 	str += '\n'
 
 	# CCDB
