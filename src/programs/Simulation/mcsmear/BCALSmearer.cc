@@ -59,8 +59,9 @@ void BCALSmearer::SmearEvent(hddm_s::HDDM *record)
     GetSiPMHits(record, SiPMHits, incident_particles);
 
     // Sampling fluctuations
-	if(config->SMEAR_HITS)
+    if(config->SMEAR_HITS) {
     	ApplySamplingFluctuations(SiPMHits, incident_particles);
+    }
 	
     // Merge hits associated with different incident particles
     MergeHits(SiPMHits, bcal_config->BCAL_TWO_HIT_RESO);
@@ -211,6 +212,7 @@ void BCALSmearer::ApplySamplingFluctuations(map<bcal_index, CellHits> &SiPMHits,
    		bcal_config->BCAL_SAMPLINGCOEFB=0.0; // (redundant, yes, but located in more obvious place here)
 
    map<bcal_index, CellHits>::iterator iter=SiPMHits.begin();
+   
    for(; iter!=SiPMHits.end(); iter++){
       CellHits &cellhits = iter->second;
       

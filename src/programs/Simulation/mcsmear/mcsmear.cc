@@ -112,9 +112,9 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'L': config->BCAL_NO_SAMPLING_FLOOR_TERM = true;  break;
           case 'M': config->BCAL_NO_POISSON_STATISTICS = true;   break;
 	  case 'S': config->BCAL_NO_FADC_SATURATION = true;      break;
-	  case 'T': config->BCAL_NO_SIPM_SATURATION = true; 
-	    cout << " mcsmear: config->BCAL_NO_SIPM_SATURATION=" << config->BCAL_NO_SIPM_SATURATION << endl; break;
+	  case 'T': config->BCAL_NO_SIPM_SATURATION = true;      break;
          }
+	 cout << "mcsmear init: Option=" << ptr[1] << " config->SMEAR_HITS=" << config->SMEAR_HITS << endl;
       }
       else {
          std::string filename(ptr);
