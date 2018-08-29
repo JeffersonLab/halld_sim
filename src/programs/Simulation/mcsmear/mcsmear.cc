@@ -114,7 +114,6 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
 	  case 'S': config->BCAL_NO_FADC_SATURATION = true;      break;
 	  case 'T': config->BCAL_NO_SIPM_SATURATION = true;      break;
          }
-	 cout << "mcsmear init: Option=" << ptr[1] << " config->SMEAR_HITS=" << config->SMEAR_HITS << endl;
       }
       else {
          std::string filename(ptr);
