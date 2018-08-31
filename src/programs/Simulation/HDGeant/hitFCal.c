@@ -134,7 +134,7 @@ void hitForwardEMcal (float xin[4], float xout[4],
    x[1] = (xin[1] + xout[1])/2;
    x[2] = (xin[2] + xout[2])/2;
    t    = (xin[3] + xout[3])/2 * 1e9;
-   transformCoord(x,"global",xfcal,"LGBL");
+   transformCoord(x,"global",xfcal,"FCAL");
 
    /* if a light guide hit, record that here, no threshold */
 
@@ -273,24 +273,20 @@ void hitForwardEMcal (float xin[4], float xout[4],
       s_FcalTruthHits_t* hits;
       int row = getrow_wrapper_();
       int column = getcolumn_wrapper_();
-      
+
+      LENGTH_OF_BLOCK=45.0;
+      if (row>=100 || column>=100) LENGTH_OF_BLOCK=18.0;
+
       float dist = 0.5*LENGTH_OF_BLOCK-xfcal[2];
       float dEcorr = dEsum * exp(-dist/ATTEN_LENGTH);
 
       // Place holder for the MIP correction function. Currently apply 
       // simple correction
       
-      if (ipart == 1 || ipart == 2 || ipart == 3) {
-         dEcorr *= 0.976;
+      if( (ipart == 5) ||  (ipart == 6) || (ipart == 8) || (ipart == 9) ){
+	dEcorr *= 1.38;
       }
-      else {
-         double beta = pin[5] / pin[4];
-         if (beta > 0.6)
-            dEcorr *= 1.35;
-         else
-            dEcorr = 0;
-      }
-
+      
       float tcorr = t + dist/C_EFFECTIVE;
       int mark = ((row+1)<<16) + (column+1);
       void** twig = getTwig(&forwardEMcalTree, mark);
@@ -380,6 +376,14 @@ s_ForwardEMcal_t* pickForwardEMcal ()
       {
          int row = blocks->in[block].row;
          int column = blocks->in[block].column;
+
+	 WIDTH_OF_BLOCK=4.;
+	 if (row>=100 || column>=100){
+	   row-=100;
+	   column-=100;
+	   WIDTH_OF_BLOCK=2.05;
+	 }
+
          float y0 = (row - CENTRAL_ROW)*WIDTH_OF_BLOCK;
          float x0 = (column - CENTRAL_COLUMN)*WIDTH_OF_BLOCK;
          float dist = sqrt(x0*x0+y0*y0);
