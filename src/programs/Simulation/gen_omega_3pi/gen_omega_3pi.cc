@@ -50,6 +50,7 @@ int main( int argc, char* argv[] ){
 	double beamPeakE  = 9.0;
 	double beamLowE   = 7.5;
 	double beamHighE  = 9.5;
+	double t_slope    = 5.0;
 	
 	int runNum = 9001;
 	int seed = 0;
@@ -148,7 +149,7 @@ int main( int argc, char* argv[] ){
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 	
 	// generate over a range of mass 
-	GammaPToXYZP resProd( lowMass, highMass, 0.140, 0.140, 0.135, type , beamMaxE, beamPeakE, beamLowE, beamHighE );
+	GammaPToXYZP resProd( lowMass, highMass, 0.140, 0.140, 0.135, type , beamMaxE, beamPeakE, beamLowE, beamHighE, t_slope);
 	
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when

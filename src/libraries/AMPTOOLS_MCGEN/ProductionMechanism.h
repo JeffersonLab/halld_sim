@@ -22,6 +22,7 @@ public:
 	ProductionMechanism( Recoil recoil, Type type, double slope = 5.0, int seed = 0 );
 	
 	void setMassRange( double low, double high );
+	void setTRange( double low, double high );
         void setGeneratorType( Type type );
 	
 	TLorentzVector produceResonance( const TLorentzVector& beam );
@@ -48,6 +49,8 @@ private:
 	double m_lowMass;
 	double m_highMass;
 	double m_slope;
+	double m_lowT;
+	double m_highT;
   
 	double m_recMass;
   
