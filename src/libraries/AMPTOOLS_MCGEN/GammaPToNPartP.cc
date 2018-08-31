@@ -18,15 +18,16 @@
 GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
 				vector<double> &ChildMass,
 				float beamMaxE, float beamPeakE, float beamLowE, float beamHighE,
-				ProductionMechanism::Type type, float slope, int seed ) : 
-m_prodMech( ProductionMechanism::kProton, type, slope, seed ),
-m_target( 0, 0, 0, ParticleMass(Proton) ),
-m_ChildMass(ChildMass)
+				ProductionMechanism::Type type, float slope, double lowT, double highT, int seed ) : 
+  m_prodMech( ProductionMechanism::kProton, type, slope, seed ),
+  m_target( 0, 0, 0, ParticleMass(Proton) ),
+  m_ChildMass(ChildMass)
 {
   m_Npart = ChildMass.size();
   assert(m_Npart>0);
 
   m_prodMech.setMassRange( lowMass, highMass );
+  m_prodMech.setTRange( lowT, highT );
   
   // Initialize coherent brem table
   float Emax =  beamMaxE;
