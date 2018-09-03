@@ -5,6 +5,6 @@ MISC_LIBS 	+= -L$(EVIOROOT)/lib -levioxx -levio -lexpat
 
 # The following is a temporary fix to accomodate the
 # ET channel in the latest EVIO package.  1/28/2013  DL
-include $(HALLD_HOME)/src/BMS/Makefile.ET
+include $(HALLD_SIM_HOME)/src/BMS/Makefile.ET
 
 

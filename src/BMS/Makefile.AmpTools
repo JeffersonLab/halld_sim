@@ -2,7 +2,7 @@ CXXFLAGS += -I$(AMPTOOLS)
 CUFLAGS += -I$(AMPTOOLS) -I..
 
 ifdef GPU
-include $(HALLD_HOME)/src/BMS/Makefile.CUDA
+include $(HALLD_SIM_HOME)/src/BMS/Makefile.CUDA
 MISC_LIBS += -L$(AMPTOOLS)/lib -lAmpTools_GPU
 else
 MISC_LIBS += -L$(AMPTOOLS)/lib -lAmpTools

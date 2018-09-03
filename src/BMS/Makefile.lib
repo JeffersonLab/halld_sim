@@ -4,7 +4,7 @@
 #
 
 # Things common to both library and executable builds live in Makefile.common
-include $(HALLD_HOME)/src/BMS/Makefile.common
+include $(HALLD_SIM_HOME)/src/BMS/Makefile.common
 
 .PHONY: all mkdirs depclean clean env
 

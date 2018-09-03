@@ -3,15 +3,15 @@ CXXFLAGS += -I$(JANA_HOME)/include
 LIB_DIRS += $(JANA_HOME)/lib
 
 ifdef XERCESCROOT
-	include $(HALLD_HOME)/src/BMS/Makefile.XERCES
+	include $(HALLD_SIM_HOME)/src/BMS/Makefile.XERCES
 endif
 
 ifdef EVIOROOT
-	include $(HALLD_HOME)/src/BMS/Makefile.EVIO
+	include $(HALLD_SIM_HOME)/src/BMS/Makefile.EVIO
 endif
 
 ifdef ETROOT
-	include $(HALLD_HOME)/src/BMS/Makefile.ET
+	include $(HALLD_SIM_HOME)/src/BMS/Makefile.ET
 endif
 
 

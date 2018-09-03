@@ -29,12 +29,12 @@ ifndef ARCH
 ARCH = $(shell uname -p)
 endif
 ifndef BMS_OSNAME
-BMS_OSNAME = $(shell $(HALLD_HOME)/src/BMS/osrelease.pl)
+BMS_OSNAME = $(shell $(HALLD_SIM_HOME)/src/BMS/osrelease.pl)
 endif
 
 # Default GNU fortran compiler is based
 # on whether we're using gcc3 or not
-GCCVERSION = $(shell $(HALLD_HOME)/src/BMS/gcc_version.csh majoronly)
+GCCVERSION = $(shell $(HALLD_SIM_HOME)/src/BMS/gcc_version.csh majoronly)
 ifeq ($(strip $(GCCVERSION)), 3)
 	# Using gcc3
 	FC_GNU = g77
@@ -70,7 +70,7 @@ LIB_DIR		= .lib/$(BMS_OSNAME)
 BIN_DIR		= .bin/$(BMS_OSNAME)
 DEP_DIR		= .depends/$(BMS_OSNAME)
 # The following gets overwritten with HALLD_MY below
-INSTALL_DIR = $(HALLD_HOME)
+INSTALL_DIR = $(HALLD_SIM_HOME)
 
 # include working directory and parent directory first
 FFLAGS   += -I. -I.. -I../include
@@ -85,22 +85,22 @@ CXXFLAGS += -I$(HALLD_MY)/include
 INSTALL_DIR = $(HALLD_MY)
 endif
 
-# include HALLD_HOME include directory
-FFLAGS   += -I$(HALLD_HOME)/include
-CFLAGS   += -I$(HALLD_HOME)/include
-CXXFLAGS += -I$(HALLD_HOME)/include
+# include HALLD_SIM_HOME include directory
+FFLAGS   += -I$(HALLD_SIM_HOME)/include
+CFLAGS   += -I$(HALLD_SIM_HOME)/include
+CXXFLAGS += -I$(HALLD_SIM_HOME)/include
 
-# include HALLD_HOME/$(BMS_OSNAME) include directory
-FFLAGS   += -I$(HALLD_HOME)/$(BMS_OSNAME)/include
-CFLAGS   += -I$(HALLD_HOME)/$(BMS_OSNAME)/include
-CXXFLAGS += -I$(HALLD_HOME)/$(BMS_OSNAME)/include
+# include HALLD_SIM_HOME/$(BMS_OSNAME) include directory
+FFLAGS   += -I$(HALLD_SIM_HOME)/$(BMS_OSNAME)/include
+CFLAGS   += -I$(HALLD_SIM_HOME)/$(BMS_OSNAME)/include
+CXXFLAGS += -I$(HALLD_SIM_HOME)/$(BMS_OSNAME)/include
 
 # This is to allow files of size>2GB (specifically for HDDM) 6/19/2009 DL
 CXXFLAGS += -D_FILE_OFFSET_BITS=64
 CFLAGS += -D_FILE_OFFSET_BITS=64
 
 # Include user specified package makefiles
-PACKAGE_MAKEFILES = $(foreach name,$(subst :, ,$(PACKAGES)),$(HALLD_HOME)/src/BMS/Makefile.$(name))
+PACKAGE_MAKEFILES = $(foreach name,$(subst :, ,$(PACKAGES)),$(HALLD_SIM_HOME)/src/BMS/Makefile.$(name))
 
 ifdef PACKAGES
 include $(PACKAGE_MAKEFILES)
@@ -161,9 +161,9 @@ LIBNAME = $(LIB_DIR)/lib$(MODULE_NAME)$(DEBUG_SUFFIX).a
 
 # Include platform specific definitions
 # (the "-" at the front means don't error if the file doesn't exist)
--include $(HALLD_HOME)/src/BMS/Makefile.$(OS)
--include $(HALLD_HOME)/src/BMS/Makefile.$(ARCH)
--include $(HALLD_HOME)/src/BMS/Makefile.$(BMS_OSNAME)
+-include $(HALLD_SIM_HOME)/src/BMS/Makefile.$(OS)
+-include $(HALLD_SIM_HOME)/src/BMS/Makefile.$(ARCH)
+-include $(HALLD_SIM_HOME)/src/BMS/Makefile.$(BMS_OSNAME)
 
 # For GNU compilers, add verbose warnings
 ifeq ($(FC),$(FC_GNU))
@@ -187,4 +187,4 @@ FFLAGS := $(filter-out $(FFLAGS_FILTER_OUT), $(FFLAGS))
 CFLAGS := $(filter-out $(CFLAGS_FILTER_OUT), $(CFLAGS))
 CXXFLAGS := $(filter-out $(CXXFLAGS_FILTER_OUT), $(CXXFLAGS))
 
-include $(HALLD_HOME)/src/BMS/Makefile.SIMD
+include $(HALLD_SIM_HOME)/src/BMS/Makefile.SIMD

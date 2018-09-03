@@ -33,7 +33,7 @@ endif
 #
 # We do at least make an attempt to do the right thing based
 # on whether you are running gcc3 or gcc4.
-GCCVERSION = $(shell $(HALLD_HOME)/src/BMS/gcc_version.csh majoronly)
+GCCVERSION = $(shell $(HALLD_SIM_HOME)/src/BMS/gcc_version.csh majoronly)
 
 ifeq ($(strip $(GCCVERSION)), 3)
 	# Using gcc3
