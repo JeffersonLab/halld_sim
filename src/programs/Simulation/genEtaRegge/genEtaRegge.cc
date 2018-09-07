@@ -850,6 +850,4 @@ int main(int narg, char *argv[])
 
 	return 0;
 }
-
 #endif   // HAVE_AMPTOOLS_MCGEN
-
