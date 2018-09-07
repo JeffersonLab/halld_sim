@@ -1062,6 +1062,7 @@ def AddAmpTools(env):
 			AMPTOOLS_LIBS = 'AmpTools_GPU'
 			print 'Using GPU enabled AMPTOOLS library'
 
+                env.AppendUnique(CXXFLAGS = ['-DHAVE_AMPTOOLS_MCGEN'])
 		env.AppendUnique(CPPPATH = AMPTOOLS_CPPPATH)
 		env.AppendUnique(LIBPATH = AMPTOOLS_LIBPATH)
 		env.AppendUnique(LIBS    = AMPTOOLS_LIBS)
