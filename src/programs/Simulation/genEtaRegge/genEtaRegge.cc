@@ -317,7 +317,7 @@ void CreateHistograms(){
 
 
 // Create a graph of the cross section dsigma/dt as a function of -t
-void GraphCrossSection(){
+void GraphCrossSection(double &xsec_max){
   // beam energy in lab
   double Egamma=Emin;
 
@@ -338,11 +338,13 @@ void GraphCrossSection(){
   double t_old=t0;
   double t_array[10000];
   double xsec_array[10000];
+  xsec_max=0.;
   for (unsigned int k=0;k<10000;k++){
     double theta_cm=M_PI*double(k)/10000.;
     double sin_theta_over_2=sin(0.5*theta_cm);
     double t=t0-4.*p_gamma*p_eta*sin_theta_over_2*sin_theta_over_2;
     double xsec=CrossSection(s,t,p_gamma,p_eta,theta_cm);
+    if (xsec>xsec_max) xsec_max=xsec;
     
     t_array[k]=-t;
     xsec_array[k]=xsec;
@@ -424,11 +426,14 @@ int main(int narg, char *argv[])
   // Get decaying particle mass and width
   string comment_line2;
   getline(infile,comment_line);
-  infile >> m_eta;
+  double m_eta_R=0.;
+  infile >> m_eta_R;
   infile >> width;
   infile.ignore(); // ignore the '\n' at the end of this line
 
+  m_eta=m_eta_R;
   m_eta_sq=m_eta*m_eta;
+
   cout << "Mass, width of decaying particle [GeV] = "<< m_eta <<"," << width << endl;
 
   // Get coupling constants for photon vertex
@@ -451,25 +456,59 @@ int main(int narg, char *argv[])
   infile >> num_decay_particles;
   infile.ignore(); // ignore the '\n' at the end of this line
 
-  // Set up vectors of particle ids and 4-vectors
-  int last_index=num_decay_particles;
-  int num_final_state_particles=num_decay_particles+1;
-  vector<TLorentzVector>particle_vectors(num_final_state_particles);
-  vector<Particle_t>particle_types(num_final_state_particles);
+  // Set up vectors of particle ids
+  vector<Particle_t>particle_types;
   double *decay_masses =new double[num_decay_particles];
-  particle_types[last_index]=Proton;
+  double *res_decay_masses=NULL;
+  vector<Particle_t>res_particle_types;
 
   // GEANT ids of decay particles
   getline(infile,comment_line);
+  cout << comment_line << endl;
+  int reson_index=-1;
   cout << "Particle id's of decay particles =";
   for (int k=0;k<num_decay_particles;k++){
     int ipart;
     infile >> ipart;
     cout << " " << ipart; 
-    particle_types[k]=(Particle_t)ipart;
-    decay_masses[k]=ParticleMass(particle_types[k]);
-  }
+    particle_types.push_back((Particle_t)ipart);
+    if (ipart>0){
+      decay_masses[k]=ParticleMass((Particle_t)ipart);
+    }
+    else {
+      reson_index=k;
+    }
+  } 
   cout << endl;
+  unsigned int num_res_decay_particles=0; 
+  double reson_mass=0.,reson_width=0.;
+  int reson_L=0;
+  if (reson_index>=0){
+    infile.ignore(); // ignore the '\n' at the end of this line 
+    getline(infile,comment_line);
+    cout << comment_line << endl;
+    infile >> reson_mass;
+    decay_masses[reson_index]=reson_mass;
+    cout << "Resonance mass = " << reson_mass << " [GeV]" << endl;   
+    infile >> reson_width;
+    cout << "Resonance width = " << reson_width << " [GeV]" << endl; 
+    infile >> reson_L;
+    cout << "Resonance orbital angular momentum L = " << reson_L << endl; 
+    infile >> num_res_decay_particles;
+    if (num_res_decay_particles>1) res_decay_masses=new double[num_res_decay_particles]; 
+    else{
+      cout << "Invalid number of decay particles! " << endl;
+      exit(0);
+    }
+    cout << " Decay particles: ";
+    for (unsigned int i=0;i<num_res_decay_particles;i++){
+      int ipart;
+      infile >> ipart;
+      cout << " " << ipart; 
+      res_particle_types.push_back((Particle_t)ipart);
+      res_decay_masses[i]=ParticleMass((Particle_t)ipart);
+    }
+  }
 
   infile.close();
  
@@ -491,7 +530,8 @@ int main(int narg, char *argv[])
   // Create some diagonistic histographs
   CreateHistograms();
   // Make a TGraph of the cross section at a fixed beam energy
-  GraphCrossSection();
+  double xsec_max=0.;
+  GraphCrossSection(xsec_max);
   
   // Fill histogram of coherent bremmsstrahlung distribution 
   for (int i=1;i<=1000;i++){
@@ -501,15 +541,12 @@ int main(int narg, char *argv[])
     else y=cobrems.Rate_dNtdx(x);
     cobrems_vs_E->Fill(Ee*double(x),double(y));
   }
-
-
+  
   //----------------------------------------------------------------------------
   // Event generation loop
   //----------------------------------------------------------------------------
   for (int i=1;i<=Nevents;i++){
     double Egamma=0.;
-    // Maximum value for cross section 
-    double xsec_max=0.3;
     double xsec=0.,xsec_test=0.;
 
     // Polar angle in center of mass frame
@@ -536,10 +573,127 @@ int main(int narg, char *argv[])
       // Momenta of incoming photon and outgoing eta and proton in cm frame
       double p_gamma=(s-m_p_sq)/(2.*Ecm);
 
-      if (width>0){  // Take into account width of resonance
-	// Use a relativistic Breit-Wigner distribution for the shape
+      // Generate mass distribution for unstable particle in the final state 
+      // with non-negligible width if specified in the input file
+      double mass_check=0.;
+      do {
+	if (reson_index>-1 && reson_width>0.){
+	  if (num_res_decay_particles==2){
+	    double BW=0.,BWtest=0.;
+	    double m1sq=res_decay_masses[0]*res_decay_masses[0];
+	    double m2sq=res_decay_masses[1]*res_decay_masses[1];
+	    double m0sq=reson_mass*reson_mass;
+	    double m1sq_minus_m2sq=m1sq-m2sq;
+	    double q0sq=(m0sq*m0sq-2.*m0sq*(m1sq+m2sq)
+			 +m1sq_minus_m2sq*m1sq_minus_m2sq)/(4.*m0sq);
+	    double BlattWeisskopf=1.;
+	    double d=5.; // Meson radius in GeV^-1: 5 GeV^-1 -> 1 fm
+	    double dsq=d*d;
+	    double Gamma0sq=reson_width*reson_width;
+	    double BWmax=0.;
+	    double BWmin=0.;
+	    double m_min=res_decay_masses[0]+res_decay_masses[1];
+	    //	    double BW_at_m_min=0.;
+	    //double BW_at_m_max=0.;
+	    if (reson_L==0){
+	      BWmax=1./(m0sq*Gamma0sq);
+	    }
+	    else{
+	      BWmax=pow(q0sq,2*reson_L)/(m0sq*Gamma0sq);
+	    }
+	    double m_max=m_p*(sqrt(1.+2.*Egamma/m_p)-1.);
+	    for (int im=0;im<num_decay_particles;im++){
+	      if (im==reson_index) continue;
+	      m_max-=decay_masses[im];
+	    }
+	    double m=0.;
+	    do {
+	      m=m_min+myrand->Uniform(m_max-m_min);
+	      double msq=m*m;
+	      double qsq=(msq*msq-2.*msq*(m1sq+m2sq)
+			  +m1sq_minus_m2sq*m1sq_minus_m2sq)/(4.*msq);
+	      double z=dsq*qsq;
+	      double z0=dsq*q0sq;
+	      double m0sq_minus_msq=m0sq-msq;
+	      if (reson_L==0){
+		BW=1./(m0sq_minus_msq*m0sq_minus_msq+m0sq*qsq/q0sq*Gamma0sq);
+	      }
+	      else{
+		if (reson_L==1){
+		  BlattWeisskopf=(1.+z0)/(1.+z);
+		}
+		BW=pow(qsq,2*reson_L)
+		  /(m0sq_minus_msq*m0sq_minus_msq
+		    +m0sq*pow(qsq/q0sq,2*reson_L+1)*Gamma0sq*BlattWeisskopf);
+	      }
+	      BWtest=BWmin+myrand->Uniform(BWmax-BWmin);
+	    } while (BWtest>BW);
+	    decay_masses[reson_index]=m;
+	  }	
+	}
 
-      }
+	if (width>0.001){  
+	  // Take into account width of resonance, but apply a practical minimum
+	  // for the width, overwise we are just wasting cpu cycles...
+	  // Use a relativistic Breit-Wigner distribution for the shape.  
+	  double m_max_=m_p*(sqrt(1.+2.*Egamma/m_p)-1.);
+	  double m_min_=decay_masses[0]; // will add the second mass below
+	  double m1sq_=decay_masses[0]*decay_masses[0];
+	  double m2sq_=0.;
+	  switch(num_decay_particles){
+	  case 2:
+	    {
+	      m_min_+=decay_masses[1];
+	      m2sq_=decay_masses[1]*decay_masses[1];
+	      break;
+	    }
+	  case 3:
+	    // Define an effective mass in an ad hoc way: we assume that in the 
+	    // CM one particle goes in one direction and the two other particles
+	    // go in the opposite direction such that p1=-p2-p3.  The effective
+	    // mass of the 2-3 system must be something between min=m2+m3 
+	    // and max=M-m1, where M is the mass of the resonance.  For
+	    // simplicity use the average of these two extremes.
+	    {
+	      double m2_=0.5*(m_eta_R-decay_masses[0]+decay_masses[1]+decay_masses[2]);
+	      m_min_+=decay_masses[1]+decay_masses[2];
+	      m2sq_=m2_*m2_;
+	      break;
+	    }
+	  default:
+	    break;
+	  }
+	  double m0sq_=m_eta_R*m_eta_R;
+	  double BW_=0.,BWtest_=0.;
+	  double Gamma0sq_=width*width;
+	  double m1sq_minus_m2sq_=m1sq_-m2sq_;
+	  double q0sq_=(m0sq_*m0sq_-2.*m0sq_*(m1sq_+m2sq_)
+			+m1sq_minus_m2sq_*m1sq_minus_m2sq_)/(4.*m0sq_);
+	  double BWmax_=1./(Gamma0sq_*m0sq_);
+	  double BWmin_=0.;
+	  double m_=0.;
+	  do{
+	    m_=m_min_+myrand->Uniform(m_max_-m_min_);
+	    double msq_=m_*m_;
+	    double qsq_=(msq_*msq_-2.*msq_*(m1sq_+m2sq_)
+			 +m1sq_minus_m2sq_*m1sq_minus_m2sq_)/(4.*msq_);
+	    double m0sq_minus_msq_=m0sq_-msq_;
+	    BW_=1./(m0sq_minus_msq_*m0sq_minus_msq_
+		    +m0sq_*m0sq_*Gamma0sq_*qsq_/q0sq_);
+	    BWtest_=BWmin_+myrand->Uniform(BWmax_-BWmin_);
+	  }
+	  while (BWtest_>BW_);
+	  m_eta=m_;
+	  m_eta_sq=m_*m_;
+	}
+	// Check that the decay products are consistent with a particle of mass
+	// m_eta...
+	mass_check=decay_masses[0];
+	for (int im=1;im<num_decay_particles;im++){
+	  mass_check+=decay_masses[im];
+	}
+      } while (mass_check>m_eta);
+    
       double E_eta=(s+m_eta_sq-m_p_sq)/(2.*Ecm);
       p_eta=sqrt(E_eta*E_eta-m_eta_sq);
     
@@ -576,15 +730,12 @@ int main(int narg, char *argv[])
     double pt=p_eta*sin(theta_cm);
     TLorentzVector eta4(pt*cos(phi_cm),pt*sin(phi_cm),p_eta*cos(theta_cm),
 			sqrt(p_eta*p_eta+m_eta_sq));
-    // eta4.Print();
 
     //Boost the eta 4-momentum into the lab
     eta4.Boost(v_cm);
-    // eta4.Print();
-
   
     // Compute the 4-momentum for the recoil proton
-    TLorentzVector proton4=beam+target-eta4;
+    TLorentzVector proton4=beam+target-eta4; 
 
     //proton4.Print();
     thrown_theta_vs_p->Fill(proton4.P(),180./M_PI*proton4.Theta());
@@ -638,11 +789,32 @@ int main(int narg, char *argv[])
     vert[2]=zmin+myrand->Uniform(zmax-zmin);
 
     // Gather the particles in the reaction and write out event in hddm format
-    particle_vectors[last_index]=proton4;
+    vector<TLorentzVector>output_particle_vectors;
+    output_particle_vectors.push_back(proton4);
+    vector<Particle_t>output_particle_types;
+    output_particle_types.push_back(Proton);
     for (int j=0;j<num_decay_particles;j++){
-      particle_vectors[j]=*phase_space.GetDecay(j);
+      if (particle_types[j]!=Unknown){
+	output_particle_vectors.push_back(*phase_space.GetDecay(j));
+	output_particle_types.push_back(particle_types[j]);
+      }
+      else {
+	TGenPhaseSpace phase_space2;
+	phase_space2.SetDecay(*phase_space.GetDecay(j),num_res_decay_particles,
+			      res_decay_masses);
+	weight=0.,rand_weight=1.;
+	do{
+	  weight=phase_space2.Generate();
+	  rand_weight=myrand->Uniform(1.);
+	}
+	while (rand_weight>weight);
+	for (unsigned int im=0;im<num_res_decay_particles;im++){
+	  output_particle_types.push_back(res_particle_types[im]);
+	  output_particle_vectors.push_back(*phase_space2.GetDecay(im));
+	}
+      }
     }
-    WriteEvent(i,beam,vert,particle_types,particle_vectors,file);
+    WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,file);
     
     if ((i%(Nevents/10))==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }
@@ -659,6 +831,7 @@ int main(int narg, char *argv[])
 
   // Cleanup
   delete []decay_masses;
+  if (res_decay_masses!=NULL) delete []res_decay_masses;
 
   return 0;
 }
