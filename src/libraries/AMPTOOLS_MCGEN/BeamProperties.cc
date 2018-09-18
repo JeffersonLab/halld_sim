@@ -103,19 +103,30 @@ bool BeamProperties::parseConfig(){
 // create histograms for flux and polarization fraction using CobremsGeneration
 void BeamProperties::generateCobrems(){
 
+	// Set default parameters (in case not provided by config file)
+	std::map<std::string,double> defaultParameters;
+	defaultParameters.insert( std::pair<std::string,double>( "Emax", 11.6 ) );
+	defaultParameters.insert( std::pair<std::string,double>( "Epeak", 8.8 ) );
+	defaultParameters.insert( std::pair<std::string,double>( "Elow", 3.0 ) );
+	defaultParameters.insert( std::pair<std::string,double>( "Ehigh", 11.6 ) );
+	defaultParameters.insert( std::pair<std::string,double>( "Emittance", 10.e-9 ) );
+	defaultParameters.insert( std::pair<std::string,double>( "RadiationThickness", 50.e-6 ) );
+	defaultParameters.insert( std::pair<std::string,double>( "CollimatorDiameter", 0.005 ) );
+	defaultParameters.insert( std::pair<std::string,double>( "CollimatorDistance", 76.0 ) );
+	
 	// check that required parameters are provided
 	const int nParameters = 8;
 	string parameterNames[nParameters] = {"ElectronBeamEnergy", "CoherentPeakEnergy", "PhotonBeamLowEnergy", "PhotonBeamHighEnergy",  "Emittance", "RadiatorThickness", "CollimatorDiameter", "CollimatorDistance"};
 	for(int i=0; i<nParameters; i++) {
-		if(!mBeamParametersMap.count(parameterNames[i].data())) {
-			cout << "BeamProperties ERROR:  generateCombrems parameter " << parameterNames[i] << " missing" << endl;
-			exit(1);
+		if(!mBeamParametersMap.at(parameterNames[i].data())) {
+			cout << "BeamProperties ERROR:  generateCombrems parameter " << parameterNames[i] << " missing: using default = " << defaultParameters.at(parameterNames[i].data()) << endl;
+			mBeamParametersMap.insert( std::pair<std::string,double>( parameterNames[i].data(), defaultParameters.at(parameterNames[i].data())) );
 		}
 	}
 
 	// Set parameters from config file
-	double Emax  = mBeamParametersMap.at("ElectronBeamEnergy");
-	double Epeak = mBeamParametersMap.at("CoherentPeakEnergy");
+        double Emax  = mBeamParametersMap.at("ElectronBeamEnergy");
+        double Epeak = mBeamParametersMap.at("CoherentPeakEnergy");
 	double Elow  = mBeamParametersMap.at("PhotonBeamLowEnergy");
 	double Ehigh = mBeamParametersMap.at("PhotonBeamHighEnergy");
 

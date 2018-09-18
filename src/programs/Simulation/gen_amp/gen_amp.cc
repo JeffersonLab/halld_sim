@@ -50,11 +50,6 @@ int main( int argc, char* argv[] ){
 	// default upper and lower bounds 
 	double lowMass = 0.2;
 	double highMass = 2.0;
-	
-	double beamMaxE   = 12.0;
-	double beamPeakE  = 9.0;
-	double beamLowE   = 3.0;
-	double beamHighE  = 12.0;
 
 	int runNum = 30731;
 	unsigned int seed = 0;
@@ -89,18 +84,6 @@ int main( int argc, char* argv[] ){
 		if (arg == "-n"){  
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  nEvents = atoi( argv[++i] ); }
-		if (arg == "-m"){
-			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-			else  beamMaxE = atof( argv[++i] ); }
-		if (arg == "-p"){
-			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-			else  beamPeakE = atof( argv[++i] ); }
-		if (arg == "-a"){
-			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-                        else  beamLowE = atof( argv[++i] ); }
-                if (arg == "-b"){
-                        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-                        else  beamHighE = atof( argv[++i] ); }
 		if (arg == "-r"){
                         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
                         else  runNum = atoi( argv[++i] ); }
@@ -128,10 +111,6 @@ int main( int argc, char* argv[] ){
 			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -n    <value>\t Minimum number of events to generate [optional]" << endl;
-			cout << "\t -m    <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
-                        cout << "\t -p    <value>\t Coherent peak photon energy [optional]" << endl;
-                        cout << "\t -a    <value>\t Minimum photon energy to simulate events [optional]" << endl;
-                        cout << "\t -b    <value>\t Maximum photon energy to simulate events [optional]" << endl;
 			cout << "\t -r    <value>\t Run number assigned to generated events [optional]" << endl;
 			cout << "\t -s    <value>\t Random number seed initialization [optional]" << endl;
 			cout << "\t -t    <value>\t Momentum transfer slope [optional]" << endl;
@@ -191,7 +170,6 @@ int main( int argc, char* argv[] ){
 	if (!foundResonance)
 	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with mass = width = 1GeV" << endl; 
 
-
 	// random number initialization (set to 0 by default)
 	TRandom3* gRandom = new TRandom3();
 	gRandom->SetSeed(seed);
@@ -207,13 +185,29 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
-	
+
+	// loop to look for beam configuration file
+        TString beamConfigFile;
+        const vector<ConfigFileLine> configFileLinesBeam = parser.getConfigFileLines();
+        for (vector<ConfigFileLine>::const_iterator it=configFileLinesBeam.begin(); it!=configFileLinesBeam.end(); it++) {
+                if ((*it).keyword() == "define") {
+                        TString beamArgument =  (*it).arguments()[0].c_str();
+                        if(beamArgument.Contains("beamconf")) {
+                                beamConfigFile = (*it).arguments()[1].c_str();
+                        }
+                }
+        }
+	if(beamConfigFile.Length() == 0) {
+		cout<<"WARNING: Couldn't find beam configuration file"<<endl;
+		cout<<"         Using default CobremsGenerator Eg_max=12, Eg_peak=9"<<endl;
+	}
+
 	ProductionMechanism::Type type =
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
-	GammaPToNPartP resProd( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, lowT, highT, seed );
+	GammaPToNPartP resProd( threshold<lowMass ? lowMass : threshold, highMass, childMasses, type, slope, lowT, highT, seed, beamConfigFile);
 
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
