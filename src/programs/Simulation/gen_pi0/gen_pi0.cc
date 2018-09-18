@@ -116,7 +116,7 @@ int main( int argc, char* argv[] ){
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 		if ((*it).keyword() == "define") {
 			TString beamArgument =  (*it).arguments()[0].c_str();
-			if(beamArgument.Contains("beam")) {
+			if(beamArgument.Contains("beamconfig")) {
 				beamConfigFile = (*it).arguments()[1].c_str();
 				//cout<<beamConfigFile.Data()<<endl;
 			}

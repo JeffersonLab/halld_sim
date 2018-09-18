@@ -192,7 +192,7 @@ int main( int argc, char* argv[] ){
         for (vector<ConfigFileLine>::const_iterator it=configFileLinesBeam.begin(); it!=configFileLinesBeam.end(); it++) {
                 if ((*it).keyword() == "define") {
                         TString beamArgument =  (*it).arguments()[0].c_str();
-                        if(beamArgument.Contains("beamconf")) {
+                        if(beamArgument.Contains("beamconfig")) {
                                 beamConfigFile = (*it).arguments()[1].c_str();
                         }
                 }
