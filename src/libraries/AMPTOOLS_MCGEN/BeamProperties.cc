@@ -129,8 +129,8 @@ void BeamProperties::generateCobrems(){
 	CobremsGeneration cobrems(Emax, Epeak);
 	cobrems.setBeamEmittance(mBeamParametersMap.at("Emittance"));
 	cobrems.setTargetThickness(mBeamParametersMap.at("RadiatorThickness"));
-	cobrems.setCollimatorDistance(mBeamParametersMap.at("CollimatorDiameter"));
-	cobrems.setCollimatorDiameter(mBeamParametersMap.at("CollimatorDistance"));
+	cobrems.setCollimatorDiameter(mBeamParametersMap.at("CollimatorDiameter"));
+	cobrems.setCollimatorDistance(mBeamParametersMap.at("CollimatorDistance"));
 	cobrems.setCollimatedFlag(true);
 	
 	// Fill flux
