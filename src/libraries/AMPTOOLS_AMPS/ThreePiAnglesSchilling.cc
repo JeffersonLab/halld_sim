@@ -138,7 +138,7 @@ ThreePiAnglesSchilling::calcAmplitude( GDouble** pKin ) const {
 
     GDouble phi = angles.Phi();
 
-    TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // beam polarization vector
+    TVector3 eps(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
     GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 
     // vector meson production from K. Schilling et. al.

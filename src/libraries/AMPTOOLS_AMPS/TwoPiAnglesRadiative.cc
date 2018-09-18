@@ -150,7 +150,7 @@ TwoPiAnglesRadiative::calcAmplitude( GDouble** pKin ) const {
 
     //Since the beam is in PARA configuration (Run 3185), the polarization vector is along the lab x-axis
     //Since the boost is in the z-direction, this vector is the same in the production CM frame
-    TVector3 locPolUnit(cos(polAngle), sin(polAngle), 0.0);
+    TVector3 locPolUnit(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0);
 
     //In the production CM frame, locPHI is the angle between the polarization vector and the production plane
     double locCosPHI = locPolUnit.Dot(locHelicityYAxis_ProdCM.Cross(locBeamP4_ProdCM.Vect().Unit()));
