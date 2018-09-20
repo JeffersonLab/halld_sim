@@ -20,10 +20,13 @@ public:
   enum { k2PiMass = 0, kPiPCosTheta, kPhiPiPlus, kPhiPiMinus, kPhi, kphi, kPsi, kt, kNumHists};
   
   TwoPiPlotGenerator( const FitResults& results );
-    
+  TwoPiPlotGenerator( );
+
+  void projectEvent( Kinematics* kin );
+  
 private:
         
-  void projectEvent( Kinematics* kin );
+  void createHistograms();
   
 };
 
