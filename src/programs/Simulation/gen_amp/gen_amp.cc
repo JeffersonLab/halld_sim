@@ -27,6 +27,8 @@
 
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/ConfigFileParser.h"
+#include "IUAmpTools/PlotGenerator.h"
+#include "IUAmpTools/FitResults.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -199,7 +201,6 @@ int main( int argc, char* argv[] ){
         }
 	if(beamConfigFile.Length() == 0) {
 		cout<<"WARNING: Couldn't find beam configuration file"<<endl;
-		cout<<"         Using default CobremsGenerator Eg_max=12, Eg_peak=9"<<endl;
 	}
 
 	ProductionMechanism::Type type =
@@ -236,7 +237,6 @@ int main( int argc, char* argv[] ){
 	ROOTDataWriter rootOut( outname );
 	
 	TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
-	
 	ostringstream locStream;
 	ostringstream locIsobarStream;
 	for (unsigned int i=2; i<Particles.size(); i++){
@@ -310,7 +310,7 @@ int main( int argc, char* argv[] ){
 				double rand = gRandom->Uniform() * maxInten;
 				
 				if( weightedInten > rand || genFlat ){
-					
+
 					mass->Fill( resonance.M() );
 					massW->Fill( resonance.M(), genWeight );
 					
@@ -394,11 +394,11 @@ int main( int argc, char* argv[] ){
 	CosTheta_psi->Write();
 	M_CosTheta->Write();
 	M_Phi->Write();
+
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;
 	
 	return 0;
 }
-
 

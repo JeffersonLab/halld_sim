@@ -118,9 +118,11 @@ int main( int argc, char* argv[] ){
 			TString beamArgument =  (*it).arguments()[0].c_str();
 			if(beamArgument.Contains("beamconfig")) {
 				beamConfigFile = (*it).arguments()[1].c_str();
-				//cout<<beamConfigFile.Data()<<endl;
 			}
 		}
+	}
+	if(beamConfigFile.Length() == 0) {
+		cout<<"WARNING: Couldn't find beam configuration file"<<endl;
 	}
 
 	// generate single pi0 production

@@ -48,7 +48,7 @@ void BeamProperties::createHistograms( TString configFile ) {
 
 bool BeamProperties::parseConfig(){
 
-	//cout<<endl<<"Parsing BeamProperty config file: "<<mConfigFile.Data()<<endl<<endl;
+	cout<<endl<<"Parsing BeamProperty config file: "<<mConfigFile.Data()<<endl<<endl;
 
 	// start assuming parameters for CobremsGeneration
 	mIsROOT = false;
