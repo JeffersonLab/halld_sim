@@ -28,7 +28,6 @@ double g0_sq=110.5; // GeV^-2
 // Regge cut parameters
 double regge_cuts[5]; // dc c_P_omega c_f2_omega c_P_rho c_f2_rho 
 
-double Emin=3.,Emax=12.0; // GeV
 double zmin=50.0,zmax=80.0; // cm, target extent
 int Nevents=10000;
 int runNo=30300;
@@ -2471,7 +2470,7 @@ void CreateHistograms(string beamConfigFile){
 // Create a graph of the cross section dsigma/dt as a function of -t
 void GraphCrossSection(double m1,double m2){
   // beam energy in lab
-  double Egamma=Emin;
+  double Egamma=cobrems_vs_E->GetBinLowEdge(1); // get from CobremsGenerator histogram;
   TLorentzVector beam(0,0,Egamma,Egamma);
   TLorentzVector target(0,0,0,m_p);
 
@@ -2706,14 +2705,8 @@ int main(int narg, char *argv[])
     exit(-1);
   } 
 
-  // Get photon energy range
+  // Get beam properties configuration file
   string comment_line;
-  getline(infile,comment_line);
-  infile >> Emin;
-  infile >> Emax;
-  infile.ignore(); // ignore the '\n' at the end of this line
-
-   // Get beam properties configuration file
   getline(infile,comment_line);
   string beamConfigFile;
   infile >> beamConfigFile;
@@ -2775,11 +2768,11 @@ int main(int narg, char *argv[])
   cout << endl;
   infile.close();
   
-  // Make a TGraph of the cross section at a fixed beam energy
-  GraphCrossSection(decay_masses[0],decay_masses[1]);
-  
   // Create some diagonistic histograms
   CreateHistograms(beamConfigFile);
+
+  // Make a TGraph of the cross section at a fixed beam energy
+  GraphCrossSection(decay_masses[0],decay_masses[1]);
 
   // Set up some variables for cross section calculation
   // masses of decay particles

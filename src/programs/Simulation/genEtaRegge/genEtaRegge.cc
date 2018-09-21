@@ -1,7 +1,4 @@
 // Main program for generating eta events. 
-
-#if HAVE_AMPTOOLS_MCGEN
-
 #include "HDDM/hddm_s.h"
 #include "particleType.h"
 
@@ -34,7 +31,6 @@ double g_omega_eta_gamma=0.29;
 double g_eta_gamma_gamma=0.0429;
 double g_phi_eta_gamma=0.38;
 
-double Emin=3.,Emax=12.0; // GeV
 double zmin=50.0,zmax=80.0; // cm, target extent
 int Nevents=10000;
 int runNo=10000;
@@ -318,7 +314,7 @@ void CreateHistograms(string beamConfigFile){
 // Create a graph of the cross section dsigma/dt as a function of -t
 void GraphCrossSection(double &xsec_max){
   // beam energy in lab
-  double Egamma=Emin;
+  double Egamma=cobrems_vs_E->GetBinLowEdge(1); // get from CobremsGenerator histogram
 
   // CM energy
   double s=m_p*(m_p+2.*Egamma);
@@ -392,21 +388,8 @@ int main(int narg, char *argv[])
     exit(-1);
   } 
 
-  // Get photon energy range
-  string comment_line;
-  getline(infile,comment_line);
-  infile >> Emin;
-  infile >> Emax;
-  infile.ignore(); // ignore the '\n' at the end of this line
-  // Set sensible minimum energy
-  if (Emin<m_eta){ 
-    Emin=m_eta;
-    cout << "Warning:  Setting minimum beam energy to " << Emin << " [GeV]" 
-	 <<endl;
-  }
-  cout << "Photon energy min, max [Gev] = "<< Emin <<","<<Emax <<endl;
-
   // Get beam properties configuration file
+  string comment_line;
   getline(infile,comment_line);
   string beamConfigFile;
   infile >> beamConfigFile;
@@ -503,12 +486,12 @@ int main(int narg, char *argv[])
 
   infile.close();
   
+  // Create some diagonistic histographs
+  CreateHistograms(beamConfigFile);
+
   // Make a TGraph of the cross section at a fixed beam energy
   double xsec_max=0.;
   GraphCrossSection(xsec_max);
-  
-  // Create some diagonistic histographs
-  CreateHistograms(beamConfigFile);
 
   //----------------------------------------------------------------------------
   // Event generation loop
@@ -803,19 +786,3 @@ int main(int narg, char *argv[])
 
   return 0;
 }
-
-#else
-
-// ---- The following is compiled only if AMPTOOLS was not installed ----
-#include <iostream>
-
-int main(int narg, char *argv[])
-{
-	std::cerr << "This executable (genEtaRegge) was built without AMPTOOLS support." << std::endl;
-	std::cerr << "As such it is disabled. To use it, install AMPTOOLS and make sure" << std::endl;
-	std::cerr << "your AMPTOOLS environment variable is set to point to it and then" << std::endl;
-	std::cerr << "rebuild." << std::endl;
-
-	return 0;
-}
-#endif   // HAVE_AMPTOOLS_MCGEN

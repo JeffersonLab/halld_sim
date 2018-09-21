@@ -7,9 +7,5 @@ Import('*')
 
 env = env.Clone()
 
-#env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore', '-fno-automatic'])
-#env.AppendUnique(LINKFLAGS = ['-rdynamic', '-Wl,--no-as-needed'])
-#env.SetOption('warn', 'no-fortran-cxx-mix')  # supress warnings about linking fortran with c++
-
 sbms.AddROOT(env)
 sbms.library(env)

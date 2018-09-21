@@ -1,7 +1,5 @@
-#Emin Emax (photon energy range)
-7.0 11.7
-#Beam properties configuration file
-cobrems.cfg
+#beam configuration file
+cobrems.conf
 #mass[GeV] width[GeV]
 0.95778 0.000196
 #g_eta_gamma_gamma g_rho_eta_gamma g_omega_eta_gamma g_phi_eta_gamma 
