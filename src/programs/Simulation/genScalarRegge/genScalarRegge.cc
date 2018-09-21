@@ -15,7 +15,8 @@
 #include <vector>
 #include <string>
 using namespace std;
-#include <BeamProperties.h>
+
+#include "UTILITIES/BeamProperties.h"
 
 // Masses
 const double m_p=0.93827; // GeV

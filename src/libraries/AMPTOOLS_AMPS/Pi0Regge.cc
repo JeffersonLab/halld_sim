@@ -10,7 +10,7 @@
 
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/Pi0Regge.h"
-#include "AMPTOOLS_MCGEN/BeamProperties.h"
+#include "UTILITIES/BeamProperties.h"
 
 Pi0Regge::Pi0Regge( const vector< string >& args ) :
 UserAmplitude< Pi0Regge >( args )

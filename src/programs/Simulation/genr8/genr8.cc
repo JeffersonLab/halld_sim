@@ -29,7 +29,7 @@
 #include <genkin.h>
 #include <particleType.h>
 
-#include <BeamProperties.h>
+#include "UTILITIES/BeamProperties.h"
 
 #define TRUE 1
 #define FALSE 0

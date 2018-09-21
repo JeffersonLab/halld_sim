@@ -11,7 +11,7 @@
 #include "TRandom3.h"
 
 #include "AMPTOOLS_MCGEN/GammaPToXP.h"
-#include "AMPTOOLS_MCGEN/BeamProperties.h"
+#include "UTILITIES/BeamProperties.h"
 
 GammaPToXP::GammaPToXP( float massX, TString beamConfigFile) : 
 m_target( 0, 0, 0, 0.938 ),

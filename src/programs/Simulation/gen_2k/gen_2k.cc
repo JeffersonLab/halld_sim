@@ -146,12 +146,36 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( TwoPiAngles() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
+
+	// loop to look for beam configuration file
+        TString beamConfigFile;
+        const vector<ConfigFileLine> configFileLinesBeam = parser.getConfigFileLines();
+        for (vector<ConfigFileLine>::const_iterator it=configFileLinesBeam.begin(); it!=configFileLinesBeam.end(); it++) {
+                if ((*it).keyword() == "define") {
+                        TString beamArgument =  (*it).arguments()[0].c_str();
+                        if(beamArgument.Contains("beamconfig")) {
+                                beamConfigFile = (*it).arguments()[1].c_str();
+                        }
+                }
+        }
+	if(beamConfigFile.Length() == 0) {
+		cout<<"WARNING: Couldn't find beam configuration file -- write local version"<<endl;
+
+		beamConfigFile = "local_beam.conf";
+		ofstream locBeamConfigFile;
+		locBeamConfigFile.open(beamConfigFile.Data());
+		locBeamConfigFile<<"ElectronBeamEnergy "<<beamMaxE<<endl;       // electron beam energy
+		locBeamConfigFile<<"CoherentPeakEnergy "<<beamPeakE<<endl;      // coherent peak energy
+		locBeamConfigFile<<"PhotonBeamLowEnergy "<<beamLowE<<endl;      // photon beam low energy
+		locBeamConfigFile<<"PhotonBeamHighEnergy "<<beamHighE<<endl;    // photon beam high energy
+		locBeamConfigFile.close();
+	}
 	
 	ProductionMechanism::Type type =
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 	
 	// generate over a range of mass -- the daughters are two charged kaons
-	GammaPToXYP resProd( lowMass, highMass, 0.494, 0.494, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope );
+	GammaPToXYP resProd( lowMass, highMass, 0.494, 0.494, type, slope, seed, beamConfigFile );
 	
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when

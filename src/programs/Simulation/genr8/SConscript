@@ -6,9 +6,8 @@ import sbms
 Import('*')
 env = env.Clone()
 
-sbms.AddCobrems(env)
+sbms.AddUtilities(env)
 sbms.AddROOT(env)
-sbms.AddAmpTools(env)
 
 sbms.executable(env)
 

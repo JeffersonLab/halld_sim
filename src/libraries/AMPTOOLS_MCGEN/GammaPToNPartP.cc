@@ -13,7 +13,7 @@
 #include "TLorentzVector.h"
 #include "IUAmpTools/Kinematics.h"
 
-#include "AMPTOOLS_MCGEN/BeamProperties.h"
+#include "UTILITIES/BeamProperties.h"
 
 GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
 				vector<double> &ChildMass,

@@ -14,11 +14,12 @@
 
 #include "IUAmpTools/Kinematics.h"
 
-#include <CobremsGeneration.hh>
+#include "UTILITIES/BeamProperties.h"
 
 GammaPToXYP::GammaPToXYP( float lowMassXY, float highMassXY, 
-                          float massX, float massY, float beamMaxE, float beamPeakE, float beamLowE, float beamHighE,
-                          ProductionMechanism::Type type, float slope, int seed ) : 
+                          float massX, float massY,
+                          ProductionMechanism::Type type, float slope, int seed,
+			  TString beamConfigFile ) : 
 m_prodMech( ProductionMechanism::kProton, type, slope, seed ),
 m_target( 0, 0, 0, 0.938272 ),
 m_childMass( 0 ) {
@@ -28,37 +29,10 @@ m_childMass( 0 ) {
   
   m_prodMech.setMassRange( lowMassXY, highMassXY );
  
-  // Initialize coherent brem table
-  float Emax =  beamMaxE;
-  float Epeak = beamPeakE;
-  float Elow = beamLowE;
-  float Ehigh = beamHighE;
-  
-  int doPolFlux=0;  // want total flux (1 for polarized flux)
-  float emitmr=10.e-9; // electron beam emittance
-  float radt=50.e-6; // radiator thickness in m
-  float collDiam=0.005; // meters
-  float Dist = 76.0; // meters
-  CobremsGeneration cobrems(Emax, Epeak);
-  cobrems.setBeamEmittance(emitmr);
-  cobrems.setTargetThickness(radt);
-  cobrems.setCollimatorDistance(Dist);
-  cobrems.setCollimatorDiameter(collDiam);
-  cobrems.setCollimatedFlag(true);
-  cobrems.setPolarizedFlag(doPolFlux);
-
-  // Create histogram
-  cobrem_vs_E = new TH1D("cobrem_vs_E", "Coherent Bremstrahlung vs. E_{#gamma}", 1000, Elow, Ehigh);
-  
-  // Fill histogram
-  for(int i=1; i<=cobrem_vs_E->GetNbinsX(); i++){
-	  double x = cobrem_vs_E->GetBinCenter(i)/Emax;
-	  double y = 0;
-	  if(Epeak<Elow) y = cobrems.Rate_dNidx(x);
-	  else y = cobrems.Rate_dNtdx(x);
-	  cobrem_vs_E->SetBinContent(i, y);
-  }
-
+  // get beam properties from configuration file
+  BeamProperties beamProp(beamConfigFile);
+  cobrem_vs_E = (TH1D*)beamProp.GetFlux();
+  cobrem_vs_E->GetName();
 }
 
 Kinematics* 
