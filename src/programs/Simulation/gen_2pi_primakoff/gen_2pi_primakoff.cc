@@ -249,8 +249,11 @@ int main( int argc, char* argv[] ){
 					TLorentzVector p1 = evt->particle ( 1 );
 					TLorentzVector p2 = evt->particle ( 2 );
 
-					// cout << endl << " gen_2pi_primakoff particles " << " Mbeam=" << beam.M() << " Mrecoil=" << recoil.M() << " Mp1=" << p1.M() << endl;
-					// beam.Print(); recoil.Print(); p1.Print(); p2.Print(); resonance.Print();
+					if (isfinite(recoil.M()) && isfinite(p1.M())) {
+					  // check for nan values in vectors
+
+					  // cout << endl << " gen_2pi_primakoff particles " << " Mbeam=" << beam.M() << " Mrecoil=" << recoil.M() << " Mp1=" << p1.M() << endl;
+					  // beam.Print(); recoil.Print(); p1.Print(); p2.Print(); resonance.Print();
 			     
 					Double_t phipol=0;    // hardwire angle of photon polarization in lab.
 					TVector3 eps(cos(phipol), sin(phipol), 0.0); // beam polarization vector in lab
@@ -301,6 +304,7 @@ int main( int argc, char* argv[] ){
 					// note that there is no provision currently for vertex output in root file
 					rootOut.writeEvent( *evt );
 					++eventCounter;
+					}
 				}
 			}
 			else{
