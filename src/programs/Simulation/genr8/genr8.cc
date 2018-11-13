@@ -95,7 +95,7 @@ int UseCurrentTimeForRandomSeed = TRUE;
 
 
 double rawthresh(struct particleMC_t *Isobar);
-void decay(struct particleMC_t *Isobar);
+void decayParticle(struct particleMC_t *Isobar);
 void boost2lab(struct particleMC_t *Isobar);
 void boostFamily(vector4_t *beta,struct particleMC_t *Isobar);
 void boost(vector4_t *beta,vector4_t *vec);
@@ -134,6 +134,7 @@ void PrintUsage(char *processName)
   /* fprintf(stderr,"\t-R Save recoiling baryon information. \n"); */
  
   fprintf(stderr,"\t-A<filename> Save in ascii format. \n");
+  fprintf(stderr,"\t-B<filename> Beam configuratin input file. \n");
   fprintf(stderr,"\t-s<seed> Set random number seed to <seed>. \n");
   fprintf(stderr,"\t         (default is to set using current time + pid) \n");
   fprintf(stderr,"\t-h Print this help message\n\n");
@@ -166,6 +167,7 @@ int main(int argc,char **argv)
   // double X_threshold ;
   double costheta,theta,phi,lf,lfmax=0;
   int isacomment=TRUE,haveChildren=TRUE;
+  TString beamConfigFilename;
 
   Y= &(particle[0]);
   Y->parent = &CM;
@@ -209,6 +211,10 @@ int main(int argc,char **argv)
 	  WriteAscii=1;
 	  fout = fopen(++argptr,"w");
 	  fprintf(stderr,"Opening file %s for output. \n",argptr);
+	  break;
+	case 'B':
+	  beamConfigFilename = ++argptr;
+	  fprintf(stderr,"Opening beam config input file %s \n",argptr);
 	  break;
 	case 'R':
 	  fprintf(stderr,"Printing recoil information.\n");
@@ -270,12 +276,14 @@ int main(int argc,char **argv)
   /* Fill particle information */
 
   // get beam properties from configuration file
-  TString beamConfigFile("cobrems.cfg");
-  BeamProperties beamProp(beamConfigFile);
-  TH1D *cobrem_vs_E = (TH1D*)beamProp.GetFlux();
-
-  // if no configuration file fall back to old mechanism of setting fixed energy
-  if(cobrem_vs_E == NULL) {
+  TH1D *cobrem_vs_E = NULL;
+  
+  /* get beam information */  
+  if (beamConfigFilename.Contains(".conf")) { 
+	  BeamProperties beamProp(beamConfigFilename.Data());
+	  cobrem_vs_E = (TH1D*)beamProp.GetFlux();
+  }
+  else { // if no configuration file fall back to old mechanism of setting fixed energy
 	  isacomment=TRUE;
 	  while(isacomment==TRUE){
 		  char *pline;
@@ -285,7 +293,8 @@ int main(int argc,char **argv)
 			  if(!(*token == '%'))
 				  isacomment=FALSE;
 		  }
-	  } /* get beam information */  
+	  } 
+	  
 	  beam.p.space.x = atof(token);
 	  token=strtok(NULL," ");
 	  beam.p.space.y = atof(token);
@@ -651,8 +660,8 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
       printFamily(X);
       */
 
-    decay(X);
-    decay(Y);
+    decayParticle(X);
+    decayParticle(Y);
     if(Debug) {
       fprintf(stderr,"X after decay\n");
       printFamily(X);
@@ -964,7 +973,7 @@ double rawthresh(struct particleMC_t *Isobar)
  * child isobar.
  *************************************/
 
-void decay(struct particleMC_t *Isobar)
+void decayParticle(struct particleMC_t *Isobar)
 {
   int i;
   double breakup_p,theta,phi;
@@ -983,7 +992,7 @@ void decay(struct particleMC_t *Isobar)
       Isobar->child[1]->p = 
 	polarMake4v(breakup_p,(M_PI - theta),(M_PI + phi),Isobar->child[1]->mass);
       for(i=0;i<Isobar->nchildren;i++)
-	decay(Isobar->child[i]);
+	decayParticle(Isobar->child[i]);
     }
 }
 

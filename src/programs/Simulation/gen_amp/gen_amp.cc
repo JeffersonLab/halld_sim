@@ -205,7 +205,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( TwoPiAngles() );
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
 	AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
-    AmpToolsInterface::registerAmplitude( TwoPSAngles() );
+	AmpToolsInterface::registerAmplitude( TwoPSAngles() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
