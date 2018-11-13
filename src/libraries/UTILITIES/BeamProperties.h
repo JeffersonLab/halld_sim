@@ -15,6 +15,9 @@
 
 #include "TH1.h"
 
+#include "CCDB/Calibration.h"
+#include "CCDB/CalibrationGenerator.h"
+
 class BeamProperties {
   
 public:
@@ -30,15 +33,21 @@ private:
   void createHistograms( TString configFile );
   bool parseConfig();
   void generateCobrems();
-  void fillFromROOT();
-  void fillFromCCDB();
+  void fillFluxFromROOT();
+  void fillPolFromROOT();
+  void fillFluxFromCCDB();
+  void fillPolFromCCDB();
+  void fillPolFixed();
+  double PSAcceptance(double Egamma, double norm, double min, double max);
 
   TString mConfigFile;
   std::map<std::string,double> mBeamParametersMap;
   std::map<std::string,std::string> mBeamHistNameMap;
 
-  bool mIsROOT;
-  bool mIsCCDB;
+  bool mIsCCDBFlux, mIsCCDBPol;
+  bool mIsROOTFlux, mIsROOTPol;
+  bool mIsPolFixed;
+  int mRunNumber;
 
   TH1D *fluxVsEgamma;
   TH1D *polFracVsEgamma;
