@@ -1082,19 +1082,14 @@ def AddAmpPlotter(env):
 
 
 ##################################
-# Utilities
+# Utilities for generators (CCDB and Cobrems)
 ##################################
 def AddUtilities(env):
-	pyincludes = subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0]
-	utilities_home = os.getenv('HALLD_SIM_HOME', 'halld_sim')
-	env.AppendUnique(CPPPATH = ["%s/src/include/UTILITIES" % (utilities_home)])
-	env.AppendUnique(LIBPATH = ["%s/%s/lib" % (utilities_home, env['OSNAME'])])
-	env.AppendUnique(LIBS    = 'UTILITIES')
+	AddCCDB(env)
+     	pyincludes = subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0]
 	env.AppendUnique(CCFLAGS = pyincludes.rstrip().split())
 	# BOOST is required by cobrems and if it is not installed in /usr or /usr/local then we must get it from the environment
 	boost_root = os.getenv('BOOST_ROOT')
 	if boost_root != None:
 		env.AppendUnique(CPPPATH = [boost_root + "/include"])
-
-
 

@@ -10,8 +10,11 @@ if os.getenv('AMPTOOLS', 'nada')!='nada':
 	
 	env = env.Clone()
 
-	sbms.AddAmpTools(env)
+	UTILITIES_LIBS = "UTILITIES"
+	env.AppendUnique(LIBS = UTILITIES_LIBS.split())
+
 	sbms.AddUtilities(env)
+	sbms.AddAmpTools(env)
 	sbms.AddROOT(env)
 	sbms.library(env)
 

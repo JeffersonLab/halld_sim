@@ -45,7 +45,7 @@ Pi0Regge::calcAmplitude( GDouble** pKin ) const {
 	GDouble phi = p1_cm.Phi() + polAngle*TMath::Pi()/180.;
 	GDouble cos2Phi = cos(2.*phi);
 	
-	// polarization from cobrem.F
+	// polarization BeamProperties
 	int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
 	GDouble Pgamma;
 	if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
