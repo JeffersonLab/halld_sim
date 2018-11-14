@@ -18,12 +18,12 @@ UserAmplitude< PiPlusRegge >( args )
 {
 	assert( args.size() == 1 );
 	// Polarization plane angle (PARA = 0 and PERP = PI/2)
-	PolPlane = atof( args[0].c_str() );
 
 	// BeamProperties configuration file
 	TString beamConfigFile = args[0].c_str();
 	BeamProperties beamProp(beamConfigFile);
 	polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+	polAngle = beamProp.GetPolAngle();
 }
 
 
@@ -44,7 +44,7 @@ PiPlusRegge::calcAmplitude( GDouble** pKin ) const {
 	
 	// phi dependence needed for polarized distribution
 	TLorentzVector p1_cm = cmBoost * p1;
-	GDouble phi = p1_cm.Phi() + PolPlane*TMath::Pi()/180.;
+	GDouble phi = p1_cm.Phi() + polAngle*TMath::Pi()/180.;
 	GDouble cos2Phi = cos(2.*phi);
 	
 	// polarization from cobrem.F
