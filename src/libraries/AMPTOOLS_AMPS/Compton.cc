@@ -56,7 +56,7 @@ Compton::calcAmplitude( GDouble** pKin ) const {
 	// factors needed to calculate cross section from model
 	GDouble s = cm.M2();
 	GDouble t = (recoil - target).M2();
-	if(fabs(t) < 0.15) return 0.;
+	if(fabs(t) < 0.4) return 0.; // interested in high -t behavior, so temporarily exclude low -t 
 
 	// model parameters from PAC42 proposal PR12-14-003
 	GDouble s_0 = 10.92;
