@@ -8,6 +8,7 @@ dirc_config_t::dirc_config_t(JEventLoop *loop, DDIRCGeometry *dircGeom)
         // default values
         DIRC_TSIGMA           = 0.5; // 0.5 ns 
 
+#if 0
 	// Get values from CCDB
 	cout<<"get DIRC/mc_timing_smear parameters from calibDB"<<endl;
 	map<string, double> dircmctimingsmear;
@@ -16,6 +17,7 @@ dirc_config_t::dirc_config_t(JEventLoop *loop, DDIRCGeometry *dircGeom)
 	} else {
 		DIRC_TSIGMA = dircmctimingsmear["DIRC_TSIGMA"];
 	}
+#endif
 
 	// get per-pixel efficiencies from CCDB
 }
