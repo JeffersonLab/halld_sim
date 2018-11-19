@@ -134,7 +134,6 @@ void PrintUsage(char *processName)
   /* fprintf(stderr,"\t-R Save recoiling baryon information. \n"); */
  
   fprintf(stderr,"\t-A<filename> Save in ascii format. \n");
-  fprintf(stderr,"\t-B<filename> Beam configuratin input file. \n");
   fprintf(stderr,"\t-s<seed> Set random number seed to <seed>. \n");
   fprintf(stderr,"\t         (default is to set using current time + pid) \n");
   fprintf(stderr,"\t-h Print this help message\n\n");
@@ -167,7 +166,6 @@ int main(int argc,char **argv)
   // double X_threshold ;
   double costheta,theta,phi,lf,lfmax=0;
   int isacomment=TRUE,haveChildren=TRUE;
-  TString beamConfigFilename;
 
   Y= &(particle[0]);
   Y->parent = &CM;
@@ -211,10 +209,6 @@ int main(int argc,char **argv)
 	  WriteAscii=1;
 	  fout = fopen(++argptr,"w");
 	  fprintf(stderr,"Opening file %s for output. \n",argptr);
-	  break;
-	case 'B':
-	  beamConfigFilename = ++argptr;
-	  fprintf(stderr,"Opening beam config input file %s \n",argptr);
 	  break;
 	case 'R':
 	  fprintf(stderr,"Printing recoil information.\n");
@@ -278,22 +272,25 @@ int main(int argc,char **argv)
   // get beam properties from configuration file
   TH1D *cobrem_vs_E = NULL;
   
-  /* get beam information */  
+  isacomment=TRUE;
+  TString beamConfigFilename;
+  while(isacomment==TRUE){
+	  char *pline;
+	  pline = fgets(line,sizeof(line),stdin);
+	  if (pline!=NULL){
+		  token=strtok(line," ");
+		  if(!(*token == '%')) {
+			  isacomment=FALSE;
+			  beamConfigFilename=pline;
+		  }
+	  }
+  }/* get beam information */  
+  beamConfigFilename.ReplaceAll("\n", ""); // delete end of line characer... what a pain
   if (beamConfigFilename.Contains(".conf")) { 
 	  BeamProperties beamProp(beamConfigFilename.Data());
 	  cobrem_vs_E = (TH1D*)beamProp.GetFlux();
   }
   else { // if no configuration file fall back to old mechanism of setting fixed energy
-	  isacomment=TRUE;
-	  while(isacomment==TRUE){
-		  char *pline;
-		  pline = fgets(line,sizeof(line),stdin);
-		  if (pline!=NULL){
-			  token=strtok(line," ");
-			  if(!(*token == '%'))
-				  isacomment=FALSE;
-		  }
-	  } 
 	  
 	  beam.p.space.x = atof(token);
 	  token=strtok(NULL," ");
