@@ -227,7 +227,7 @@ int main( int argc, char* argv[] ){
 	else if(isPionRecoil)
 		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, ProductionMechanism::kPion, type, slope, lowT, highT, seed );
 	else
-		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, lowT, highT, seed );
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, ProductionMechanism::kProton, type, slope, lowT, highT, seed );
 	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
@@ -345,7 +345,7 @@ int main( int argc, char* argv[] ){
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector target(0,0,0,recoil[3]);
 					
-					if(isKaonRecoil)
+					if(isKaonRecoil || isPionRecoil)
 						t->Fill(-1*(beam-evt->particle(1)).M2());
 					else
 						t->Fill(-1*(evt->particle(1)-target).M2());
