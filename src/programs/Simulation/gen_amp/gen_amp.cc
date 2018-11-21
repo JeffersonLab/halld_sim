@@ -177,7 +177,8 @@ int main( int argc, char* argv[] ){
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
 	double resonance[]={1.0, 1.0};
 	bool foundResonance = false;
-	bool isBaryonResonance = false;
+	bool isKaonRecoil = false;
+	bool isPionRecoil = false;
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
 	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
@@ -187,7 +188,7 @@ int main( int argc, char* argv[] ){
 	      resonance[1]=atof((*it).arguments()[2].c_str());
 	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
 	      if((*it).arguments()[0] == "Lambda1520")
-		 isBaryonResonance = true;
+		 isKaonRecoil = true;
 	      foundResonance = true;
 	      break;
 	    }
@@ -220,10 +221,13 @@ int main( int argc, char* argv[] ){
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
-	GammaPToNPartP resProd( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, lowT, highT, seed );
-	if(isBaryonResonance) // not elegant
+	GammaPToNPartP resProd;
+	if(isKaonRecoil)
 		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, ProductionMechanism::kKaon, type, slope, lowT, highT, seed );
-	
+	else if(isPionRecoil)
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, ProductionMechanism::kPion, type, slope, lowT, highT, seed );
+	else
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, lowT, highT, seed );
 	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
@@ -341,7 +345,7 @@ int main( int argc, char* argv[] ){
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector target(0,0,0,recoil[3]);
 					
-					if(isBaryonResonance)
+					if(isKaonRecoil)
 						t->Fill(-1*(beam-evt->particle(1)).M2());
 					else
 						t->Fill(-1*(evt->particle(1)-target).M2());

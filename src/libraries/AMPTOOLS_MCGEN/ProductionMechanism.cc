@@ -26,7 +26,10 @@ m_lastWeight( 1. )
   kMneutron=ParticleMass(Neutron);
   // kMZ = 108.;      //  mass of Sn116 
   kMZ = 208.*0.931494;      //  use mass of Pb as it is in the particle table
+  kMPion = ParticleMass(PiPlus);
   kMKaon = ParticleMass(KPlus);
+  
+  isBaryonResonance = false;
 
   // initialize pseudo-random generator
   gRandom->SetSeed(seed);
@@ -36,7 +39,8 @@ m_lastWeight( 1. )
   case kProton:  m_recMass = kMproton; break; //old value: 0.9382
   case kNeutron: m_recMass = kMneutron; break; //old value: 0.9395
   case kZ: m_recMass = kMZ; break; //default to Sn116/Pb
-  case kKaon: m_recMass = kMKaon; break;
+  case kPion: m_recMass = kMPion; isBaryonResonance = true; break;
+  case kKaon: m_recMass = kMKaon; isBaryonResonance = true; break;
   default:       m_recMass = kMproton; break; //old value: 0.9382
   }
 }
@@ -96,7 +100,7 @@ ProductionMechanism::produceResonance( const TLorentzVector& beam ){
   while( random( 0., exptMax ) > exp(-m_slope*t) );   // remove factor of t for rho production (no spin flip). Set this line for exp(Bt)
   
   TVector3 resonanceMomCM;
-  if(m_recMass == kMKaon){
+  if(isBaryonResonance){
 	resonanceMomCM.SetMagThetaPhi( resMomCM,
 					kPi-acos( 1. - 2.*t/tMax ), // opposite of what it would be for meson resonances
 					random( -kPi, kPi ) );

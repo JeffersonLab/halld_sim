@@ -15,6 +15,9 @@
 
 #include <CobremsGeneration.hh>
 
+GammaPToNPartP::GammaPToNPartP():
+	m_prodMech(ProductionMechanism::kProton,ProductionMechanism::kFlat,0,0)
+{}
 
 GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
 				vector<double> &ChildMass,
