@@ -221,7 +221,10 @@ int main( int argc, char* argv[] ){
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
 	GammaPToNPartP resProd( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, lowT, highT, seed );
-
+	if(isBaryonResonance) // not elegant
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, ProductionMechanism::kKaon, type, slope, lowT, highT, seed );
+	
+	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
 	  return 1;
