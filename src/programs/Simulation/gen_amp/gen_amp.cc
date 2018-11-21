@@ -22,6 +22,7 @@
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
+#include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -176,14 +177,17 @@ int main( int argc, char* argv[] ){
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
 	double resonance[]={1.0, 1.0};
 	bool foundResonance = false;
+	bool isBaryonResonance = false;
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
-	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1"){
+	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
 	      if ( (*it).arguments().size() != 3 )
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
 	      resonance[1]=atof((*it).arguments()[2].c_str());
 	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
+	      if((*it).arguments()[0] == "Lambda1520")
+		 isBaryonResonance = true;
 	      foundResonance = true;
 	      break;
 	    }
@@ -204,10 +208,11 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( TwoPiAngles() );
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
 	AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
-    AmpToolsInterface::registerAmplitude( TwoPSAngles() );
+	AmpToolsInterface::registerAmplitude( TwoPSAngles() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
+	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 	
 	ProductionMechanism::Type type =
@@ -333,7 +338,10 @@ int main( int argc, char* argv[] ){
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector target(0,0,0,recoil[3]);
 					
-					t->Fill(-1*(evt->particle(1)-target).M2());
+					if(isBaryonResonance)
+						t->Fill(-1*(beam-evt->particle(1)).M2());
+					else
+						t->Fill(-1*(evt->particle(1)-target).M2());
 
 					TLorentzRotation resonanceBoost( -resonance.BoostVector() );
 					
