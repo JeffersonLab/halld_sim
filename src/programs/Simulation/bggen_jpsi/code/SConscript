@@ -19,7 +19,6 @@ else:
 	# Turn off warnings for bggen since Pythia has too many
 	env['FORTRANFLAGS'].remove('-Wall')
 
-	sbms.AddCERNLIB(env)
 	sbms.AddHDDM(env)
 
 	# By default SConstruct adds 'include' which turns into

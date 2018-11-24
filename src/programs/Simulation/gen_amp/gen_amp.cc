@@ -18,6 +18,7 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_amp.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
+#include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
@@ -203,6 +204,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( TwoPiAngles() );
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
 	AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
+    AmpToolsInterface::registerAmplitude( TwoPSAngles() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
