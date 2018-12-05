@@ -15,11 +15,25 @@
 
 #include <CobremsGeneration.hh>
 
+GammaPToNPartP::GammaPToNPartP():
+	m_prodMech(ProductionMechanism::kProton,ProductionMechanism::kFlat,0,0)
+{}
+
 GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
 				vector<double> &ChildMass,
 				float beamMaxE, float beamPeakE, float beamLowE, float beamHighE,
 				ProductionMechanism::Type type, float slope, double lowT, double highT, int seed ) : 
-  m_prodMech( ProductionMechanism::kProton, type, slope, seed ),
+	GammaPToNPartP( lowMass, highMass, 
+			ChildMass,
+			beamMaxE, beamPeakE, beamLowE, beamHighE,
+			ProductionMechanism::kProton, type, slope, lowT, highT, seed )
+{}
+
+GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
+				vector<double> &ChildMass,
+				float beamMaxE, float beamPeakE, float beamLowE, float beamHighE,
+				ProductionMechanism::Recoil recoil, ProductionMechanism::Type type, float slope, double lowT, double highT, int seed ) : 
+  m_prodMech( recoil, type, slope, seed ),
   m_target( 0, 0, 0, ParticleMass(Proton) ),
   m_ChildMass(ChildMass)
 {
