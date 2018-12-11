@@ -1,7 +1,4 @@
 // Main program for generating eta events. 
-
-#if HAVE_AMPTOOLS_MCGEN
-
 #include "HDDM/hddm_s.h"
 #include "particleType.h"
 
@@ -19,7 +16,7 @@
 #include <string>
 using namespace std;
 
-#include <AMPTOOLS_MCGEN/CobremsGeneration.hh>
+#include "UTILITIES/BeamProperties.h"
 
 // Masses
 const double m_p=0.93827; // GeV
@@ -34,7 +31,6 @@ double g_omega_eta_gamma=0.29;
 double g_eta_gamma_gamma=0.0429;
 double g_phi_eta_gamma=0.38;
 
-double Emin=3.,Emax=12.0; // GeV
 double zmin=50.0,zmax=80.0; // cm, target extent
 int Nevents=10000;
 int runNo=10000;
@@ -295,7 +291,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
 }
 
 // Create some diagnostic histograms
-void CreateHistograms(){
+void CreateHistograms(string beamConfigFile){
 
   thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,2.0);
   thrown_t->SetXTitle("-t [GeV^{2}]");
@@ -310,16 +306,15 @@ void CreateHistograms(){
   thrown_theta_vs_p->SetXTitle("p [GeV/c]");
   thrown_theta_vs_p->SetYTitle("#theta [degrees]");
   
-  cobrems_vs_E=new TH1D("cobrems_vs_E","Coherent bremsstrahlung spectrum",
-			1000,Emin,Emax);
-
+  BeamProperties beamProp(beamConfigFile);
+  cobrems_vs_E = (TH1D*)beamProp.GetFlux();
 }
 
 
 // Create a graph of the cross section dsigma/dt as a function of -t
 void GraphCrossSection(double &xsec_max){
   // beam energy in lab
-  double Egamma=Emin;
+  double Egamma=cobrems_vs_E->GetBinLowEdge(1); // get from CobremsGenerator histogram
 
   // CM energy
   double s=m_p*(m_p+2.*Egamma);
@@ -393,35 +388,14 @@ int main(int narg, char *argv[])
     exit(-1);
   } 
 
-  // Get photon energy range
+  // Get beam properties configuration file
   string comment_line;
   getline(infile,comment_line);
-  infile >> Emin;
-  infile >> Emax;
-  infile.ignore(); // ignore the '\n' at the end of this line
-  // Set sensible minimum energy
-  if (Emin<m_eta){ 
-    Emin=m_eta;
-    cout << "Warning:  Setting minimum beam energy to " << Emin << " [GeV]" 
-	 <<endl;
-  }
-  cout << "Photon energy min, max [Gev] = "<< Emin <<","<<Emax <<endl;
-
-  // Get coherent peak and collimator diameter
-  getline(infile,comment_line);
-  float Epeak=9.0,collDiam=0.005,radThickness=50e-6;
-  float Ee=12.0;
-  infile >> Ee;
-  infile >> Epeak;
-  infile >> collDiam;
-  infile >> radThickness;
+  string beamConfigFile;
+  infile >> beamConfigFile;
   infile.ignore(); // ignore the '\n' at the end of this line
 
-  cout << "Electron beam energy = " << Ee << " GeV, Coherent peak = " 
-       << Epeak <<" GeV, collimator diameter = " 
-       <<collDiam << " m, radiator thickness = " 
-       << radThickness << " m"
-       << endl;
+  cout << "Photon beam configuration file " << beamConfigFile.data() << endl;
 
   // Get decaying particle mass and width
   string comment_line2;
@@ -511,37 +485,14 @@ int main(int narg, char *argv[])
   }
 
   infile.close();
- 
-  //----------------------------------------------------------------------------
-  // Setup coherent bremsstrahlung generator
-  //----------------------------------------------------------------------------
-  float radColDist=76.0;// meters
-  int doPolFlux=0;  // want total flux (1 for polarized flux)
-  float emitmr=10.e-9; // electron beam emittance
-  CobremsGeneration cobrems(Ee, Epeak);
-  cobrems.setBeamEmittance(emitmr);
-  cobrems.setTargetThickness(radThickness);
-  cobrems.setCollimatorDistance(radColDist);
-  cobrems.setCollimatorDiameter(collDiam);
-  cobrems.setCollimatedFlag(true);
-  cobrems.setPolarizedFlag(doPolFlux);
-  cobrems.setCollimatedFlag(true);
   
   // Create some diagonistic histographs
-  CreateHistograms();
+  CreateHistograms(beamConfigFile);
+
   // Make a TGraph of the cross section at a fixed beam energy
   double xsec_max=0.;
   GraphCrossSection(xsec_max);
-  
-  // Fill histogram of coherent bremmsstrahlung distribution 
-  for (int i=1;i<=1000;i++){
-    float x=float(cobrems_vs_E->GetBinCenter(i)/Ee);
-    float y=0;
-    if (Epeak<Emin) y=cobrems.Rate_dNidx(x);
-    else y=cobrems.Rate_dNtdx(x);
-    cobrems_vs_E->Fill(Ee*double(x),double(y));
-  }
-  
+
   //----------------------------------------------------------------------------
   // Event generation loop
   //----------------------------------------------------------------------------
@@ -835,19 +786,3 @@ int main(int narg, char *argv[])
 
   return 0;
 }
-
-#else
-
-// ---- The following is compiled only if AMPTOOLS was not installed ----
-#include <iostream>
-
-int main(int narg, char *argv[])
-{
-	std::cerr << "This executable (genEtaRegge) was built without AMPTOOLS support." << std::endl;
-	std::cerr << "As such it is disabled. To use it, install AMPTOOLS and make sure" << std::endl;
-	std::cerr << "your AMPTOOLS environment variable is set to point to it and then" << std::endl;
-	std::cerr << "rebuild." << std::endl;
-
-	return 0;
-}
-#endif   // HAVE_AMPTOOLS_MCGEN

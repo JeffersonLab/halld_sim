@@ -21,12 +21,12 @@ public:
 	
   GammaPToNPartP( float lowMass, float highMass, 
 		  vector<double> &ChildMass,
-		  float beamMaxE, float beamPeakE, float beamLowE, float beamHigh, ProductionMechanism::Recoil recoil, ProductionMechanism::Type type, float slope = 6.0, double lowT = 0.0, double highT = 12.0, int seed = 0 );
+		  ProductionMechanism::Recoil recoil, ProductionMechanism::Type type, float slope = 6.0, double lowT = 0.0, double highT = 12.0, int seed = 0, TString beamConfigFile = "");
   
   //overload constructor for backwards compatibility
   GammaPToNPartP( float lowMass, float highMass, 
 		  vector<double> &ChildMass,
-		  float beamMaxE, float beamPeakE, float beamLowE, float beamHigh, ProductionMechanism::Type type, float slope = 6.0, double lowT = 0.0, double highT = 12.0, int seed = 0 );
+		  ProductionMechanism::Type type, float slope = 6.0, double lowT = 0.0, double highT = 12.0, int seed = 0, TString beamConfigFile = "");
   
   Kinematics* generate();
   

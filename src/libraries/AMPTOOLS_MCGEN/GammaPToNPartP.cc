@@ -13,7 +13,7 @@
 #include "TLorentzVector.h"
 #include "IUAmpTools/Kinematics.h"
 
-#include <CobremsGeneration.hh>
+#include "UTILITIES/BeamProperties.h"
 
 GammaPToNPartP::GammaPToNPartP():
 	m_prodMech(ProductionMechanism::kProton,ProductionMechanism::kFlat,0,0)
@@ -21,18 +21,17 @@ GammaPToNPartP::GammaPToNPartP():
 
 GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
 				vector<double> &ChildMass,
-				float beamMaxE, float beamPeakE, float beamLowE, float beamHighE,
-				ProductionMechanism::Type type, float slope, double lowT, double highT, int seed ) : 
+				ProductionMechanism::Type type, float slope, double lowT, double highT, int seed,
+				TString beamConfigFile ) : 
 	GammaPToNPartP( lowMass, highMass, 
 			ChildMass,
-			beamMaxE, beamPeakE, beamLowE, beamHighE,
-			ProductionMechanism::kProton, type, slope, lowT, highT, seed )
+			ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile )
 {}
 
 GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
 				vector<double> &ChildMass,
-				float beamMaxE, float beamPeakE, float beamLowE, float beamHighE,
-				ProductionMechanism::Recoil recoil, ProductionMechanism::Type type, float slope, double lowT, double highT, int seed ) : 
+				ProductionMechanism::Recoil recoil, ProductionMechanism::Type type, float slope, double lowT, double highT, int seed,
+				TString beamConfigFile ) : 
   m_prodMech( recoil, type, slope, seed ),
   m_target( 0, 0, 0, ParticleMass(Proton) ),
   m_ChildMass(ChildMass)
@@ -42,37 +41,11 @@ GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass,
 
   m_prodMech.setMassRange( lowMass, highMass );
   m_prodMech.setTRange( lowT, highT );
-  
-  // Initialize coherent brem table
-  float Emax =  beamMaxE;
-  float Epeak = beamPeakE;
-  float Elow = beamLowE;
-  float Ehigh = beamHighE;
-  
-  int doPolFlux=0;  // want total flux (1 for polarized flux)
-  float emitmr=10.e-9; // electron beam emittance
-  float radt=50.e-6; // radiator thickness in m
-  float collDiam=0.005; // meters
-  float Dist = 76.0; // meters
-  CobremsGeneration cobrems(Emax, Epeak);
-  cobrems.setBeamEmittance(emitmr);
-  cobrems.setTargetThickness(radt);
-  cobrems.setCollimatorDistance(Dist);
-  cobrems.setCollimatorDiameter(collDiam);
-  cobrems.setCollimatedFlag(true);
-  cobrems.setPolarizedFlag(doPolFlux);
 
-  // Create histogram
-  cobrem_vs_E = new TH1D("cobrem_vs_E", "Coherent Bremstrahlung vs. E_{#gamma}", 1000, Elow, Ehigh);
-  
-  // Fill histogram
-  for(int i=1; i<=cobrem_vs_E->GetNbinsX(); i++){
-	  double x = cobrem_vs_E->GetBinCenter(i)/Emax;
-	  double y = 0;
-	  if(Epeak<Elow) y = cobrems.Rate_dNidx(x);
-	  else y = cobrems.Rate_dNtdx(x);
-	  cobrem_vs_E->SetBinContent(i, y);
-  }
+  // get beam properties from configuration file
+  BeamProperties beamProp(beamConfigFile);
+  cobrem_vs_E = (TH1D*)beamProp.GetFlux();
+  cobrem_vs_E->GetName();
 
 }
 
