@@ -15,11 +15,24 @@
 
 #include "UTILITIES/BeamProperties.h"
 
+GammaPToNPartP::GammaPToNPartP():
+	m_prodMech(ProductionMechanism::kProton,ProductionMechanism::kFlat,0,0)
+{}
+
 GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
 				vector<double> &ChildMass,
 				ProductionMechanism::Type type, float slope, double lowT, double highT, int seed,
 				TString beamConfigFile ) : 
-  m_prodMech( ProductionMechanism::kProton, type, slope, seed ),
+	GammaPToNPartP( lowMass, highMass, 
+			ChildMass,
+			ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile )
+{}
+
+GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass, 
+				vector<double> &ChildMass,
+				ProductionMechanism::Recoil recoil, ProductionMechanism::Type type, float slope, double lowT, double highT, int seed,
+				TString beamConfigFile ) : 
+  m_prodMech( recoil, type, slope, seed ),
   m_target( 0, 0, 0, ParticleMass(Proton) ),
   m_ChildMass(ChildMass)
 {
