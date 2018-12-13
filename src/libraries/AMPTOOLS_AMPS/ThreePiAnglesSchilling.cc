@@ -13,7 +13,7 @@
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 
-#include <AMPTOOLS_MCGEN/CobremsGeneration.hh>
+#include "UTILITIES/BeamProperties.h"
 
 ThreePiAnglesSchilling::ThreePiAnglesSchilling( const vector< string >& args ) :
     UserAmplitude< ThreePiAnglesSchilling >( args )
@@ -50,55 +50,12 @@ ThreePiAnglesSchilling::ThreePiAnglesSchilling( const vector< string >& args ) :
     registerParameter( rho1m12 );
 
     registerParameter( polAngle );
-
-    // Initialize coherent brem table
-    // Do this over the full range since we will be using this as a lookup
-    float Emax  = 12.0;
-    float Epeak = 9.0;
-    float Elow  = 0.139*2;
-    float Ehigh = 12.0;
-
-    int doPolFlux=0;  // want total flux (1 for polarized flux)
-    float emitmr=10.e-9; // electron beam emittance
-    float radt=50.e-6; // radiator thickness in m
-    float collDiam=0.005; // meters
-    float Dist = 76.0; // meters
-    CobremsGeneration cobrems(Emax, Epeak);
-    cobrems.setBeamEmittance(emitmr);
-    cobrems.setTargetThickness(radt);
-    cobrems.setCollimatorDistance(Dist);
-    cobrems.setCollimatorDiameter(collDiam);
-    cobrems.setCollimatedFlag(true);
-    cobrems.setPolarizedFlag(doPolFlux);
-
-    // Create histogram
-    totalFlux_vs_E = new TH1D("totalFlux_vs_E", "Total Flux vs. E_{#gamma}", 1000, Elow, Ehigh);
-    polFlux_vs_E   = new TH1D("polFlux_vs_E", "Polarized Flux vs. E_{#gamma}", 1000, Elow, Ehigh);
-    polFrac_vs_E   = new TH1D("polFrac_vs_E", "Polarization Fraction vs. E_{#gamma}", 1000, Elow, Ehigh);
-
-    // Fill totalFlux
-    for(int i=1;i<=totalFlux_vs_E->GetNbinsX(); i++){
-        double x = totalFlux_vs_E->GetBinCenter(i)/Emax;
-        double y = 0;
-        //if(Epeak<Elow) y = cobrems.Rate_dNidx(x);
-        y = cobrems.Rate_dNtdx(x);
-        totalFlux_vs_E->SetBinContent(i, y);
-    }
-
-    doPolFlux=1;
-    cobrems.setPolarizedFlag(doPolFlux);
-    // Fill totalFlux
-    for(int i=1;i<=polFlux_vs_E->GetNbinsX(); i++){
-        double x = polFlux_vs_E->GetBinCenter(i)/Emax;
-        double y = 0;
-        //if(Epeak<Elow) y = cobrems.Rate_dNidx(x);
-        y = cobrems.Rate_dNcdx(x);
-        polFlux_vs_E->SetBinContent(i, y);
-    }
-
-    polFrac_vs_E->Divide(polFlux_vs_E, totalFlux_vs_E);
+    
+    // BeamProperties configuration file
+    TString beamConfigFile = args[10].c_str();
+    BeamProperties beamProp(beamConfigFile);
+    polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
 }
-
 
 complex< GDouble >
 ThreePiAnglesSchilling::calcAmplitude( GDouble** pKin ) const {
@@ -143,7 +100,9 @@ ThreePiAnglesSchilling::calcAmplitude( GDouble** pKin ) const {
 
     // vector meson production from K. Schilling et. al.
     GDouble Pgamma;
-    if(polFraction >= 0.) Pgamma = polFraction;
+    if(polFraction >= 0.) { // for fitting with constant polarization 
+	    Pgamma = polFraction;
+    }
     else{
        int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
        if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){

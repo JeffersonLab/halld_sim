@@ -14,8 +14,10 @@ if os.getenv('AMPTOOLS') != None:
 	env.AppendUnique(LINKFLAGS = ['-rdynamic', '-Wl,--no-as-needed'])
 	env.SetOption('warn', 'no-fortran-cxx-mix')  # supress warnings about linking fortran with c++
 
+	UTILITIES_LIBS = "UTILITIES"
+	env.AppendUnique(LIBS = UTILITIES_LIBS.split())
+
+	sbms.AddUtilities(env)
 	sbms.AddAmpTools(env)
 	sbms.AddROOT(env)
 	sbms.library(env)
-
-	sbms.AddCobrems(env)

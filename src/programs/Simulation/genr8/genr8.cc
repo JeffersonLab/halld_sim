@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/signal.h>
@@ -28,6 +28,8 @@
 
 #include <genkin.h>
 #include <particleType.h>
+
+#include "UTILITIES/BeamProperties.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -93,7 +95,7 @@ int UseCurrentTimeForRandomSeed = TRUE;
 
 
 double rawthresh(struct particleMC_t *Isobar);
-void decay(struct particleMC_t *Isobar);
+void decayParticle(struct particleMC_t *Isobar);
 void boost2lab(struct particleMC_t *Isobar);
 void boostFamily(vector4_t *beta,struct particleMC_t *Isobar);
 void boost(vector4_t *beta,vector4_t *vec);
@@ -105,7 +107,6 @@ void printFinal(FILE *fp,struct particleMC_t *Isobar);
 void printp2ascii(FILE *fp,struct particleMC_t *Isobar);
 void setMass(struct particleMC_t *Isobar);
 void initMass(struct particleMC_t *Isobar);
-char *ParticleType(Particle_t p);
 void checkFamily(struct particleMC_t *Isobar);
 int setChildrenMass(struct particleMC_t *Isobar);
 void printFamily(struct particleMC_t *Isobar);
@@ -266,29 +267,42 @@ int main(int argc,char **argv)
    */
 
 
-/* Fill particle information */
+  /* Fill particle information */
 
+  // get beam properties from configuration file
+  TH1D *cobrem_vs_E = NULL;
+  
   isacomment=TRUE;
+  TString beamConfigFilename;
   while(isacomment==TRUE){
-    char *pline;
-    pline = fgets(line,sizeof(line),stdin);
-    if (pline!=NULL){
-      token=strtok(line," ");
-      if(!(*token == '%'))
-	isacomment=FALSE;
-    }
-  }  /* get beam information */
-  beam.p.space.x = atof(token);
-  token=strtok(NULL," ");
-  beam.p.space.y = atof(token);
-  token=strtok(NULL," ");
-  beam.p.space.z = atof(token);
-  token=strtok(NULL," ");
-  beam.mass =  atof(token);
-  fprintf(stderr,"Reading: \tbeamp.x \tbeamp.y \tbeamp.z \tbeamMass\n");
-  fprintf(stderr,"Found: \t\t%lf \t%lf \t%lf \t%lf \n",
-	  beam.p.space.x, beam.p.space.y, beam.p.space.z, beam.mass);  
-
+	  char *pline;
+	  pline = fgets(line,sizeof(line),stdin);
+	  if (pline!=NULL){
+		  token=strtok(line," ");
+		  if(!(*token == '%')) {
+			  isacomment=FALSE;
+			  beamConfigFilename=pline;
+		  }
+	  }
+  }/* get beam information */  
+  beamConfigFilename.ReplaceAll("\n", ""); // delete end of line characer... what a pain
+  if (beamConfigFilename.Contains(".conf")) { 
+	  BeamProperties beamProp(beamConfigFilename.Data());
+	  cobrem_vs_E = (TH1D*)beamProp.GetFlux();
+  }
+  else { // if no configuration file fall back to old mechanism of setting fixed energy
+	  
+	  beam.p.space.x = atof(token);
+	  token=strtok(NULL," ");
+	  beam.p.space.y = atof(token);
+	  token=strtok(NULL," ");
+	  beam.p.space.z = atof(token);
+	  token=strtok(NULL," ");
+	  beam.mass =  atof(token);
+	  fprintf(stderr,"Reading: \tbeamp.x \tbeamp.y \tbeamp.z \tbeamMass\n");
+	  fprintf(stderr,"Found: \t\t%lf \t%lf \t%lf \t%lf \n",
+		  beam.p.space.x, beam.p.space.y, beam.p.space.z, beam.mass);  
+  }
 
   isacomment=TRUE;
   while(isacomment==TRUE){
@@ -385,7 +399,7 @@ int main(int argc,char **argv)
       token=strtok(NULL," ");
       if(!(*token == '*'))
 	/* particle[part].particleID = part; */
-	particle[part].particleID = atoi(token);/* see particleType.h */
+	particle[part].particleID = (Particle_t)atoi(token);/* see particleType.h */
       token=strtok(NULL," ");
       if(!(*token == '*')){
 	particle[part].nchildren = atoi(token);
@@ -452,44 +466,51 @@ int main(int argc,char **argv)
   checkFamily(X);
   fprintf(stderr,"Found EOI----  Input File appears Fine.\n");
 
-    /* We are now done reading the input information */
-
-  /*
-   * The beam and target are in the lab frame.
-   * Put them in the overall center of momentum (CM) frame 
-   * and calculate |t| & recoil angles.
-   */
-
-    if(X->nchildren == 0) X->mass = X->bookmass;
-     if(Y->nchildren == 0) Y->mass = Y->bookmass;
-      
-    target.p.t = energy(target.mass,&(target.p.space));        
-    beam.p.t = energy(beam.mass,&(beam.p.space));
-    //initBeam4.t= beam.p.t;  initBeam4.space.x= beam.p.space.x;
-    //initBeam4.space.y= beam.p.space.y; initBeam4.space.z= beam.p.space.z;
-    sqrt_s = sqrt( SQ(beam.mass) +SQ(target.mass) + 2.0*beam.p.t * target.p.t);
-    /*MassHighBW = sqrt_s - recoil.mass; */
-    MassHighBW = sqrt_s; /* see do loop below */
-
-  v4[0]= beam.p;
-  v4[1]= target.p;
-  nv4=2;
+  /* We are now done reading the input information */ 
   
-  CM.mass = sqrt_s;
-  CM.p = Sum4vec(v4,nv4);
-  beta = get_beta(&(CM.p),RESTFRAME);
-  boost(&beta,&(beam.p));
-  boost(&beta,&(target.p));
-  
-  initMass(X);
-  initMass(Y);
-  CMenergy = beam.p.t + target.p.t;
+  if(X->nchildren == 0) X->mass = X->bookmass;
+  if(Y->nchildren == 0) Y->mass = Y->bookmass;
  
   while(naccepted <max){
 
-    
     if (Debug) fprintf(stderr,"In main do loop ... %d \n",naccepted);
+    struct particleMC_t event_beam, event_target;
+
+    // Get beam energy for each event and generate kinematics
+    if(cobrem_vs_E) {
+	    event_beam.p.space.x = 0;
+	    event_beam.p.space.y = 0;
+	    event_beam.p.space.z = cobrem_vs_E->GetRandom();
+    }
+    else {
+	    event_beam = beam;
+    }    
+    event_target = target;
+
+    /*
+     * The beam and target are in the lab frame.
+     * Put them in the overall center of momentum (CM) frame 
+     * and calculate |t| & recoil angles.
+    */
+
+    event_beam.p.t = energy(event_beam.mass,&(event_beam.p.space));
+    event_target.p.t = energy(event_target.mass,&(event_target.p.space));
+
+    sqrt_s = sqrt( SQ(event_beam.mass) +SQ(event_target.mass) + 2.0*event_beam.p.t * event_target.p.t);
+    MassHighBW = sqrt_s; /* see do loop below */
+
+    v4[0]= event_beam.p;
+    v4[1]= event_target.p;
+    nv4=2;
   
+    CM.mass = sqrt_s;
+    CM.p = Sum4vec(v4,nv4);
+    beta = get_beta(&(CM.p),RESTFRAME);
+    boost(&beta,&(event_beam.p));
+    boost(&beta,&(event_target.p));
+    
+    CMenergy = event_beam.p.t + event_target.p.t;
+
     /* 
      * Generate the resonance 
      * in the CM frame, and
@@ -582,10 +603,10 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
 
     if(Y->nchildren ==0){
       
-      t_min = -( SQ( (SQ(beam.mass) -SQ(xmass) -SQ(target.mass) +SQ(ymass))/(2.0*sqrt_s))
-		 -SQ(v3mag(&(beam.p.space)) - X_momentum ));
-      t_max = -( SQ( (SQ(beam.mass) -SQ(xmass) -SQ(target.mass) +SQ(ymass))/(2.0*sqrt_s))
-		 -SQ(v3mag(&(beam.p.space)) + X_momentum ));
+      t_min = -( SQ( (SQ(event_beam.mass) -SQ(xmass) -SQ(event_target.mass) +SQ(ymass))/(2.0*sqrt_s))
+		 -SQ(v3mag(&(event_beam.p.space)) - X_momentum ));
+      t_max = -( SQ( (SQ(event_beam.mass) -SQ(xmass) -SQ(event_target.mass) +SQ(ymass))/(2.0*sqrt_s))
+		 -SQ(v3mag(&(event_beam.p.space)) + X_momentum ));
       /* 
        *fprintf(stderr,
        "beam.mass= %lf xmass= %lf target.mass=%lf ymass= %lf sqrt_s= %lf beam.p= %lf X->p= %lf  X_momentum= %lf\n",
@@ -597,10 +618,10 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
        */ 
     } else{ /* it's some baryon pseudo t process */
        
-    t_min = -( SQ( (SQ(beam.mass) -SQ(xmass) -SQ(target.mass) +SQ(ymass))/(2.0*sqrt_s))
-	       -SQ(v3mag(&(beam.p.space)) - X_momentum ));
-    t_max = -( SQ( (SQ(beam.mass) -SQ(xmass) -SQ(target.mass) +SQ(ymass))/(2.0*sqrt_s))
-	       -SQ(v3mag(&(beam.p.space)) + X_momentum ));
+    t_min = -( SQ( (SQ(event_beam.mass) -SQ(xmass) -SQ(event_target.mass) +SQ(ymass))/(2.0*sqrt_s))
+	       -SQ(v3mag(&(event_beam.p.space)) - X_momentum ));
+    t_max = -( SQ( (SQ(event_beam.mass) -SQ(xmass) -SQ(event_target.mass) +SQ(ymass))/(2.0*sqrt_s))
+	       -SQ(v3mag(&(event_beam.p.space)) + X_momentum ));
     
     }     
     expt_max = exp(-slope * t_max);
@@ -611,9 +632,9 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
       expt = randm(expt_max,expt_min);
      
       t= -log(expt)/slope;
-      costheta = ( beam.p.t * X_energy -
-		   0.5*(t + (beam.mass)*(beam.mass) + (X->mass)*(X->mass))
-		   )/( v3mag(&(beam.p.space))*X_momentum ) ;
+      costheta = ( event_beam.p.t * X_energy -
+		   0.5*(t + (event_beam.mass)*(event_beam.mass) + (X->mass)*(X->mass))
+		   )/( v3mag(&(event_beam.p.space))*X_momentum ) ;
       
     }while(fabs(costheta)>1.0  );
     
@@ -621,7 +642,7 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
     phi = randm(-1*M_PI,M_PI);
     
     X->p = polarMake4v(X_momentum,theta,phi,X->mass);
-    Y->p=polarMake4v(X_momentum,(M_PI-theta),(M_PI+phi),Y->mass);
+    Y->p = polarMake4v(X_momentum,(M_PI-theta),(M_PI+phi),Y->mass);
 
     /*
      *   Now decay X -> children -> grandchildren -> and so forth
@@ -636,8 +657,8 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
       printFamily(X);
       */
 
-    decay(X);
-    decay(Y);
+    decayParticle(X);
+    decayParticle(Y);
     if(Debug) {
       fprintf(stderr,"X after decay\n");
       printFamily(X);
@@ -949,7 +970,7 @@ double rawthresh(struct particleMC_t *Isobar)
  * child isobar.
  *************************************/
 
-void decay(struct particleMC_t *Isobar)
+void decayParticle(struct particleMC_t *Isobar)
 {
   int i;
   double breakup_p,theta,phi;
@@ -968,7 +989,7 @@ void decay(struct particleMC_t *Isobar)
       Isobar->child[1]->p = 
 	polarMake4v(breakup_p,(M_PI - theta),(M_PI + phi),Isobar->child[1]->mass);
       for(i=0;i<Isobar->nchildren;i++)
-	decay(Isobar->child[i]);
+	decayParticle(Isobar->child[i]);
     }
 }
 
@@ -1172,137 +1193,6 @@ double randm(double low, double high)
   return ((high - low) * drand48() + low);
 }
 
-#if 0
-char *ParticleType(Particle_t p)
-{
-  static char ret[20];
-  switch (p) {
-  case Unknown:
-    strcpy(ret,"unknown");
-    break;
-  case Gamma:
-    strcpy(ret,"gamma");
-    break;
-  case Positron:
-    strcpy(ret,"positron");
-    break;
-  case Electron:
-    strcpy(ret,"electron");
-    break;
-  case Neutrino:
-    strcpy(ret,"neutrino");
-    break;
-  case MuonPlus:
-    strcpy(ret,"mu+");
-    break;
-  case MuonMinus:
-    strcpy(ret,"mu-");
-    break;
-  case Pi0:
-    strcpy(ret,"pi0");
-    break;
-  case PiPlus:
-    strcpy(ret,"pi+");
-    break;
-  case PiMinus:
-    strcpy(ret,"pi-");
-    break;
-  case KLong:
-    strcpy(ret,"KL");
-    break;
-  case KPlus:
-    strcpy(ret,"K+");
-    break;
-  case KMinus:
-    strcpy(ret,"K-");
-    break;
-  case Neutron:
-    strcpy(ret,"neutron");
-    break;
-  case Proton:
-    strcpy(ret,"proton");
-    break;
-  case AntiProton:
-    strcpy(ret,"pbar");
-    break;
-  case KShort:
-    strcpy(ret,"Ks");
-    break;
-  case Eta:
-    strcpy(ret,"eta");
-    break;
-  case Lambda:
-    strcpy(ret,"lambda");
-    break;
-  case SigmaPlus:
-    strcpy(ret,"sigma+");
-    break;
-  case Sigma0:
-    strcpy(ret,"sigma0");
-    break;
-  case SigmaMinus:
-    strcpy(ret,"sigma-");
-    break;
-  case Xi0:
-    strcpy(ret,"Xi0");
-    break;
-  case XiMinus:
-    strcpy(ret,"Xi-");
-    break;
-  case OmegaMinus:
-    strcpy(ret,"omega-");
-    break;
-  case AntiNeutron:
-    strcpy(ret,"nbar");
-    break;
-
-  case AntiLambda:
-    strcpy(ret,"lambdabar");
-    break;
-  case AntiSigmaMinus:
-    strcpy(ret,"sigmabar-");
-    break;
-  case AntiSigma0:
-    strcpy(ret,"sigmabar0");
-    break;
-  case AntiSigmaPlus:
-    strcpy(ret,"sigmabar+");
-    break;
-  case AntiXi0:
-    strcpy(ret,"Xibar0");
-    break;
-  case AntiXiPlus:
-    strcpy(ret,"Xibar+");
-    break;
-  case AntiOmegaPlus:
-    strcpy(ret,"omegabar+");
-    break;
-  case Rho0:
-    strcpy(ret,"rho0");
-    break;  
-  case RhoPlus:
-    strcpy(ret,"rho+");
-    break;
-  case RhoMinus:
-    strcpy(ret,"rho;");
-    break;
-  case omega:
-    strcpy(ret,"omega");
-    break;
-  case EtaPrime:
-    strcpy(ret,"etaprime");
-    break;
-  case phiMeson:
-    strcpy(ret,"phi");
-    break;
-  default:
-    sprintf(ret,"type(%d)",(int)p);
-    break;
-  }
-  return(ret);
-}
-
-#endif
 /*
  ***********************
  *                     *
@@ -1310,7 +1200,4 @@ char *ParticleType(Particle_t p)
  *                     *
  ***********************
  */
-
-
-
 

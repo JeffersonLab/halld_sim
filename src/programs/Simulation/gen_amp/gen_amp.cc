@@ -22,12 +22,15 @@
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
+#include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
 
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/ConfigFileParser.h"
+#include "IUAmpTools/PlotGenerator.h"
+#include "IUAmpTools/FitResults.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -51,10 +54,10 @@ int main( int argc, char* argv[] ){
 	// default upper and lower bounds 
 	double lowMass = 0.2;
 	double highMass = 2.0;
-	
+
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 9.0;
-	double beamLowE   = 3.0;
+	double beamLowE   = 2.0;
 	double beamHighE  = 12.0;
 
 	int runNum = 30731;
@@ -95,7 +98,7 @@ int main( int argc, char* argv[] ){
 			else  beamMaxE = atof( argv[++i] ); }
 		if (arg == "-p"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-			else  beamPeakE = atof( argv[++i] ); }
+			else beamPeakE = atof( argv[++i] ); }
 		if (arg == "-a"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
                         else  beamLowE = atof( argv[++i] ); }
@@ -129,10 +132,10 @@ int main( int argc, char* argv[] ){
 			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -n    <value>\t Minimum number of events to generate [optional]" << endl;
-			cout << "\t -m    <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
-                        cout << "\t -p    <value>\t Coherent peak photon energy [optional]" << endl;
-                        cout << "\t -a    <value>\t Minimum photon energy to simulate events [optional]" << endl;
-                        cout << "\t -b    <value>\t Maximum photon energy to simulate events [optional]" << endl;
+			cout << "\t -m  <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
+                        cout << "\t -p  <value>\t Coherent peak photon energy [optional]" << endl;
+                        cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
+                        cout << "\t -b  <value>\t Maximum photon energy to simulate events [optional]" << endl;
 			cout << "\t -r    <value>\t Run number assigned to generated events [optional]" << endl;
 			cout << "\t -s    <value>\t Random number seed initialization [optional]" << endl;
 			cout << "\t -t    <value>\t Momentum transfer slope [optional]" << endl;
@@ -176,14 +179,18 @@ int main( int argc, char* argv[] ){
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
 	double resonance[]={1.0, 1.0};
 	bool foundResonance = false;
+	bool isKaonRecoil = false;
+	bool isPionRecoil = false;
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
-	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1"){
+	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
 	      if ( (*it).arguments().size() != 3 )
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
 	      resonance[1]=atof((*it).arguments()[2].c_str());
 	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
+	      if((*it).arguments()[0] == "Lambda1520")
+		 isKaonRecoil = true;
 	      foundResonance = true;
 	      break;
 	    }
@@ -191,7 +198,6 @@ int main( int argc, char* argv[] ){
 	}
 	if (!foundResonance)
 	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with mass = width = 1GeV" << endl; 
-
 
 	// random number initialization (set to 0 by default)
 	TRandom3* gRandom = new TRandom3();
@@ -204,19 +210,50 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( TwoPiAngles() );
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
 	AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
-    AmpToolsInterface::registerAmplitude( TwoPSAngles() );
+	AmpToolsInterface::registerAmplitude( TwoPSAngles() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
+	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
-	
+
+	// loop to look for beam configuration file
+        TString beamConfigFile;
+        const vector<ConfigFileLine> configFileLinesBeam = parser.getConfigFileLines();
+        for (vector<ConfigFileLine>::const_iterator it=configFileLinesBeam.begin(); it!=configFileLinesBeam.end(); it++) {
+                if ((*it).keyword() == "define") {
+                        TString beamArgument =  (*it).arguments()[0].c_str();
+                        if(beamArgument.Contains("beamconfig")) {
+                                beamConfigFile = (*it).arguments()[1].c_str();
+                        }
+                }
+        }
+	if(beamConfigFile.Length() == 0) {
+		cout<<"WARNING: Couldn't find beam configuration file -- write local version"<<endl;
+
+		beamConfigFile = "local_beam.conf";
+		ofstream locBeamConfigFile;
+		locBeamConfigFile.open(beamConfigFile.Data());
+		locBeamConfigFile<<"ElectronBeamEnergy "<<beamMaxE<<endl;       // electron beam energy
+		locBeamConfigFile<<"CoherentPeakEnergy "<<beamPeakE<<endl;      // coherent peak energy
+		locBeamConfigFile<<"PhotonBeamLowEnergy "<<beamLowE<<endl;      // photon beam low energy
+		locBeamConfigFile<<"PhotonBeamHighEnergy "<<beamHighE<<endl;    // photon beam high energy
+		locBeamConfigFile.close();
+	}
+
 	ProductionMechanism::Type type =
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
-	GammaPToNPartP resProd( threshold<lowMass ? lowMass : threshold, highMass, childMasses, beamMaxE, beamPeakE, beamLowE, beamHighE, type, slope, lowT, highT, seed );
-
+	GammaPToNPartP resProd;
+	if(isKaonRecoil)
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kKaon, type, slope, lowT, highT, seed, beamConfigFile );
+	else if(isPionRecoil)
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kPion, type, slope, lowT, highT, seed, beamConfigFile );
+	else
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
+	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
 	  return 1;
@@ -244,7 +281,6 @@ int main( int argc, char* argv[] ){
 	ROOTDataWriter rootOut( outname );
 	
 	TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
-	
 	ostringstream locStream;
 	ostringstream locIsobarStream;
 	for (unsigned int i=2; i<Particles.size(); i++){
@@ -318,7 +354,7 @@ int main( int argc, char* argv[] ){
 				double rand = gRandom->Uniform() * maxInten;
 				
 				if( weightedInten > rand || genFlat ){
-					
+
 					mass->Fill( resonance.M() );
 					massW->Fill( resonance.M(), genWeight );
 					
@@ -333,7 +369,10 @@ int main( int argc, char* argv[] ){
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector target(0,0,0,recoil[3]);
 					
-					t->Fill(-1*(evt->particle(1)-target).M2());
+					if(isKaonRecoil || isPionRecoil)
+						t->Fill(-1*(beam-evt->particle(1)).M2());
+					else
+						t->Fill(-1*(evt->particle(1)-target).M2());
 
 					TLorentzRotation resonanceBoost( -resonance.BoostVector() );
 					
@@ -402,11 +441,11 @@ int main( int argc, char* argv[] ){
 	CosTheta_psi->Write();
 	M_CosTheta->Write();
 	M_Phi->Write();
+
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;
 	
 	return 0;
 }
-
 

@@ -20,10 +20,13 @@ public:
   enum { k3PiMass = 0, kCosThetaPiMinus, kCosThetaPiPlus, kCosThetaPi0, kPhiPiPlus, kPhiPiMinus, kPhiPi0, kCosTheta, kPhi, kphi, kPsi, kt, kNumHists};
   
   ThreePiPlotGeneratorSchilling( const FitResults& results );
+  ThreePiPlotGeneratorSchilling( );
     
+  void projectEvent( Kinematics* kin );
+
 private:
         
-  void projectEvent( Kinematics* kin );
+  void createHistograms( );
   
 };
 
