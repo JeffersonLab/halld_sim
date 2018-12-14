@@ -165,14 +165,14 @@ TwoPiWt_sigma::calcAmplitude( GDouble** pKin ) const
 
     complex<GDouble> Aw = Aw_func(xin,parin);
 
-    Double_t Bslope=3.7; 
+    /*Double_t Bslope=3.7; 
     Double_t Bgen=6.0;
 
-    Aw = Aw * exp(Bslope*t)/exp(6.0*t);         // Divide out generated exponential. 
+    Aw = Aw * exp(Bslope*t)/exp(6.0*t);         // Divide out generated exponential. Move to separate amplitude.*/ 
 
     if (Wpipi < mass1+mass2) Aw = 0;
     
-    //  cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " Aw2=" << std::norm(Aw) << " AwPhase=" << std::arg(Aw) << endl;
+    // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " Aw2=" << std::norm(Aw) << " AwPhase=" << std::arg(Aw) << endl;
   
   return( Aw );
 }

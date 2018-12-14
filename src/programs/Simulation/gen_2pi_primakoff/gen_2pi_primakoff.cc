@@ -17,6 +17,7 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
+#include "AMPTOOLS_AMPS/TwoPitdist.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
@@ -144,6 +145,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
 	AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
 	AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+	AmpToolsInterface::registerAmplitude( TwoPitdist() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 	
@@ -151,7 +153,7 @@ int main( int argc, char* argv[] ){
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 	
 	// generate over a range of mass -- the daughters are two charged pions
-	float Bslope= 6;   // exponential slope
+	float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
 	GammaZToXYZ resProd( lowMass, highMass, 0.140, 0.140, beamMaxE, beamPeakE, beamLowE, beamHighE, type, Bslope);
 	
 	// seed the distribution with a sum of noninterfering s-wave amplitudes

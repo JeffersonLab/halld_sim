@@ -106,7 +106,7 @@ ProductionMechanism::produceResonance( const TLorentzVector& beam ){
 }
 TLorentzVector
 ProductionMechanism::produceResonanceZ ( const TLorentzVector& beam){
-  /* This method is based on produceResonance, which assumes a proton target and exponential t dependence
+  /* This method is modeled after produceResonance, which assumes a proton target and exponential t dependence
      This method is intended for use with a high Z target in Primakoff production.  Elton 4/14/2017
 
    */
@@ -130,7 +130,7 @@ ProductionMechanism::produceResonanceZ ( const TLorentzVector& beam){
     resMomCM  = cmMomentum( cmEnergy, resMass, m_recMass );
   
     tMaxkin = 4. * beamMomCM * resMomCM;
-    tMax = 0.01;   // restrict max to make more efficient for Primakoff generation
+    tMax = 0.05;   // restrict max to make more efficient for Primakoff generation
     t = random( 0, tMax ); 
   } 
   // while( random( 0., exptMax ) > t*exp(-m_slope*t) );   // Elton 8/19/2016.  t*exp(Bt)

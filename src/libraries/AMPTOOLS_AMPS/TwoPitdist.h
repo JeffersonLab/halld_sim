@@ -1,5 +1,5 @@
-#if !defined(TWOPIWT_PRIMAKOFF)
-#define TWOPIWT_PRIMAKOFF
+#if !defined(TWOPITDIST)
+#define TWOPITDIST
 
 #include "IUAmpTools/Amplitude.h"
 #include "IUAmpTools/AmpParameter.h"
@@ -12,21 +12,21 @@
 #include <vector>
 
 using std::complex;
-using namespace std;
+using namespace std;  
 
 class Kinematics;
 
-class TwoPiWt_primakoff : public UserAmplitude< TwoPiWt_primakoff >
+class TwoPitdist : public UserAmplitude< TwoPitdist >
 {
   
 public:
 	
-	TwoPiWt_primakoff() : UserAmplitude< TwoPiWt_primakoff >() {}
-	TwoPiWt_primakoff( const vector< string >& args );
+	TwoPitdist() : UserAmplitude< TwoPitdist >() {}
+	TwoPitdist( const vector< string >& args );
 	
-	~TwoPiWt_primakoff(){}
+	~TwoPitdist(){}
   
-	string name() const { return "TwoPiWt_primakoff"; }
+	string name() const { return "TwoPitdist"; }
   
   complex< GDouble > calcAmplitude( GDouble** pKin ) const;
 	  
@@ -42,8 +42,7 @@ public:
   
 private:
 	
-  AmpParameter m_par1;    // for the moment assume W cross section has 5 parameters
-  AmpParameter m_par2;
+  AmpParameter Bslope;    // for the moment assume W cross section has 4 parameters
   AmpParameter Bgen;
   
   pair< string, string > m_daughters;  

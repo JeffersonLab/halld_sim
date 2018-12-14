@@ -19,9 +19,9 @@
 
 GammaZToXYZ::GammaZToXYZ( float lowMassXY, float highMassXY, 
                           float massX, float massY, float beamMaxE, float beamPeakE, float beamLowE, float beamHighE,
-                          ProductionMechanism::Type type , float Bslope=6) : 
+                          ProductionMechanism::Type type , float Bslope=2) : 
 
-m_prodMech( ProductionMechanism::kZ, type, Bslope), // last arg is t dependence
+m_prodMech( ProductionMechanism::kZ, type, Bslope), // last arg is t dependence. Use value that is lower than any expected for reactions of interest. Elton 10/9/18
 // m_target( 0, 0, 0, 108.),    // use mass of Tin
 m_target( 0, 0, 0, 208.*0.931494),    // use mass of Pb since it is defined in particle tables.
 m_childMass( 0 ) {
