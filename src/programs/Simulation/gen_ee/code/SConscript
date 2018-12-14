@@ -9,5 +9,5 @@ env = env.Clone()
 	
 sbms.AddHDDM(env)
 sbms.AddROOT(env)
-sbms.executable(env, 'ee_mc')
+sbms.executable(env, 'gen_ee')
 #sbms.executable(env)

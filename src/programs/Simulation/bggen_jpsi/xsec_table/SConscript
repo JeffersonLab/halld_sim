@@ -20,6 +20,5 @@ else:
 	fflags = env['FORTRANFLAGS'].remove('-Wall')
 	env.Replace(FORTRANFLAGS=fflags)
 
-	sbms.AddCERNLIB(env)
 	sbms.AddHDDM(env)
 	sbms.executable(env, 'xsec_table')

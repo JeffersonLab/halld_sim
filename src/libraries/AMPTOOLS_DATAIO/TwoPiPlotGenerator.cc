@@ -10,9 +10,18 @@
 TwoPiPlotGenerator::TwoPiPlotGenerator( const FitResults& results ) :
 PlotGenerator( results )
 {
+	createHistograms();
+}
+
+TwoPiPlotGenerator::TwoPiPlotGenerator( ) :
+PlotGenerator( )
+{
+	createHistograms();
+}
+
+void TwoPiPlotGenerator::createHistograms() {
   // calls to bookHistogram go here
   
-  // bookHistogram( k2PiMass, new Histogram1D( 200, 0., 2.0, "M2pi", "Invariant Mass of #pi^{+} #pi^{-}") );
   bookHistogram( k2PiMass, new Histogram1D( 86, 0.28, 2.0, "M2pi", "Invariant Mass of #pi^{+} #pi^{-}") );
   bookHistogram( kPiPCosTheta, new Histogram1D( 50, -1., 1., "cosTheta", "cos( #theta ) of Resonance Production") );
 
@@ -21,7 +30,6 @@ PlotGenerator( results )
   bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#Phi" ) );
   bookHistogram( kphi, new Histogram1D( 50, -1*PI, PI, "phi", "#phi" ) );
   bookHistogram( kPsi, new Histogram1D( 50, -1*PI, PI, "psi", "#psi" ) );
-  // bookHistogram( kt, new Histogram1D( 100, 0, 5, "t", "-t" ) );
   bookHistogram( kt, new Histogram1D( 100, 0, 2.00, "t", "-t" ) );
 }
 

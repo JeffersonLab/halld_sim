@@ -22,7 +22,8 @@ class GammaZToXYZ {
 public:
   
   GammaZToXYZ( float lowMassXY, float highMassXY, float massX, float massY,
-               float beamMaxE, float beamPeakE, float beamLowE, float beamHigh, ProductionMechanism::Type type );
+               ProductionMechanism::Type type,
+	       TString beamConfigFile  );
   
   Kinematics* generate();
   

@@ -10,6 +10,5 @@ if os.getenv('CERN') == None:
 	print '==== CANNOT BUILD stdhep_translators WITHOUT CERN ===='
 else:
 	sbms.AddHDDM(env)
-	sbms.AddCERNLIB(env)
 	sbms.executables(env)
 
