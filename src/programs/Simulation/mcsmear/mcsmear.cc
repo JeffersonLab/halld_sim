@@ -96,7 +96,7 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'h': Usage();                                     break;
           case 'o': OUTFILENAME = strdup(&ptr[2]);               break;
           case 'N': config->ADD_NOISE=true;                      break;
-	  case 's': config->SMEAR_HITS=false;                    break;
+          case 's': config->SMEAR_HITS=false;                    break;
           case 'i': config->IGNORE_SEEDS=true;                   break;
           case 'r': config->SetSeeds(&ptr[2]);                   break;
           case 'd': config->DROP_TRUTH_HITS=true;                break;
@@ -105,14 +105,14 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'm': config->APPLY_HITS_TRUNCATION=false;         break;
           case 'E': config->FCAL_ADD_LIGHTGUIDE_HITS=true;       break;
 
-	      // BCAL parameters
+          // BCAL parameters
           case 'G': config->BCAL_NO_T_SMEAR = true;              break;
           case 'H': config->BCAL_NO_DARK_PULSES = true;          break;
           case 'K': config->BCAL_NO_SAMPLING_FLUCTUATIONS = true; break;
           case 'L': config->BCAL_NO_SAMPLING_FLOOR_TERM = true;  break;
           case 'M': config->BCAL_NO_POISSON_STATISTICS = true;   break;
-	  case 'S': config->BCAL_NO_FADC_SATURATION = true;      break;
-	  case 'T': config->BCAL_NO_SIPM_SATURATION = true;      break;
+          case 'S': config->BCAL_NO_FADC_SATURATION = true;      break;
+          case 'T': config->BCAL_NO_SIPM_SATURATION = true;      break;
          }
       }
       else {
