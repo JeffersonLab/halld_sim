@@ -341,6 +341,11 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
       DGeometry *dgeom = dapp->GetDGeometry(loop->GetJEvent().GetRunNumber());
       JGeometryXML *jgeom = dynamic_cast<JGeometryXML*>(dgeom->GetJGeometry());
       geom(0).setMd5smear(jgeom->GetChecksum());
+      if (geom(0).getMd5smear() != geom(0).getMd5simulation()) {
+         std::cerr << "Warning: simulation geometry checksum does not match"
+                   << " the geometry description used by mcsmear."
+                   << std::endl;
+      }
    }
 
    // Smear values
