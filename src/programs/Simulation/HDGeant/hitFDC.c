@@ -743,7 +743,7 @@ void hitForwardDC (float xin[4], float xout[4],
 
   /* post the hit to the truth tree */
 
-  int itrack = (stack == 0)? gidGetId(track) : -1;
+  itrack = (stack == 0)? gidGetId(track) : -1;
  
   if (history == 0)
   {
