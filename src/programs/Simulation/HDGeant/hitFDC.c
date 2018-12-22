@@ -402,9 +402,23 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
   // distance
   int index=0;
   locate(drift_table,1000,dradius,&index);
+#if OLD_LINEAR_DRIFT_TIME_LOOKUP_INTERPOLATOR
   float dd=drift_table[index+1]-drift_table[index];
   float frac=(dradius-drift_table[index])/dd;
   float tdrift_unsmeared=0.5*((float)index+frac);
+#else
+  // use a quadratic interpolator on the lookup table
+  float *dd = &drift_table[(index < 997)? index : 997];
+  double tt = 0.5; //ns
+  double dd10 = dd[1] - dd[0];
+  double dd20 = dd[2] - dd[0];
+  double dd21 = dd[2] - dd[1];
+  double qa = tt*index;
+  double qb = (dd20/dd10 - 2*dd10/dd20) * tt/dd21;
+  double qc = (2/dd20 - 1/dd10) * tt/dd21;
+  double d0 = dradius - dd[0];
+  double tdrift_unsmeared = qa + qb*d0 + qc*d0*d0;
+#endif
   // Apply small B-field dependence on the drift time
   tdrift_unsmeared*=1.+bscale[0]+bscale[1]*B[2]*B[2];
 
@@ -414,7 +428,7 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
 
   // longitidinal diffusion, derived from Garfield calculations
   float dt=(( 39.44   )*dx4/(0.5-dz2)+( 56.0  )*dz4/(0.5-dx2)
-      +( 0.01566 )*dx4/(dz4+0.002)/(0.251-dx2))*rndno[1];
+      +( 0.01566 )*dx4/(dz4+0.002)/(0.251-dx2))*(rndno[1]-0.5);
 
   double tdrift_smeared=tdrift_unsmeared+dt;
   if (tdrift_smeared<tmin){
@@ -457,7 +471,7 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
        * of just keeping the time of the first hit recorded.
        */
         ahits->in[nhit].t = 
-            (ahits->in[nhit].t * ahits->in[nhit].dE + tdrift * dE)
+            (ahits->in[nhit].t * ahits->in[nhit].dE + *tdrift * dE)
             / (ahits->in[nhit].dE += dE);
 #endif
 
