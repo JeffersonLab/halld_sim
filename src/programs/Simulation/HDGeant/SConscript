@@ -25,6 +25,8 @@ else:
 		if (postgcc.endswith('-cntr')):
 			vers_end = len(postgcc) - 5
 			version_string = postgcc[0:vers_end]
+		else:
+			version_string = postgcc
 		versions = version_string.split('.')
 		if int(versions[0]) >= 4 and int(versions[1]) >= 8 or int(versions[0]) >= 5:
 			env.PrependUnique(FORTRANFLAGS = ['-fno-aggressive-loop-optimizations'])
