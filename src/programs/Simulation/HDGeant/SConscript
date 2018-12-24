@@ -20,8 +20,12 @@ else:
 	#bms_osname = os.environ['BMS_OSNAME']
 	bms_osname = env['OSNAME']
 	bms_split = bms_osname.split('gcc')
-	if len(bms_split) >= 2 : 
-		versions = bms_split[1].split('.')
+	if len(bms_split) >= 2 :
+		postgcc = bms_split[1]
+		if (postgcc.endswith('-cntr')):
+			vers_end = len(postgcc) - 5
+			version_string = postgcc[0:vers_end]
+		versions = version_string.split('.')
 		if int(versions[0]) >= 4 and int(versions[1]) >= 8 or int(versions[0]) >= 5:
 			env.PrependUnique(FORTRANFLAGS = ['-fno-aggressive-loop-optimizations'])
 
