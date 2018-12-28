@@ -127,7 +127,10 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
              		&& !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyCorrectionFactor(witer)))
              		continue;
 
-            double t = titer->getT() + gDRandom.SampleGaussian(fdc_config->FDC_TDRIFT_SIGMA)*1.0e9;
+            double t = titer->getT();
+          	if(config->SMEAR_HITS) {
+               t += gDRandom.SampleGaussian(fdc_config->FDC_TDRIFT_SIGMA)*1.0e9;
+            }
             if (t > config->TRIGGER_LOOKBACK_TIME && t < t_max) {
                hddm_s::FdcAnodeHitList hits = witer->addFdcAnodeHits();
                hits().setT(t);

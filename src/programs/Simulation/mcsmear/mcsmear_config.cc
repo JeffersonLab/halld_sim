@@ -33,7 +33,8 @@ mcsmear_config_t::mcsmear_config_t()
           BCAL_NO_SAMPLING_FLUCTUATIONS = false;
           BCAL_NO_SAMPLING_FLOOR_TERM = false; 
           BCAL_NO_POISSON_STATISTICS = false;  
-	  BCAL_NO_FADC_SATURATION = false;   
+	  BCAL_NO_FADC_SATURATION = false;     
+	  BCAL_NO_SIPM_SATURATION = false;    
 		
 	TRIGGER_LOOKBACK_TIME = -100; // ns
 		

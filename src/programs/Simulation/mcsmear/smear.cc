@@ -22,8 +22,6 @@ using namespace std;
 #endif
 
 
-DCCALGeometry *ccalGeom = NULL;
-
 //-----------
 // Smear (constructor)
 //-----------
