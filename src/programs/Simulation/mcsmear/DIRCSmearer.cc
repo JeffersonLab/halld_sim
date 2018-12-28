@@ -3,7 +3,7 @@
 //-----------
 // dirc_config_t  (constructor)
 //-----------
-dirc_config_t::dirc_config_t(JEventLoop *loop, DDIRCGeometry *dircGeom)
+dirc_config_t::dirc_config_t(JEventLoop *loop)
 {
         // default values
         DIRC_TSIGMA           = 0.5; // 0.5 ns 
@@ -27,6 +27,7 @@ dirc_config_t::dirc_config_t(JEventLoop *loop, DDIRCGeometry *dircGeom)
 //-----------
 void DIRCSmearer::SmearEvent(hddm_s::HDDM *record)
 {
+#ifdef SMEARDIRC
 	hddm_s::DircTruthPmtHitList truthPmtHits = record->getDircTruthPmtHits();
 	hddm_s::DircTruthPmtHitList::iterator iter;
 	for (iter = truthPmtHits.begin(); iter != truthPmtHits.end(); ++iter) {
@@ -52,4 +53,5 @@ void DIRCSmearer::SmearEvent(hddm_s::HDDM *record)
 		hits().setT(t);
 		hits().setCh(ch);
 	}
+#endif
 }
