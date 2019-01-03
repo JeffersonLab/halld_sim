@@ -11,6 +11,9 @@ class dirc_config_t
         dirc_config_t(JEventLoop *loop);
 
         double DIRC_TSIGMA;
+
+	int DIRC_MAX_CHANNELS;
+	vector< vector <int> > dChannelStatus;
 };
 
 
@@ -28,6 +31,7 @@ class DIRCSmearer : public Smearer
 
  private:
         dirc_config_t  *dirc_config;
+	enum dirc_status_state {GOOD, BAD, NOISY};
 };
 
 
