@@ -84,7 +84,7 @@ sc_config_t::sc_config_t(JEventLoop *loop)
 // GetPaddleTimeResolution
 //------------------------
 double sc_config_t::GetPaddleTimeResolution(int sector, double sc_local_z)  { 
-	double time_resolution = 0.;
+	double time_resolution = 0.;  // units of ns
 	
 	// the new 4-region piecewise parameterization is in terms of the pathlength along the paddle
 	double dpath = 0.;
@@ -114,7 +114,8 @@ double sc_config_t::GetPaddleTimeResolution(int sector, double sc_local_z)  {
 	}
 	
 	// If these resolutions come from data, apply correction factors to remove any other contributions
-	//time_resolution = (time_resolution - SC_MC_CORRECTION_P0) / SC_MC_CORRECTION_P1;
+	// note that the factors were determined in units of ps, so we need to convert to and from ns.
+	time_resolution = ( (time_resolution*1000. - SC_MC_CORRECTION_P0) / SC_MC_CORRECTION_P1 ) / 1000.;
 
 	// convert ps to ns
 	//time_resolution /= 1000.;
