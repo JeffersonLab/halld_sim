@@ -19,14 +19,15 @@ sc_config_t::sc_config_t(JEventLoop *loop)
     DGeometry* locGeometry = dapp->GetDGeometry(loop->GetJEvent().GetRunNumber());
 
     // Get start counter geometry
-    vector<vector<DVector3> >sc_norm; 
-    vector<vector<DVector3> >sc_pos;
     unsigned int MAX_SECTORS=0;
     if (locGeometry->GetStartCounterGeom(sc_pos, sc_norm))  {
 		MAX_SECTORS = sc_pos.size();
-        for(int sc_index=0; sc_index<sc_pos.size(); sc_index++)
+        for(unsigned int sc_index=0; sc_index<sc_pos.size(); sc_index++) {
             SC_START_Z.push_back( sc_pos[sc_index][0].z() );
-
+        }
+            
+		double theta = sc_norm[0][sc_norm[0].size() - 2].Theta();
+		START_ANGLE_CORR = 1./cos(M_PI_2 - theta);
     }
 
 	// Load data from CCDB
@@ -46,24 +47,26 @@ sc_config_t::sc_config_t(JEventLoop *loop)
 
     // Start counter individual paddle resolutions
     vector< vector<double> > sc_paddle_resolution_params;
-    if(loop->GetCalib("START_COUNTER/time_resol_paddle_v2", sc_paddle_resolution_params))
-        jout << "Error in loading START_COUNTER/time_resol_paddle_v2 !" << endl;
+    if(loop->GetCalib("START_COUNTER/TRvsPL", sc_paddle_resolution_params))
+        jout << "Error in loading START_COUNTER/TRvsPL !" << endl;
     else {
         if(sc_paddle_resolution_params.size() != MAX_SECTORS)
             jerr << "Start counter paddle resolutions table has wrong number of entries:" << endl
                  << "  loaded = " << sc_paddle_resolution_params.size()
                  << "  expected = " << MAX_SECTORS << endl;
 
-        for(int i=0; i<MAX_SECTORS; i++) {
-            SC_MAX_RESOLUTION.push_back( sc_paddle_resolution_params[i][0] );
-            SC_BOUNDARY1.push_back( sc_paddle_resolution_params[i][1] );
-            SC_BOUNDARY2.push_back( sc_paddle_resolution_params[i][2] );
-            SC_SECTION1_P0.push_back( sc_paddle_resolution_params[i][3] ); 
-            SC_SECTION1_P1.push_back( sc_paddle_resolution_params[i][4] );
-            SC_SECTION2_P0.push_back( sc_paddle_resolution_params[i][5] ); 
-            SC_SECTION2_P1.push_back( sc_paddle_resolution_params[i][6] );
-            SC_SECTION3_P0.push_back( sc_paddle_resolution_params[i][7] ); 
-            SC_SECTION3_P1.push_back( sc_paddle_resolution_params[i][8] );
+        for(unsigned int i=0; i<MAX_SECTORS; i++) {
+            SC_SECTION1_P0.push_back( sc_paddle_resolution_params[i][0] ); 
+            SC_SECTION1_P1.push_back( sc_paddle_resolution_params[i][1] );
+            SC_BOUNDARY1.push_back( sc_paddle_resolution_params[i][2] );
+            SC_SECTION2_P0.push_back( sc_paddle_resolution_params[i][3] ); 
+            SC_SECTION2_P1.push_back( sc_paddle_resolution_params[i][4] );
+            SC_BOUNDARY2.push_back( sc_paddle_resolution_params[i][5] );
+            SC_SECTION3_P0.push_back( sc_paddle_resolution_params[i][6] ); 
+            SC_SECTION3_P1.push_back( sc_paddle_resolution_params[i][7] );
+            SC_BOUNDARY3.push_back( sc_paddle_resolution_params[i][8] );
+            SC_SECTION4_P0.push_back( sc_paddle_resolution_params[i][9] ); 
+            SC_SECTION4_P1.push_back( sc_paddle_resolution_params[i][10] );
         }
     }
 
@@ -75,6 +78,48 @@ sc_config_t::sc_config_t(JEventLoop *loop)
         SC_MC_CORRECTION_P1 = sc_mc_correction_factors["P1"];
     }
 
+}
+
+//------------------------
+// GetPaddleTimeResolution
+//------------------------
+double sc_config_t::GetPaddleTimeResolution(int sector, double sc_local_z)  { 
+	double time_resolution = 0.;
+	
+	// the new 4-region piecewise parameterization is in terms of the pathlength along the paddle
+	double dpath = 0.;
+
+	// calculate in local coordinates
+	double sc_pos_soss = sc_pos[sector][0].z();   // Start of straight section
+	double sc_pos_eoss = sc_pos[sector][1].z() - sc_pos_soss;   // End of straight section
+	double sc_pos_eobs = sc_pos[sector][sc_pos[sector].size() - 2].z() - sc_pos_soss;  // End of bend section
+
+	// Calculate hit distance along scintillator relative to upstream end
+	if (sc_local_z <= sc_pos_eoss)  // Check to see if hit occured in the straight section
+		dpath = sc_local_z ;
+	else if(sc_local_z > sc_pos_eoss && sc_local_z <= sc_pos_eobs) //check if in bend section: if so, apply corrections
+		dpath = (sc_local_z - sc_pos_eoss)*START_ANGLE_CORR + sc_pos_eoss;
+	else // nose section: apply corrections
+		dpath = (sc_local_z - sc_pos_eoss)*START_ANGLE_CORR + sc_pos_eoss;
+
+	// look up resolution
+	if(dpath < SC_BOUNDARY1[sector]) {
+		time_resolution = SC_SECTION1_P0[sector] + SC_SECTION1_P1[sector]*dpath;
+	} else if(dpath < SC_BOUNDARY2[sector]) {
+		time_resolution = SC_SECTION2_P0[sector] + SC_SECTION2_P1[sector]*dpath;
+	} else if(dpath < SC_BOUNDARY3[sector]) {
+		time_resolution = SC_SECTION3_P0[sector] + SC_SECTION3_P1[sector]*dpath;
+	} else {
+		time_resolution = SC_SECTION4_P0[sector] + SC_SECTION4_P1[sector]*dpath;
+	}
+	
+	// If these resolutions come from data, apply correction factors to remove any other contributions
+	//time_resolution = (time_resolution - SC_MC_CORRECTION_P0) / SC_MC_CORRECTION_P1;
+
+	// convert ps to ns
+	//time_resolution /= 1000.;
+	//cout << "z hit = " << sc_local_z << "  dpath = " << dpath << "  time resolution = " << time_resolution << endl;
+	return time_resolution;
 }
 
 
