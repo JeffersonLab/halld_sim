@@ -6,11 +6,12 @@ import sbms
 Import('*')
 env = env.Clone()
 
+UTILITIES_LIBS = "UTILITIES"
+env.AppendUnique(LIBS = UTILITIES_LIBS.split())
 
-sbms.AddCobrems(env)
+sbms.AddUtilities(env)
 sbms.AddROOT(env)
 sbms.AddHDDM(env)
-sbms.AddAmpTools(env)
 sbms.executable(env)
 
 

@@ -19,6 +19,7 @@ using namespace std;
 #include <JANA/JEvent.h>
 
 #include <HDDM/DEventSourceHDDM.h>
+#include <JANA/JGeometryXML.h>
 #include <TRACKING/DMCThrown.h>
 #include <DRandom2.h>
 
@@ -314,7 +315,7 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
         skip2merge[iter->first] = 0;
     }
 
-	return NOERROR;
+    return NOERROR;
 }
 
 //------------------------------------------------------------------
@@ -332,6 +333,20 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
    hddm_s::HDDM *record = (hddm_s::HDDM*)event.GetRef();
    if (!record)
       return NOERROR;
+
+   // Handle geometry records
+   hddm_s::GeometryList geom = record->getGeometrys();
+   if (geom.size() > 0) {
+      DApplication* dapp = dynamic_cast<DApplication*>(loop->GetJApplication());
+      DGeometry *dgeom = dapp->GetDGeometry(loop->GetJEvent().GetRunNumber());
+      JGeometryXML *jgeom = dynamic_cast<JGeometryXML*>(dgeom->GetJGeometry());
+      geom(0).setMd5smear(jgeom->GetChecksum());
+      if (geom(0).getMd5smear() != geom(0).getMd5simulation()) {
+         std::cerr << "Warning: simulation geometry checksum does not match"
+                   << " the geometry description used by mcsmear."
+                   << std::endl;
+      }
+   }
 
    // Smear values
    smearer->SmearEvent(record);

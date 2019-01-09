@@ -13,6 +13,8 @@
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 
+#include "UTILITIES/BeamProperties.h"
+
 TwoPiAngles::TwoPiAngles( const vector< string >& args ) :
 UserAmplitude< TwoPiAngles >( args )
 {
@@ -48,6 +50,11 @@ UserAmplitude< TwoPiAngles >( args )
 	registerParameter( rho1m12 );
 
 	registerParameter( polAngle );
+
+	// BeamProperties configuration file
+	TString beamConfigFile = args[10].c_str();
+	BeamProperties beamProp(beamConfigFile);
+	polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
 }
 
 
@@ -86,8 +93,19 @@ TwoPiAngles::calcAmplitude( GDouble** pKin ) const {
         GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	
 	// vector meson production from K. Schilling et. al.
-	GDouble Pgamma = polFraction;
+	GDouble Pgamma;
+	if(polFraction > 0.) { // for fitting with constant polarization 
+		Pgamma = polFraction;
+	}
+	else{
+		int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+		if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+			Pgamma = 0.;
+		}
+		else Pgamma = polFrac_vs_E->GetBinContent(bin);
+	}
 	
+	// vector meson production from K. Schilling et. al.
 	GDouble W = 0.5*(1. - rho000) + 0.5*(3.*rho000 - 1.)*cosTheta*cosTheta - sqrt(2.)*rho100*sin2Theta*cos(phi) - rho1m10*sinSqTheta*cos(2.*phi);
 	
 	W -= Pgamma*cos(2.*Phi) * (rho111*sinSqTheta + rho001*cosTheta*cosTheta - sqrt(2.)*rho101*sin2Theta*cos(phi) - rho1m11*sinSqTheta*cos(2.*phi));

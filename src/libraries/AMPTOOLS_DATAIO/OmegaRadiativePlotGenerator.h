@@ -1,5 +1,5 @@
-#if !(defined TWOPIPLOTGENERATOR)
-#define TWOPIPLOTGENERATOR
+#if !(defined OMEGARADIATIVEPLOTGENERATOR)
+#define OMEGARADIATIVEPLOTGENERATOR
 
 #include <vector>
 #include <string>
@@ -17,15 +17,17 @@ class OmegaRadiativePlotGenerator : public PlotGenerator
 public:
   
   // create an index for different histograms
-  //enum { kOmegaMass = 0, kPi0CosTheta, kPi0Phi, kGammaCosTheta, kGammaPhi, kPhi, kphi, kPsi, kt, kNumHists};
   enum { kOmegaMass = 0, kCosThetaPi0, kCosThetaGamma, kPhiPi0, kPhiGamma, kCosTheta, kPhi, kphi, kPsi, kt, kNumHists};
 
   OmegaRadiativePlotGenerator( const FitResults& results );
+  OmegaRadiativePlotGenerator( );
     
-private:
-        
   void projectEvent( Kinematics* kin );
+ 
+private:
   
+  void createHistograms( );
+ 
 };
 
 #endif

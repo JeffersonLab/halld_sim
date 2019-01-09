@@ -1,5 +1,7 @@
 #include "CCALSmearer.h"
 
+DCCALGeometry *ccalGeom = NULL;
+
 //-----------
 // ccal_config_t  (constructor)
 //-----------

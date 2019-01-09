@@ -6,6 +6,7 @@
 #include "IUAmpTools/AmpParameter.h"
 #include "GPUManager/GPUCustomTypes.h"
 
+#include "TH1D.h"
 #include <string>
 #include <complex>
 #include <vector>
@@ -59,6 +60,7 @@ private:
   AmpParameter polAngle;
 
   double polFraction;
+  TH1D *polFrac_vs_E;
 
 };
 
