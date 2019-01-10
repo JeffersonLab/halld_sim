@@ -235,16 +235,6 @@ c      write(6,*)cnames(NLEVEL)
           call hitCerenkov(xin,xout,pin,pout,-dEsum,ITRA,ISTAK,ISTORY,
      >          IPART)
         endif
-      elseif (cnames(NLEVEL).eq.'RAWN') then ! DIRC window: truth
-        if (dEsum.gt.0) then
-          call hitDirc(xin,xout,pin,pout,dEsum,ITRA,ISTAK,ISTORY,
-     >          IPART)
-        endif
-      elseif (cnames(NLEVEL).eq.'RDCD') then ! DIRC Cathode: counter
-        if ((dEsum.gt.0).and.(IPART.eq.50)) then
-          call hitDirc(xin,xout,pin,pout,-dEsum,ITRA,ISTAK,ISTORY,
-     >          IPART)
-        endif
       elseif ((cnames(NLEVEL).eq.'FTOC').or.  ! forward TOF counter
      +        (cnames(NLEVEL).eq.'FTOX').or.  ! forward TOF counter
      +        (cnames(NLEVEL).eq.'FTOH')) then

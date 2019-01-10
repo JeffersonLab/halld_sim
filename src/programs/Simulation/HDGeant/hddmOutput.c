@@ -116,9 +116,6 @@ int loadOutput (int runNo)
    if ((hitView->Cerenkov = pickCerenkov()) != HDDM_NULL) {
       ++packages_hit;
    }
-   if ((hitView->DIRC = pickDirc()) != HDDM_NULL) {
-	   ++packages_hit;
-   }
    if ((hitView->forwardTOF = pickForwardTOF()) != HDDM_NULL) {
       ++packages_hit;
    }
