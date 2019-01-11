@@ -263,7 +263,7 @@ C..geant..
 *
 *             Read the data cards
 *
-      OPEN(UNIT=4,FILE='control.in',STATUS='UNKNOWN')
+      OPEN(UNIT=4,FILE='control.in',STATUS='OLD',ERR=99)
       CALL FFSET('LINP',4)
       CALL FFSET('SIZE',16)
       call ffkey('infile',infile,20,'MIXED')
@@ -472,5 +472,7 @@ C..geant..
       if (IHADR.eq.4) call GMORIN
 
       call gidClear()
+      return
 
+   99 STOP('Unable to open input file control.in')
       END

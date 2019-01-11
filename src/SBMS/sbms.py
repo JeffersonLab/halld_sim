@@ -598,6 +598,10 @@ def AddRECONPaths(env):
 	halld_recon_home = os.getenv('HALLD_RECON_HOME', 'halld_recon')
 	env.AppendUnique(CPPPATH = ["%s/%s/include" % (halld_recon_home, env['OSNAME'])])
 	env.AppendUnique(LIBPATH = ["%s/%s/lib" % (halld_recon_home, env['OSNAME'])])
+        
+        # skip smearing DIRC if hit object doesn't exist in halld_recon (ie. it's an old version)
+        if os.path.exists(halld_recon_home+"/src/libraries/DIRC/DDIRCPmtHit.h"):
+                AddCompileFlags(env, "-DSMEARDIRC")
 
 ##################################
 # DANA
