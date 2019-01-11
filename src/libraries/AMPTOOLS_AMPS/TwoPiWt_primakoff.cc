@@ -120,8 +120,8 @@ Double_t sigmat_func (Double_t *x, Double_t *par){
     // include other masses here
     
     Double_t m1 = 0;      // mass of photon, incident beam
-    // Double_t m2 = 108.;    // mass of 116Sn, target
-    Double_t m2 = 208.;    // use Pb mass because it is in the particle list
+    // Double_t m2 = 108.*0.931494;    // mass of 116Sn, target
+    Double_t m2 = 208.*0.931494;    // use Pb mass because it is in the particle list
     Double_t m3 = Wpipi;   // mass of 2pi system, scattered system
     Double_t m4 = m2;     // recoil target
     
@@ -174,10 +174,11 @@ TwoPiWt_primakoff::TwoPiWt_primakoff( const vector< string >& args ) :
 UserAmplitude< TwoPiWt_primakoff >( args )
 {
   
-  assert( args.size() == 4 );
+  assert( args.size() == 5);
 	m_par1 = AmpParameter( args[0] );
 	m_par2 = AmpParameter( args[1] );
-	m_daughters = pair< string, string >( args[2], args[3] );
+	Bgen = AmpParameter( args[2] );
+	m_daughters = pair< string, string >( args[3], args[4] );
   
   // need to register any free parameters so the framework knows about them
   registerParameter( m_par1 );
@@ -240,10 +241,14 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
     xin[0] = Wpipi;                // W, 2pi mass
     Double_t Eg = pKin[0][0];          // incident photon energy
     Double_t parin[npar];
-    parin[0] = 1.29;              // parameter 1: exponent
-    parin[1] = 0.;                // parameter 2: par2 (spare)
+    // parin[0] = 1.29;              // parameter 1: exponent
+    // parin[1] = 0.;                // parameter 2: par2 (spare)
+    parin[0] = m_par1;              // parameter 1: exponent
+    parin[1] = m_par2;                // parameter 2: par2 (spare)
     // Double_t Wmin=0.2 ;
     // Double_t Wmax=0.8;
+
+    // cout << " TwoPiWt_primakoff: m_par1=" << m_par1 << " m_par2=" << m_par2 << " Bgen=" << Bgen << endl;
 
     GDouble sig_ggpipi = sigma_ggpipi_func(xin,parin);
 
@@ -261,7 +266,7 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
 
     // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " sig_ggpipi=" << sig_ggpipi << " sigmat=" << sigmat << endl;
   
-    complex<GDouble> Csig( sqrt(sigmat*sig_ggpipi/Wpipi/exp(6.0*t)), 0.0 );    // Return complex double, sqrt (cross section). Divide out generated exponential. 
+    complex<GDouble> Csig( sqrt(sigmat*sig_ggpipi/Wpipi/exp(Bgen*t)), 0.0 );    // Return complex double, sqrt (cross section). Divide out generated exponential. 
   
   return( Csig  );
 }

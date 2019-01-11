@@ -16,6 +16,8 @@
 
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
+#include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
+#include "AMPTOOLS_AMPS/TwoPitdist.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
@@ -142,6 +144,8 @@ int main( int argc, char* argv[] ){
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
 	AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
+	AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+	AmpToolsInterface::registerAmplitude( TwoPitdist() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
@@ -173,7 +177,8 @@ int main( int argc, char* argv[] ){
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 	
 	// generate over a range of mass -- the daughters are two charged pions
-	GammaZToXYZ resProd( lowMass, highMass, 0.140, 0.140, type, beamConfigFile );
+	float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
+	GammaZToXYZ resProd( lowMass, highMass, 0.140, 0.140, type, beamConfigFile , Bslope);
 	
 	// seed the distribution with a sum of noninterfering s-wave amplitudes
 	// we can easily compute the PDF for this and divide by that when
@@ -273,8 +278,11 @@ int main( int argc, char* argv[] ){
 					TLorentzVector p1 = evt->particle ( 1 );
 					TLorentzVector p2 = evt->particle ( 2 );
 
-					// cout << endl << " gen_2pi_primakoff particles " << " Mbeam=" << beam.M() << " Mrecoil=" << recoil.M() << " Mp1=" << p1.M() << endl;
-					// beam.Print(); recoil.Print(); p1.Print(); p2.Print(); resonance.Print();
+					if (isfinite(recoil.M()) && isfinite(p1.M())) {
+					  // check for nan values in vectors
+
+					  // cout << endl << " gen_2pi_primakoff particles " << " Mbeam=" << beam.M() << " Mrecoil=" << recoil.M() << " Mp1=" << p1.M() << endl;
+					  // beam.Print(); recoil.Print(); p1.Print(); p2.Print(); resonance.Print();
 			     
 					Double_t phipol=0;    // hardwire angle of photon polarization in lab.
 					TVector3 eps(cos(phipol), sin(phipol), 0.0); // beam polarization vector in lab
@@ -325,6 +333,7 @@ int main( int argc, char* argv[] ){
 					// note that there is no provision currently for vertex output in root file
 					rootOut.writeEvent( *evt );
 					++eventCounter;
+					}
 				}
 			}
 			else{
