@@ -79,7 +79,7 @@ int main(int narg,char* argv[])
    if(error_code != NOERROR) 
        return static_cast<int>(error_code);
    else
-       return 0;
+       return dapp.GetExitCode();
 }
 
 //-----------
