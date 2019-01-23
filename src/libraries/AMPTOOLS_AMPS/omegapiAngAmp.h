@@ -71,9 +71,6 @@ private:
 
   vector< int > mIz;
   
-
-  AmpParameter polAngle;
-
   GDouble m_1p;
   GDouble w_1p;
   GDouble n_1p;
@@ -100,7 +97,7 @@ private:
 
   GDouble ds_ratio;
 
-  double polFraction;
+  double   polAngle;
   
   TH1D *totalFlux_vs_E;
   TH1D *polFlux_vs_E;
