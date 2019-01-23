@@ -11,6 +11,7 @@ C
       INCLUDE 'bg_partc.inc'
       INCLUDE 'bg_evec.inc'
       INCLUDE 'bg_reac.inc'
+      INCLUDE 'hepevt.inc'
 C
       REAL RNDM,GBRWIGN
 C
@@ -22,6 +23,8 @@ C
      +    ,ppf,epf1,ppi,tt,tmn,tmx,amdec,amd(6),pcms(4)
      +    ,wdm
 C 
+      CHARACTER cent(2)*6,cproc*16
+C
       INTEGER mxoutl
       PARAMETER (mxoutl=6)
       REAL ami(2),pcmi(4,2),plabi(4,2)
@@ -207,6 +210,90 @@ C         write(6,*) i,ity(i),MXPGEANT,IPLUND(ity(i)),itorig(i),it1dec(i)
          IF(it1dec(i).NE.0) ITPTRA(2,i)=10   ! indicates that this particle should not be used in GEANT 
       ENDDO
       NTRA=np
+C
+	  IF(RADCORR.EQ.1) THEN   ! do radiative corr. with PHOTOS
+	  	  IF(RADINI.EQ.0) THEN  ! one-time initialization
+	  	  	CALL PHOINI
+	  	  ENDIF
+CCCCCCCCCCCCCCCCCCC CHECK BEFORE PHOTOS
+C
+C---     Print the event
+C
+C      	 WRITE(*,*) 'BEFORE PHOTOS'
+C         WRITE(*,1000) IEVENT,IEVPROC,cproc
+C 1000    FORMAT(' Event ',I6,'  Process=',I4,3X,A16)
+C         WRITE(*,1005) 
+C     +     (cent(i),(ITPIN(j,i),j=1,2),AMIN(i),(PIN(j,i),j=1,3),i=1,2)
+C 1005    FORMAT(1X,A6,3X,I3,2X,I5,3X,4X,F8.4,3X,3F8.3)
+C         WRITE(*,1010) 
+C     +      (i,(ITPTRA(j,i),j=1,6),AMTRA(i),(PTRA(j,i),j=1,3),i=1,NTRA)
+C 1010    FORMAT(1X,I3,3X,I3,I6,2X,I5,3X,3I4,4X,F8.4,3X,3F8.3)
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+C---	Fill HepEvt block as input to PHOTOS
+C
+		NEVHEP = IEVENT
+		NHEP = NTRA
+		DO i=1,NHEP
+		  ISTHEP(i) = ITPTRA(2,i)
+		  IF(ISTHEP(i).EQ.10) THEN
+		  	ISTHEP(i) = 2
+		  ENDIF
+		  IDHEP(i) = ITPTRA(3,i)
+		  JMOHEP(1,i) = ITPTRA(4,i)
+		  JMOHEP(2,i) = 0
+		  JDAHEP(1,i) = ITPTRA(5,i)
+		  JDAHEP(2,i) = ITPTRA(6,i)
+		  PHEP(1,i) = PTRA(1,i)
+		  PHEP(2,i) = PTRA(2,i)
+		  PHEP(3,i) = PTRA(3,i)
+		  PHEP(4,i) = sqrt(AMTRA(i)**2+PTRA(1,i)**2+PTRA(2,i)**2+PTRA(3,i)**2)
+		  PHEP(5,i) = AMTRA(i)
+		  VHEP(1,i) = 0
+		  VHEP(2,i) = 0
+		  VHEP(3,i) = 0
+		  VHEP(4,i) = 0
+		ENDDO
+C
+C---	Call PHOTOS
+C
+		CALL PHOTOS(2)
+C
+C---	Refill local event from PHOTOS output
+		NTRA = NHEP
+		DO i=1,NHEP
+		  ITPTRA(2,i) = ISTHEP(i)
+		  IF(ITPTRA(2,i).EQ.2) THEN
+		  	ITPTRA(2,i) = 10
+		  ENDIF
+		  ITPTRA(3,i) = IDHEP(i)
+		  ITPTRA(4,i) = JMOHEP(1,i)
+		  ITPTRA(5,i) = JDAHEP(1,i)
+		  ITPTRA(6,i) = JDAHEP(2,i)
+		  PTRA(1,i) = PHEP(1,i)
+		  PTRA(2,i) = PHEP(2,i)
+		  PTRA(3,i) = PHEP(3,i)
+		  AMTRA(i) = PHEP(5,i)
+		ENDDO
+C
+CCCCCCCCCCCCCCCCCCC CHECK AFTER PHOTOS
+C
+C---     Print the event
+C
+C		IF(NHEP.GT.4) THEN
+C      	 WRITE(*,*) 'AFTER PHOTOS'
+C         WRITE(*,1000) IEVENT,IEVPROC,cproc
+Cc 1000    FORMAT(' Event ',I6,'  Process=',I4,3X,A16)
+C         WRITE(*,1005) 
+C     +     (cent(i),(ITPIN(j,i),j=1,2),AMIN(i),(PIN(j,i),j=1,3),i=1,2)
+Cc 1005    FORMAT(1X,A6,3X,I3,2X,I5,3X,4X,F8.4,3X,3F8.3)
+C         WRITE(*,1010) 
+C     +      (i,(ITPTRA(j,i),j=1,6),AMTRA(i),(PTRA(j,i),j=1,3),i=1,NTRA)
+Cc 1010    FORMAT(1X,I3,3X,I3,I6,2X,I5,3X,3I4,4X,F8.4,3X,3F8.3)
+C	endif
+	  ENDIF
+C
+C
 C
       IERR=0
  999  CONTINUE

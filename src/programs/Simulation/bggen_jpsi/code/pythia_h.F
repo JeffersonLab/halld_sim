@@ -11759,7 +11759,7 @@ C P.L. ...An event with W^2_T<4will be generated new by RADGEN at the
 C      ...same kinematic point, the number of tries needed by RADGEN is 
 C      ...counted and saved in the variable rcweight!
              IF (qedrad.ne.0) then
-	      IF((mcradcor_cType.eq.'qela').or.(mcradcor_cType.eq.'elas')) then
+	      IF((mcradcor_cType.EQ.'qela').OR.(mcradcor_cType.EQ.'elas')) then
                  GOTO 122
 	      ENDIF
               IF(dble(mcRadCor_W2True).LT.
@@ -14571,11 +14571,12 @@ C...Commonblocks.
       COMMON/PYDAT2/KCHG(500,4),PMAS(500,4),PARF(2000),VCKM(4,4)
       SAVE /PYJETS/,/PYDAT1/,/PYDAT2/
 C...HEPEVT commonblock.
-      PARAMETER (NMXHEP=4000)
-      COMMON/HEPEVT/NEVHEP,NHEP,ISTHEP(NMXHEP),IDHEP(NMXHEP),
-     &JMOHEP(2,NMXHEP),JDAHEP(2,NMXHEP),PHEP(5,NMXHEP),VHEP(4,NMXHEP)
-      DOUBLE PRECISION PHEP,VHEP
-      SAVE /HEPEVT/
+c      PARAMETER (NMXHEP=4000)
+c      COMMON/HEPEVT/NEVHEP,NHEP,ISTHEP(NMXHEP),IDHEP(NMXHEP),
+c     &JMOHEP(2,NMXHEP),JDAHEP(2,NMXHEP),PHEP(5,NMXHEP),VHEP(4,NMXHEP)
+c      DOUBLE PRECISION PHEP,VHEP
+c      SAVE /HEPEVT/
+	  INCLUDE 'hepevt.inc'
  
 C...Conversion from PYTHIA to standard, the easy part.
       IF(MCONV.EQ.1) THEN
@@ -20434,11 +20435,12 @@ C...Parameter statement to help give large particle numbers.
      &KEXCIT=4000000,KDIMEN=5000000)
  
 C...HEPEVT commonblock.
-      PARAMETER (NMXHEP=4000)
-      COMMON/HEPEVT/NEVHEP,NHEP,ISTHEP(NMXHEP),IDHEP(NMXHEP),
-     &JMOHEP(2,NMXHEP),JDAHEP(2,NMXHEP),PHEP(5,NMXHEP),VHEP(4,NMXHEP)
-      DOUBLE PRECISION PHEP,VHEP
-      SAVE /HEPEVT/
+c      PARAMETER (NMXHEP=4000)
+c      COMMON/HEPEVT/NEVHEP,NHEP,ISTHEP(NMXHEP),IDHEP(NMXHEP),
+c     &JMOHEP(2,NMXHEP),JDAHEP(2,NMXHEP),PHEP(5,NMXHEP),VHEP(4,NMXHEP)
+c      DOUBLE PRECISION PHEP,VHEP
+c      SAVE /HEPEVT/
+	  INCLUDE 'hepevt.inc'
  
 C...User process event common block.
       INTEGER MAXNUP
