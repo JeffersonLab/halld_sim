@@ -97,9 +97,6 @@ BeamProperties beamProp(beamConfigFile);
 polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
 polAngle = beamProp.GetPolAngle();
 
-    registerParameter( polAngle );
-
-
     ds_ratio = atof( args[10].c_str() );
     
     //1+ state
