@@ -8,6 +8,7 @@
 #include <string>
 #include <sstream>
 #include "UTILITIES/CobremsGeneration.hh"
+#include "UTILITIES/BeamProperties.h"
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
@@ -90,7 +91,11 @@ omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
 
     assert( args.size() == 23);
 
-    polAngle = AmpParameter( args[0] );
+
+TString beamConfigFile = args[0].c_str();
+BeamProperties beamProp(beamConfigFile);
+polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+polAngle = beamProp.GetPolAngle();
 
     registerParameter( polAngle );
 
@@ -494,17 +499,13 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
     TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // beam polarization vector
     GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 
-    // vector meson production from K. Schilling et. al.
-    GDouble Pgamma;
-    if(polFraction >= 0.) Pgamma = polFraction;
-    else{
-       int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
-       if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
-          Pgamma = 0.;
-       }
-       else Pgamma = polFrac_vs_E->GetBinContent(bin);
-    }
-
+// polarization BeamProperties
+	int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
+	GDouble Pgamma;
+	if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+		Pgamma = 0.;
+	}
+	else Pgamma = polFrac_vs_E->GetBinContent(bin);
 
    double mx = X.M();
     complex <GDouble> amplitude = sqrtIntensity(Pgamma, mx, Phi, angvector);
