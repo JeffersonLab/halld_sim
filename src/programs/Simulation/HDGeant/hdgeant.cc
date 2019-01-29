@@ -16,7 +16,7 @@ extern bool POSTSMEAR;
 extern string MCSMEAROPTS;
 extern bool DELETEUNSMEARED;
 
-// Defined in calibDB.cc
+// Defined in dl_routines.cc
 extern string HDDS_XML;
 
 // Declare routines callable from FORTRAN
