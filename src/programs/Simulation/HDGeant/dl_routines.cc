@@ -154,8 +154,29 @@ void init_runtime_xml_(void)
 
 	// Generate FORTRAN code from XML
 	cout<<endl;
-	cout << "Generating FORTRAN from XML source ...." << endl;
-	string cmd = "$HDDS_HOME/bin/$BMS_OSNAME/hdds-geant " + HDDS_XML + " > tmp.F";
+	cout << "Generating FORTRAN from XML source " << HDDS_XML << endl;
+    if (HDDS_XML.find("ccdb://GEOMETRY/main_HDDS.xml,run=") == 0) {
+        char xmldir[] = ".hdds_tmp_XXXXXX";
+        string tempdir(mkdtemp(xmldir));
+        string url = HDDS_XML.substr(0,HDDS_XML.find(",run="));
+        int runno = stoi(HDDS_XML.substr(34));
+        JCalibration *jcalib = japp->GetJCalibration(runno);
+        vector<string> xmlfiles;
+        jcalib->GetListOfNamepaths(xmlfiles);
+        vector<string>::iterator xiter;
+        for (xiter = xmlfiles.begin(); xiter != xmlfiles.end(); ++xiter) {
+            if (xiter->find("GEOMETRY/") == 0) {
+                cout << *xiter << endl;
+                vector<map<string, string> > vals;
+                jcalib->GetCalib(*xiter, vals);
+                string &xml = vals[0].begin()->second;
+                ofstream xmlout(tempdir + xiter->substr(xiter->find("/")));
+                xmlout << xml;
+            }
+        }
+        HDDS_XML = tempdir + "/main_HDDS.xml";
+    }
+	string cmd = "$HDDS_HOME/$BMS_OSNAME/bin/hdds-geant " + HDDS_XML + " > tmp.F";
 	cout << cmd << endl;
 	retcode = system(cmd.c_str());
 	if(retcode) cerr << "Error running command: " << retcode << endl;
