@@ -9,6 +9,5 @@ env = env.Clone()
 sbms.AddROOT(env)
 sbms.AddRCDB(env)
 sbms.AddDANA(env)
+env.AppendUnique(LIBS = 'gfortran')
 sbms.executable(env)
-
-
