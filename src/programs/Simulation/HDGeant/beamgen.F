@@ -69,6 +69,9 @@ c  freq > freqMaximum is generated; a few ppm of these is no problem.
       common /genstate/ppol,rndm
       save /genstate/
 
+      real spot_offset
+      common /beamgenProperties/spot_offset(2)
+
       real x, theta2
 
       call GRNDM(rndm,7)
@@ -242,6 +245,8 @@ c set the x rotation angle to 0 by assigning Epeak = 0 in control.in
       vertex(2) = vertex(2) + ubuf(3)
       nubuf = 3
 #endif
+      vertex(1) = vertex(1) + spot_offset(1)
+      vertex(2) = vertex(2) + spot_offset(2)
       call settofg(vertex,t0)
       if (bgtagonly.eq.0 .or. t0.eq.0) then
         call GSVERT(vertex,0,0,ubuf,nubuf,nvert)
@@ -274,4 +279,27 @@ c set the x rotation angle to 0 by assigning Epeak = 0 in control.in
       enddo
       pol = theta2 / (a(1) + a(2) * theta2 + a(3) * theta2**2)
       abrems_polarization = pol * cos(2*phi)
+      end
+
+      subroutine set_spotsize(spotrms)
+      real spotrms
+*
+* Set the size of the virtual spot (electron beam projection to the
+* entrance plane of the primary collimator) to spotrms (m).
+*
+#include "cobrems.inc"
+      spot = spotrms
+      end
+
+      subroutine set_spotpos(x,y)
+      real x,y
+*
+* Set the position of the virtual spot (electron beam projection to the
+* entrance plane of the primary collimator) to (x,y) in meters relative
+* to the center of the collimator hole.
+*
+      real spot_offset
+      common /beamgenProperties/spot_offset(2)
+      spot_offset(1) = x * 100
+      spot_offset(2) = y * 100
       end

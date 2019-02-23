@@ -30,7 +30,7 @@ c event source is the external Monte Carlo generator that produced the file,
 c but the BEAM card may still be present, and it is needed if beam-related
 c backgrounds are being superimposed on top of the primary event signals,
 c as requested with the BGRATE card (see below).  The beam card accepts
-c the following five parameters.  
+c the following parameters.  
 c      Emax   - end-point energy of the electron beam (GeV)
 c      Epeak  - energy of the primary coherent peak edge (GeV)
 c      Emin   - minimum energy of the coherent bremsstrahlung beam (GeV)
@@ -38,6 +38,9 @@ c      collz  - z position of collimator in m
 c      colld  - diameter of collimator in m 
 c      Eemit  - electron beam emittance in m.rad
 c      radthick - dimaond radiator thickneess in m
+c      spotRMS - virtual spot rms size at the collimator (m)
+c      spotX - x offset of virtual spot from collimator axis (m)
+c      spotY - y offset of virtual spot from collimator axis (m)
 c Omitting the final parameter Emin results in the default value being used.
 c Setting Epeak to zero selects an amorphous radiator instead of diamond.
 cBEAM 10. 9.999 0.0012 76.00 0.005 10.e-9 20.e-6
