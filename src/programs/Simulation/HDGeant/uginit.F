@@ -38,6 +38,12 @@
 *   - all cheat tags have been modified to report all three coordinates
 *     (in the global reference system) instead of only two [rtj]
 *
+* Revision 1.12  2019/02/23 09:36:34  jonesrt
+* Add 3 new fields to the end of the BEAM card in control.in:
+*  (8)  spotRMS - virtual spot rms size at the collimator (m)
+*  (9)  spotX - x offset of virtual spot from collimator axis (m)
+*  (10) spotY - y offset of virtual spot from collimator axis (m)
+*
 * Revision 1.11  2005/01/21 09:36:34  davidl
 * Read in BFIELD and NOSECONDARIES cards and store in hdtrackparams common block
 *
@@ -172,9 +178,9 @@
       integer openInput, skipInput, openOutput
       external openInput, skipInput, openOutput
       real beamE0, beamEpeak, beamEmin, radColDist, colDiam
-      real beamEmit, radThick
+      real beamEmit, radThick, spotRMS, spotX, spotY
       common /beamPars/ beamE0,beamEpeak,beamEmin,radColDist,colDiam,
-     +                  beamEmit, radThick
+     +                  beamEmit, radThick, spotRMS, spotX, spotY
       data beamE0/0/
       data beamEpeak/0/
       data beamEmin/0/
@@ -182,6 +188,9 @@
       data colDiam/0.0034/
       data beamEmit/1e-8/
       data radThick/20e-6/
+      data spotRMS/0/
+      data spotX/0/
+      data spotY/0/
 
 c The following parameters are declared in hdtrackparams.inc above.
       data nosecondaries/0/
@@ -272,7 +281,7 @@ C..geant..
       call ffkey('postsmear',postsmear,1,'INTEGER')
       call ffkey('mcsmearopts',mcsmearopts,64,'MIXED')
       call ffkey('deleteunsmeared',deleteunsmeared,1,'INTEGER')
-      call ffkey('beam',beamE0,7,'REAL')
+      call ffkey('beam',beamE0,10,'REAL')
       call ffkey('genbeam',genbeam_mode,20,'MIXED')
       call ffkey('bfieldmap', bfield_map,20,'MIXED')
       call ffkey('bfieldtype', bfield_type,20,'MIXED')
@@ -427,6 +436,10 @@ c        endif
      +           ' cannot continue.'
         stop
       endif
+      if (spotRMS .gt. 0) then
+        call set_spotsize(spotRMS)
+      endif
+      call set_spotpos(spotX,spotY)
 *
 *             Initialize graphics package
 *
