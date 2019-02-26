@@ -35,6 +35,15 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
      	CDC_CHARGE_TO_ADC_COUNTS = 1./cdcparms["CDC_ADC_ASCALE"]; 
 	}
 	
+
+ // CDC correction for gain drop from progressive gas deterioration in spring 2018
+      jout << "get CDC/gain_doca_correction parameters from CCDB..." << endl;
+      if(loop->GetCalib("CDC/gain_doca_correction", CDC_GAIN_DOCA_PARS))
+		jout << "Error loading CDC/gain_doca_correction !" << endl;
+
+
+
+
 	// LOAD efficiency correction factors
 
 	// first load some geometry information
@@ -162,19 +171,45 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 		 		&& !gDRandom.DecideToAcceptHit(cdc_config->GetEfficiencyCorrectionFactor(iter->getRing(), iter->getStraw())))
 		 	continue;
 
-         double t = titer->getT();
-         double q = titer->getQ();
+        double t = titer->getT();
+        double q = titer->getQ();
+
+
+        // Beni effect :-)  modify to mimic spring 2018 gas deteriation
+
+        // CDC/gain_doca_correction contains CDC_GAIN_DOCA_PARS 
+        // dmax dcorr goodp0 goodp1 thisp0 thisp1
+
+        // The reconstruction code uses these to scale up the spring 2018 hit amplitudes for dE/dx to approximate that w usual conditions
+        // 0: dmax Hits outside this DOCA are ignored when calculating dE/dx 
+        // 1: dcorr  Hits inside this DOCA are not corrected (not necessary)
+
+        // Here the same linear functions are used to scale the hit amplitude down.
+
+
+        double d = titer->getD();
+
+	// This is the correction for pulse amplitude. 
+        
+        if (d > cdc_config->CDC_GAIN_DOCA_PARS[1]) { 
+            double reference = cdc_config->CDC_GAIN_DOCA_PARS[2] + d*cdc_config->CDC_GAIN_DOCA_PARS[3];
+            double this_run = cdc_config->CDC_GAIN_DOCA_PARS[4] + d*cdc_config->CDC_GAIN_DOCA_PARS[5];
+            q = q * this_run/reference;   
+        }  
+
  
-         if(config->SMEAR_HITS) {
+        if(config->SMEAR_HITS) {
          	// Smear out the CDC drift time using the specified sigma.
          	// This is for timing resolution from the electronics;
          	// diffusion is handled in hdgeant.
-			t += gDRandom.SampleGaussian(cdc_config->CDC_TDRIFT_SIGMA)*1.0e9;
+		t += gDRandom.SampleGaussian(cdc_config->CDC_TDRIFT_SIGMA)*1.0e9;
          	// Pedestal-smeared charge
          	q +=  gDRandom.SampleGaussian(cdc_config->CDC_PEDESTAL_SIGMA);
-		 }
-         double amplitude = q * cdc_config->CDC_CHARGE_TO_ADC_COUNTS * cdc_config->CDC_INTEGRAL_TO_AMPLITUDE;
-         
+	}
+
+        double amplitude = q * cdc_config->CDC_CHARGE_TO_ADC_COUNTS * cdc_config->CDC_INTEGRAL_TO_AMPLITUDE;
+
+       
          // per-wire threshold in ADC units
          double threshold = cdc_config->GetWireThreshold(iter->getRing(), iter->getStraw());
          if (t > config->TRIGGER_LOOKBACK_TIME && t < t_max && amplitude > threshold) {
