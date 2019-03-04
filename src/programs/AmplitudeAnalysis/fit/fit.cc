@@ -98,8 +98,14 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
   
   AmpToolsInterface ati( cfgInfo );
+
+  double likelihood_init =  ati.likelihood();
   
-  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << likelihood_init << endl;
+  if (!isfinite(likelihood_init)) {
+      cout << "*** fit- infinite Likelihood before minimization EXIT***" << endl;
+      exit(1);
+    }
   
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   

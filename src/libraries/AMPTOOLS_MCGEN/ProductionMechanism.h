@@ -17,7 +17,7 @@ class ProductionMechanism
 public:
 	
 	enum Type { kResonant, kFlat };
-	enum Recoil { kProton, kNeutron, kZ, kPion, kKaon };
+	enum Recoil { kProton, kNeutron, kZ, kPion, kKaon, kPi0 };
 	
 	ProductionMechanism( Recoil recoil, Type type, double slope = 5.0, int seed = 0 );
 	
@@ -37,7 +37,7 @@ public:
 private:
   
   static const double kPi;
-  double kMproton,kMneutron,kMZ, kMPion, kMKaon;
+  double kMproton,kMneutron,kMZ, kMPion, kMKaon, kMPi0;
 
   double generateMass();
   
