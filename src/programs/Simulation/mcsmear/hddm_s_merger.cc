@@ -79,6 +79,8 @@ static thread_local double tpol_integration_window_ns(2500.);
 static thread_local int    fmwpc_max_hits(1);
 static thread_local double fmwpc_min_delta_t_ns(400.);
 
+static thread_local double dirc_min_delta_t_ns(100.);
+
 extern const mcsmear_config_t *mcsmear_config;
 
 namespace hddm_s_merger {
@@ -406,6 +408,14 @@ namespace hddm_s_merger {
    double get_fmwpc_min_delta_t_ns() {
       return fmwpc_min_delta_t_ns;
    }
+
+   double get_dirc_min_delta_t_ns() {
+      return dirc_min_delta_t_ns;
+   }
+
+   void set_dirc_min_delta_t_ns(double dt_ns) {
+      dirc_min_delta_t_ns = dt_ns;
+   }
 }
 
 hddm_s::HDDM &operator+=(hddm_s::HDDM &dst, hddm_s::HDDM &src)
@@ -445,6 +455,7 @@ hddm_s::HitViewList &operator+=(hddm_s::HitViewList &dst,
       dst(0).getPairSpectrometerCoarses() += iter->getPairSpectrometerCoarses();
       dst(0).getTripletPolarimeters() += iter->getTripletPolarimeters();
       dst(0).getForwardMWPCs() += iter->getForwardMWPCs();
+      dst(0).getDIRCs() += iter->getDIRCs();   
    }
    return dst;
 }
@@ -1905,6 +1916,78 @@ hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
    return dst;
 }
 
+hddm_s::DIRCList &operator+=(hddm_s::DIRCList &dst,
+			     hddm_s::DIRCList &src)
+{
+   if (src.size() > 0 && dst.size() == 0)
+      dst.add(1);
+   hddm_s::DIRCList::iterator iter;
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      dst(0).getDircPmtHits() += iter->getDircPmtHits();
+   }
+   return dst;
+}
+
+hddm_s::DircPmtHitList &operator+=(hddm_s::DircPmtHitList &dst,
+				   hddm_s::DircPmtHitList &src)
+{
+   
+   int iord = 0;
+   hddm_s::DircPmtHitList::iterator iter;
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      // order by channel and time
+      int ch = iter->getCh();
+      double t = iter->getT() + t_shift_ns;
+      while (iord > 0) {
+	 if (iord == dst.size() || dst(iord).getCh() > ch ||
+             (dst(iord).getCh() == ch && dst(iord).getT() > t))
+         {
+            --iord;
+         }
+         else
+            break;
+      }
+      while (iord < dst.size()) {
+	 if (dst(iord).getCh() < ch ||
+             (dst(iord).getCh() == ch && dst(iord).getT() < t))
+         {
+            ++iord;
+         }
+         else
+            break;
+      }
+      double dt = dirc_min_delta_t_ns;
+
+/*
+      // merge DIRCPmtHits from two sources
+      if (iord == dst.size() || dst(iord).getCh() != ch)
+      {
+         dst.add(1, (iord < dst.size())? iord : -1);
+         dst(iord).setCh(ch);
+	 dst(iord).setT(t);
+      }
+*/
+
+      if (iord > 0 && t - dst(iord - 1).getT() < dt && ch == dst(iord - 1).getCh()) {
+	 // simulated hit came first, ignore noise hit
+	 cout<<"DIRC simulated hit first on ch="<<ch<<endl;
+      }
+      else if (iord < dst.size() && dst(iord).getT() - t < dt && ch == dst(iord).getCh()) {
+	 // noise hit came first, set this as hit time
+	 cout<<"DIRC noise hit first on ch="<<ch<<endl;
+	 dst(iord).setT(t);
+      }
+      else if (iord == dst.size() || dst(iord).getCh() != ch) { 
+	 // only one noise hit in time window, add to output
+         dst.add(1, (iord < dst.size())? iord : -1);
+	 dst(iord).setCh(ch);
+         dst(iord).setT(t);
+      }
+   }
+
+   return dst;
+}
+
 void hddm_s_merger::truncate_hits(hddm_s::HDDM &record) {
    hddm_s::CdcStrawList straws = record.getCdcStraws();
    hddm_s::CdcStrawList::iterator istraw;
@@ -2232,3 +2315,4 @@ void hddm_s_merger::truncate_fmwpc_hits(hddm_s::FmwpcHitList &hits) {
       hits.del(-1, fmwpc_max_hits);
    }
 }
+

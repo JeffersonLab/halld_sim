@@ -6,30 +6,35 @@
 dirc_config_t::dirc_config_t(JEventLoop *loop)
 {
         // default values
-        DIRC_TSIGMA           = 0.5; // 0.5 ns 
+	DIRC_EFFIC_SCALE      = 1.5;
+        DIRC_TSIGMA           = 0.7; // 0.7 ns 
 	DIRC_MAX_CHANNELS     = 108*64; 
 
-#if 0
-	// Get values from CCDB
-	cout<<"get DIRC/mc_timing_smear parameters from calibDB"<<endl;
-	map<string, double> dircmctimingsmear;
-	if(loop->GetCalib("DIRC/mc_timing_smear", dircmctimingsmear)) {
-		jerr << "Problem loading DIRC/mc_timing_smear from CCDB!" << endl;
+	// get time smearing from CCDB
+	cout<<"get DIRC/mc_parms parameters from calibDB"<<endl;
+	map<string, double> mc_parms;
+	if(loop->GetCalib("DIRC/mc_parms", mc_parms)) {
+		jerr << "Problem loading DIRC/mc_parms from CCDB!" << endl;
 	} else {
-		DIRC_TSIGMA = dircmctimingsmear["DIRC_TSIGMA"];
+		DIRC_EFFIC_SCALE = mc_parms["PAR0"];
+		DIRC_TSIGMA = mc_parms["PAR1"];
 	}
-#endif
 
-	// get DIRC channel status from DB
+	// get DIRC channel status and efficiency from DB
 	vector<int> new_status(DIRC_MAX_CHANNELS);
+	vector<float> new_effic(DIRC_MAX_CHANNELS);
 	dChannelStatus.push_back(new_status); 
 	dChannelStatus.push_back(new_status);
+	dChannelEffic.push_back(new_effic);
+        dChannelEffic.push_back(new_effic);
 	if (loop->GetCalib("/DIRC/North/channel_status", dChannelStatus[0]))
 		jout << "Error loading /DIRC/North/channel_status !" << endl;
 	if (loop->GetCalib("/DIRC/South/channel_status", dChannelStatus[1]))
 		jout << "Error loading /DIRC/South/channel_status !" << endl;
-	
-	// get per-pixel efficiencies from CCDB
+	if (loop->GetCalib("/DIRC/North/channel_effic", dChannelEffic[0]))
+                jout << "Error loading /DIRC/North/channel_effic !" << endl;
+        if (loop->GetCalib("/DIRC/South/channel_effic", dChannelEffic[1]))
+                jout << "Error loading /DIRC/South/channel_effic !" << endl;
 }
 
 //-----------
@@ -46,20 +51,13 @@ void DIRCSmearer::SmearEvent(hddm_s::HDDM *record)
 	hddm_s::DircTruthPmtHitList::iterator iter;
 	for (iter = truthPmtHits.begin(); iter != truthPmtHits.end(); ++iter) {
 		
-		// add per-pixel efficiencies from MAPMT test data
-		//if (config->APPLY_EFFICIENCY_CORRECTIONS && !gDRandom.DecideToAcceptHit(dirc_config->GetEfficiencyCorrectionFactor(iter->getCh())) ) {
-		//	continue;
-		//}
-		
 		double t = iter->getT();
 		int ch = iter->getCh();
 		
 		if(config->SMEAR_HITS) {
 			// Smear the timing of the hit
 			t += gDRandom.SampleGaussian(dirc_config->DIRC_TSIGMA);
-			
-			// Add cross talk here?
-			
+
 			// Remove pixels with bad status
 			int box = (iter->getCh() < dirc_config->DIRC_MAX_CHANNELS) ? 1 : 0;
 			int channel = iter->getCh() % dirc_config->DIRC_MAX_CHANNELS;
@@ -67,6 +65,11 @@ void DIRCSmearer::SmearEvent(hddm_s::HDDM *record)
 			if ( (status==BAD) || (status==NOISY) ) {
 				continue;
 			}
+
+			// Add per-pixel efficiencies from MAPMT test data
+			if (config->APPLY_EFFICIENCY_CORRECTIONS && !gDRandom.DecideToAcceptHit(dirc_config->dChannelEffic[box][channel]/dirc_config->DIRC_EFFIC_SCALE)) {
+                                continue;
+                        }
 		}
 		
 		hddm_s::DircPmtHitList hits = dirc().addDircPmtHits();

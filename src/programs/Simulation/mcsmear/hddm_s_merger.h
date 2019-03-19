@@ -115,6 +115,12 @@ namespace hddm_s_merger {
    double get_fmwpc_min_delta_t_ns();
    void set_fmwpc_min_delta_t_ns(double dt_ns);
 
+   // hits merging / truncation parameters for the DIRC
+   int get_dirc_max_hits();
+   void set_dirc_max_hits(int maxhits);
+   double get_dirc_min_delta_t_ns();
+   void set_dirc_min_delta_t_ns(double dt_ns);
+
    void truncate_hits(hddm_s::HDDM &record);
    void truncate_cdc_hits(hddm_s::CdcStrawHitList &hits);
    void truncate_fdc_wire_hits(hddm_s::FdcAnodeHitList &hits);
@@ -132,6 +138,7 @@ namespace hddm_s_merger {
    void truncate_psc_hits(hddm_s::PscHitList &hits);
    void truncate_tpol_hits(hddm_s::TpolHitList &hits);
    void truncate_fmwpc_hits(hddm_s::FmwpcHitList &hits);
+   void truncate_dirc_hits(hddm_s::DircPmtHitList &hits);
 }
 
 hddm_s::HDDM &operator+=(hddm_s::HDDM &dst, hddm_s::HDDM &src);
@@ -228,6 +235,10 @@ hddm_s::FmwpcChamberList &operator+=(hddm_s::FmwpcChamberList &dst,
                                      hddm_s::FmwpcChamberList &src);
 hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
                                  hddm_s::FmwpcHitList &src);
+hddm_s::DIRCList &operator+=(hddm_s::DIRCList &dst,
+			     hddm_s::DIRCList &src);
+hddm_s::DircPmtHitList &operator+=(hddm_s::DircPmtHitList &dst,
+				   hddm_s::DircPmtHitList &src);
 
 #endif
 

@@ -11,9 +11,11 @@ class dirc_config_t
         dirc_config_t(JEventLoop *loop);
 
         double DIRC_TSIGMA;
+	double DIRC_EFFIC_SCALE;
 
 	int DIRC_MAX_CHANNELS;
 	vector< vector <int> > dChannelStatus;
+	vector< vector <float> > dChannelEffic;
 };
 
 
