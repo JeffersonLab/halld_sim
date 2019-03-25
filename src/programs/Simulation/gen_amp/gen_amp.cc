@@ -23,6 +23,7 @@
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
+#include "AMPTOOLS_AMPS/Lambda1520tdist.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
@@ -216,6 +217,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
 	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
+	AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
@@ -306,6 +308,7 @@ int main( int argc, char* argv[] ){
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
 	TH2F* M_Phi = new TH2F( "M_Phi", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
+	TH2F* M_Phi_lab = new TH2F( "M_Phi_lab", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
 	
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
@@ -397,6 +400,7 @@ int main( int argc, char* argv[] ){
 
 					M_CosTheta->Fill( resonance.M(), cosTheta);
 					M_Phi->Fill( resonance.M(), phi);
+					M_Phi_lab->Fill( resonance.M(), recoil.Phi());
 					
 					TVector3 eps(1.0, 0.0, 0.0); // beam polarization vector
                                         double Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
@@ -443,6 +447,7 @@ int main( int argc, char* argv[] ){
 	CosTheta_psi->Write();
 	M_CosTheta->Write();
 	M_Phi->Write();
+	M_Phi_lab->Write();
 
 	diagOut->Close();
 	

@@ -6,6 +6,8 @@
 #include "IUAmpTools/AmpParameter.h"
 #include "GPUManager/GPUCustomTypes.h"
 
+#include "TH1D.h"
+
 #include <string>
 #include <complex>
 #include <vector>
@@ -32,8 +34,6 @@ public:
   
 private:
   
-	GDouble phipol;
-	AmpParameter polFrac;
 	AmpParameter rho011;
 	AmpParameter rho031;
 	AmpParameter rho03m1;
@@ -45,6 +45,10 @@ private:
 	
 	AmpParameter rho231;
 	AmpParameter rho23m1;
+
+	GDouble polFraction;
+	GDouble polAngle;
+	TH1D *polFrac_vs_E;
 
 };
 

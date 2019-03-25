@@ -13,25 +13,24 @@
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 
+#include "UTILITIES/BeamProperties.h"
+
 Lambda1520Angles::Lambda1520Angles( const vector< string >& args ) :
 UserAmplitude< Lambda1520Angles >( args )
 {
-	assert( args.size() == 11 );
+	assert( args.size() == 11 || args.size() == 10 );
 	
-	phipol  = atof(args[0].c_str() )*3.14159/180.; // azimuthal angle of the photon polarization vector in the lab.
-	polFrac = AmpParameter( args[1] ); // fraction of polarization (0-1)
+	rho011  = AmpParameter( args[0] );
+	rho031  = AmpParameter( args[1] );
+	rho03m1 = AmpParameter( args[2] );
 	
-	rho011  = AmpParameter( args[2] );
-	rho031  = AmpParameter( args[3] );
-	rho03m1 = AmpParameter( args[4] );
+	rho111  = AmpParameter( args[3] );
+	rho133  = AmpParameter( args[4] );
+	rho131  = AmpParameter( args[5] );
+	rho13m1 = AmpParameter( args[6] );
 	
-	rho111  = AmpParameter( args[5] );
-	rho133  = AmpParameter( args[6] );
-	rho131  = AmpParameter( args[7] );
-	rho13m1 = AmpParameter( args[8] );
-	
-	rho231  = AmpParameter( args[9] );
-	rho23m1 = AmpParameter( args[10] );
+	rho231  = AmpParameter( args[7] );
+	rho23m1 = AmpParameter( args[8] );
 	
 	// need to register any free parameters so the framework knows about them
 	registerParameter( rho011 );
@@ -45,6 +44,25 @@ UserAmplitude< Lambda1520Angles >( args )
 	
 	registerParameter( rho231 );
 	registerParameter( rho23m1 );
+	
+	if(args.size() == 11){
+		polAngle  = atof(args[9].c_str() )*3.14159/180.; // azimuthal angle of the photon polarization vector in the lab.
+		polFraction = AmpParameter( args[10] ); // fraction of polarization (0-1)
+		std::cout << "Fixed polarisation of " << polFraction << " and angle of " << polAngle << " degrees." << std::endl;
+	}
+	else if (args.size() == 10){
+		// BeamProperties configuration file
+		TString beamConfigFile = args[9].c_str();
+		BeamProperties beamProp(beamConfigFile);
+		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+		polAngle = beamProp.GetPolAngle();
+		std::cout << "Polarisation angle of " << polAngle << " and degree from BeamProperties." << std::endl;
+		for(Int_t i=0; i<polFrac_vs_E->GetXaxis()->GetNbins()+2; i++){
+			cout << polFrac_vs_E->GetBinContent(i) << endl;
+		}
+	}
+	else
+		assert(0);
 }
 
 
@@ -81,13 +99,21 @@ Lambda1520Angles::calcAmplitude( GDouble** pKin ) const {
 	
 	GDouble phi = angles.Phi();
 	
-	TVector3 eps(cos(phipol), sin(phipol), 0.0); // beam polarization vector in lab
+	TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // beam polarization vector in lab
 	GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	Phi = Phi > 0? Phi : Phi + 3.14159;
 	
-	// SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
-	GDouble Pgamma = polFrac;
+	// polarization BeamProperties
+	GDouble Pgamma=polFraction;
+	if(polFrac_vs_E!=NULL){
+		int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
+		if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+			Pgamma = 0.;
+		}
+		else Pgamma = polFrac_vs_E->GetBinContent(bin);
+	}
 	
+	// SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
 	GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosSqTheta) - 2.*TMath::Sqrt(3.)*rho031*cos(phi)*sin2Theta - 2.*TMath::Sqrt(3.)*rho03m1*cos(2.*phi)*sinSqTheta;
 	
 	W -= Pgamma*cos(2.*Phi) * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosSqTheta) - 2.*TMath::Sqrt(3.)*rho131*cos(phi)*sin2Theta - 2.*TMath::Sqrt(3.)*rho13m1*cos(2.*phi)*sinSqTheta);
@@ -96,7 +122,7 @@ Lambda1520Angles::calcAmplitude( GDouble** pKin ) const {
 	
 	W *= 1./(4.*PI);
 	
-	return W;
-// 	return complex< GDouble > ( sqrt(fabs(W)) );
+// 	return W;
+	return complex< GDouble > ( sqrt(fabs(W)) );
 }
 
