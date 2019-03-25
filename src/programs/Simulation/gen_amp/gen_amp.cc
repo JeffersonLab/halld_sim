@@ -23,6 +23,7 @@
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
+#include "AMPTOOLS_AMPS/Lambda1520tdist.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
@@ -216,6 +217,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
 	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
+	AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
