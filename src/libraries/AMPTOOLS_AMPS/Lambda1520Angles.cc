@@ -46,7 +46,7 @@ UserAmplitude< Lambda1520Angles >( args )
 	registerParameter( rho23m1 );
 	
 	if(args.size() == 11){
-		polAngle  = atof(args[9].c_str() )*3.14159/180.; // azimuthal angle of the photon polarization vector in the lab.
+		polAngle  = atof(args[9].c_str() ); // azimuthal angle of the photon polarization vector in the lab.
 		polFraction = AmpParameter( args[10] ); // fraction of polarization (0-1)
 		std::cout << "Fixed polarisation of " << polFraction << " and angle of " << polAngle << " degrees." << std::endl;
 	}
@@ -57,6 +57,8 @@ UserAmplitude< Lambda1520Angles >( args )
 		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
 		polAngle = beamProp.GetPolAngle();
 		std::cout << "Polarisation angle of " << polAngle << " and degree from BeamProperties." << std::endl;
+		if(polAngle == -1)
+			std::cout << "This is an amorphous run. Set beam polarisation to 0." << std::endl;
 		for(Int_t i=0; i<polFrac_vs_E->GetXaxis()->GetNbins()+2; i++){
 			cout << polFrac_vs_E->GetBinContent(i) << endl;
 		}
@@ -99,13 +101,16 @@ Lambda1520Angles::calcAmplitude( GDouble** pKin ) const {
 	
 	GDouble phi = angles.Phi();
 	
-	TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // beam polarization vector in lab
+	TVector3 eps(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector in lab
 	GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	Phi = Phi > 0? Phi : Phi + 3.14159;
 	
 	// polarization BeamProperties
 	GDouble Pgamma=polFraction;
-	if(polFrac_vs_E!=NULL){
+	
+	if(polAngle == -1)
+		Pgamma = 0.;
+	else if(polFrac_vs_E!=NULL){
 		int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
 		if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
 			Pgamma = 0.;
