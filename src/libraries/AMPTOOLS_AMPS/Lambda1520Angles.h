@@ -46,8 +46,8 @@ private:
 	AmpParameter rho231;
 	AmpParameter rho23m1;
 
-	GDouble polFraction;
-	GDouble polAngle;
+	GDouble polFraction=0.;
+	GDouble polAngle=-1;
 	TH1D *polFrac_vs_E;
 
 };
