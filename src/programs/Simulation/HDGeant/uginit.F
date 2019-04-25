@@ -471,6 +471,7 @@ c        endif
 C..geant..
       CALL GGCLOS
       CALL GPART
+      CALL GUPART
       CALL GPHYSI
       CALL GRFILE(3,'hdgeant.rz','ON')
       CALL HCDIR('//RZfile',' ')
