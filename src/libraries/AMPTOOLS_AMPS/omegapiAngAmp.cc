@@ -19,7 +19,7 @@
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/breakupMomentum.h"
-#include "AMPTOOLS_AMPS/HelicityFrame.h"
+#include "AMPTOOLS_AMPS/omegapiAngles.h"
 
 #include <cmath>
 #include <complex>
@@ -88,42 +88,55 @@ omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
   UserAmplitude< omegapiAngAmp >( args ),
   m_fastCalc( false )
 {
+	assert( args.size() == 23 || args.size() == 24 );
+	
+	if(args.size() == 24){
+		polAngle  = atof(args[22].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
+		polFraction = AmpParameter( args[23] ); // polarization fraction
+		std::cout << "Fixed polarization fraction =" << polFraction << " and pol.angle= " << polAngle << " degrees." << std::endl;
+	}
+	else if (args.size() == 23){
+		// BeamProperties configuration file
+		TString beamConfigFile = args[22].c_str();
+		BeamProperties beamProp(beamConfigFile);
+		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+		polAngle = beamProp.GetPolAngle();
+		std::cout << "Polarisation angle of " << polAngle << " and degree from BeamProperties." << std::endl;
+		if(polAngle == -1)
+			std::cout << "This is an amorphous run. Set beam polarisation to 0." << std::endl;
+		for(Int_t i=0; i<polFrac_vs_E->GetXaxis()->GetNbins()+2; i++){
+			//cout << polFrac_vs_E->GetBinContent(i) << endl;
+		}
+	}
+	else
+	assert(0);
 
-    assert( args.size() == 23);
-
-
-TString beamConfigFile = args[0].c_str();
-BeamProperties beamProp(beamConfigFile);
-polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
-polAngle = beamProp.GetPolAngle();
-
-    ds_ratio = atof( args[10].c_str() );
+    ds_ratio = atof( args[9].c_str() );
     
     //1+ state
-    m_1p = atof( args[1].c_str() );
-    w_1p = atof( args[2].c_str() );
-    n_1p = atof( args[3].c_str() );
-    phi0_1p = atof( args[11].c_str() );
-    theta_1p = atof( args[12].c_str() );
-    phip_1p = atof( args[13].c_str() );
-    phim_1p = atof( args[14].c_str() );
-    psi_1p = atof( args[15].c_str() );
+    m_1p = atof( args[0].c_str() );
+    w_1p = atof( args[1].c_str() );
+    n_1p = atof( args[2].c_str() );
+    phi0_1p = atof( args[10].c_str() );
+    theta_1p = atof( args[11].c_str() );
+    phip_1p = atof( args[12].c_str() );
+    phim_1p = atof( args[13].c_str() );
+    psi_1p = atof( args[14].c_str() );
     //1- state    
-    m_1m = atof( args[4].c_str() );
-    w_1m = atof( args[5].c_str() );
-    n_1m = atof( args[6].c_str() );
-    phi0_1m = atof( args[16].c_str() );
-    theta_1m = atof( args[17].c_str() );
-    phip_1m = atof( args[18].c_str() );
-    phim_1m = atof( args[19].c_str() );
-    psi_1m = atof( args[20].c_str() );
+    m_1m = atof( args[3].c_str() );
+    w_1m = atof( args[4].c_str() );
+    n_1m = atof( args[5].c_str() );
+    phi0_1m = atof( args[15].c_str() );
+    theta_1m = atof( args[16].c_str() );
+    phip_1m = atof( args[17].c_str() );
+    phim_1m = atof( args[18].c_str() );
+    psi_1m = atof( args[19].c_str() );
     //0- state    
-    m_0m = atof( args[7].c_str() );
-    w_0m = atof( args[8].c_str() );
-    n_0m = atof( args[9].c_str() );
-    phi0_0m = atof( args[21].c_str() );
-    theta_0m = atof( args[22].c_str() );
-    
+    m_0m = atof( args[6].c_str() );
+    w_0m = atof( args[7].c_str() );
+    n_0m = atof( args[8].c_str() );
+    phi0_0m = atof( args[20].c_str() );
+    theta_0m = atof( args[21].c_str() );    
 
     par[0] = m_1p;
     par[1] = w_1p;
@@ -147,55 +160,8 @@ polAngle = beamProp.GetPolAngle();
     par[19] = psi_1m;
     par[20] = phi0_0m;
     par[21] = theta_0m;
-    
-  mG0_omega = 0.0085;
-  mG0_b1 = 0.143;
-    // Initialize coherent brem table
-    // Do this over the full range since we will be using this as a lookup
-    float Emax  = 12.0;
-    float Epeak = 9.0;
-    float Elow  = 0.139*2;
-    float Ehigh = 12.0;
 
-    int doPolFlux=0;  // want total flux (1 for polarized flux)
-    float emitmr=10.e-9; // electron beam emittance
-    float radt=50.e-6; // radiator thickness in m
-    float collDiam=0.005; // meters
-    float Dist = 76.0; // meters
-    CobremsGeneration cobrems(Emax, Epeak);
-    cobrems.setBeamEmittance(emitmr);
-    cobrems.setTargetThickness(radt);
-    cobrems.setCollimatorDistance(Dist);
-    cobrems.setCollimatorDiameter(collDiam);
-    cobrems.setCollimatedFlag(true);
-    cobrems.setPolarizedFlag(doPolFlux);
-
-    // Create histogram
-    totalFlux_vs_E = new TH1D("totalFlux_vs_E", "Total Flux vs. E_{#gamma}", 1000, Elow, Ehigh);
-    polFlux_vs_E   = new TH1D("polFlux_vs_E", "Polarized Flux vs. E_{#gamma}", 1000, Elow, Ehigh);
-    polFrac_vs_E   = new TH1D("polFrac_vs_E", "Polarization Fraction vs. E_{#gamma}", 1000, Elow, Ehigh);
-
-    // Fill totalFlux
-    for(int i=1;i<=totalFlux_vs_E->GetNbinsX(); i++){
-        double x = totalFlux_vs_E->GetBinCenter(i)/Emax;
-        double y = 0;
-        //if(Epeak<Elow) y = cobrems.Rate_dNidx(x);
-        y = cobrems.Rate_dNtdx(x);
-        totalFlux_vs_E->SetBinContent(i, y);
-    }
-
-    doPolFlux=1;
-    cobrems.setPolarizedFlag(doPolFlux);
-    // Fill totalFlux
-    for(int i=1;i<=polFlux_vs_E->GetNbinsX(); i++){
-        double x = polFlux_vs_E->GetBinCenter(i)/Emax;
-        double y = 0;
-        //if(Epeak<Elow) y = cobrems.Rate_dNidx(x);
-        y = cobrems.Rate_dNcdx(x);
-        polFlux_vs_E->SetBinContent(i, y);
-    }
-
-    polFrac_vs_E->Divide(polFlux_vs_E, totalFlux_vs_E);
+  mG0_omega = 0.00849;    
 }
 
 //Define breakup momentum (x here is the measured mass of the omegapi)
@@ -424,12 +390,7 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
   TLorentzVector beam  (pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0]); 
   TLorentzVector recoil(pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0]);
 
-  GDouble m0_omega=0.783;
-
-
-  //Exprected particle list: 
-  // b1(pi0 omega(pi0 "rho"(pi- pi+)))
-  //    2         3         4   5
+  GDouble m0_omega=0.782;
 
   TLorentzVector rhos_pim(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
   TLorentzVector rhos_pip(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
@@ -443,7 +404,7 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
   TLorentzVector omegas_pi(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
   TLorentzVector omega = rho + omegas_pi;
 
-  if(useCutoff && fabs(omega.M()-m0_omega) > 3.0*mG0_omega){
+  if(useCutoff && fabs(omega.M()-m0_omega) > mG0_omega){
     ////cout << "s";
     return CZero; 
   }
@@ -453,61 +414,34 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
 
     ////////////////////////////////////////////////// Boost Particles and Get Angles//////////////////////////////////
 
-  // orientation of production plane in lab
-  //GDouble alpha = recoil.Vect().Phi();
-  
   //Helicity coordinate system
   TLorentzVector Gammap = beam + targetopi;
  
-  vector <double> locthetaphi = getthetaphi(omega, X, beam, Gammap);
-  
-  vector <double> locthetaphih = getthetaphi(rhos_pip, omega, X, X, rhos_pim, Gammap); 
-
-  vector <double> angvector{locthetaphi[0], locthetaphi[1], locthetaphih[0], locthetaphih[1]};
-  
-  TLorentzVector z_rf = X;
-  TLorentzVector InverseOfX_rf = beam;
-  TVector3 zrfboost = Gammap.BoostVector();
-// boost x to zrf
-  InverseOfX_rf.Boost(-1.0*zrfboost);
-  //boost z to rf
-  z_rf.Boost(-1.0*zrfboost);
-
-  //particle 1 (positively charged)
-  TLorentzVector particle1_rf = omega;
-  //boost particle 1 to zrf
-  particle1_rf.Boost(-1.0*zrfboost);
-  //boost particle 1 to z
-  TVector3 zboost = z_rf.BoostVector();
-  TLorentzVector particle1_z = particle1_rf;
-  particle1_z.Boost(-1.0*zboost);
-  TVector3 particle_z = particle1_z.Vect();
-
-  //get the unit vectors in space
-  TVector3 particle_zunit = (particle_z).Unit();
-  TVector3 z_rfunit = (z_rf.Vect()).Unit();
-  TVector3 InverseOfX_rfunit = (InverseOfX_rf.Vect()).Unit();
-
-  //calculate phi
-  TVector3 y = ((InverseOfX_rfunit).Cross(z_rfunit)).Unit();
-  TVector3 x = (y.Cross(z_rfunit)).Unit();
-  TVector3 z = z_rfunit;
-
-    TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // beam polarization vector
-    GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
-
 // polarization BeamProperties
+	GDouble Pgamma=polFraction;//fixed beam polarization fraction
+	if(polAngle == -1)
+	Pgamma = 0.;//if beam is amorphous set polarization fraction to 0
+	else if(polFrac_vs_E!=NULL){
 	int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
-	GDouble Pgamma;
+
 	if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
 		Pgamma = 0.;
 	}
-	else Pgamma = polFrac_vs_E->GetBinContent(bin);
-
+	else
+	 Pgamma = polFrac_vs_E->GetBinContent(bin);
+	}
    double mx = X.M();
-    complex <GDouble> amplitude = sqrtIntensity(Pgamma, mx, Phi, angvector);
 
-   
+  vector <double> locthetaphi = getomegapiAngles(polAngle, omega, X, beam, Gammap);
+  
+  vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
+
+  vector <double> angvector{locthetaphi[0], locthetaphi[1], locthetaphih[0], locthetaphih[1]};
+
+    GDouble Phi = locthetaphi[2];
+
+    complex <GDouble> amplitude = sqrtIntensity(Pgamma, mx, Phi, angvector);
+ 
   return amplitude;
 
 }

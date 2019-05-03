@@ -18,7 +18,7 @@ class tof_config_t
 	}
 	inline double GetHitTimeResolution(int plane, int bar)  { 
 		// assume that the paddle resolution is given by: paddle resol = (hit resol)^2
-		return GetPaddleTimeResolution(plane, bar)/TMath::Sqrt2(); 
+		return GetPaddleTimeResolution(plane, bar)*TMath::Sqrt2(); 
 	}
 
 	double TOF_SIGMA;
