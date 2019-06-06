@@ -97,7 +97,7 @@ private:
 
   GDouble ds_ratio;
 
-  double   polAngle;
+  double   polAngle, polFraction;
   
   TH1D *totalFlux_vs_E;
   TH1D *polFlux_vs_E;

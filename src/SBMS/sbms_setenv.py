@@ -136,7 +136,7 @@ def mk_setenv_csh(env):
 		str += 'setenv RCDB_CONNECTION %s\n' % rcdb_conn
 		str += 'setenv %s ${RCDB_HOME}/cpp/lib:${%s}\n' % (LDLPV, LDLPV)
 		str += 'setenv PYTHONPATH ${RCDB_HOME}/python:${PYTHONPATH}\n'
-		str += 'setenv PATH ${RCDB_HOME}/bin:${RCDB_HOME}/cpp/bin:${PATH}\n'
+		str += 'setenv PATH ${RCDB_HOME}:${RCDB_HOME}/bin:${RCDB_HOME}/cpp/bin:${PATH}\n'
 		str += '\n'
 
 	# ROOT
