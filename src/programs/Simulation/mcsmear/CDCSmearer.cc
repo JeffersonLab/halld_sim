@@ -173,54 +173,96 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 
         double t = titer->getT();
         double q = titer->getQ();
+        double d = titer->getD();
 
+        double amplitude = q;   // convert from q to amplitude later
+        bool suppress_gain = 0;
 
         // Beni effect :-)  modify to mimic spring 2018 gas deteriation
 
         // CDC/gain_doca_correction contains CDC_GAIN_DOCA_PARS 
         // dmax dcorr goodp0 goodp1 thisp0 thisp1
 
-        // The reconstruction code uses these to scale up the spring 2018 hit amplitudes for dE/dx to approximate that w usual conditions
+        // The reconstruction code uses these to scale up the spring 2018 hit amplitude & charge for dE/dx to approximate that w usual conditions
         // 0: dmax Hits outside this DOCA are ignored when calculating dE/dx 
         // 1: dcorr  Hits inside this DOCA are not corrected (not necessary)
 
-        // Here the same linear functions are used to scale the hit amplitude down.
+        // Here the same linear functions are used to scale the hit amplitude & charge down.
 
+        double dmax = cdc_config->CDC_GAIN_DOCA_PARS[0];  //hits with doca > dmax are not used for dE/dx in recon
+        double dmin = cdc_config->CDC_GAIN_DOCA_PARS[1];  //gain is not suppressed for doca < dmin
 
-        double d = titer->getD();
+        double reference;
+        double this_run;
 
-	// This is the correction for pulse amplitude. 
+        if (dmin < dmax) suppress_gain = 1;   // default values for good-gas runs have dmin=dmax=1.0cm 
+
+        if (suppress_gain) { 
         
-        if (d > cdc_config->CDC_GAIN_DOCA_PARS[1]) { 
-            double reference = cdc_config->CDC_GAIN_DOCA_PARS[2] + d*cdc_config->CDC_GAIN_DOCA_PARS[3];
-            double this_run = cdc_config->CDC_GAIN_DOCA_PARS[4] + d*cdc_config->CDC_GAIN_DOCA_PARS[5];
-            q = q * this_run/reference;   
-        }  
+          // apply correction for pulse amplitude.  Correct first and then convert from charge to amplitude later 
 
+          if (d > dmin) {
+              reference = cdc_config->CDC_GAIN_DOCA_PARS[2] + d*cdc_config->CDC_GAIN_DOCA_PARS[3];
+              this_run = cdc_config->CDC_GAIN_DOCA_PARS[4] + d*cdc_config->CDC_GAIN_DOCA_PARS[5];
+              amplitude = amplitude * this_run/reference;   
+          }  
+
+       
+  	  // This is the correction for pulse integral. 
+
+          if (d < dmin) {
+
+             reference    = (cdc_config->CDC_GAIN_DOCA_PARS[2] + cdc_config->CDC_GAIN_DOCA_PARS[3]*dmin) * (dmin - d);
+             reference += (cdc_config->CDC_GAIN_DOCA_PARS[2] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[3]*(dmin+dmax)) * (dmax - dmin);
+
+             this_run    = (cdc_config->CDC_GAIN_DOCA_PARS[4] + cdc_config->CDC_GAIN_DOCA_PARS[5]*dmin) * (dmin - d);
+             this_run += (cdc_config->CDC_GAIN_DOCA_PARS[4] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[5]*(dmin+dmax)) * (dmax - dmin);
+
+          } else { 
+
+             reference = (cdc_config->CDC_GAIN_DOCA_PARS[2] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[3]*(d+dmax)) * (dmax - d);
+             this_run   = (cdc_config->CDC_GAIN_DOCA_PARS[4] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[5]*(d+dmax)) * (dmax - d);
+
+          }
+
+          q = q * this_run/reference;   
  
+        }   // end of gain suppression
+
+
+        double smearcharge = 0;   // Using the same smearing for both amp and integral for the time being
+
         if(config->SMEAR_HITS) {
          	// Smear out the CDC drift time using the specified sigma.
          	// This is for timing resolution from the electronics;
          	// diffusion is handled in hdgeant.
 		t += gDRandom.SampleGaussian(cdc_config->CDC_TDRIFT_SIGMA)*1.0e9;
          	// Pedestal-smeared charge
-         	q +=  gDRandom.SampleGaussian(cdc_config->CDC_PEDESTAL_SIGMA);
+         	smearcharge =  gDRandom.SampleGaussian(cdc_config->CDC_PEDESTAL_SIGMA);
 	}
 
-        double amplitude = q * cdc_config->CDC_CHARGE_TO_ADC_COUNTS * cdc_config->CDC_INTEGRAL_TO_AMPLITUDE;
+        q += smearcharge;
+
+        amplitude += smearcharge;   // add on pedestal noise, then convert from charge to amplitude
+
+        amplitude = amplitude * cdc_config->CDC_CHARGE_TO_ADC_COUNTS * cdc_config->CDC_INTEGRAL_TO_AMPLITUDE;
 
        
-         // per-wire threshold in ADC units
-         double threshold = cdc_config->GetWireThreshold(iter->getRing(), iter->getStraw());
-         if (t > config->TRIGGER_LOOKBACK_TIME && t < t_max && amplitude > threshold) {
+        // per-wire threshold in ADC units
+        double threshold = cdc_config->GetWireThreshold(iter->getRing(), iter->getStraw());
+        if (t > config->TRIGGER_LOOKBACK_TIME && t < t_max && amplitude > threshold) {
             hits = iter->addCdcStrawHits();
             hits().setT(t);
             hits().setQ(q);
-         }
 
-         if (config->DROP_TRUTH_HITS) {
+	    hddm_s::CdcDigihitList digihit = hits().addCdcDigihits();
+	    digihit().setPeakAmp(amplitude);
+
+        }
+
+        if (config->DROP_TRUTH_HITS) {
             iter->deleteCdcStrawTruthHits();
-         }
+        }
       }
    }
 }
