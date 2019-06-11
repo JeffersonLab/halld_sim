@@ -9,11 +9,11 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
 	CDC_TDRIFT_SIGMA      = 0.0;
 	CDC_TIME_WINDOW       = 0.0;
 	CDC_PEDESTAL_SIGMA    = 0.0;
-	CDC_THRESHOLD_FACTOR  = 0.0;
-    CDC_CHARGE_TO_ADC_COUNTS = 1.;
+	//	CDC_THRESHOLD_FACTOR  = 0.0;
+    CDC_ASCALE = 1.;
 
     // temporary? this is a ballpark guess from Naomi (sdobbs, 8/28/2017)
-    CDC_INTEGRAL_TO_AMPLITUDE = 1. / 29.;
+    CDC_INTEGRAL_TO_AMPLITUDE = 1. / 28.8;
  		
  	// load data from CCDB
  	jout << "get CDC/cdc_parms parameters from CCDB..." << endl;
@@ -24,7 +24,7 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
      	CDC_TDRIFT_SIGMA   = cdcparms["CDC_TDRIFT_SIGMA"]; 
  		CDC_TIME_WINDOW    = cdcparms["CDC_TIME_WINDOW"];
  		CDC_PEDESTAL_SIGMA = cdcparms["CDC_PEDESTAL_SIGMA"]; 
- 		CDC_THRESHOLD_FACTOR = cdcparms["CDC_THRESHOLD_FACTOR"];
+		// 		CDC_THRESHOLD_FACTOR = cdcparms["CDC_THRESHOLD_FACTOR"];
 	}
 	
  	jout << "get CDC/digi_scales parameters from CCDB..." << endl;
@@ -32,7 +32,7 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
     if(loop->GetCalib("CDC/digi_scales", cdcparms)) {
     	jerr << "Problem loading CDC/digi_scales from CCDB!" << endl;
     } else {
-     	CDC_CHARGE_TO_ADC_COUNTS = 1./cdcparms["CDC_ADC_ASCALE"]; 
+     	CDC_ASCALE = cdcparms["CDC_ADC_ASCALE"]; 
 	}
 	
 
@@ -175,8 +175,8 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
         double q = titer->getQ();
         double d = titer->getD();
 
-        double amplitude = q;   // convert from q to amplitude later
-        bool suppress_gain = 0;
+        double amplitude = q;   // apply scaling to convert from q to amplitude later
+
 
         // Beni effect :-)  modify to mimic spring 2018 gas deteriation
 
@@ -192,14 +192,15 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
         double dmax = cdc_config->CDC_GAIN_DOCA_PARS[0];  //hits with doca > dmax are not used for dE/dx in recon
         double dmin = cdc_config->CDC_GAIN_DOCA_PARS[1];  //gain is not suppressed for doca < dmin
 
-        double reference;
-        double this_run;
-
+        bool suppress_gain = 0;
         if (dmin < dmax) suppress_gain = 1;   // default values for good-gas runs have dmin=dmax=1.0cm 
 
         if (suppress_gain) { 
-        
-          // apply correction for pulse amplitude.  Correct first and then convert from charge to amplitude later 
+
+          double reference;
+          double this_run;
+
+          // apply correction for pulse amplitude.  Convert from charge to amplitude later on, after adding pedestal charge smearing 
 
           if (d > dmin) {
               reference = cdc_config->CDC_GAIN_DOCA_PARS[2] + d*cdc_config->CDC_GAIN_DOCA_PARS[3];
@@ -245,12 +246,12 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 
         amplitude += smearcharge;   // add on pedestal noise, then convert from charge to amplitude
 
-        amplitude = amplitude * cdc_config->CDC_CHARGE_TO_ADC_COUNTS * cdc_config->CDC_INTEGRAL_TO_AMPLITUDE;
+        double raw_amplitude = amplitude * cdc_config->CDC_INTEGRAL_TO_AMPLITUDE / cdc_config->CDC_ASCALE;
 
        
         // per-wire threshold in ADC units
         double threshold = cdc_config->GetWireThreshold(iter->getRing(), iter->getStraw());
-        if (t > config->TRIGGER_LOOKBACK_TIME && t < t_max && amplitude > threshold) {
+        if (t > config->TRIGGER_LOOKBACK_TIME && t < t_max && raw_amplitude > threshold) {
             hits = iter->addCdcStrawHits();
             hits().setT(t);
             hits().setQ(q);

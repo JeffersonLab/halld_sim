@@ -16,7 +16,7 @@ class cdc_config_t
 	double CDC_PEDESTAL_SIGMA;   // deprecated
 	double CDC_THRESHOLD_FACTOR; // number of pedestal sigmas for determining sparsification threshold - deprecated
         double CDC_INTEGRAL_TO_AMPLITUDE;
-        double CDC_CHARGE_TO_ADC_COUNTS;
+        double CDC_ASCALE;
 
         vector<double> CDC_GAIN_DOCA_PARS;  // params to model gas deterioration spring 2018
 
