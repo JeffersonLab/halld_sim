@@ -29,12 +29,12 @@ c The simulation run number is selected according to the following rules:
 c  1) if it is specified on the command line with the -r <run_number> option
 c     then this <run_number> overrides all other sources;
 c  2) if is it specified in this control.in file on a line starting with the
-c     letters rung or RUNG then the second field in that line is interpreted
+c     letters runno or RUNNO then the second field in that line is interpreted
 c     as an unsigned integer and assigned as the simulation run number;
-c  3) if there is no RUNG line in control.in but there is a line starting
-c     with runno or RUNNO then the second field on the RUNNO line is taken
+c  3) if there is no RUNNO line in control.in but there is a line starting
+c     with rung or RUNG then the second field on the RUNG line is taken
 c     as the simulation run number and written to the output events;
-c  4) if there is no RUNG or RUNNO card in control.in but there is an
+c  4) if there is no RUNNO or RUNG card in control.in but there is an
 c     external input event file specified by a line starting with INFI[le]
 c     then the run number that is written in the input events in that input
 c     file is carried over to the simulation output events, and used by the

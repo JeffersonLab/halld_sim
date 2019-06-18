@@ -58,6 +58,9 @@ int main(int narg, char *argv[])
 				HDDS_XML = arg.substr(arg.find("=")+1);
 			}
 		}
+		if (arg=="-r") {
+            controlparams_.override_run_number = std::atoi(arg.c_str()+2);
+        }
 	}
 	
 	// If specified to read in XML geometry, do necessary

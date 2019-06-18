@@ -146,10 +146,12 @@
 #include "controlparams.inc"
 *
       integer iskip
+      integer irunno
       integer infile(20)
       integer outfile(20)
-      common /inputFile/ iskip,infile,outfile
+      common /inputFile/ iskip,irunno,infile,outfile
       data iskip/0/
+      data irunno/0/
       data infile/20*0/
       data outfile/20*0/
 
@@ -277,6 +279,7 @@ C..geant..
       CALL FFSET('SIZE',16)
       call ffkey('infile',infile,20,'MIXED')
       call ffkey('skip',iskip,1,'INTEGER')
+      call ffkey('runno',irunno,1,'INTEGER')
       call ffkey('outfile',outfile,20,'MIXED')
       call ffkey('postsmear',postsmear,1,'INTEGER')
       call ffkey('mcsmearopts',mcsmearopts,64,'MIXED')
@@ -325,13 +328,19 @@ c      nevent = 0
 *            Get the run number from the input file 
         call extractRunNumber(myrunno)
 *           .. but override it with the RUNG card if IDRUN>0        
-        if (IDRUN.lt.0) then
-           IDRUN=myrunno
+        if (override_run_number.gt.0) then
+           continue
+        elseif (irunno.gt.0) then
+           override_run_number = irunno
+        elseif (IDRUN.gt.0) then
+           override_run_number = IDRUN
+        elseif (myrunno.gt.0) then
+           override_run_number = myrunno
         else 
-           override_run_number=1
+           override_run_number = 0
         endif
 
-        write(6,*) 'run number ',IDRUN,override_run_number
+        write(6,*) 'run number ',override_run_number
         if (iskip .gt. 0) then
           ifail = skipInput(iskip)
         endif

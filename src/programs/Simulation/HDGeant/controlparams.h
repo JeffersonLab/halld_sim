@@ -14,6 +14,7 @@ typedef struct {
 	int get_next_evt;
 	float trigger_time_signa_ns;
 	int event_count;
+	int override_run_number;
 }controlparams_t;
 extern controlparams_t controlparams_;
 

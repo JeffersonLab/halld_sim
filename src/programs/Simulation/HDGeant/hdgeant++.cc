@@ -58,6 +58,9 @@ int main(int narg, char *argv[])
 				HDDS_XML = arg.substr(arg.find("=")+1);
 			}
 		}
+		if (arg=="-r") {
+            controlparams_.override_run_number = std::atoi(arg.c_str()+2);
+        }
 	}
 	
 	// If specified to read in XML geometry, do necessary
@@ -97,6 +100,7 @@ void Usage(void)
 	cout<<"found in the HDGeant source code directory."<<endl;
 	cout<<endl;
 	cout<<" options:"<<endl;
+	cout<<"    -rN                   Simulate with run number N"<<endl;
 	cout<<"    -h or --help          Print this usage statement"<<endl;
 	cout<<"    -xml[=main_HDDS.xml]  Dynamically generate geometry"<<endl;
 	cout<<"    -checksum             Print the MD5 checksum of the "<<endl;
