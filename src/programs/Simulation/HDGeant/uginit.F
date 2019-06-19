@@ -225,6 +225,16 @@ C  for the coherent bremsstrahlung beam generator - see beamgen.F
       real    xMinimum,freqMaximum,beamStartZ,Theta02
       common /coherentGen/xMinimum,freqMaximum,beamStartZ,Theta02
 
+C  Common block for ffread, used to interpret control.in,
+C  included here to expand the space for additional keys.
+      parameter (NCSIZE=800, LSTACK=20)
+      COMMON /CFREAD/  NWORDS, NCHKEY, NWDKEY, NKEYS,  MAXKEY,
+     *                 NOFLEN, NOFTYP, NOFKEY,
+     *                 LINPUT, LUNIN,  LUNOUT,
+     *                 ISTACK, LUNS(LSTACK),
+     *                 IFFOPT(8), KEYOPT(3),
+     *                 IWORDS(NCSIZE)
+      call FFINIT(NCSIZE)
 *
 *     -----------------------------------------------------------------
 *
@@ -304,6 +314,14 @@ C..geant..
       call FFKEY('trefsigma',trigger_time_sigma_ns,1,'REAL')
       call gtgamaff()
       CALL GFFGO
+
+c   override the run number if specified on the commandline
+
+      if (override_run_number.gt.0) then
+        IDRUN = override_run_number
+      elseif (irunno.gt.0) then
+        IDRUN = irunno
+      endif
 *
 *             Verify that the random number seeds are OK
 *
@@ -328,19 +346,10 @@ c      nevent = 0
 *            Get the run number from the input file 
         call extractRunNumber(myrunno)
 *           .. but override it with the RUNG card if IDRUN>0        
-        if (override_run_number.gt.0) then
-           continue
-        elseif (irunno.gt.0) then
-           override_run_number = irunno
-        elseif (IDRUN.gt.0) then
-           override_run_number = IDRUN
-        elseif (myrunno.gt.0) then
-           override_run_number = myrunno
-        else 
-           override_run_number = 0
+        if (IDRUN.le.0) then
+           IDRUN = myrunno
         endif
 
-        write(6,*) 'run number ',override_run_number
         if (iskip .gt. 0) then
           ifail = skipInput(iskip)
         endif
