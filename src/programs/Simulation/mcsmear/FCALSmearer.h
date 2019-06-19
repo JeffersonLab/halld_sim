@@ -16,10 +16,15 @@ class fcal_config_t
 	double FCAL_PHOT_STAT_COEF;
 	double FCAL_BLOCK_THRESHOLD;
 	double FCAL_TSIGMA;
-	
+	vector<double> FCAL_PEDS; 
 	vector<double> FCAL_GAINS;
 	double FCAL_MC_ESCALE;
-
+	
+	double FCAL_PED_RMS;
+        double FCAL_THRESHOLD_SCALING;
+        double FCAL_THRESHOLD;
+        double FCAL_INTEGRAL_PEAK;
+	
     bool FCAL_ADD_LIGHTGUIDE_HITS;
 	
 	vector< vector<double > > block_efficiencies;
