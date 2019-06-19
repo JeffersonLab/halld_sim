@@ -346,7 +346,9 @@ c      nevent = 0
 *            Get the run number from the input file 
         call extractRunNumber(myrunno)
 *           .. but override it with the RUNG card if IDRUN>0        
-        if (IDRUN.le.0) then
+        if (IDRUN.gt.0) then
+           override_run_number = IDRUN
+        else
            IDRUN = myrunno
         endif
 
