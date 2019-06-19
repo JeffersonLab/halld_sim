@@ -50,17 +50,20 @@ int main(int narg, char *argv[])
 		string arg = argv[i];
 		string next = i<(narg+1) ? argv[i]:"";
 		
-		if(arg=="-h" || arg=="--help")Usage();
-		if(arg=="-checksum" || arg=="--checksum")print_xml_md5_checksum = true;
-		if(arg.find("-xml")==0){
+		if (arg=="-h" || arg=="--help")
+            Usage();
+		else if (arg=="-checksum" || arg=="--checksum")
+            print_xml_md5_checksum = true;
+		else if (arg.find("-xml")==0) {
 			controlparams_.runtime_geom = 1;
-			if(arg.find("=")!=string::npos){
+			if (arg.find("=")!=string::npos) {
 				HDDS_XML = arg.substr(arg.find("=")+1);
 			}
 		}
-		if (arg=="-r") {
-            controlparams_.override_run_number = std::atoi(arg.c_str()+2);
-        }
+		else if (arg=="-r" && narg>i+1)
+            controlparams_.override_run_number = std::atoi(argv[i+1]);
+		else if (arg.substr(0,2)=="-r")
+            controlparams_.override_run_number = std::atoi(argv[i]+2);
 	}
 	
 	// If specified to read in XML geometry, do necessary
