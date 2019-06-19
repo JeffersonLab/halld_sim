@@ -7,7 +7,7 @@ extern "C" {
 
 typedef struct {
 	int writenohits;
-	int shoersincol;
+	int showersincol;
 	int driftclusters;
 	float tgwidth[2];
 	int runtime_geom;
