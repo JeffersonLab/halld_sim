@@ -10,7 +10,11 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
 	FCAL_BLOCK_THRESHOLD  = 0.0; //20.0*k_MeV;
 	// FCAL_TSIGMA           = 0.0; // 200 ps
 	FCAL_TSIGMA           = 0.; // 400 ps 
-
+	FCAL_PED_RMS          = 0.; //2.7E-4
+	FCAL_INTEGRAL_PEAK    = 0.; //5.7
+	FCAL_THRESHOLD        = 0.; //108
+	FCAL_THRESHOLD_SCALING= 0.; // (110/108)
+	
 	// Get values from CCDB
 	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
     map<string, double> fcalparms;
@@ -31,6 +35,44 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
     	}
     }
      
+   vector <double> FCAL_PEDS_TEMP;
+   if(loop->GetCalib("FCAL/pedestals", FCAL_PEDS_TEMP)) {
+      jerr << "Problem loading FCAL/pedestals from CCDB!" << endl;
+   } else {
+       for (unsigned int i = 0; i < FCAL_PEDS_TEMP.size(); i++) {
+         FCAL_PEDS.push_back(FCAL_PEDS_TEMP.at(i));
+      }
+   }
+	
+   double FCAL_PED_RMS_TEMP;
+   if(loop->GetCalib("FCAL/pedestal_rms", FCAL_PED_RMS_TEMP)) {
+      jerr << "Problem loading FCAL/pedestal_rms from CCDB!" << endl;
+   } else {
+      FCAL_PED_RMS = FCAL_PED_RMS_TEMP;
+   }
+	
+   double FCAL_INT_PEAK_TEMP;
+   if(loop->GetCalib("FCAL/integral_peak_ratio", FCAL_GAINS_TEMP)) {
+      jerr << "Problem loading FCAL/integral_peak_ratio from CCDB!" << endl;
+   } else {
+      FCAL_INTEGRAL_PEAK = FCAL_INT_PEAK_TEMP;
+   }
+   
+   double FCAL_THRESHOLD_TEMP;
+   if(loop->GetCalib("FCAL/threshold", FCAL_THRESHOLD)) {
+      jerr << "Problem loading FCAL/threshold from CCDB!" << endl;
+   } else {
+      FCAL_THRESHOLD = FCAL_THRESHOLD_TEMP;
+   }
+   
+   double FCAL_THRESHOLD_SCALING_TEMP;
+   if(loop->GetCalib("FCAL/threshold_scaling", FCAL_THRESHOLD_SCALING_TEMP)) {
+       jerr << "Problem loading FCAL/threshold_scaling from CCDB!" << endl;
+   } else {
+       FCAL_THRESHOLD_SCALING = FCAL_THRESHOLD_SCALING_TEMP;
+   }
+	
+	
     cout<<"get FCAL/digi_scales parameters from calibDB"<<endl;
     map<string, double> fcaldigiscales;
     if(loop->GetCalib("FCAL/digi_scales", fcaldigiscales)) {
@@ -122,8 +164,15 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 
          // Get gain constant per block
          int channelnum = fcalGeom->channel(iter->getRow(), iter->getColumn()); 
-         double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);
-              
+	      
+         double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);    
+	 double pedestal_rms = fcal_config->FCAL_PED_RMS;
+	 double integral_peak = fcal_config->FCAL_INTEGRAL_PEAK;
+	 double MeV_FADC = fcal_config->FCAL_MC_ESCALE;
+	 double pedestal = fcal_config->FCAL_PEDS.at(channelnum);
+	 double threshold = fcal_config->FCAL_THRESHOLD;
+	 double threshold_scaling = fcal_config->FCAL_THRESHOLD_SCALING;     
+	      
          double E = titer->getE();
          if(fcal_config->FCAL_ADD_LIGHTGUIDE_HITS) {
              hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
@@ -147,7 +196,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 		 
          // Apply a single block threshold. 
          // Scale threshold by gains         
-         if (E >= fcal_config->FCAL_BLOCK_THRESHOLD * FCAL_gain ){
+         	if (E >= FCAL_gain*integral_peak*MeV_FADC*(threshold*threshold_scaling-pedestal+gDRandom.SampleGaussian(pedestal_rms)) ){
                hddm_s::FcalHitList hits = iter->addFcalHits();
                hits().setE(E);
                hits().setT(t);
