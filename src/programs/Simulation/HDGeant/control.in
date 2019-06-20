@@ -18,9 +18,31 @@ c instructs HDGeant to open ./phi-1680.hddm, skip the first 25 events and then
 c process the following 100 input events and stop.  If the end of the file is
 c reached before the event count specified in card TRIG is exhausted then the
 c processing will stop at the end of file.
-INFILE 'bggen.hddm'
+cINFILE 'bggen.hddm'
 TRIG 1000000
-RUNG 9001
+
+c The RUNG card is one of the ways to set the run number that is written to
+c the output events. The simulation run number determines which geometry and
+c magnetic field settings are used in the simulation, and also a variety of
+c detector readout and digitization parameters that are read from ccdb.
+c The simulation run number is selected according to the following rules:
+c  1) if it is specified on the command line with the -r <run_number> option
+c     then this <run_number> overrides all other sources;
+c  2) if is it specified in this control.in file on a line starting with the
+c     letters runno or RUNNO then the second field in that line is interpreted
+c     as an unsigned integer and assigned as the simulation run number;
+c  3) if there is no RUNNO line in control.in but there is a line starting
+c     with rung or RUNG then the second field on the RUNG line is taken
+c     as the simulation run number and written to the output events;
+c  4) if there is no RUNNO or RUNG card in control.in but there is an
+c     external input event file specified by a line starting with INFI[le]
+c     then the run number that is written in the input events in that input
+c     file is carried over to the simulation output events, and used by the
+c     simulation;
+c  5) if none of the above conditions is met then the simulation run number
+c     is taken to be zero. Normally this is not considered valid, and a
+c     warning message is printed at startup.
+RUNG 51500
 
 c The BEAM card configures the built-in coherent bremsstralung photon
 c beam generator in HDGeant.  If the INFILE card is not present and BEAM
@@ -43,7 +65,7 @@ c      spotX - x offset of virtual spot from collimator axis (m)
 c      spotY - y offset of virtual spot from collimator axis (m)
 c Omitting the final parameter Emin results in the default value being used.
 c Setting Epeak to zero selects an amorphous radiator instead of diamond.
-cBEAM 10. 9.999 0.0012 76.00 0.005 10.e-9 20.e-6
+cBEAM 12. 9.0 0.0012 76.00 0.005 10.e-9 20.e-6 1e-3 -0.0 +0.0
 
 c The GENBEAM card configures the simulation program to act purely as a
 c Monte Carlo event generator, and not to actually track any of the particles
@@ -71,7 +93,15 @@ c postconv is only supported at present by HDGeant4.
 cGENBEAM 'postconv'
 
 c Commenting out the following line will disable simulated hits output.
-OUTFILE 'bgtest.hddm'
+OUTFILE 'test4.hddm'
+
+c Uncomment the following line to turn off geometry optimization. Generally
+c you do NOT want to turn this off. Doing so may result in a significantly
+c faster startup, but slower event processing. Faster startup is useful
+c when running interactively to inspect the geometry or visualize a few
+c events. It may also be useful when developing HDGeant4 itself. Otherwise
+c leave geometry optimization on (the default).
+c GEOMOPT 0
 
 c The following are used to automatically invoke the mcsmear program
 c to do the final stage digitization of hits after the simulation
@@ -85,8 +115,8 @@ c
 c POSTSMEAR  - set this 1 to auto-invoke the mcsmear program and 0 to not
 c DELETEUNSMEARED - set this to 1 to delete the OUTFILE after running mcsmear
 c MCSMEAROPTS - String to specify additional arguments to pass to mcsmear
-POSTSMEAR 1
-DELETEUNSMEARED 1
+POSTSMEAR 0
+DELETEUNSMEARED 0
 c MCSMEAROPTS '-t1000 -d0'
 
 c The following card enables single-track generation (for testing).
@@ -115,7 +145,7 @@ c PLOG 1
 c TLOG 1
 c
 c   particle  momentum  theta  phi  delta_momentum delta_theta delta_phi
-KINE   108      1.0       50.   0.      0.              0.        360.
+KINE   108      0.5       90.  180.      0.            0.        0.
 
 c The SCAP card determines the vertex position for the particle gun.  It
 c supports the following three arguments, all of which default to 0.
@@ -133,8 +163,8 @@ c to zero meaning the vertex is always located at the point specified
 c by SCAP. Note that this only affects the particle gun. Events read
 c from a file contain their own vertex information.
 c
-c            vertex_extent_r  vertext_extent_z
-c TGTWIDTH           0.5              0.2
+c            vertex_extent_r  vertex_extent_z
+TGTWIDTH           0.5              29.5
 
 c If you specify a non-zero value for vertex_x and/or vertex_y above then
 c all tracks will emerge from the given point.  If you leave them at zero,
@@ -178,7 +208,7 @@ c     now ready to go. If you ever change anything in the beamline geometry
 c     eg. the collimator diameter, the coherent edge position, or the value
 c     of beamEmin, do not forget to come back and change your BGRATE.
 cBGGATE -200. 200.
-cBGRATE 4.80
+cBGRATE 2.67
 
 c The above cards BGRATE, BGGATE normally cause the simulation to add
 c accidental tagger hits to the simulated output record, in addition to
@@ -194,7 +224,7 @@ c if you are only interested in the region of the coherent peak. This
 c minimum is the third field of the BEAM card above. Remember that if
 c you change beamEmin, you also need to change BGRATE to match, as 
 c described above.
-cBGTAGONLY 1
+BGTAGONLY 1
 
 c The following line controls the uncertainty of the event time reference
 c relative to the RF structure of the beam. The event time reference is
@@ -230,7 +260,7 @@ c seeds. The seeds are written to the output HDDM file though so if one
 c uses the output file for input to another invocation of hdgeant(++)
 c then the same seeds will be used. You may check for seeds in the input
 c file using hddm-xml file.hddm | grep random .
-RNDM 121
+RNDM 3
 
 c The following line controls the cutoffs for tracking of particles.
 c CUTS cutgam cutele cutneu cuthad cutmuo bcute bcutm dcute dcutm ppcutm tofmax
@@ -248,7 +278,7 @@ c  - tofmax = Time of flight cut (1.E+10 sec)
 c  - gcuts  = 5 user words (0.)
 c Only the first 5 fields (the ones that start with 'cut')
 c are supported by hdgeant4.
-CUTS 1e-4 1e-4 1e-3 1e-3 1e-4
+cCUTS 1e-4 1e-4 1e-3 1e-3 1e-4
 
 c Geant4 introduced the concept of ?a unique cut in range? which allows the user
 c to specify the threshold for secondaries production in terms of the range that
@@ -261,7 +291,7 @@ c in that CUTS are applied to the corresponding particles when they are being
 c tracked, whereas RANGECUTS are used to decide whether they should be
 c generated (as secondaries) in the first place.
 
-RANGECUTS 0.1 0.1 1.0 1.0 0.1
+cRANGECUTS 0.1 0.1 1.0 1.0 0.1
 
 c Geant4 physics models are more comprehensive than the ones provided in G3,
 c and one consequence of this is that some particles (eg. neutrons) seem to go
@@ -350,7 +380,7 @@ c TRAJECTORIES = 3  store full trajectory of primary tracks
 c TRAJECTORIES = 4  store full trajectory of primary tracks and birth/death points of secondaries
 c TRAJECTORIES = 5  store full trajectory for all particles
 c
-TRAJECTORIES 0
+TRAJECTORIES 4
 
 c The following tracking parameters are defined for each tracking medium
 c   TMAXFD (REAL) maximum angular deviation due to the magnetic field
