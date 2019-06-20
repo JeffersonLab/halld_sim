@@ -8,7 +8,6 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
 	// default values
 	FCAL_PHOT_STAT_COEF   = 0.0; //0.035;
 	FCAL_BLOCK_THRESHOLD  = 0.0; //20.0*k_MeV;
-	// FCAL_TSIGMA           = 0.0; // 200 ps
 	FCAL_TSIGMA           = 0.; // 400 ps 
 	FCAL_PED_RMS          = 0.; //2.7E-4
 	FCAL_INTEGRAL_PEAK    = 0.; //5.7
