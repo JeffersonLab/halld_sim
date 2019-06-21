@@ -10,6 +10,7 @@
 #include "TTree.h"
 
 #include <string>
+#include <set>
 
 using namespace std;
 
@@ -67,6 +68,9 @@ private:
   float m_pyBeam;
   float m_pzBeam;
   float m_weight;
+
+  multiset< unsigned int > m_entryOrder;
+  mutable multiset< unsigned int >::const_iterator m_nextEntry;
 };
 
 #endif
