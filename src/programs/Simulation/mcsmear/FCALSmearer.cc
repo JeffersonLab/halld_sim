@@ -51,14 +51,14 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
    }
 	
    double FCAL_INT_PEAK_TEMP;
-   if(loop->GetCalib("FCAL/integral_peak_ratio", FCAL_GAINS_TEMP)) {
+   if(loop->GetCalib("FCAL/integral_peak_ratio", FCAL_INT_PEAK_TEMP)) {
       jerr << "Problem loading FCAL/integral_peak_ratio from CCDB!" << endl;
    } else {
       FCAL_INTEGRAL_PEAK = FCAL_INT_PEAK_TEMP;
    }
    
    double FCAL_THRESHOLD_TEMP;
-   if(loop->GetCalib("FCAL/threshold", FCAL_THRESHOLD)) {
+   if(loop->GetCalib("FCAL/threshold", FCAL_THRESHOLD_TEMP)) {
       jerr << "Problem loading FCAL/threshold from CCDB!" << endl;
    } else {
       FCAL_THRESHOLD = FCAL_THRESHOLD_TEMP;
@@ -195,7 +195,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 		 
          // Apply a single block threshold. 
          // Scale threshold by gains         
-         	if (E >= FCAL_gain*integral_peak*MeV_FADC*(threshold*threshold_scaling-pedestal+gDRandom.SampleGaussian(pedestal_rms)) ){
+         	if (E >= FCAL_gain*integral_peak*MeV_FADC*(threshold*threshold_scaling - pedestal+gDRandom.SampleGaussian(pedestal_rms)) ){
                hddm_s::FcalHitList hits = iter->addFcalHits();
                hits().setE(E);
                hits().setT(t);
