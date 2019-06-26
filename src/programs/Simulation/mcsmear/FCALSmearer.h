@@ -19,7 +19,7 @@ class fcal_config_t
 	vector<double> FCAL_PEDS; 
 	vector<double> FCAL_GAINS;
 	double FCAL_MC_ESCALE;
-	
+        double FCAL_ADC_ASCALE;
 	double FCAL_PED_RMS;
         double FCAL_THRESHOLD_SCALING;
         double FCAL_THRESHOLD;
