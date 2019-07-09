@@ -56,7 +56,10 @@ Ylm::calcAmplitude( GDouble** pKin ) const {
   TVector3 z = -1. * recoil_res.Vect().Unit();
   // or GJ frame?
   // TVector3 z = beam_res.Vect().Unit();
-  TVector3 y = recoil_res.Vect().Cross(z).Unit();
+
+// normal to the production plane
+  TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();
+
   TVector3 x = y.Cross(z);
   
   TVector3 angles( (p1_res.Vect()).Dot(x),
