@@ -99,10 +99,12 @@ Zlm::calcAmplitude( GDouble** pKin ) const {
   
   GDouble Factor = sqrt(1 + m_s * Pgamma);
   GDouble zlm = 0;
+  complex< GDouble > rotateY = polar(1., -1.*Phi);
   if (m_r == 1)
-    zlm = cos(Phi)*real(Y( m_j, m_m, cosTheta, phi ));
+    zlm = real(Y( m_j, m_m, cosTheta, phi ) * rotateY);
   if (m_r == -1)
-    zlm = sin(Phi)*imag(Y( m_j, m_m, cosTheta, phi ));
+    zlm = imag(Y( m_j, m_m, cosTheta, phi ) * rotateY);
+
   return complex< GDouble >( static_cast< GDouble>( Factor ) * zlm );
 }
 
