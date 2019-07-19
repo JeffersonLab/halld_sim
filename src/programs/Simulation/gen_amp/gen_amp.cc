@@ -353,16 +353,13 @@ int main( int argc, char* argv[] ){
 			for (unsigned int i=3; i<Particles.size(); i++)
 			  isobar += evt->particle( i );
 
+			/////////////////////////////////////////////////////////////////////
+			// Do user calculation here for decay angles to match IsobarAngles //
+			/////////////////////////////////////////////////////////////////////
 			TLorentzVector beam = evt->particle(0);
 			TLorentzVector recoil = evt->particle(1);
 			TLorentzVector PX = resonance;
 			TLorentzVector PBatchX = evt->particle(5);
-			
-			TLorentzVector target ( 0, 0, 0, 0.938 );
-			TLorentzVector cms = beam + target;
-			TVector3 cmsBoost = cms.BoostVector();
-			TLorentzVector recoilCms = recoil;
-			recoilCms.Boost(-1.0*cmsBoost);
 			
 			// calculate decay angles in resonance X rest frame
 			TVector3 XRestBoost = PX.BoostVector();
@@ -405,50 +402,11 @@ int main( int argc, char* argv[] ){
 					intenWVsM->Fill( resonance.M(), weightedInten );
 
 					M_isobar->Fill( isobar.M() );
-					
-					// calculate angular variables
-					TLorentzVector beam = evt->particle ( 0 );
-					TLorentzVector recoil = evt->particle ( 1 );
-					TLorentzVector p1 = evt->particle ( 2 );
-					TLorentzVector target(0,0,0,recoil[3]);
-					
-					if(isKaonRecoil || isPionRecoil)
-						t->Fill(-1*(beam-evt->particle(1)).M2());
-					else
-						t->Fill(-1*(evt->particle(1)-target).M2());
-
-					TLorentzRotation resonanceBoost( -resonance.BoostVector() );
-					
-					TLorentzVector beam_res = resonanceBoost * beam;
-					TLorentzVector recoil_res = resonanceBoost * recoil;
-					TLorentzVector p1_res = resonanceBoost * p1;
-					
-					// normal to the production plane
-                                        TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();
-
-                                        // choose helicity frame: z-axis opposite recoil proton in rho rest frame
-                                        TVector3 z = -1. * recoil_res.Vect().Unit();
-                                        TVector3 x = y.Cross(z).Unit();
-                                        TVector3 angles( (p1_res.Vect()).Dot(x),
-                                                         (p1_res.Vect()).Dot(y),
-                                                         (p1_res.Vect()).Dot(z) );
-
-                                        double cosTheta = angles.CosTheta();
-                                        double phi = angles.Phi();
 
 					M_CosTheta->Fill( resonance.M(), cosThetaBatchX);
 					M_Phi->Fill( resonance.M(), phiBatchX);
 					M_Phi_lab->Fill( resonance.M(), recoil.Phi());
-					
-					TVector3 eps(1.0, 0.0, 0.0); // beam polarization vector
-                                        double Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 
-                                        GDouble psi = phi - Phi;
-                                        if(psi < -1*PI) psi += 2*PI;
-                                        if(psi > PI) psi -= 2*PI;
-					
-					CosTheta_psi->Fill( psi, cosTheta);
-					
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
 					

@@ -29,7 +29,6 @@ public:
 private:
 	
 	int m_jX;
-	int m_parX;
 	int m_lX;	
 
 	string m_daughtX;
