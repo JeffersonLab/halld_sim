@@ -27,6 +27,7 @@
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
+#include "AMPTOOLS_AMPS/IsobarAngles.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -57,7 +58,7 @@ int main( int argc, char* argv[] ){
 	
 	// default upper and lower bounds 
 	double lowMass = 0.2;
-	double highMass = 2.0;
+	double highMass = 3.0;
 
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 9.0;
@@ -223,6 +224,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
+	AmpToolsInterface::registerAmplitude( IsobarAngles() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
@@ -350,6 +352,38 @@ int main( int argc, char* argv[] ){
 			TLorentzVector isobar;
 			for (unsigned int i=3; i<Particles.size(); i++)
 			  isobar += evt->particle( i );
+
+			TLorentzVector beam = evt->particle(0);
+			TLorentzVector recoil = evt->particle(1);
+			TLorentzVector PX = resonance;
+			TLorentzVector PBatchX = evt->particle(5);
+			
+			TLorentzVector target ( 0, 0, 0, 0.938 );
+			TLorentzVector cms = beam + target;
+			TVector3 cmsBoost = cms.BoostVector();
+			TLorentzVector recoilCms = recoil;
+			recoilCms.Boost(-1.0*cmsBoost);
+			
+			// calculate decay angles in resonance X rest frame
+			TVector3 XRestBoost = PX.BoostVector();
+			
+			TLorentzVector beamX   = beam;
+			TLorentzVector recoilX = recoil;
+			TLorentzVector batchX  = PBatchX;
+			beamX.Boost(-1.0*XRestBoost);
+			recoilX.Boost(-1.0*XRestBoost);
+			batchX.Boost(-1.0*XRestBoost);
+			
+			TVector3 z = -recoilX.Vect().Unit();
+			TVector3 y = (beam.Vect().Unit()).Cross(z).Unit();
+			TVector3 x = y.Cross(z);
+			
+			TVector3 anglesBatchX( (batchX.Vect()).Dot(x),
+					       (batchX.Vect()).Dot(y),
+					       (batchX.Vect()).Dot(z) );
+			
+			GDouble cosThetaBatchX = anglesBatchX.CosTheta();
+			GDouble phiBatchX = anglesBatchX.Phi();
 			
 			double genWeight = evt->weight();
 			
@@ -402,8 +436,8 @@ int main( int argc, char* argv[] ){
                                         double cosTheta = angles.CosTheta();
                                         double phi = angles.Phi();
 
-					M_CosTheta->Fill( resonance.M(), cosTheta);
-					M_Phi->Fill( resonance.M(), phi);
+					M_CosTheta->Fill( resonance.M(), cosThetaBatchX);
+					M_Phi->Fill( resonance.M(), phiBatchX);
 					M_Phi_lab->Fill( resonance.M(), recoil.Phi());
 					
 					TVector3 eps(1.0, 0.0, 0.0); // beam polarization vector
