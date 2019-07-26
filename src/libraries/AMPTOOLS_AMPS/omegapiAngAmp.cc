@@ -88,13 +88,13 @@ omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
 	assert( args.size() == 24 || args.size() == 25 );
 	
 	if(args.size() == 25){
-		polAngle  = atof(args[22].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
-		polFraction = AmpParameter( args[23] ); // polarization fraction
+		polAngle  = atof(args[23].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
+		polFraction = AmpParameter( args[24] ); // polarization fraction
 		std::cout << "Fixed polarization fraction =" << polFraction << " and pol.angle= " << polAngle << " degrees." << std::endl;
 	}
 	else if (args.size() == 24){
 		// BeamProperties configuration file
-		TString beamConfigFile = args[22].c_str();
+		TString beamConfigFile = args[23].c_str();
 		BeamProperties beamProp(beamConfigFile);
 		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
 		polAngle = beamProp.GetPolAngle();
@@ -110,7 +110,7 @@ omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
 
     //A switch to use cut off only when generating (casues problem when fitting)
     //Set to 1 with gen_amp, 0 with fit.
-    useCutoff = atoi( args[24].c_str() );
+    useCutoff = atoi( args[22].c_str() );
  
 	
     ds_ratio = AmpParameter(args[9]);
