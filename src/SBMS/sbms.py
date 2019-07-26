@@ -1086,6 +1086,64 @@ def AddAmpPlotter(env):
 
 
 ##################################
+# HepMC
+##################################
+def AddHepMC(env):
+	HEPMC_HOME = os.getenv('HEPMC_HOME')
+	if HEPMC_HOME==None:
+		print ''
+		print 'HepMC is being requested but the HEPMC_HOME environment variable is not set!'
+		print ''
+        else:
+                HEPMC_CPPPATH = "%s/include" % (HEPMC_HOME)
+                HEPMC_LIBPATH = "%s/lib" % (HEPMC_HOME)
+                HEPMC_LIBS = "HepMC"
+                env.AppendUnique(CPPPATH = HEPMC_CPPPATH)
+                env.AppendUnique(LIBPATH = HEPMC_LIBPATH)
+                env.AppendUnique(LIBS    = HEPMC_LIBS)
+
+
+##################################
+# PHOTOS
+##################################
+def AddPhotos(env):
+	PHOTOS_HOME = os.getenv('PHOTOS_HOME')
+	if PHOTOS_HOME==None:
+		print ''
+		print 'Photos is being requested but the PHOTOS_HOME environment variable is not set!'
+		print ''
+        else:
+                PHOTOS_CPPPATH = "%s/include" % (PHOTOS_HOME)
+                PHOTOS_LIBPATH = "%s/lib" % (PHOTOS_HOME)
+                PHOTOS_LIBS = [ "Photospp", "PhotosppHepMC" ]
+                env.AppendUnique(CXXFLAGS = ['-DEVTGEN_PHOTOS'])
+                env.AppendUnique(CPPPATH = PHOTOS_CPPPATH)
+                env.AppendUnique(LIBPATH = PHOTOS_LIBPATH)
+                env.AppendUnique(LIBS    = PHOTOS_LIBS)
+
+
+##################################
+# EvtGen
+##################################
+def AddEvtGen(env):
+	EVTGEN_HOME = os.getenv('EVTGEN_HOME')
+	if EVTGEN_HOME==None:
+		print ''
+		print 'EvtGen is being requested but the EVTGEN_HOME environment variable is not set!'
+		print ''
+        else:
+                AddHepMC(env)
+                AddPhotos(env)
+                EVTGEN_CPPPATH = "%s/" % (EVTGEN_HOME)
+                EVTGEN_LIBPATH = "%s/lib" % (EVTGEN_HOME)
+                EVTGEN_LIBS = [ "EvtGen", "EvtGenExternal" ]
+                env.AppendUnique(CXXFLAGS = ['-DEVTGEN_EXTERNAL'])
+                env.AppendUnique(CPPPATH = EVTGEN_CPPPATH)
+                env.AppendUnique(LIBPATH = EVTGEN_LIBPATH)
+                env.AppendUnique(LIBS    = EVTGEN_LIBS)
+
+
+##################################
 # Utilities for generators (CCDB and Cobrems)
 ##################################
 def AddUtilities(env):
