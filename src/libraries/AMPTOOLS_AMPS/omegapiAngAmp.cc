@@ -1,4 +1,4 @@
-//July 19th 2018, Based on DOI: 10.1016/0550-3213(84)90382-1
+//July 26th 2019, Based on DOI: 10.1016/0550-3213(84)90382-1
 #include <ctime>
 #include <stdlib.h>
 #include <stdio.h>
@@ -85,14 +85,14 @@ double hmoment(int alpha, vector<double> vector)
 omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
   UserAmplitude< omegapiAngAmp >( args )
 {
-	assert( args.size() == 23 || args.size() == 24 );
+	assert( args.size() == 24 || args.size() == 25 );
 	
-	if(args.size() == 24){
+	if(args.size() == 25){
 		polAngle  = atof(args[22].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
 		polFraction = AmpParameter( args[23] ); // polarization fraction
 		std::cout << "Fixed polarization fraction =" << polFraction << " and pol.angle= " << polAngle << " degrees." << std::endl;
 	}
-	else if (args.size() == 23){
+	else if (args.size() == 24){
 		// BeamProperties configuration file
 		TString beamConfigFile = args[22].c_str();
 		BeamProperties beamProp(beamConfigFile);
@@ -108,6 +108,11 @@ omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
 	else
 	assert(0);
 
+    //A switch to use cut off only when generating (casues problem when fitting)
+    //Set to 1 with gen_amp, 0 with fit.
+    useCutoff = atoi( args[24].c_str() );
+ 
+	
     ds_ratio = AmpParameter(args[9]);
     
     //1+ state
@@ -437,17 +442,12 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
   TLorentzVector rhos_pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
   TLorentzVector rho = rhos_pip + rhos_pim;
 
-  bool useCutoff=true;
-  GDouble m0_omega=0.782;
-  GDouble mG0_omega = 0.00849;    
-  //if( useCutoff && rho.M()+0.135 > m0_omega+3.0*mG0_omega){
-    ////cout << "s";
-  //  return CZero;
-  //}
-
   TLorentzVector omegas_pi(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
   TLorentzVector omega = rho + omegas_pi;
 
+  //Cut off to force a narrow omega peak. Casues problem with fit.
+  GDouble m0_omega=0.782;
+  GDouble mG0_omega = 0.00849;    
   if(useCutoff && fabs(omega.M()-m0_omega) > mG0_omega){
     //cout << "Cutting event with m_omega =" << omega.M() << endl;
     return CZero; 
@@ -491,7 +491,6 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
 
 
 return amplitude;
-
 }
 
 void omegapiAngAmp::updatePar( const AmpParameter& par ){
