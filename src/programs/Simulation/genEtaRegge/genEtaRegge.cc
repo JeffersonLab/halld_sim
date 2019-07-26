@@ -9,14 +9,64 @@
 #include <TH1D.h>
 #include <TH2D.h>
 #include <TGraph.h>
+#include <cstdlib>
+#include <sys/stat.h>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
 #include <vector>
 #include <string>
+#include <algorithm> 
+#include <cctype>
+#include <locale>
 using namespace std;
 
 #include "UTILITIES/BeamProperties.h"
+
+#include "EvtGen/EvtGen.hh"
+
+#include "EvtGenBase/EvtParticle.hh"
+#include "EvtGenBase/EvtParticleFactory.hh"
+#include "EvtGenBase/EvtPatches.hh"
+#include "EvtGenBase/EvtPDL.hh"
+#include "EvtGenBase/EvtRandom.hh"
+#include "EvtGenBase/EvtReport.hh"
+#include "EvtGenBase/EvtHepMCEvent.hh"
+#include "EvtGenBase/EvtSimpleRandomEngine.hh"
+#include "EvtGenBase/EvtMTRandomEngine.hh"
+#include "EvtGenBase/EvtAbsRadCorr.hh"
+#include "EvtGenBase/EvtDecayBase.hh"
+
+#ifdef EVTGEN_EXTERNAL
+#include "EvtGenExternal/EvtExternalGenList.hh"
+#endif
+
+typedef struct {
+	int parent_id;
+	vector<Particle_t> ids;
+	vector<TLorentzVector> p4vs;
+} secondary_decay_t;
+
+// trim from start (in place)
+static inline void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+        return !std::isspace(ch);
+    }));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::string &s) {
+    ltrim(s);
+    rtrim(s);
+}
+
 
 // Masses
 const double m_p=0.93827; // GeV
@@ -225,8 +275,10 @@ double CrossSection(double s,double t,double p_gamma,double p_eta,double theta){
 
 // Put particle data into hddm format and output to file
 void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
-		vector<Particle_t>&particle_types,
-		vector<TLorentzVector>&particle_vectors, s_iostream_t *file){  
+		vector<Particle_t> &particle_types,
+		vector<TLorentzVector> &particle_vectors, 
+		vector< secondary_decay_t > &secondary_vertices,
+		s_iostream_t *file){  
    s_PhysicsEvents_t* pes;
    s_Reactions_t* rs;
    s_Target_t* ta;
@@ -264,8 +316,9 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
    ta->momentum->pz = 0.;
    ta->momentum->E  = ParticleMass(ta->type);
    // Primary vertex 
-   rs->in[0].vertices = vs = make_s_Vertices(1);
-   vs->mult = 1;
+   int num_vertices = 1 + secondary_vertices.size();
+   rs->in[0].vertices = vs = make_s_Vertices(num_vertices);
+   vs->mult = num_vertices;
    vs->in[0].origin = origin = make_s_Origin();
    vs->in[0].products = ps = make_s_Products(particle_vectors.size());
    ps->mult = 0;
@@ -274,11 +327,12 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
    origin->vy = vert[1];
    origin->vz = vert[2];
    // Final state particles
+   int part_ind = 1;
    for (unsigned int i=0;i<particle_vectors.size();i++,ps->mult++){
      Particle_t my_particle=particle_types[i];
      ps->in[ps->mult].type = my_particle;
      ps->in[ps->mult].pdgtype = PDGtype(my_particle);
-     ps->in[ps->mult].id = i+1; /* unique value for this particle within the event */
+     ps->in[ps->mult].id = part_ind++; /* unique value for this particle within the event */
      ps->in[ps->mult].parentid = 0;  /* All internally generated particles have no parent */
      ps->in[ps->mult].mech = 0; // ???     
      ps->in[ps->mult].momentum = make_s_Momentum();
@@ -287,6 +341,38 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
      ps->in[ps->mult].momentum->pz = particle_vectors[i].Pz();
      ps->in[ps->mult].momentum->E  = particle_vectors[i].E();
    }
+   // write out any secondary vertices (like pi0's)
+   //		vector< secondary_decay_t > &secondary_vertices,
+   if(secondary_vertices.size() > 0) {
+   		int vertex_ind = 1;
+   		for(auto& the_vertex : secondary_vertices) {
+		   // assume that all particles are generated at the same vertex
+		   vs->in[vertex_ind].origin = origin = make_s_Origin();
+		   vs->in[vertex_ind].products = ps = make_s_Products(the_vertex.ids.size());
+		   ps->mult = 0;
+		   origin->t = 0.0;
+		   origin->vx = vert[0];
+		   origin->vy = vert[1];
+		   origin->vz = vert[2];
+	   
+		   // add in the particles associated with this vertex
+		   for (unsigned int i=0; i<the_vertex.ids.size(); i++,ps->mult++){
+			 Particle_t my_particle = the_vertex.ids[i];
+			 ps->in[ps->mult].type = my_particle;
+			 ps->in[ps->mult].pdgtype = PDGtype(my_particle);
+			 ps->in[ps->mult].id = part_ind++; /* unique value for this particle within the event */
+			 ps->in[ps->mult].parentid = the_vertex.parent_id;  /* All internally generated particles have no parent */
+			 ps->in[ps->mult].mech = 0; // ???     
+			 ps->in[ps->mult].momentum = make_s_Momentum();
+			 ps->in[ps->mult].momentum->px = the_vertex.p4vs[i].Px();
+			 ps->in[ps->mult].momentum->py = the_vertex.p4vs[i].Py();
+			 ps->in[ps->mult].momentum->pz = the_vertex.p4vs[i].Pz();
+			 ps->in[ps->mult].momentum->E  = the_vertex.p4vs[i].E();
+		   }
+		   
+		   vertex_ind++;  // get ready for next iteration
+	   }
+	}
    flush_s_HDDM(thisOutputEvent,file);
 }
 
@@ -430,9 +516,73 @@ int main(int narg, char *argv[])
   infile >> num_decay_particles;
   infile.ignore(); // ignore the '\n' at the end of this line
 
+  // check to see if we should use EvtGen
+  bool use_evtgen = false;
+  EvtParticle* parent(0);
+  EvtGen *myGenerator = nullptr;
+  EvtId EtaId;  // read this in from file below - this is actually a class, which gets filled with reasonable defaults
+  
+  // if we don't explicitly define the decay particles in the config file, 
+  // then use EvtGen to generate the decays
+  if(num_decay_particles == -1) { 
+  	num_decay_particles = 0;
+  	use_evtgen = true;
+
+	// get the produced particle type
+	getline(infile,comment_line);
+	string particle_type;
+	getline(infile,particle_type);
+	trim(particle_type);
+	cout << "Generating particle: " << particle_type << endl;
+  	
+  	// initialize EvtGen
+  	const char* evtgen_home_env_ptr = std::getenv("EVTGEN_HOME");
+  	string EVTGEN_HOME = (evtgen_home_env_ptr==nullptr) ? "." : evtgen_home_env_ptr;  // default to the current directory
+  	
+    // Define the random number generator
+    EvtRandomEngine* eng = 0;
+#ifdef EVTGEN_CPP11
+ 	 // Use the Mersenne-Twister generator (C++11 only)
+ 	 eng = new EvtMTRandomEngine();
+#else
+ 	 eng = new EvtSimpleRandomEngine();
+#endif
+
+ 	 EvtRandom::setRandomEngine(eng);
+
+ 	 EvtAbsRadCorr* radCorrEngine = 0;
+ 	 std::list<EvtDecayBase*> extraModels;
+
+#ifdef EVTGEN_EXTERNAL
+ 	 bool convertPythiaCodes(false);
+	 bool useEvtGenRandom(true);
+ 	 EvtExternalGenList genList(convertPythiaCodes, "", "gamma", useEvtGenRandom);
+	 radCorrEngine = genList.getPhotosModel();
+	 extraModels = genList.getListOfModels();
+#endif
+
+ 	//Initialize the generator - read in the decay table and particle properties
+  	const char* evtgen_decay_file_ptr = std::getenv("EVTGEN_DECAY_FILE");
+ 	string evtGenDecayFile = (evtgen_decay_file_ptr==nullptr) ? EVTGEN_HOME + "/DECAY.DEC" : evtgen_decay_file_ptr;
+  	const char* evtgen_particle_defs_ptr = std::getenv("EVTGEN_PARTICLE_DEFINITIONS");
+ 	string evtGenParticleDefs = (evtgen_particle_defs_ptr==nullptr) ? EVTGEN_HOME + "/evt.pdl" : evtgen_particle_defs_ptr;
+ 	myGenerator = new EvtGen(evtGenDecayFile.c_str(), evtGenParticleDefs.c_str(), eng,
+  		     				 radCorrEngine, &extraModels);
+
+	// open optional user decay file, if it exists
+	struct stat buffer;   
+	if(stat("userDecay.dec", &buffer) == 0)
+	  	myGenerator->readUDecay("userDecay.dec");
+
+	// Now that we have initialized EvtGen, we can access things like the particle DB
+	EtaId = EvtPDL::getId(std::string(particle_type));
+  	
+  }
+  
   // Set up vectors of particle ids
   vector<Particle_t>particle_types;
-  double *decay_masses =new double[num_decay_particles];
+  //double *decay_masses =new double[num_decay_particles];
+  vector<double> decay_masses(num_decay_particles);
   double *res_decay_masses=NULL;
   vector<Particle_t>res_particle_types;
 
@@ -440,20 +590,22 @@ int main(int narg, char *argv[])
   getline(infile,comment_line);
   cout << comment_line << endl;
   int reson_index=-1;
-  cout << "Particle id's of decay particles =";
-  for (int k=0;k<num_decay_particles;k++){
-    int ipart;
-    infile >> ipart;
-    cout << " " << ipart; 
-    particle_types.push_back((Particle_t)ipart);
-    if (ipart>0){
-      decay_masses[k]=ParticleMass((Particle_t)ipart);
-    }
-    else {
-      reson_index=k;
-    }
-  } 
-  cout << endl;
+  if(!use_evtgen) {
+	  cout << "Particle id's of decay particles =";
+	  for (int k=0;k<num_decay_particles;k++){
+		int ipart;
+		infile >> ipart;
+		cout << " " << ipart; 
+		particle_types.push_back((Particle_t)ipart);
+		if (ipart>0){
+		  decay_masses[k]=ParticleMass((Particle_t)ipart);
+		}
+		else {
+		  reson_index=k;
+		}
+	  } 
+	  cout << endl;
+  }
   unsigned int num_res_decay_particles=0; 
   double reson_mass=0.,reson_width=0.;
   int reson_L=0;
@@ -526,6 +678,7 @@ int main(int narg, char *argv[])
 
       // Generate mass distribution for unstable particle in the final state 
       // with non-negligible width if specified in the input file
+      if(!use_evtgen) {
       double mass_check=0.;
       do {
 	if (reson_index>-1 && reson_width>0.){
@@ -644,6 +797,22 @@ int main(int narg, char *argv[])
 	  mass_check+=decay_masses[im];
 	}
       } while (mass_check>m_eta);
+    } else {
+    	// if using EvtGen, we don't know what the decay products are a priori
+    	// use a non-relativistic BW instead
+    	if(width > 0.000001) {
+			bool is_good_mass = false;
+			do {
+				double m_ = myrand->BreitWigner(m_eta_R,width);
+				cout << m_ << " " << m_eta_R << " " << width << endl;
+				// use a cutoff of +- 5 times the width so we don't populate the far tails too much
+				is_good_mass = (m_ > m_eta_R-5.*width) && (m_ < m_eta_R+5.*width);
+			} while (!is_good_mass);
+		} else {
+			m_eta = m_eta_R;
+		}
+    }
+    
     
       double E_eta=(s+m_eta_sq-m_p_sq)/(2.*Ecm);
       p_eta=sqrt(E_eta*E_eta-m_eta_sq);
@@ -691,81 +860,121 @@ int main(int narg, char *argv[])
     //proton4.Print();
     thrown_theta_vs_p->Fill(proton4.P(),180./M_PI*proton4.Theta());
 
-    // Generate 3-body decay of eta according to phase space
-    TGenPhaseSpace phase_space;
-    phase_space.SetDecay(eta4,num_decay_particles,decay_masses);
-    double weight=0.,rand_weight=1.;
-    do{
-      weight=phase_space.Generate();
-      rand_weight=myrand->Uniform(1.);
-    }
-    while (rand_weight>weight);
-
-    // Histograms of Dalitz distribution
-    if (num_decay_particles==3){
-      TLorentzVector one=*phase_space.GetDecay(0);  
-      TLorentzVector two=*phase_space.GetDecay(1);
-      TLorentzVector three=*phase_space.GetDecay(2);
-      TLorentzVector one_two=one+two;
-      TLorentzVector one_three=one+three;
- 
-      TLorentzVector eta=one_two+three;
-      TVector3 boost=-eta.BoostVector();
-
-      double eta_mass=eta.M();
-      eta.Boost(boost);
-      
-      one.Boost(boost);
-      two.Boost(boost);
-      three.Boost(boost);
-
-      double m1=one.M(),m2=two.M(),m3=three.M();
-      double E1=one.E(),E2=two.E(),E3=three.E();
-      double T1=E1-m1; // pi0 for charged channel
-      double T2=E2-m2; // pi+ for charged channel
-      double T3=E3-m3; // pi- for charged channel
-      double Q_eta=eta_mass-m1-m2-m3;
-      double X=sqrt(3.)*(T2-T3)/Q_eta;
-      double Y=3.*T1/Q_eta-1.;
-      thrown_dalitzXY->Fill(X,Y);
-
-      double z_dalitz=X*X+Y*Y;
-      //printf("z %f\n",z_dalitz);
-      thrown_dalitzZ->Fill(z_dalitz);
-    }
-    // Other diagnostic histograms
-    thrown_t->Fill(-t);
-
     // Randomly generate z position in target
     vert[2]=zmin+myrand->Uniform(zmax-zmin);
+
+    // Other diagnostic histograms
+    thrown_t->Fill(-t);
 
     // Gather the particles in the reaction and write out event in hddm format
     vector<TLorentzVector>output_particle_vectors;
     output_particle_vectors.push_back(proton4);
     vector<Particle_t>output_particle_types;
     output_particle_types.push_back(Proton);
-    for (int j=0;j<num_decay_particles;j++){
-      if (particle_types[j]!=Unknown){
-	output_particle_vectors.push_back(*phase_space.GetDecay(j));
-	output_particle_types.push_back(particle_types[j]);
-      }
-      else {
-	TGenPhaseSpace phase_space2;
-	phase_space2.SetDecay(*phase_space.GetDecay(j),num_res_decay_particles,
-			      res_decay_masses);
-	weight=0.,rand_weight=1.;
-	do{
-	  weight=phase_space2.Generate();
-	  rand_weight=myrand->Uniform(1.);
-	}
-	while (rand_weight>weight);
-	for (unsigned int im=0;im<num_res_decay_particles;im++){
-	  output_particle_types.push_back(res_particle_types[im]);
-	  output_particle_vectors.push_back(*phase_space2.GetDecay(im));
-	}
-      }
+    vector<secondary_decay_t>secondary_vertices;
+    if(use_evtgen) {
+		// Set up the parent particle
+		EvtVector4R pInit(eta4.E(), eta4.X(), eta4.Y(), eta4.Z());
+		parent = EvtParticleFactory::particleFactory(EtaId, pInit);
+
+		// Generate the event
+		myGenerator->generateDecay(parent);    
+		
+		// Write out resulting particles
+		for(unsigned int i=0; i<parent->getNDaug(); i++) {
+			TLorentzVector vec4v( parent->getDaug(i)->getP4Lab().get(1),
+								  parent->getDaug(i)->getP4Lab().get(2),
+								  parent->getDaug(i)->getP4Lab().get(3),
+								  parent->getDaug(i)->getP4Lab().get(0)   );
+			output_particle_vectors.push_back(vec4v);
+			output_particle_types.push_back(PDGtoPType(parent->getDaug(i)->getPDGId()));
+			
+			// see if any of the particles decay and add info on them
+			// should be mostly pi0's, but we should go recursive...
+			if(parent->getDaug(i)->getNDaug()>0) {
+				secondary_decay_t secondary_vertex;
+				secondary_vertex.parent_id = i;
+				for(unsigned int j=0; j<parent->getDaug(i)->getNDaug(); j++) {
+					TLorentzVector vec4v( parent->getDaug(i)->getDaug(j)->getP4Lab().get(1),
+										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(2),
+										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(3),
+										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(0)   );
+					secondary_vertex.p4vs.push_back(vec4v);
+					secondary_vertex.ids.push_back(PDGtoPType(parent->getDaug(i)->getDaug(j)->getPDGId()));
+				}
+				secondary_vertices.push_back(secondary_vertex);
+			}			
+		}
+	
+		parent->deleteTree();
+   
+    } else {   // no evtgen
+		// Generate 3-body decay of eta according to phase space
+		TGenPhaseSpace phase_space;
+		phase_space.SetDecay(eta4,num_decay_particles,decay_masses.data());
+		double weight=0.,rand_weight=1.;
+		do{
+		  weight=phase_space.Generate();
+		  rand_weight=myrand->Uniform(1.);
+		}
+		while (rand_weight>weight);
+
+		// Histograms of Dalitz distribution
+		if (num_decay_particles==3){
+		  TLorentzVector one=*phase_space.GetDecay(0);  
+		  TLorentzVector two=*phase_space.GetDecay(1);
+		  TLorentzVector three=*phase_space.GetDecay(2);
+		  TLorentzVector one_two=one+two;
+		  TLorentzVector one_three=one+three;
+ 
+		  TLorentzVector eta=one_two+three;
+		  TVector3 boost=-eta.BoostVector();
+
+		  double eta_mass=eta.M();
+		  eta.Boost(boost);
+	  
+		  one.Boost(boost);
+		  two.Boost(boost);
+		  three.Boost(boost);
+
+		  double m1=one.M(),m2=two.M(),m3=three.M();
+		  double E1=one.E(),E2=two.E(),E3=three.E();
+		  double T1=E1-m1; // pi0 for charged channel
+		  double T2=E2-m2; // pi+ for charged channel
+		  double T3=E3-m3; // pi- for charged channel
+		  double Q_eta=eta_mass-m1-m2-m3;
+		  double X=sqrt(3.)*(T2-T3)/Q_eta;
+		  double Y=3.*T1/Q_eta-1.;
+		  thrown_dalitzXY->Fill(X,Y);
+
+		  double z_dalitz=X*X+Y*Y;
+		  //printf("z %f\n",z_dalitz);
+		  thrown_dalitzZ->Fill(z_dalitz);
+		}
+
+		for (int j=0;j<num_decay_particles;j++){
+			if (particle_types[j]!=Unknown) {
+				output_particle_vectors.push_back(*phase_space.GetDecay(j));
+				output_particle_types.push_back(particle_types[j]);
+			} else {
+				TGenPhaseSpace phase_space2;
+				phase_space2.SetDecay(*phase_space.GetDecay(j),num_res_decay_particles,
+						  res_decay_masses);
+				weight=0.,rand_weight=1.;
+				do{
+					weight=phase_space2.Generate();
+					rand_weight=myrand->Uniform(1.);
+				} while (rand_weight>weight);
+				for (unsigned int im=0;im<num_res_decay_particles;im++){
+					output_particle_types.push_back(res_particle_types[im]);
+					output_particle_vectors.push_back(*phase_space2.GetDecay(im));
+				}
+			}
+		}
     }
-    WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,file);
+    
+    // Write Event to HDDM file
+    WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,secondary_vertices,file);
     
     if ((i%(Nevents/10))==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }
@@ -781,7 +990,7 @@ int main(int narg, char *argv[])
   cout<<" "<<Nevents<<" event written to "<<output_file_name<<endl;
 
   // Cleanup
-  delete []decay_masses;
+  //delete []decay_masses;
   if (res_decay_masses!=NULL) delete []res_decay_masses;
 
   return 0;
