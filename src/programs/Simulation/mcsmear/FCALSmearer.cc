@@ -46,7 +46,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
       }
    }
    
-   cout<<"get FCAL/pedestal_rms from calibDB"<<endl;
+   cout<<"get FCAL/MC/pedestal_rms from calibDB"<<endl;
    double FCAL_PED_RMS_TEMP;
    if(loop->GetCalib("FCAL/MC/pedestal_rms", FCAL_PED_RMS_TEMP)) {
       jerr << "Problem loading FCAL/MC/pedestal_rms from CCDB!" << endl;
@@ -54,7 +54,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
       FCAL_PED_RMS = FCAL_PED_RMS_TEMP;
    }
 	
-   cout<<"get FCAL/integral_peak_ratio from calibDB"<<endl;
+   cout<<"get FCAL/MC/integral_peak_ratio from calibDB"<<endl;
    double FCAL_INT_PEAK_TEMP;
    if(loop->GetCalib("FCAL/MC/integral_peak_ratio", FCAL_INT_PEAK_TEMP)) {
       jerr << "Problem loading FCAL/MC/integral_peak_ratio from CCDB!" << endl;
@@ -62,7 +62,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
       FCAL_INTEGRAL_PEAK = FCAL_INT_PEAK_TEMP;
    }
    
-   cout<<"get FCAL/threshold from calibDB"<<endl;
+   cout<<"get FCAL/MC/threshold from calibDB"<<endl;
    double FCAL_THRESHOLD_TEMP;
    if(loop->GetCalib("FCAL/MC/threshold", FCAL_THRESHOLD_TEMP)) {
       jerr << "Problem loading FCAL/MC/threshold from CCDB!" << endl;
@@ -70,7 +70,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
       FCAL_THRESHOLD = FCAL_THRESHOLD_TEMP;
    }
    
-   cout<<"get FCAL/threhsold_scaling from calibDB"<<endl;
+   cout<<"get FCAL/MC/threhsold_scaling from calibDB"<<endl;
    double FCAL_THRESHOLD_SCALING_TEMP;
    if(loop->GetCalib("FCAL/MC/threshold_scaling", FCAL_THRESHOLD_SCALING_TEMP)) {
        jerr << "Problem loading FCAL/MC/threshold_scaling from CCDB!" << endl;
@@ -79,7 +79,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
    }
 	
 
-   cout<<"get FCAL/mc_escale from calibDB"<<endl;
+   cout<<"get FCAL/MC/mc_escale from calibDB"<<endl;
    double FCAL_MC_ESCALE_TEMP;
    if(loop->GetCalib("FCAL/MC/mc_escale", FCAL_MC_ESCALE_TEMP)) {
         jerr << "Problem loading FCAL/MC/mc_escale from CCDB!" << endl;
