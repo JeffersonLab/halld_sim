@@ -1,4 +1,4 @@
-//July 19th 2018, Based on DOI: 10.1016/0550-3213(84)90382-1
+//July 26th 2019, Based on DOI: 10.1016/0550-3213(84)90382-1
 #if !defined(OMEGAPIANGAMP)
 #define OMEGAPIANGAMP
 
@@ -34,7 +34,7 @@ public:
  void updatePar( const AmpParameter& par );
 
 private:
-  
+  bool useCutoff;
   AmpParameter m_1p;
   AmpParameter w_1p;
   AmpParameter n_1p;
