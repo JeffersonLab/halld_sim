@@ -197,6 +197,7 @@ int main(int narg, char *argv[])
 				<< endl;
 	  exit(-2);
 	}
+	cout << "Opening Input File:  " << INPUT_FILE << " ..." << endl;
 	hddm_s::istream *instream = new hddm_s::istream(*infile);
 
 	// Open output file
@@ -206,6 +207,7 @@ int main(int narg, char *argv[])
 				<< "\" for writing." << endl;
 	  exit(-3);
 	}
+	cout << "Opening Output File:  " << OUTPUT_FILE << " ..." << endl;
 	hddm_s::ostream *outstream = new hddm_s::ostream(*outfile);
 
 	InitEvtGen();
