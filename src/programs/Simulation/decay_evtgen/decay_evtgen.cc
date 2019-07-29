@@ -32,12 +32,14 @@ using namespace std;
 #include "HDDM/hddm_s.hpp"
 
 #include "TLorentzVector.h"
+#include "TVector3.h"
 
 typedef struct {
 	int id = -1;
 	int type = -1;   // PDG type
 	bool decayed = false;
 	TLorentzVector momentum;
+	TVector3 vertex;
 } gen_particle_info_t;
 
 string INPUT_FILE = "";
@@ -74,6 +76,7 @@ void InitEvtGen()
  	 std::list<EvtDecayBase*> extraModels;
 
 #ifdef EVTGEN_EXTERNAL
+     // this is all required for using PHOTOS
  	 bool convertPythiaCodes(false);
 	 bool useEvtGenRandom(true);
  	 EvtExternalGenList genList(convertPythiaCodes, "", "gamma", useEvtGenRandom);
@@ -106,6 +109,7 @@ void ParseVertices(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &part
    hddm_s::VertexList vertices = hddmevent->getVertices();
    hddm_s::VertexList::iterator it_vertex;
 
+	// put the thrown particles in the HDDM record into some intermediate format
 	for (it_vertex = vertices.begin(); it_vertex != vertices.end(); ++it_vertex) {
     	hddm_s::ProductList &products = it_vertex->getProducts();
       	hddm_s::ProductList::iterator it_product;
@@ -121,6 +125,9 @@ void ParseVertices(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &part
 			TLorentzVector mom(it_product->getMomentum().getPx(), it_product->getMomentum().getPy(), 
 								it_product->getMomentum().getPz(), it_product->getMomentum().getE());
 			part_info.momentum = mom;
+			TVector3 vertex(it_vertex->getOrigin().getVx(), it_vertex->getOrigin().getVy(),
+							it_vertex->getOrigin().getVz());
+			part_info.vertex = vertex;
 			
 			// track the maximum particle ID for when we need to add more particles
 			if(max_particle_id < part_info.id)
@@ -137,7 +144,8 @@ void ParseVertices(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &part
 //-------------------------------
 // DecayParticles
 //-------------------------------
-void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &particle_info, int max_particle_id)
+void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &particle_info, 
+					int &max_particle_id)
 {
 	EvtParticle* parent(0);
 	for(auto &part : particle_info) {
@@ -147,17 +155,30 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 							part.momentum.Py(), part.momentum.Pz());
 		parent = EvtParticleFactory::particleFactory(partId, pInit);
 
-		// Generate the event
-		myGenerator->generateDecay(parent);    
-		
-		//cout << part.id << " " << part.type << " " << parent->getNDaug() << endl;  // DEBUG
-		
-		// add decay vertex and daughter particles to HDDM record
+		// Generate the particle decays - this is where the real meat happens
+		// This generates the particle decay based on the predefined/user-defined decays
+		// If the particle is "stable", then there is no defined decay in the default files
+		// which is true for particles like the electron and proton, but also the pion and kaon.
+		// "long-lived" particles should really be decayed by Geant.  
+		// I need to add an exclusion list so that we don't decay neutral kaons, hyperons, etc.
+		myGenerator->generateDecay(parent);
+
+		// add decay vertex and daughter particles to HDDM record, if a decay happened
 		if(parent->getNDaug() > 0) {
+			part.decayed = true;    
 			hddm_s::ReactionList rs = hddmevent->getReactions();
 			hddm_s::VertexList vertices = rs().addVertices();
 			hddm_s::ProductList ps = vertices().addProducts(parent->getNDaug());
 			
+			// set the event vertex
+		    hddm_s::OriginList os = vertices().addOrigins();
+			os().setT(0.0);
+			os().setVx(part.vertex.x());
+			os().setVy(part.vertex.y());
+			os().setVz(part.vertex.z());
+			
+			// save the information on the daughter particles
+			vector< gen_particle_info_t > decay_particle_info;
 			for (unsigned int i=0; i<parent->getNDaug(); i++){
 				ps(i).setType(PDGtoPType(parent->getDaug(i)->getPDGId()));
 				ps(i).setPdgtype(parent->getDaug(i)->getPDGId());
@@ -169,11 +190,25 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 				pmoms().setPy(parent->getDaug(i)->getP4Lab().get(2));
 				pmoms().setPz(parent->getDaug(i)->getP4Lab().get(3));
 				pmoms().setE(parent->getDaug(i)->getP4Lab().get(0));
+				
+				// save the same info so that we can go through these particles and see if they need to decay
+				gen_particle_info_t part_info;
+				part_info.id = max_particle_id;
+				part_info.type = parent->getDaug(i)->getPDGId();
+				part_info.decayed = false;
+				TLorentzVector mom(parent->getDaug(i)->getP4Lab().get(1), parent->getDaug(i)->getP4Lab().get(2), 
+								   parent->getDaug(i)->getP4Lab().get(3), parent->getDaug(i)->getP4Lab().get(0));
+				part_info.momentum = mom;
+				part_info.vertex = part.vertex;
+			
+				decay_particle_info.push_back(part_info);    
 			}
 		
+			// go ahead and decay the particles we just generated
+			DecayParticles(hddmevent, decay_particle_info, max_particle_id);
 		}
 		
-		parent->deleteTree();
+		parent->deleteTree();   //cleanup
 	}
 
 }
@@ -211,15 +246,20 @@ int main(int narg, char *argv[])
 	hddm_s::ostream *outstream = new hddm_s::ostream(*outfile);
 
 	InitEvtGen();
-
+	
+	int event_count = 1;
 	hddm_s::HDDM *hddmevent = new hddm_s::HDDM;
 	while(*instream >> *hddmevent) {
 		int num_particles = -1;   // number of particles in the event
 		int max_particle_id = 0;  // needed for generating decay particles
 
+		if( (event_count++%1000) == 0) {
+			cout << "Processed " << event_count << " events ..." << endl;
+		}
+
 		vector< gen_particle_info_t > particle_info;
-		ParseVertices(hddmevent, particle_info, max_particle_id);
-		DecayParticles(hddmevent, particle_info, max_particle_id);
+		ParseVertices(hddmevent, particle_info, max_particle_id);    // fill particle info vector
+		DecayParticles(hddmevent, particle_info, max_particle_id);   // run EvtGen decays based on particle info vector
 	
 	   	*outstream << *hddmevent;  // save event
 	}
