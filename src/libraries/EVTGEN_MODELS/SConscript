@@ -1,0 +1,17 @@
+
+import os
+import sbms
+
+# get env object and clone it
+Import('*')
+
+# Verify EVTGEN_HOME environment variable is set
+if os.getenv('EVTGEN_HOME', 'nada')!='nada':
+	
+	env = env.Clone()
+
+	sbms.AddEvtGen(env)
+	sbms.AddROOT(env)
+	sbms.library(env)
+
+

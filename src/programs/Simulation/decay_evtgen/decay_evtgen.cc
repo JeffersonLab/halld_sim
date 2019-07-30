@@ -30,6 +30,7 @@ using namespace std;
 
 #include "particleType.h"
 #include "HDDM/hddm_s.hpp"
+#include "EVTGEN_MODELS/RegisterGlueXModels.h"
 
 #include "TLorentzVector.h"
 #include "TVector3.h"
@@ -91,6 +92,9 @@ void InitEvtGen()
  	string evtGenParticleDefs = (evtgen_particle_defs_ptr==nullptr) ? EVTGEN_HOME + "/evt.pdl" : evtgen_particle_defs_ptr;
  	myGenerator = new EvtGen(evtGenDecayFile.c_str(), evtGenParticleDefs.c_str(), eng,
   		     				 radCorrEngine, &extraModels);
+  		     				 
+  	// Make special GlueX definitions
+  	GlueX_EvtGen::RegisterGlueXModels();
 
 	// open optional user decay file, if it exists
 	struct stat buffer;   
