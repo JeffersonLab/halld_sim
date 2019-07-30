@@ -133,7 +133,16 @@ void ParseVertices(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &part
 			if(max_particle_id < part_info.id)
 				max_particle_id = part_info.id;
 			
-			// check parent
+			// check parent and flag that is has been decayed
+			int parent_id = it_product->getParentid();
+			if(parent_id) {
+				for(auto &part : particle_info) {
+					if(part.id == parent_id) {
+						part.decayed = true;
+						break;
+					}
+				}
+			}
 			
 			particle_info.push_back(part_info);    
 		}
@@ -149,6 +158,9 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 {
 	EvtParticle* parent(0);
 	for(auto &part : particle_info) {
+		if(part.decayed)
+			continue;
+	
 		// Set up the parent particle
 		EvtId partId = EvtPDL::getId(std::string(EvtGenString(PDGtoPType(part.type))));
 		EvtVector4R pInit(part.momentum.E(), part.momentum.Px(), 
@@ -161,8 +173,17 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 		// which is true for particles like the electron and proton, but also the pion and kaon.
 		// "long-lived" particles should really be decayed by Geant.  
 		// I need to add an exclusion list so that we don't decay neutral kaons, hyperons, etc.
-		myGenerator->generateDecay(parent);
-
+		// hardcode it for now...
+		switch(PDGtoPType(part.type)) {
+			case KShort: case KLong: case Lambda: case SigmaPlus:
+  			case Sigma0: case SigmaMinus: case Xi0: case XiMinus:  case OmegaMinus:
+  			case AntiLambda: case AntiSigmaMinus: case AntiSigma0: case AntiSigmaPlus:
+  			case AntiXi0: case AntiXiPlus: case AntiOmegaPlus:
+  				continue;
+			default:
+				myGenerator->generateDecay(parent);
+		}
+		
 		// add decay vertex and daughter particles to HDDM record, if a decay happened
 		if(parent->getNDaug() > 0) {
 			part.decayed = true;    
