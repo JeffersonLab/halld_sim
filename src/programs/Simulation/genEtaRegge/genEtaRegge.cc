@@ -22,6 +22,7 @@
 using namespace std;
 
 #include "UTILITIES/BeamProperties.h"
+#include "EVTGEN_MODELS/RegisterGlueXModels.h"
 
 #include "EvtGen/EvtGen.hh"
 
@@ -568,6 +569,9 @@ int main(int narg, char *argv[])
  	string evtGenParticleDefs = (evtgen_particle_defs_ptr==nullptr) ? EVTGEN_HOME + "/evt.pdl" : evtgen_particle_defs_ptr;
  	myGenerator = new EvtGen(evtGenDecayFile.c_str(), evtGenParticleDefs.c_str(), eng,
   		     				 radCorrEngine, &extraModels);
+
+  	// Make special GlueX definitions
+  	GlueX_EvtGen::RegisterGlueXModels();
 
 	// open optional user decay file, if it exists
 	struct stat buffer;   
