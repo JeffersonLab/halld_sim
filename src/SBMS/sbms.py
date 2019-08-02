@@ -1089,10 +1089,10 @@ def AddAmpPlotter(env):
 # HepMC
 ##################################
 def AddHepMC(env):
-	HEPMC_HOME = os.getenv('HEPMC_HOME')
+	HEPMC_HOME = os.getenv('HEPMCDIR')
 	if HEPMC_HOME==None:
 		print ''
-		print 'HepMC is being requested but the HEPMC_HOME environment variable is not set!'
+		print 'HepMC is being requested but the HEPMCDIR environment variable is not set!'
 		print ''
         else:
                 HEPMC_CPPPATH = "%s/include" % (HEPMC_HOME)
@@ -1107,10 +1107,10 @@ def AddHepMC(env):
 # PHOTOS
 ##################################
 def AddPhotos(env):
-	PHOTOS_HOME = os.getenv('PHOTOS_HOME')
+	PHOTOS_HOME = os.getenv('PHOTOSDIR')
 	if PHOTOS_HOME==None:
 		print ''
-		print 'Photos is being requested but the PHOTOS_HOME environment variable is not set!'
+		print 'Photos is being requested but the PHOTOSDIR environment variable is not set!'
 		print ''
         else:
                 PHOTOS_CPPPATH = "%s/include" % (PHOTOS_HOME)
@@ -1126,17 +1126,17 @@ def AddPhotos(env):
 # EvtGen
 ##################################
 def AddEvtGen(env):
-	EVTGEN_HOME = os.getenv('EVTGEN_HOME')
+	EVTGEN_HOME = os.getenv('EVTGENDIR')
 	if EVTGEN_HOME==None:
 		print ''
-		print 'EvtGen is being requested but the EVTGEN_HOME environment variable is not set!'
+		print 'EvtGen is being requested but the EVTGENDIR environment variable is not set!'
 		print ''
         else:
                 AddHepMC(env)
                 AddPhotos(env)
                 EVTGEN_CPPPATH = "%s/" % (EVTGEN_HOME)
                 EVTGEN_LIBPATH = [ "%s/lib" % (EVTGEN_HOME), "%s/lib64" % (EVTGEN_HOME) ]   # either of these could be true
-                EVTGEN_LIBS = [ "EvtGen", "EvtGenExternal" ]
+                EVTGEN_LIBS = [ "EvtGen", "EvtGenExternal" ] 
                 EVTGEN_LIBS += [ "EVTGEN_MODELS" ]
                 env.AppendUnique(CXXFLAGS = ['-DEVTGEN_EXTERNAL'])
                 env.AppendUnique(CPPPATH = EVTGEN_CPPPATH)
