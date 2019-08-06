@@ -5,8 +5,8 @@ import sbms
 # get env object and clone it
 Import('*')
 
-# Verify EVTGEN_HOME environment variable is set
-if os.getenv('EVTGEN_HOME', 'nada')!='nada':
+# Verify EVTGENDIR environment variable is set
+if os.getenv('EVTGENDIR', 'nada')!='nada':
 	
 	env = env.Clone()
 

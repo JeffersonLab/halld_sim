@@ -537,7 +537,7 @@ int main(int narg, char *argv[])
 	cout << "Generating particle: " << particle_type << endl;
   	
   	// initialize EvtGen
-  	const char* evtgen_home_env_ptr = std::getenv("EVTGEN_HOME");
+  	const char* evtgen_home_env_ptr = std::getenv("EVTGENDIR");
   	string EVTGEN_HOME = (evtgen_home_env_ptr==nullptr) ? "." : evtgen_home_env_ptr;  // default to the current directory
   	
     // Define the random number generator
