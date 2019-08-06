@@ -22,6 +22,7 @@
 using namespace std;
 
 #include "UTILITIES/BeamProperties.h"
+#ifdef HAVE_EVTGEN
 #include "EVTGEN_MODELS/RegisterGlueXModels.h"
 
 #include "EvtGen/EvtGen.hh"
@@ -40,7 +41,8 @@ using namespace std;
 
 #ifdef EVTGEN_EXTERNAL
 #include "EvtGenExternal/EvtExternalGenList.hh"
-#endif
+#endif //EVTGEN_EXTERNAL
+#endif //HAVE_EVTGEN
 
 typedef struct {
 	int parent_id;
@@ -517,8 +519,9 @@ int main(int narg, char *argv[])
   infile >> num_decay_particles;
   infile.ignore(); // ignore the '\n' at the end of this line
 
-  // check to see if we should use EvtGen
   bool use_evtgen = false;
+#ifdef HAVE_EVTGEN
+  // check to see if we should use EvtGen
   EvtParticle* parent(0);
   EvtGen *myGenerator = nullptr;
   EvtId EtaId;  // read this in from file below - this is actually a class, which gets filled with reasonable defaults
@@ -537,7 +540,7 @@ int main(int narg, char *argv[])
 	cout << "Generating particle: " << particle_type << endl;
   	
   	// initialize EvtGen
-  	const char* evtgen_home_env_ptr = std::getenv("EVTGENDIR");
+  	const char* evtgen_home_env_ptr = std::getenv("EVTGEN_HOME");
   	string EVTGEN_HOME = (evtgen_home_env_ptr==nullptr) ? "." : evtgen_home_env_ptr;  // default to the current directory
   	
     // Define the random number generator
@@ -582,6 +585,7 @@ int main(int narg, char *argv[])
 	EtaId = EvtPDL::getId(std::string(particle_type));
   	
   }
+#endif // HAVE_EVTGEN
   
   // Set up vectors of particle ids
   vector<Particle_t>particle_types;
@@ -876,6 +880,7 @@ int main(int narg, char *argv[])
     vector<Particle_t>output_particle_types;
     output_particle_types.push_back(Proton);
     vector<secondary_decay_t>secondary_vertices;
+#ifdef HAVE_EVTGEN
     if(use_evtgen) {
 		// Set up the parent particle
 		EvtVector4R pInit(eta4.E(), eta4.X(), eta4.Y(), eta4.Z());
@@ -913,6 +918,7 @@ int main(int narg, char *argv[])
 		parent->deleteTree();
    
     } else {   // no evtgen
+#endif //HAVE_EVTGEN
 		// Generate 3-body decay of eta according to phase space
 		TGenPhaseSpace phase_space;
 		phase_space.SetDecay(eta4,num_decay_particles,decay_masses.data());
@@ -975,7 +981,9 @@ int main(int narg, char *argv[])
 				}
 			}
 		}
+#ifdef HAVE_EVTGEN
     }
+#endif //HAVE_EVTGEN
     
     // Write Event to HDDM file
     WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,secondary_vertices,file);
