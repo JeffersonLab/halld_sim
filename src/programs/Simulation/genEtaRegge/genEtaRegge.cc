@@ -45,6 +45,7 @@ using namespace std;
 #endif //HAVE_EVTGEN
 
 typedef struct {
+	bool decayed = false; // not used for now
 	int parent_id;
 	vector<Particle_t> ids;
 	vector<TLorentzVector> p4vs;
@@ -69,7 +70,6 @@ static inline void trim(std::string &s) {
     ltrim(s);
     rtrim(s);
 }
-
 
 // Masses
 const double m_p=0.93827; // GeV
@@ -280,6 +280,7 @@ double CrossSection(double s,double t,double p_gamma,double p_eta,double theta){
 void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
 		vector<Particle_t> &particle_types,
 		vector<TLorentzVector> &particle_vectors, 
+		vector<bool> &particle_decayed,
 		vector< secondary_decay_t > &secondary_vertices,
 		s_iostream_t *file){  
    s_PhysicsEvents_t* pes;
@@ -333,7 +334,10 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
    int part_ind = 1;
    for (unsigned int i=0;i<particle_vectors.size();i++,ps->mult++){
      Particle_t my_particle=particle_types[i];
-     ps->in[ps->mult].type = my_particle;
+     if(particle_decayed[i])
+	     ps->in[ps->mult].type = Unknown;  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
+	 else
+	     ps->in[ps->mult].type = my_particle;
      ps->in[ps->mult].pdgtype = PDGtype(my_particle);
      ps->in[ps->mult].id = part_ind++; /* unique value for this particle within the event */
      ps->in[ps->mult].parentid = 0;  /* All internally generated particles have no parent */
@@ -344,7 +348,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
      ps->in[ps->mult].momentum->pz = particle_vectors[i].Pz();
      ps->in[ps->mult].momentum->E  = particle_vectors[i].E();
    }
-   // write out any secondary vertices (like pi0's)
+   // write out any secondary vertices (like pi0 decays)
    //		vector< secondary_decay_t > &secondary_vertices,
    if(secondary_vertices.size() > 0) {
    		int vertex_ind = 1;
@@ -361,6 +365,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
 		   // add in the particles associated with this vertex
 		   for (unsigned int i=0; i<the_vertex.ids.size(); i++,ps->mult++){
 			 Particle_t my_particle = the_vertex.ids[i];
+			 ps->in[ps->mult].decayVertex = vertex_ind;
 			 ps->in[ps->mult].type = my_particle;
 			 ps->in[ps->mult].pdgtype = PDGtype(my_particle);
 			 ps->in[ps->mult].id = part_ind++; /* unique value for this particle within the event */
@@ -540,7 +545,7 @@ int main(int narg, char *argv[])
 	cout << "Generating particle: " << particle_type << endl;
   	
   	// initialize EvtGen
-  	const char* evtgen_home_env_ptr = std::getenv("EVTGEN_HOME");
+  	const char* evtgen_home_env_ptr = std::getenv("EVTGENDIR");
   	string EVTGEN_HOME = (evtgen_home_env_ptr==nullptr) ? "." : evtgen_home_env_ptr;  // default to the current directory
   	
     // Define the random number generator
@@ -877,8 +882,13 @@ int main(int narg, char *argv[])
     // Gather the particles in the reaction and write out event in hddm format
     vector<TLorentzVector>output_particle_vectors;
     output_particle_vectors.push_back(proton4);
+
     vector<Particle_t>output_particle_types;
     output_particle_types.push_back(Proton);
+
+    vector<bool>output_particle_decays;
+	output_particle_decays.push_back(false);
+	
     vector<secondary_decay_t>secondary_vertices;
 #ifdef HAVE_EVTGEN
     if(use_evtgen) {
@@ -887,7 +897,7 @@ int main(int narg, char *argv[])
 		parent = EvtParticleFactory::particleFactory(EtaId, pInit);
 
 		// Generate the event
-		myGenerator->generateDecay(parent);    
+		myGenerator->generateDecay(parent);
 		
 		// Write out resulting particles
 		for(unsigned int i=0; i<parent->getNDaug(); i++) {
@@ -901,6 +911,8 @@ int main(int narg, char *argv[])
 			// see if any of the particles decay and add info on them
 			// should be mostly pi0's, but we should go recursive...
 			if(parent->getDaug(i)->getNDaug()>0) {
+				output_particle_decays.push_back(true);
+
 				secondary_decay_t secondary_vertex;
 				secondary_vertex.parent_id = i;
 				for(unsigned int j=0; j<parent->getDaug(i)->getNDaug(); j++) {
@@ -912,7 +924,9 @@ int main(int narg, char *argv[])
 					secondary_vertex.ids.push_back(PDGtoPType(parent->getDaug(i)->getDaug(j)->getPDGId()));
 				}
 				secondary_vertices.push_back(secondary_vertex);
-			}			
+			} else {
+				output_particle_decays.push_back(false);
+			}
 		}
 	
 		parent->deleteTree();
@@ -986,7 +1000,7 @@ int main(int narg, char *argv[])
 #endif //HAVE_EVTGEN
     
     // Write Event to HDDM file
-    WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,secondary_vertices,file);
+    WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,output_particle_decays,secondary_vertices,file);
     
     if ((i%(Nevents/10))==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }

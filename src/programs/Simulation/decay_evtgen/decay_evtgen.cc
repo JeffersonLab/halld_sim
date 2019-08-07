@@ -41,6 +41,7 @@ typedef struct {
 	bool decayed = false;
 	TLorentzVector momentum;
 	TVector3 vertex;
+	hddm_s::ProductList::iterator hddmProduct;
 } gen_particle_info_t;
 
 string INPUT_FILE = "";
@@ -51,7 +52,7 @@ void InitEvtGen();
 void ParseCommandLineArguments(int narg,char *argv[]);
 void Usage(void);
 void ParseVertices(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &particle_info);
-void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &particle_info);
+void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &particle_info, int &vertex_id);
 
 //-------------------------------
 // InitEvtGen
@@ -132,6 +133,7 @@ void ParseVertices(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &part
 			TVector3 vertex(it_vertex->getOrigin().getVx(), it_vertex->getOrigin().getVy(),
 							it_vertex->getOrigin().getVz());
 			part_info.vertex = vertex;
+			part_info.hddmProduct = it_product;
 			
 			// track the maximum particle ID for when we need to add more particles
 			if(max_particle_id < part_info.id)
@@ -158,7 +160,7 @@ void ParseVertices(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &part
 // DecayParticles
 //-------------------------------
 void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &particle_info, 
-					int &max_particle_id)
+					int &max_particle_id, int &vertex_id)
 {
 	EvtParticle* parent(0);
 	for(auto &part : particle_info) {
@@ -186,6 +188,9 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
   				continue;
 			default:
 				myGenerator->generateDecay(parent);
+				if(parent->getNDaug() > 0) 
+					part.hddmProduct->setType(Unknown);  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
+				break;
 		}
 		
 		// add decay vertex and daughter particles to HDDM record, if a decay happened
@@ -194,17 +199,20 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 			hddm_s::ReactionList rs = hddmevent->getReactions();
 			hddm_s::VertexList vertices = rs().addVertices();
 			hddm_s::ProductList ps = vertices().addProducts(parent->getNDaug());
-			
+			hddm_s::ProductList::iterator it_product = ps.begin();
+
 			// set the event vertex
 		    hddm_s::OriginList os = vertices().addOrigins();
 			os().setT(0.0);
 			os().setVx(part.vertex.x());
 			os().setVy(part.vertex.y());
 			os().setVz(part.vertex.z());
+			vertex_id++;
 			
 			// save the information on the daughter particles
 			vector< gen_particle_info_t > decay_particle_info;
-			for (unsigned int i=0; i<parent->getNDaug(); i++){
+			for (unsigned int i=0; i<parent->getNDaug(); i++, it_product++){
+				ps(i).setDecayVertex(vertex_id);
 				ps(i).setType(PDGtoPType(parent->getDaug(i)->getPDGId()));
 				ps(i).setPdgtype(parent->getDaug(i)->getPDGId());
 				ps(i).setId(++max_particle_id);   // unique value for this particle within the event
@@ -225,12 +233,13 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 								   parent->getDaug(i)->getP4Lab().get(3), parent->getDaug(i)->getP4Lab().get(0));
 				part_info.momentum = mom;
 				part_info.vertex = part.vertex;
+				part_info.hddmProduct = it_product;
 			
 				decay_particle_info.push_back(part_info);    
 			}
 		
 			// go ahead and decay the particles we just generated
-			DecayParticles(hddmevent, decay_particle_info, max_particle_id);
+			DecayParticles(hddmevent, decay_particle_info, max_particle_id, vertex_id);
 		}
 		
 		parent->deleteTree();   //cleanup
@@ -283,8 +292,9 @@ int main(int narg, char *argv[])
 		}
 
 		vector< gen_particle_info_t > particle_info;
+		int vertex_id = 0;
 		ParseVertices(hddmevent, particle_info, max_particle_id);    // fill particle info vector
-		DecayParticles(hddmevent, particle_info, max_particle_id);   // run EvtGen decays based on particle info vector
+		DecayParticles(hddmevent, particle_info, max_particle_id, vertex_id);   // run EvtGen decays based on particle info vector
 	
 	   	*outstream << *hddmevent;  // save event
 	}
