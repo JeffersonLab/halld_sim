@@ -37,7 +37,8 @@ using namespace std;
 
 typedef struct {
 	int id = -1;
-	int type = -1;   // PDG type
+	Particle_t type = Unknown;
+	int pdgtype = -1;   
 	bool decayed = false;
 	TLorentzVector momentum;
 	TVector3 vertex;
@@ -125,7 +126,8 @@ void ParseVertices(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &part
 
 			gen_particle_info_t part_info;
 			part_info.id = it_product->getId();
-			part_info.type = it_product->getPdgtype();
+			part_info.type = it_product->getType();
+			part_info.pdgtype = it_product->getPdgtype();
 			part_info.decayed = false;
 			TLorentzVector mom(it_product->getMomentum().getPx(), it_product->getMomentum().getPy(), 
 								it_product->getMomentum().getPz(), it_product->getMomentum().getE());
@@ -164,11 +166,29 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 {
 	EvtParticle* parent(0);
 	for(auto &part : particle_info) {
+//   		cerr << "part id = " << part.id << "  type = " << part.type 
+//  			<< "  pdgtype = " << part.pdgtype << "  evtid = " <<   EvtPDL::evtIdFromStdHep(part.pdgtype) << endl;
+		
 		if(part.decayed)
 			continue;
+		if(part.type == 0) {
+			cout << "Particle of type 0 detected, skipping!" << endl;
+			continue;
+		}
 	
 		// Set up the parent particle
-		EvtId partId = EvtPDL::getId(std::string(EvtGenString(PDGtoPType(part.type))));
+		//EvtId partId = EvtPDL::getId(std::string(EvtGenString(part.type)));  // do we really want to use EvtGenString?  maybe use some internal EvtGen function instead...
+		EvtId partId;   
+		//  do some mapping between the particle IDs in the HDDM files and EvtGen IDs
+		//  this gets complicated since most generators are good about writing out particle types
+		//  in the PDG scheme, but some aren't.  should fix that at some point
+		if(part.pdgtype != 0)
+			// prefer determining particle type from its PDG numbering
+			partId = EvtPDL::evtIdFromStdHep(part.pdgtype);  
+		else
+			// use the standard particle type as a backup - would be nice
+			// if we didn't have these dependencies!
+			partId = EvtPDL::getId(std::string(EvtGenString(part.type))); 
 		EvtVector4R pInit(part.momentum.E(), part.momentum.Px(), 
 							part.momentum.Py(), part.momentum.Pz());
 		parent = EvtParticleFactory::particleFactory(partId, pInit);
@@ -180,7 +200,7 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 		// "long-lived" particles should really be decayed by Geant.  
 		// I need to add an exclusion list so that we don't decay neutral kaons, hyperons, etc.
 		// hardcode it for now...
-		switch(PDGtoPType(part.type)) {
+		switch(part.type) {
 			case KShort: case KLong: case Lambda: case SigmaPlus:
   			case Sigma0: case SigmaMinus: case Xi0: case XiMinus:  case OmegaMinus:
   			case AntiLambda: case AntiSigmaMinus: case AntiSigma0: case AntiSigmaPlus:
@@ -227,7 +247,8 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 				// save the same info so that we can go through these particles and see if they need to decay
 				gen_particle_info_t part_info;
 				part_info.id = max_particle_id;
-				part_info.type = parent->getDaug(i)->getPDGId();
+				part_info.type = PDGtoPType(parent->getDaug(i)->getPDGId());
+				part_info.pdgtype = parent->getDaug(i)->getPDGId();
 				part_info.decayed = false;
 				TLorentzVector mom(parent->getDaug(i)->getP4Lab().get(1), parent->getDaug(i)->getP4Lab().get(2), 
 								   parent->getDaug(i)->getP4Lab().get(3), parent->getDaug(i)->getP4Lab().get(0));
