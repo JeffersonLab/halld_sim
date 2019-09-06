@@ -171,7 +171,7 @@ TwoPiAnglesRadiative::calcAmplitude( GDouble** pKin ) const {
 
     // vector meson production from K. Schilling et. al.
     GDouble Pgamma;
-    if(polFraction >= 0.) { // for fitting with constant polarization 
+    if(polFraction > 0.) { // for fitting with constant polarization 
 	    Pgamma = polFraction;
     }
     else{
