@@ -1,4 +1,4 @@
-//may 28th 2018, Atkinson 84, wigner D, config input
+//July 26th 2019, Based on DOI: 10.1016/0550-3213(84)90382-1
 #include <ctime>
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,7 +28,7 @@
 
 TLorentzVector targetopi(0,0,0,0.938);
 
-double par[22];
+ double pararray[22];
 
 //Create array of lmLM:
 int lmLM[25][4] = {{0,0,0,0}, {0,0,2,0}, {0,0,2,1}, {0,0,2,2}, {2,0,0,0}, {2,0,2,0}, {2,0,2,1}, {2,0,2,2}, {2,1,2,0}, {2,1,2,1}, {2,1,2,2}, {2,2,2,0}, {2,2,2,1}, {2,2,2,2}, {2,1,1,1}, {0,0,1,0}, {0,0,1,1}, {2,1,1,0}, {2,1,1,1}, {2,1,2,1}, {2,1,2,2}, {2,2,2,1}, {2,2,2,2}, {2,0,1,0}, {2,0,1,1}};
@@ -49,11 +49,11 @@ double calpha(int alpha)
   double normalization = 0.0;
   
   int l = lmLM[alpha][0];
-  int L = lmLM[alpha][1];
-  int m = lmLM[alpha][2];
+  int m = lmLM[alpha][1];
+  int L = lmLM[alpha][2];
   int M = lmLM[alpha][3];
   
-  double normalization_num = 4.0 * TMath::Pi() * TMath::Pi();
+  double normalization_num = 16.0 * TMath::Pi() * TMath::Pi();
   double normalization_denum = ((2.0 * l)+1.0) * ((2.0 * L)+1.0) * (2.0-delta(m,0)) * (2.0-delta(M,0));
   normalization = normalization_denum/normalization_num;
   
@@ -62,12 +62,10 @@ double calpha(int alpha)
 
 double hmoment(int alpha, vector<double> vector)
 {
-  double loccostheta1 = TMath::Cos(vector[0]);
-  double locsintheta1 = TMath::Sin(vector[0]);
-  double locphi1 = vector[1];
-  double loccosthetaH1 = TMath::Cos(vector[2]);
-  double locsinthetaH1 = TMath::Sin(vector[2]);
-  double locphiH1 = vector[3];
+  double loccostheta = TMath::Cos(vector[0]);
+  double locphi = vector[1];
+  double loccosthetaH = TMath::Cos(vector[2]);
+  double locphiH = vector[3];
 
   int l = lmLM[alpha][0];
   int m = lmLM[alpha][1];
@@ -77,31 +75,30 @@ double hmoment(int alpha, vector<double> vector)
    double moment = 0.0;
   if (alpha < 15)
   {
-    moment = 0.5 * std::real(wignerD(L, M, m, loccostheta1, locphi1) * wignerD(l, m, 0, loccosthetaH1, locphiH1) + pow(-1.0,L+M) * wignerD(L, M, m, loccostheta1, locphi1) * wignerD(l, m, 0, loccosthetaH1, locphiH1));
+    moment = 0.5 * std::real(wignerD(L, M, m, loccostheta, locphi) * wignerD(l, m, 0, loccosthetaH, locphiH) + pow(-1.0,L+M) * wignerD(L, -M, m, loccostheta, locphi) * wignerD(l, m, 0, loccosthetaH, locphiH));
   }
-  else {moment = 0.5 * std::real(wignerD(L, M, m, loccostheta1, locphi1) * wignerD(l, m, 0, loccosthetaH1, locphiH1) - pow(-1.0,L+M) * wignerD(L, M, m, loccostheta1, locphi1) * wignerD(l, m, 0, loccosthetaH1, locphiH1));}
+  else {moment = 0.5 * std::real(wignerD(L, M, m, loccostheta, locphi) * wignerD(l, m, 0, loccosthetaH, locphiH) - pow(-1.0,L+M) * wignerD(L, -M, m, loccostheta, locphi) * wignerD(l, m, 0, loccosthetaH, locphiH));}
 
   return moment;
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
-  UserAmplitude< omegapiAngAmp >( args ),
-  m_fastCalc( false )
+  UserAmplitude< omegapiAngAmp >( args )
 {
-	assert( args.size() == 23 || args.size() == 24 );
+	assert( args.size() == 24 || args.size() == 25 );
 	
-	if(args.size() == 24){
-		polAngle  = atof(args[22].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
-		polFraction = AmpParameter( args[23] ); // polarization fraction
+	if(args.size() == 25){
+		polAngle  = atof(args[23].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
+		polFraction = AmpParameter( args[24] ); // polarization fraction
 		std::cout << "Fixed polarization fraction =" << polFraction << " and pol.angle= " << polAngle << " degrees." << std::endl;
 	}
-	else if (args.size() == 23){
+	else if (args.size() == 24){
 		// BeamProperties configuration file
-		TString beamConfigFile = args[22].c_str();
+		TString beamConfigFile = args[23].c_str();
 		BeamProperties beamProp(beamConfigFile);
 		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
 		polAngle = beamProp.GetPolAngle();
-		std::cout << "Polarisation angle of " << polAngle << " and degree from BeamProperties." << std::endl;
+		std::cout << "Polarisation angle of " << polAngle << " from BeamProperties." << std::endl;
 		if(polAngle == -1)
 			std::cout << "This is an amorphous run. Set beam polarisation to 0." << std::endl;
 		for(Int_t i=0; i<polFrac_vs_E->GetXaxis()->GetNbins()+2; i++){
@@ -111,57 +108,86 @@ omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
 	else
 	assert(0);
 
-    ds_ratio = atof( args[9].c_str() );
+    //A switch to use cut off only when generating (casues problem when fitting)
+    //Set to 1 with gen_amp, 0 with fit.
+    useCutoff = atoi( args[22].c_str() );
+ 
+	
+    ds_ratio = AmpParameter(args[9]);
     
     //1+ state
-    m_1p = atof( args[0].c_str() );
-    w_1p = atof( args[1].c_str() );
-    n_1p = atof( args[2].c_str() );
-    phi0_1p = atof( args[10].c_str() );
-    theta_1p = atof( args[11].c_str() );
-    phip_1p = atof( args[12].c_str() );
-    phim_1p = atof( args[13].c_str() );
-    psi_1p = atof( args[14].c_str() );
+    m_1p = AmpParameter(args[0]);
+    w_1p = AmpParameter(args[1]);
+    n_1p = AmpParameter(args[2]);
+    phi0_1p = AmpParameter(args[10]);
+    theta_1p = AmpParameter(args[11]);
+    phip_1p = AmpParameter(args[12]);
+    phim_1p = AmpParameter(args[13]);
+    psi_1p = AmpParameter(args[14]);
     //1- state    
-    m_1m = atof( args[3].c_str() );
-    w_1m = atof( args[4].c_str() );
-    n_1m = atof( args[5].c_str() );
-    phi0_1m = atof( args[15].c_str() );
-    theta_1m = atof( args[16].c_str() );
-    phip_1m = atof( args[17].c_str() );
-    phim_1m = atof( args[18].c_str() );
-    psi_1m = atof( args[19].c_str() );
+    m_1m = AmpParameter(args[3]);
+    w_1m = AmpParameter(args[4]);
+    n_1m = AmpParameter(args[5]);
+    phi0_1m = AmpParameter(args[15]);
+    theta_1m = AmpParameter(args[16]);
+    phip_1m = AmpParameter(args[17]);
+    phim_1m = AmpParameter(args[18]);
+    psi_1m = AmpParameter(args[19]);
     //0- state    
-    m_0m = atof( args[6].c_str() );
-    w_0m = atof( args[7].c_str() );
-    n_0m = atof( args[8].c_str() );
-    phi0_0m = atof( args[20].c_str() );
-    theta_0m = atof( args[21].c_str() );    
+    m_0m = AmpParameter(args[6]);
+    w_0m = AmpParameter(args[7]);
+    n_0m = AmpParameter(args[8]);
+    phi0_0m = AmpParameter(args[20]);
+    theta_0m = AmpParameter(args[21]);    
 
-    par[0] = m_1p;
-    par[1] = w_1p;
-    par[2] = n_1p;
-    par[3] = m_1m;
-    par[4] = w_1m;
-    par[5] = n_1m;
-    par[6] = m_0m;
-    par[7] = w_0m;
-    par[8] = n_0m;
-    par[9] = ds_ratio;
-    par[10] = phi0_1p;
-    par[11] = theta_1p;
-    par[12] = phip_1p;
-    par[13] = phim_1p;
-    par[14] = psi_1p;
-    par[15] = phi0_1m;
-    par[16] = theta_1m;
-    par[17] = phip_1m;
-    par[18] = phim_1m;
-    par[19] = psi_1m;
-    par[20] = phi0_0m;
-    par[21] = theta_0m;
+  registerParameter(m_1p);
+  registerParameter(w_1p);
+  registerParameter(n_1p);
+  registerParameter(phi0_1p);
+  registerParameter(theta_1p);
+  registerParameter(phip_1p);
+  registerParameter(phim_1p);
+  registerParameter(psi_1p);
 
-  mG0_omega = 0.00849;    
+  registerParameter(m_1m);
+  registerParameter(w_1m);
+  registerParameter(n_1m);
+  registerParameter(phi0_1m);
+  registerParameter(theta_1m);
+  registerParameter(phip_1m);
+  registerParameter(phim_1p);
+  registerParameter(psi_1m);
+
+  registerParameter(m_0m);
+  registerParameter(w_0m);
+  registerParameter(n_0m);
+  registerParameter(phi0_0m);
+  registerParameter(theta_0m);
+
+  registerParameter(ds_ratio);
+
+    pararray[0] = m_1p;
+    pararray[1] = w_1p;
+    pararray[2] = n_1p;
+    pararray[3] = m_1m;
+    pararray[4] = w_1m;
+    pararray[5] = n_1m;
+    pararray[6] = m_0m;
+    pararray[7] = w_0m;
+    pararray[8] = n_0m;
+    pararray[9] = ds_ratio;
+    pararray[10] = phi0_1p;
+    pararray[11] = theta_1p;
+    pararray[12] = phip_1p;
+    pararray[13] = phim_1p;
+    pararray[14] = psi_1p;
+    pararray[15] = phi0_1m;
+    pararray[16] = theta_1m;
+    pararray[17] = phip_1m;
+    pararray[18] = phim_1m;
+    pararray[19] = psi_1m;
+    pararray[20] = phi0_0m;
+    pararray[21] = theta_0m;
 }
 
 //Define breakup momentum (x here is the measured mass of the omegapi)
@@ -292,7 +318,9 @@ std::complex<double> rho(double phi0, double theta, double phiplus, double phimi
     f_beta = f_minus(phiminus2, theta2, psi2);
     f_beta_neg = f_plus(phiplus2, theta2, psi2);
   }
+
   return f_alpha * std::conj(f_beta) + eta_parity(ialpha) * eta_parity(ibeta) * TMath::Power(-1.0, J_spin(ialpha) - J_spin(ibeta)) * TMath::Power(-1.0, Lambda_H(iH) - Lambda_H(iHPrime)) * f_alpha_neg * std::conj(f_beta_neg);
+
 }
 
 
@@ -308,15 +336,23 @@ std::complex<double> HelicitySum(double phi0, double theta, double phiplus, doub
       sumH += rho(phi0, theta, phiplus, phiminus, psi, phi02, theta2, phiplus2, phiminus2, psi2, iH, iHPrime, ialpha, ibeta) * clebschGordan(J_spin(ibeta), L, Lambda_H(iHPrime), M, J_spin(ialpha), Lambda_H(iH));
     }
   }
+  
+      //cout << "SumH = " << sumH << endl;
   return sumH;
 }
 
 //Define t_star (sum of production density matrix)
 std::complex<double> t_star_LM(double phi0, double theta, double phiplus, double phiminus, double psi, double phi02, double theta2, double phiplus2, double phiminus2, double psi2, int ialpha, int ibeta, int L, int M) {
-  return TMath::Sqrt((2.0*J_spin(ibeta) + 1.0)/(2.0*J_spin(ialpha) + 1.0)) * HelicitySum(phi0, theta, phiplus, phiminus, psi, phi02, theta2, phiplus2, phiminus2, psi2, ialpha, ibeta, L, M);
+
+  complex <GDouble> t_star_LM_par = TMath::Sqrt((2.0*J_spin(ibeta) + 1.0)/(2.0*J_spin(ialpha) + 1.0)) * HelicitySum(phi0, theta, phiplus, phiminus, psi, phi02, theta2, phiplus2, phiminus2, psi2, ialpha, ibeta, L, M);
+  
+      //cout << "T*(LM) = " << t_star_LM_par << endl;
+
+  return t_star_LM_par;
 }
 
-double SingleIntensity(double x, double *par, int l, int m, int L, int M, int ialpha, int ibeta) {
+double SingleIntensity(double x, double *pararray, int l, int m, int L, int M, int ialpha, int ibeta) {
+    double single_intensity = 0.;
     double phiplus_alpha = 0;
     double phiminus_alpha = 0;
     double psi_alpha = 0;
@@ -324,28 +360,34 @@ double SingleIntensity(double x, double *par, int l, int m, int L, int M, int ia
     double phiminus_beta = 0;
     double psi_beta = 0;
     if (ialpha < 2) {
-      phiplus_alpha = par[5*ialpha + 12];
-      phiminus_alpha = par[5*ialpha + 13];
-      psi_alpha = par[5*ialpha + 14];
+      phiplus_alpha = pararray[5*ialpha + 12];
+      phiminus_alpha = pararray[5*ialpha + 13];
+      psi_alpha = pararray[5*ialpha + 14];
     }
     if (ibeta < 2) {
-      phiplus_beta = par[5*ibeta + 12];
-      phiminus_beta = par[5*ibeta + 13];
-      psi_beta = par[5*ibeta + 14];
+      phiplus_beta = pararray[5*ibeta + 12];
+      phiminus_beta = pararray[5*ibeta + 13];
+      psi_beta = pararray[5*ibeta + 14];
     }
-  return std::real(t_star_LM(par[5*ialpha + 10], par[5*ialpha + 11], phiplus_alpha, phiminus_alpha, psi_alpha, par[5*ibeta + 10], par[5*ibeta + 11], phiplus_beta, phiminus_beta, psi_beta, ialpha, ibeta, L, M) * f_Llm(x, par[3*ialpha + 0], par[3*ialpha + 1], par[3*ialpha + 2], ialpha, par[3*ibeta + 0], par[3*ibeta + 1], par[3*ibeta + 2], ibeta, par[9], l, m, L) * clebschGordan(1, l, 0, 0, 1, 0));
+
+    single_intensity = std::real(t_star_LM(pararray[5*ialpha + 10], pararray[5*ialpha + 11], phiplus_alpha, phiminus_alpha, psi_alpha, pararray[5*ibeta + 10], pararray[5*ibeta + 11], phiplus_beta, phiminus_beta, psi_beta, ialpha, ibeta, L, M) * f_Llm(x, pararray[3*ialpha + 0], pararray[3*ialpha + 1], pararray[3*ialpha + 2], ialpha, pararray[3*ibeta + 0], pararray[3*ibeta + 1], pararray[3*ibeta + 2], ibeta, pararray[9], l, m, L) * clebschGordan(1, l, 0, 0, 1, 0));
+    //cout << "single intensity = " << single_intensity << endl;
+
+  return single_intensity;
 }
 
-double Intensity(double x, double *par, int i){
+double Intensity(double x, double *pararray, int i){
   
     double IntensitySum = 0;
   for (int ialpha = 0; ialpha < 3; ialpha++) { //double sum over combination of JP states
     for (int ibeta = 0; ibeta < 3; ibeta++) {
       if ( (ialpha != ibeta) & (eta_parity(ialpha) == eta_parity(ibeta)) ) //Only want interference moments with opposite parity
 	continue;
-      IntensitySum += SingleIntensity(x, par, lmLM[i][0], lmLM[i][1], lmLM[i][2], lmLM[i][3], ialpha, ibeta);
+      IntensitySum += SingleIntensity(x, pararray, lmLM[i][0], lmLM[i][1], lmLM[i][2], lmLM[i][3], ialpha, ibeta);
     }
   }
+    //cout << "IntensitySum = " << IntensitySum << endl;
+
   return IntensitySum;
 }
 
@@ -355,26 +397,33 @@ double wdist(int k, double x, double Phi, vector<double> vector)
 
           for (int alpha = 0; alpha < 25; alpha++)//quantum states
 	  {
-	    if (k == 0){dist += Intensity(x, par, alpha) * hmoment(alpha, vector) * calpha(alpha);}
+	    if (k == 0){dist += Intensity(x, pararray, alpha) * hmoment(alpha, vector) * calpha(alpha);}
 
-	    if (k == 1){dist += Intensity(x, par, alpha) * TMath::Sqrt(2.0) * TMath::Cos(2.0 * Phi) * hmoment(alpha, vector) * calpha(alpha);}
+	    if (k == 1){dist += Intensity(x, pararray, alpha) * hmoment(alpha, vector) * calpha(alpha) * TMath::Sqrt(2.0) * TMath::Cos(2.0 * Phi);}
 
-	    if (k == 2){dist += Intensity(x, par, alpha) * TMath::Sqrt(2.0) * TMath::Sin(2.0 * Phi) * hmoment(alpha, vector) * calpha(alpha);}
+	    if (k == 2){dist += Intensity(x, pararray, alpha) * hmoment(alpha, vector) * calpha(alpha) * TMath::Sqrt(2.0) * TMath::Sin(2.0 * Phi);}
 
 	  }//alpha loop
-    //cout << "dist = " << dist << endl;
+  // cout << "wdist(" << k << ") = " << dist << endl;
 
     return dist;
   }
 
-double sqrtIntensity(double polfrac, double x, double Phi, vector<double> vector)
+    complex <GDouble> sqrtIntensity(double polfrac, double x, double Phi, vector<double> vector)
+//    double sqrtIntensity(double polfrac, double x, double Phi, vector<double> vector)
   {
-    double intensity = 0.0;
+	double intensity = 0.0;
+	double real_sqrt_intensity = 0.0;
+	double ima_sqrt_intensity = 0.0;
 
-	intensity = wdist(0, x, Phi,vector) + polfrac * wdist(1, x, Phi,vector) * TMath::Cos(2.0 * Phi) +  polfrac * wdist(2, x, Phi,vector) * TMath::Sin(2.0 * Phi);
+	intensity = wdist(0, x, Phi,vector) - polfrac * wdist(1, x, Phi,vector) * TMath::Cos(2.0 * Phi) -  polfrac * wdist(2, x, Phi,vector) * TMath::Sin(2.0 * Phi);
 	
-    //cout << "sqrtintensity = " << TMath::Sqrt(intensity) << endl;
-    return TMath::Sqrt(intensity);
+       if (intensity >= 0.0) real_sqrt_intensity = sqrt(intensity);
+       if (intensity < 0.0) ima_sqrt_intensity = sqrt(abs(intensity));
+	
+	complex <GDouble> sqrt_intensity(real_sqrt_intensity,ima_sqrt_intensity);
+	//cout << "intensity = " << intensity << ", sqrt_intensity = " << sqrt_intensity << endl;
+       return sqrt_intensity;
   }
 
 ////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
@@ -382,30 +431,25 @@ double sqrtIntensity(double polfrac, double x, double Phi, vector<double> vector
 complex< GDouble >
 omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
 {
-  bool useCutoff=true;
-  complex <GDouble> i(0, 1), COne(1, 0),CZero(0,0);  
+  complex <GDouble> CZero(0,0);  
 
   ////////////////////////////////////////////////// Get Lorentz Vectors of Particles //////////////////////////////////
 
   TLorentzVector beam  (pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0]); 
   TLorentzVector recoil(pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0]);
 
-  GDouble m0_omega=0.782;
-
-  TLorentzVector rhos_pim(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
-  TLorentzVector rhos_pip(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
+  TLorentzVector rhos_pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+  TLorentzVector rhos_pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
   TLorentzVector rho = rhos_pip + rhos_pim;
-
-  if( useCutoff && rho.M()+0.135 > m0_omega+3.0*mG0_omega){
-    ////cout << "s";
-    return CZero;
-  }
 
   TLorentzVector omegas_pi(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
   TLorentzVector omega = rho + omegas_pi;
 
+  //Cut off to force a narrow omega peak. Casues problem with fit.
+  GDouble m0_omega=0.782;
+  GDouble mG0_omega = 0.00849;    
   if(useCutoff && fabs(omega.M()-m0_omega) > mG0_omega){
-    ////cout << "s";
+    //cout << "Cutting event with m_omega =" << omega.M() << endl;
     return CZero; 
   }
 
@@ -436,12 +480,20 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
   
   vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
 
+  //cout << "theta =" << locthetaphi[0] << ", phi= " << locthetaphi[1] << ", thetah =" << locthetaphih[0] << ", phih= " << locthetaphih[1] << endl;
   vector <double> angvector{locthetaphi[0], locthetaphi[1], locthetaphih[0], locthetaphih[1]};
 
     GDouble Phi = locthetaphi[2];
 
     complex <GDouble> amplitude = sqrtIntensity(Pgamma, mx, Phi, angvector);
  
-  return amplitude;
+  //cout << real(amplitude) << "+i" << imag(amplitude) << endl;
 
+
+return amplitude;
+}
+
+void omegapiAngAmp::updatePar( const AmpParameter& par ){
+ 
+  // could do expensive calculations here on parameter updates  
 }

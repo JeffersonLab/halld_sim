@@ -1,5 +1,8 @@
 #include "TOFSmearer.h"
 
+#include <TOF/DTOFGeometry.h>
+
+
 //-----------
 // tof_config_t  (constructor)
 //-----------
@@ -10,25 +13,29 @@ tof_config_t::tof_config_t(JEventLoop *loop)
  	TOF_PHOTONS_PERMEV = 400.;
  	TOF_BAR_THRESHOLD    = 0.0;
 
-	// geometry
-	const int TOF_NUM_PLANES = 2;
-    const int TOF_NUM_BARS = 44;
+	// load values from geometry
+	vector <const DTOFGeometry*> TOFGeom;
+	loop->Get(TOFGeom);
+	TOF_NUM_PLANES = TOFGeom[0]->Get_NPlanes();
+	TOF_NUM_BARS = TOFGeom[0]->Get_NBars();
 
 	// Load data from CCDB
-    cout<<"Get TOF/tof_parms parameters from CCDB..."<<endl;
+    string locTOFParmsTable = TOFGeom[0]->Get_CCDB_DirectoryName() + "/tof_parms";
+    cout<<"Get "<<locTOFParmsTable<<" parameters from CCDB..."<<endl;
     map<string, double> tofparms;
-    if(loop->GetCalib("TOF/tof_parms", tofparms)) {
-     	jerr << "Problem loading TOF/tof_parms from CCDB!" << endl;
+    if(loop->GetCalib(locTOFParmsTable.c_str(), tofparms)) {
+     	jerr << "Problem loading "<<locTOFParmsTable<<" from CCDB!" << endl;
      	return;
     }
      	
     TOF_SIGMA =  tofparms["TOF_SIGMA"];
     TOF_PHOTONS_PERMEV =  tofparms["TOF_PHOTONS_PERMEV"];
 	
-	cout<<"get TOF/paddle_resolutions from calibDB"<<endl;
+    string locTOFPaddleResolTable = TOFGeom[0]->Get_CCDB_DirectoryName() + "/paddle_resolutions";
+	cout<<"get "<<locTOFPaddleResolTable<<" from calibDB"<<endl;
     vector <double> TOF_PADDLE_TIME_RESOLUTIONS_TEMP;
-    if(loop->GetCalib("TOF/paddle_resolutions", TOF_PADDLE_TIME_RESOLUTIONS_TEMP)) {
-    	jerr << "Problem loading TOF/paddle_resolutions from CCDB!" << endl;
+    if(loop->GetCalib(locTOFPaddleResolTable.c_str(), TOF_PADDLE_TIME_RESOLUTIONS_TEMP)) {
+    	jerr << "Problem loading "<<locTOFPaddleResolTable<<" from CCDB!" << endl;
     } else {
     	for (unsigned int i = 0; i < TOF_PADDLE_TIME_RESOLUTIONS_TEMP.size(); i++) {
        		TOF_PADDLE_TIME_RESOLUTIONS.push_back(TOF_PADDLE_TIME_RESOLUTIONS_TEMP.at(i));
@@ -36,9 +43,10 @@ tof_config_t::tof_config_t(JEventLoop *loop)
     }
 
 	// load per-channel efficiencies
+    string locTOFChannelEffTable = TOFGeom[0]->Get_CCDB_DirectoryName() + "/channel_mc_efficiency";
 	vector<double> raw_table;
-	if(loop->GetCalib("TOF/channel_mc_efficiency", raw_table)) {
-    	jerr << "Problem loading TOF/channel_mc_efficiency from CCDB!" << endl;
+	if(loop->GetCalib(locTOFChannelEffTable.c_str(), raw_table)) {
+    	jerr << "Problem loading "<<locTOFChannelEffTable<<" from CCDB!" << endl;
     } else {
     	int channel = 0;
 
