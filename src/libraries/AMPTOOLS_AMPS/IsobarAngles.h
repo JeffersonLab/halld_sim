@@ -34,6 +34,7 @@ private:
 	string m_daughtX;
 	vector<string> m_daughtI;
 	vector<int> m_jI;
+	vector<bool> m_isBach;
 	int m_nIsobars;
     
 };

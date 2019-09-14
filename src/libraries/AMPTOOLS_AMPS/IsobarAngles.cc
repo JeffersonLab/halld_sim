@@ -36,6 +36,18 @@ UserAmplitude< IsobarAngles >( args )
 		// daughters of isobar (bachelor always first)
 		m_daughtI.push_back( string( args[i+1] ) );  
 
+		/*
+		// check if this is a subseqent batchelor decay
+		bool isBach = false;
+		if(m_daughtI.size() > 1) {
+			if(m_daughtI[i-maxPar].size() == (m_daughtI[i-maxPar-1].size() - 1)) {
+				isBach = true;
+				cout<<"Found subsequent bachelor decay "<<m_daughtI[i-maxPar-1].data()<<" -> "<<m_daughtI[i-maxPar].data()<<endl;
+			}
+		}
+		m_isBach.push_back( isBach );
+		*/
+
 		m_nIsobars++;
 	}
 	
@@ -44,6 +56,14 @@ UserAmplitude< IsobarAngles >( args )
 	for( unsigned int i = 0; i < m_jI.size(); i++) {
 		cout<<"Isobar: J="<<m_jI[i]<<" and daughters="<<m_daughtI[i].data()<<endl;
 		assert( m_jI[i] >= 0  );
+		
+		// check if this is a subseqent batchelor decay
+		bool isBach = false;
+		if(i>0 && m_daughtI[i].size() == (m_daughtI[i-1].size() - 1)) {
+			isBach = true;
+			cout<<"Found subsequent bachelor decay "<<m_daughtI[i-1].data()<<" -> "<<m_daughtI[i].data()<<endl;
+		}
+		m_isBach.push_back( isBach );
 	}
 }
 
@@ -53,6 +73,7 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 
 	TLorentzVector PX, Ptemp;
 	TLorentzVector PIsobar[m_nIsobars], PBatch[m_nIsobars] ;
+	TVector3 zIsoX[m_nIsobars];
 	pair<TLorentzVector, TLorentzVector> PNorm[m_nIsobars];
 	
 	// add particle P4s to get momentum of X
@@ -100,9 +121,16 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 	beamX.Boost(-1.0*XRestBoost);
 	recoilX.Boost(-1.0*XRestBoost);
 	batchX.Boost(-1.0*XRestBoost);
+
+	// keep reference vectors for isobars in X rest frame for angle definitions
+	for( int i = 0; i < m_nIsobars; i++ ){
+		TLorentzVector isobarX = PIsobar[i];
+		isobarX.Boost(-1.0*XRestBoost);
+		zIsoX[i] = isobarX.Vect().Unit();
+	}
 	
 	TVector3 z = -recoilX.Vect().Unit();
-	TVector3 y = (beam.Vect().Unit()).Cross(z).Unit();
+	TVector3 y = (beamX.Vect().Unit()).Cross(z).Unit();
 	TVector3 x = y.Cross(z);
 
 	TVector3 anglesBatchX( (batchX.Vect()).Dot(x),
@@ -116,7 +144,7 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 	// calculate decay angles in isobar rest frame (NEED TO CHECK FOR BUGS!) //
 	///////////////////////////////////////////////////////////////////////////
 	vector<GDouble> cosThetaIso, phiIso, k, q;
-	TVector3 zIsoPrevious = z;
+	pair<TVector3, TVector3> zIsoPrevious;
 	for( int i = 0; i < m_nIsobars; i++ ){
 		
 		TVector3 isoRestBoost = PIsobar[i].BoostVector();
@@ -129,9 +157,14 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 		PNormIso1.Boost(-1.0*isoRestBoost);
 		PNormIso2.Boost(-1.0*isoRestBoost);
 
-		TVector3 zIso = PResonanceIso.Vect().Unit();
-		// only true for b1 pi otherwise need original z for omega-rho...
-		TVector3 yIso = zIsoPrevious.Cross(zIso).Unit(); 
+		TVector3 zIso = zIsoX[i]; // z-axis is direction of isobar in X rest frame by default
+		TVector3 yIso = z.Cross(zIso); // decay plane from X rest frame
+		
+		// later stage of single batchelor decays (eg. omega->3pi in b1pi production)
+		if(m_isBach[i]) { 
+			zIso = zIsoPrevious.first;
+			yIso = zIsoPrevious.second.Cross(zIsoPrevious.first); 
+		}
 		TVector3 xIso = yIso.Cross(zIso);
 		
 		TVector3 PAngles = PBatchIso.Vect();
@@ -143,14 +176,17 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 				    (PAngles).Dot(yIso),
 				    (PAngles).Dot(zIso) );
 		
-		// NEED TO CHECK FOR BUGS! Currently returns 0, 1 or -1 for cosThetaIso...
 		cosThetaIso.push_back(anglesIso.CosTheta());
 		phiIso.push_back(anglesIso.Phi());
-		
+		//cout<<i<<" "<<cosThetaIso[i]<<endl;
+
 		k.push_back( breakupMomentum( PX.M(), PIsobar[i].M(), PBatchX.M() ) );
 		q.push_back( breakupMomentum( PIsobar[i].M(), PBatch[i].M(), (PIsobar[i] - PBatch[i]).M() ) );
 		
-		zIsoPrevious = zIso;
+		// reference vector for later step in current frame
+		zIsoPrevious.first = PAngles.Unit(); 
+		// reference vector for later step in previous frame
+		zIsoPrevious.second = zIso;
 	}  
 	
 	const vector< int >& perm = getCurrentPermutation();
@@ -166,6 +202,7 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 
 		complex< GDouble > term( 0, 0 );
 
+		/*
 		// loop over possible isobars given in config file and calculate contribution to amplitude
 		for ( int i = 0; i < m_nIsobars; i++ ){
 			
@@ -173,7 +210,9 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 			
 			// loop over possible orbital angular momentum (mI) in Isobar decay
 			for( int mI = -m_jI[i]; mI <= m_jI[i]; ++mI ){
-				
+	
+				if(mI != 0) continue;
+
 				// decay angle contribution for Isobar decay (replace with wignerD later)
 				termIso += Y( m_jI[i], mI, cosThetaIso[i], phiIso[i] ); 
 				
@@ -186,9 +225,10 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 			if( i==0 ) term = termIso; // add 1st isobar sum over mI to the given mL term
 			else term *= termIso; // multiply additional isobar sum to the same mL term
 		}
+		*/
 
 		// decay angle constribution for X decay
-		term *= Y( m_lX, mL, cosThetaBatchX, phiBatchX );
+		term += Y( m_lX, mL, cosThetaBatchX, phiBatchX );
 
 		// add each mL term to total amplitude
 		ans += term;
