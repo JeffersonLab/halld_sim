@@ -7,19 +7,19 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include "UTILITIES/CobremsGeneration.hh"
-#include "UTILITIES/BeamProperties.h"
+// #include "UTILITIES/CobremsGeneration.hh"
+// #include "UTILITIES/BeamProperties.h"
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
 #include "IUAmpTools/AmpParameter.h"
 #include "omegapiAngAmp.h"
-#include "AMPTOOLS_AMPS/barrierFactor.h"
-#include "AMPTOOLS_AMPS/clebschGordan.h"
-#include "AMPTOOLS_AMPS/wignerD.h"
-#include "AMPTOOLS_AMPS/breakupMomentum.h"
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "barrierFactor.h"
+#include "clebschGordan.h"
+#include "wignerD.h"
+#include "breakupMomentum.h"
+#include "omegapiAngles.h"
 
 #include <cmath>
 #include <complex>
@@ -109,85 +109,85 @@ omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
 	assert(0);
 
     //A switch to use cut off only when generating (casues problem when fitting)
-    //Set to 1 with gen_amp, 0 with fit.
+    //Set to 1 with gen_amp, 0 with fit. Not needed with the two-step generator.
     useCutoff = atoi( args[22].c_str() );
  
 	
-    ds_ratio = AmpParameter(args[9]);
+    m_ds_ratio = AmpParameter(args[9]);
     
     //1+ state
     m_1p = AmpParameter(args[0]);
-    w_1p = AmpParameter(args[1]);
-    n_1p = AmpParameter(args[2]);
-    phi0_1p = AmpParameter(args[10]);
-    theta_1p = AmpParameter(args[11]);
-    phip_1p = AmpParameter(args[12]);
-    phim_1p = AmpParameter(args[13]);
-    psi_1p = AmpParameter(args[14]);
+    m_w_1p = AmpParameter(args[1]);
+    m_n_1p = AmpParameter(args[2]);
+    m_phi0_1p = AmpParameter(args[10]);
+    m_theta_1p = AmpParameter(args[11]);
+    m_phip_1p = AmpParameter(args[12]);
+    m_phim_1p = AmpParameter(args[13]);
+    m_psi_1p = AmpParameter(args[14]);
     //1- state    
     m_1m = AmpParameter(args[3]);
-    w_1m = AmpParameter(args[4]);
-    n_1m = AmpParameter(args[5]);
-    phi0_1m = AmpParameter(args[15]);
-    theta_1m = AmpParameter(args[16]);
-    phip_1m = AmpParameter(args[17]);
-    phim_1m = AmpParameter(args[18]);
-    psi_1m = AmpParameter(args[19]);
+    m_w_1m = AmpParameter(args[4]);
+    m_n_1m = AmpParameter(args[5]);
+    m_phi0_1m = AmpParameter(args[15]);
+    m_theta_1m = AmpParameter(args[16]);
+    m_phip_1m = AmpParameter(args[17]);
+    m_phim_1m = AmpParameter(args[18]);
+    m_psi_1m = AmpParameter(args[19]);
     //0- state    
     m_0m = AmpParameter(args[6]);
-    w_0m = AmpParameter(args[7]);
-    n_0m = AmpParameter(args[8]);
-    phi0_0m = AmpParameter(args[20]);
-    theta_0m = AmpParameter(args[21]);    
+    m_w_0m = AmpParameter(args[7]);
+    m_n_0m = AmpParameter(args[8]);
+    m_phi0_0m = AmpParameter(args[20]);
+    m_theta_0m = AmpParameter(args[21]);    
 
   registerParameter(m_1p);
-  registerParameter(w_1p);
-  registerParameter(n_1p);
-  registerParameter(phi0_1p);
-  registerParameter(theta_1p);
-  registerParameter(phip_1p);
-  registerParameter(phim_1p);
-  registerParameter(psi_1p);
+  registerParameter(m_w_1p);
+  registerParameter(m_n_1p);
+  registerParameter(m_phi0_1p);
+  registerParameter(m_theta_1p);
+  registerParameter(m_phip_1p);
+  registerParameter(m_phim_1p);
+  registerParameter(m_psi_1p);
 
   registerParameter(m_1m);
-  registerParameter(w_1m);
-  registerParameter(n_1m);
-  registerParameter(phi0_1m);
-  registerParameter(theta_1m);
-  registerParameter(phip_1m);
-  registerParameter(phim_1p);
-  registerParameter(psi_1m);
+  registerParameter(m_w_1m);
+  registerParameter(m_n_1m);
+  registerParameter(m_phi0_1m);
+  registerParameter(m_theta_1m);
+  registerParameter(m_phip_1m);
+  registerParameter(m_phim_1p);
+  registerParameter(m_psi_1m);
 
   registerParameter(m_0m);
-  registerParameter(w_0m);
-  registerParameter(n_0m);
-  registerParameter(phi0_0m);
-  registerParameter(theta_0m);
+  registerParameter(m_w_0m);
+  registerParameter(m_n_0m);
+  registerParameter(m_phi0_0m);
+  registerParameter(m_theta_0m);
 
-  registerParameter(ds_ratio);
+  registerParameter(m_ds_ratio);
 
     pararray[0] = m_1p;
-    pararray[1] = w_1p;
-    pararray[2] = n_1p;
+    pararray[1] = m_w_1p;
+    pararray[2] = m_n_1p;
     pararray[3] = m_1m;
-    pararray[4] = w_1m;
-    pararray[5] = n_1m;
+    pararray[4] = m_w_1m;
+    pararray[5] = m_n_1m;
     pararray[6] = m_0m;
-    pararray[7] = w_0m;
-    pararray[8] = n_0m;
-    pararray[9] = ds_ratio;
-    pararray[10] = phi0_1p;
-    pararray[11] = theta_1p;
-    pararray[12] = phip_1p;
-    pararray[13] = phim_1p;
-    pararray[14] = psi_1p;
-    pararray[15] = phi0_1m;
-    pararray[16] = theta_1m;
-    pararray[17] = phip_1m;
-    pararray[18] = phim_1m;
-    pararray[19] = psi_1m;
-    pararray[20] = phi0_0m;
-    pararray[21] = theta_0m;
+    pararray[7] = m_w_0m;
+    pararray[8] = m_n_0m;
+    pararray[9] = m_ds_ratio;
+    pararray[10] = m_phi0_1p;
+    pararray[11] = m_theta_1p;
+    pararray[12] = m_phip_1p;
+    pararray[13] = m_phim_1p;
+    pararray[14] = m_psi_1p;
+    pararray[15] = m_phi0_1m;
+    pararray[16] = m_theta_1m;
+    pararray[17] = m_phip_1m;
+    pararray[18] = m_phim_1m;
+    pararray[19] = m_psi_1m;
+    pararray[20] = m_phi0_0m;
+    pararray[21] = m_theta_0m;
 }
 
 //Define breakup momentum (x here is the measured mass of the omegapi)
@@ -391,49 +391,10 @@ double Intensity(double x, double *pararray, int i){
   return IntensitySum;
 }
 
-double wdist(int k, double x, double Phi, vector<double> vector)
-  {
-    double dist = 0.0;
-
-          for (int alpha = 0; alpha < 25; alpha++)//quantum states
-	  {
-	    if (k == 0){dist += Intensity(x, pararray, alpha) * hmoment(alpha, vector) * calpha(alpha);}
-
-	    if (k == 1){dist += Intensity(x, pararray, alpha) * hmoment(alpha, vector) * calpha(alpha) * TMath::Sqrt(2.0) * TMath::Cos(2.0 * Phi);}
-
-	    if (k == 2){dist += Intensity(x, pararray, alpha) * hmoment(alpha, vector) * calpha(alpha) * TMath::Sqrt(2.0) * TMath::Sin(2.0 * Phi);}
-
-	  }//alpha loop
-  // cout << "wdist(" << k << ") = " << dist << endl;
-
-    return dist;
-  }
-
-    complex <GDouble> sqrtIntensity(double polfrac, double x, double Phi, vector<double> vector)
-//    double sqrtIntensity(double polfrac, double x, double Phi, vector<double> vector)
-  {
-	double intensity = 0.0;
-	double real_sqrt_intensity = 0.0;
-	double ima_sqrt_intensity = 0.0;
-
-	intensity = wdist(0, x, Phi,vector) - polfrac * wdist(1, x, Phi,vector) * TMath::Cos(2.0 * Phi) -  polfrac * wdist(2, x, Phi,vector) * TMath::Sin(2.0 * Phi);
-	
-       if (intensity >= 0.0) real_sqrt_intensity = sqrt(intensity);
-       if (intensity < 0.0) ima_sqrt_intensity = sqrt(abs(intensity));
-	
-	complex <GDouble> sqrt_intensity(real_sqrt_intensity,ima_sqrt_intensity);
-	//cout << "intensity = " << intensity << ", sqrt_intensity = " << sqrt_intensity << endl;
-       return sqrt_intensity;
-  }
-
-////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
-
-complex< GDouble >
-omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
-{
-  complex <GDouble> CZero(0,0);  
-
-  ////////////////////////////////////////////////// Get Lorentz Vectors of Particles //////////////////////////////////
+////////////////////////////////////////////////// User Vars //////////////////////////////////
+void
+omegapiAngAmp::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
+  
 
   TLorentzVector beam  (pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0]); 
   TLorentzVector recoil(pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0]);
@@ -445,18 +406,11 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
   TLorentzVector omegas_pi(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
   TLorentzVector omega = rho + omegas_pi;
 
-  //Cut off to force a narrow omega peak. Casues problem with fit.
-  GDouble m0_omega=0.782;
-  GDouble mG0_omega = 0.00849;    
-  if(useCutoff && fabs(omega.M()-m0_omega) > mG0_omega){
-    //cout << "Cutting event with m_omega =" << omega.M() << endl;
-    return CZero; 
-  }
-
   TLorentzVector Xs_pi(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]);
+
   TLorentzVector X = omega + Xs_pi;
 
-    ////////////////////////////////////////////////// Boost Particles and Get Angles//////////////////////////////////
+    //////////////////////// Boost Particles and Get Angles//////////////////////////////////
 
   //Helicity coordinate system
   TLorentzVector Gammap = beam + targetopi;
@@ -482,12 +436,120 @@ omegapiAngAmp::calcAmplitude( GDouble** pKin ) const
 
   //cout << "theta =" << locthetaphi[0] << ", phi= " << locthetaphi[1] << ", thetah =" << locthetaphih[0] << ", phih= " << locthetaphih[1] << endl;
   vector <double> angvector{locthetaphi[0], locthetaphi[1], locthetaphih[0], locthetaphih[1]};
+  
+       double moment[25] = {0.0};
+       double calpha_array[25] = {0.0};
 
-    GDouble Phi = locthetaphi[2];
+    for (int alpha = 0; alpha < 25; alpha++)//quantum states
+	  {
+	    moment[alpha] = hmoment(alpha, angvector);
+	  
+            calpha_array[alpha] = calpha(alpha);
+        }//alpha loop
+	  
+  userVars[uv_Phi] = locthetaphi[2];
 
-    complex <GDouble> amplitude = sqrtIntensity(Pgamma, mx, Phi, angvector);
+  userVars[uv_Pgamma] = Pgamma;
+  userVars[uv_mx] = mx;
+
+  userVars[uv_moment0] = moment[0];
+  userVars[uv_moment1] = moment[1];
+  userVars[uv_moment2] = moment[2];
+  userVars[uv_moment3] = moment[3];
+  userVars[uv_moment4] = moment[4];
+  userVars[uv_moment5] = moment[5];
+  userVars[uv_moment6] = moment[6];
+  userVars[uv_moment7] = moment[7];
+  userVars[uv_moment8] = moment[8];
+  userVars[uv_moment9] = moment[9];
+  userVars[uv_moment10] = moment[10];
+  userVars[uv_moment11] = moment[11];
+  userVars[uv_moment12] = moment[12];
+  userVars[uv_moment13] = moment[13];
+  userVars[uv_moment14] = moment[14];
+  userVars[uv_moment15] = moment[15];
+  userVars[uv_moment16] = moment[16];
+  userVars[uv_moment17] = moment[17];
+  userVars[uv_moment18] = moment[18];
+  userVars[uv_moment19] = moment[19];
+  userVars[uv_moment20] = moment[20];
+  userVars[uv_moment21] = moment[21];
+  userVars[uv_moment22] = moment[22];
+  userVars[uv_moment23] = moment[23];
+  userVars[uv_moment24] = moment[24];
+  
+  userVars[uv_calpha0] = calpha_array[0];
+  userVars[uv_calpha1] = calpha_array[1];
+  userVars[uv_calpha2] = calpha_array[2];
+  userVars[uv_calpha3] = calpha_array[3];
+  userVars[uv_calpha4] = calpha_array[4];
+  userVars[uv_calpha5] = calpha_array[5];
+  userVars[uv_calpha6] = calpha_array[6];
+  userVars[uv_calpha7] = calpha_array[7];
+  userVars[uv_calpha8] = calpha_array[8];
+  userVars[uv_calpha9] = calpha_array[9];
+  userVars[uv_calpha10] = calpha_array[10];
+  userVars[uv_calpha11] = calpha_array[11];
+  userVars[uv_calpha12] = calpha_array[12];
+  userVars[uv_calpha13] = calpha_array[13];
+  userVars[uv_calpha14] = calpha_array[14];
+  userVars[uv_calpha15] = calpha_array[15];
+  userVars[uv_calpha16] = calpha_array[16];
+  userVars[uv_calpha17] = calpha_array[17];
+  userVars[uv_calpha18] = calpha_array[18];
+  userVars[uv_calpha19] = calpha_array[19];
+  userVars[uv_calpha20] = calpha_array[20];
+  userVars[uv_calpha21] = calpha_array[21];
+  userVars[uv_calpha22] = calpha_array[22];
+  userVars[uv_calpha23] = calpha_array[23];
+  userVars[uv_calpha24] = calpha_array[24];
+  
+}
+
+////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
+
+complex< GDouble >
+omegapiAngAmp::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
+{
+  complex <GDouble> COne(1,0);  
+
+   GDouble Phi = userVars[uv_Phi];
+   GDouble polfrac = userVars[uv_Pgamma];
+   GDouble mb1 = userVars[uv_mx];
+
+  GDouble moment[25] = {userVars[uv_moment0], userVars[uv_moment1], userVars[uv_moment2], userVars[uv_moment3], userVars[uv_moment4], userVars[uv_moment5], userVars[uv_moment6], userVars[uv_moment7], userVars[uv_moment8], userVars[uv_moment9], userVars[uv_moment10], userVars[uv_moment11], userVars[uv_moment12], userVars[uv_moment13], userVars[uv_moment14], userVars[uv_moment15], userVars[uv_moment16], userVars[uv_moment17], userVars[uv_moment18], userVars[uv_moment19], userVars[uv_moment20], userVars[uv_moment21], userVars[uv_moment22], userVars[uv_moment23], userVars[uv_moment24]};
+
+  GDouble calpha_array[25] = {userVars[uv_calpha0], userVars[uv_calpha1], userVars[uv_calpha2], userVars[uv_calpha3], userVars[uv_calpha4], userVars[uv_calpha5], userVars[uv_calpha6], userVars[uv_calpha7], userVars[uv_calpha8], userVars[uv_calpha9], userVars[uv_calpha10], userVars[uv_calpha11], userVars[uv_calpha12], userVars[uv_calpha13], userVars[uv_calpha14], userVars[uv_calpha15], userVars[uv_calpha16], userVars[uv_calpha17], userVars[uv_calpha18], userVars[uv_calpha19], userVars[uv_calpha20], userVars[uv_calpha21], userVars[uv_calpha22], userVars[uv_calpha23], userVars[uv_calpha24]};
+
  
-  //cout << real(amplitude) << "+i" << imag(amplitude) << endl;
+    double wdist0 = 0.0;
+    double wdist1 = 0.0;
+    double wdist2 = 0.0;
+
+          for (int alpha = 0; alpha < 25; alpha++)//quantum states
+	  {
+	    wdist0 += Intensity(mb1, pararray, alpha) * moment[alpha] * calpha_array[alpha];
+
+	    wdist1 += Intensity(mb1, pararray, alpha) * moment[alpha] * calpha_array[alpha] * TMath::Sqrt(2.0) * TMath::Cos(2.0 * Phi);
+
+	    wdist2 += Intensity(mb1, pararray, alpha) * moment[alpha] * calpha_array[alpha] * TMath::Sqrt(2.0) * TMath::Sin(2.0 * Phi);
+
+	  }//alpha loop
+
+	double intensity = 0.0;
+	double real_sqrt_intensity = 0.0;
+	double ima_sqrt_intensity = 0.0;
+	
+	intensity = wdist0 - polfrac * wdist1 * TMath::Cos(2.0 * Phi) - polfrac * wdist2 * TMath::Sin(2.0 * Phi);
+	
+       if (intensity >= 0.0) real_sqrt_intensity = sqrt(intensity);
+       if (intensity < 0.0) ima_sqrt_intensity = sqrt(abs(intensity));
+	
+    complex <GDouble> sqrt_intensity(real_sqrt_intensity,ima_sqrt_intensity);
+
+    complex <GDouble> amplitude = sqrt_intensity;
+
+    //cout << real(amplitude) << "+i" << imag(amplitude) << endl;
 
 
 return amplitude;
@@ -497,3 +559,17 @@ void omegapiAngAmp::updatePar( const AmpParameter& par ){
  
   // could do expensive calculations here on parameter updates  
 }
+
+#ifdef GPU_ACCELERATION
+void
+omegapiAngAmp::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
+    
+  GPUomegapiAngAmp_exec( dimGrid, dimBlock, GPU_AMP_ARGS,
+                            m_1p, m_w_1p, m_n_1p, m_1m, m_w_1m, m_n_1m,
+                            m_0m, m_w_0m, m_n_0m, m_ds_ratio, m_phi0_1p,
+                            m_theta_1p, m_phip_1p, m_phim_1p, m_psi_1p,
+			    m_phi0_1m, m_theta_1m, m_phip_1m, m_phim_1m,
+                            m_psi_1m, m_phi0_0m, m_theta_0m, useCutoff, polAngle, polFraction );
+
+}
+#endif //GPU_ACCELERATION
