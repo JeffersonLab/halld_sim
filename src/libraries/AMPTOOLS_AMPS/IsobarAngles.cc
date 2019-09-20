@@ -72,9 +72,9 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 {
 
 	TLorentzVector PX, Ptemp;
-	TLorentzVector PIsobar[m_nIsobars], PBatch[m_nIsobars] ;
-	TVector3 zIsoX[m_nIsobars];
-	pair<TLorentzVector, TLorentzVector> PNorm[m_nIsobars];
+	TLorentzVector PIsobar[m_nIsobars], PBatch[m_nIsobars];
+	TLorentzVector PIsobarX[m_nIsobars], PBatchX[m_nIsobars];
+	pair<TLorentzVector, TLorentzVector> PNorm[m_nIsobars], PNormX[m_nIsobars];
 	
 	// add particle P4s to get momentum of X
 	for( unsigned int i = 0; i < m_daughtX.size(); ++i ){
@@ -110,29 +110,31 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 	/////////////////////////////////
 	TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );
 	TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] );
-	TLorentzVector PBatchX = PX - PIsobar[0]; // batchelor from X decay
+	TLorentzVector PBatchXdecay = PX - PIsobar[0]; // batchelor from X decay
 	
 	// calculate decay angles in resonance X rest frame
 	TVector3 XRestBoost = PX.BoostVector();
 	
 	TLorentzVector beamX   = beam;
 	TLorentzVector recoilX = recoil;
-	TLorentzVector batchX  = PBatchX;
+	TLorentzVector batchX  = PBatchXdecay;
 	beamX.Boost(-1.0*XRestBoost);
 	recoilX.Boost(-1.0*XRestBoost);
 	batchX.Boost(-1.0*XRestBoost);
 
-	// keep reference vectors for isobars in X rest frame for angle definitions
+	// keep vectors for isobars in X rest frame for later angle definitions
 	for( int i = 0; i < m_nIsobars; i++ ){
-		TLorentzVector isobarX = PIsobar[i];
-		isobarX.Boost(-1.0*XRestBoost);
-		zIsoX[i] = isobarX.Vect().Unit();
+		TLorentzVector temp = PIsobar[i]; temp.Boost(-1.0*XRestBoost);
+		PIsobarX[i] = temp;
+		temp = PBatch[i]; temp.Boost(-1.0*XRestBoost); PBatchX[i] = temp;
+		temp = PNormX[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
+		temp = PNormX[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
 	}
 	
-	TVector3 z = -recoilX.Vect().Unit();
-	TVector3 y = (beamX.Vect().Unit()).Cross(z).Unit();
+	TVector3 z = beamX.Vect().Unit();
+	TVector3 y = (beamX.Vect().Unit()).Cross((-recoilX.Vect().Unit())).Unit();
 	TVector3 x = y.Cross(z);
-
+	
 	TVector3 anglesBatchX( (batchX.Vect()).Dot(x),
 			       (batchX.Vect()).Dot(y),
 			       (batchX.Vect()).Dot(z) );
@@ -147,18 +149,20 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 	pair<TVector3, TVector3> zIsoPrevious;
 	for( int i = 0; i < m_nIsobars; i++ ){
 		
-		TVector3 isoRestBoost = PIsobar[i].BoostVector();
-		TLorentzVector PBatchIso = PBatch[i];
-		TLorentzVector PResonanceIso = PIsobar[i] - PBatch[i];
-		TLorentzVector PNormIso1 = PNorm[i].first;
-		TLorentzVector PNormIso2 = PNorm[i].second;
+		// boost from X rest frame to isobar rest frame (could do in terms of previous frame)
+		TVector3 isoRestBoost = PIsobarX[i].BoostVector();
+		TLorentzVector PBatchIso = PBatchX[i];
+		TLorentzVector PResonanceIso = PIsobarX[i] - PBatchX[i];
+		TLorentzVector PNormIso1 = PNormX[i].first;
+		TLorentzVector PNormIso2 = PNormX[i].second;
 		PBatchIso.Boost(-1.0*isoRestBoost);
 		PResonanceIso.Boost(-1.0*isoRestBoost);
 		PNormIso1.Boost(-1.0*isoRestBoost);
 		PNormIso2.Boost(-1.0*isoRestBoost);
 
-		TVector3 zIso = zIsoX[i]; // z-axis is direction of isobar in X rest frame by default
-		TVector3 yIso = z.Cross(zIso); // decay plane from X rest frame
+		// Helicity frame z-axis is direction of isobar in X rest frame by default
+		TVector3 zIso = PIsobarX[i].Vect().Unit(); 
+		TVector3 yIso = (z.Cross(zIso)).Unit(); // decay plane from X rest frame
 		
 		// later stage of single batchelor decays (eg. omega->3pi in b1pi production)
 		if(m_isBach[i]) { 
@@ -170,7 +174,7 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 		TVector3 PAngles = PBatchIso.Vect();
 		if(m_daughtI[i].size() == 3 and m_daughtI.size() == uint(m_nIsobars)) // 3-body decay (e.g. omega) 
 			PAngles = (PNormIso1.Vect()).Cross(PNormIso2.Vect());
-
+		
 		// Angles in isobar rest frame
 		TVector3 anglesIso( (PAngles).Dot(xIso),
 				    (PAngles).Dot(yIso),
@@ -178,11 +182,11 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 		
 		cosThetaIso.push_back(anglesIso.CosTheta());
 		phiIso.push_back(anglesIso.Phi());
-		//cout<<i<<" "<<cosThetaIso[i]<<endl;
 
-		k.push_back( breakupMomentum( PX.M(), PIsobar[i].M(), PBatchX.M() ) );
+		k.push_back( breakupMomentum( PX.M(), PIsobar[i].M(), PBatchXdecay.M() ) );
 		q.push_back( breakupMomentum( PIsobar[i].M(), PBatch[i].M(), (PIsobar[i] - PBatch[i]).M() ) );
 		
+		/////////// Need to keep P4 here instead of z-axis ///////////////
 		// reference vector for later step in current frame
 		zIsoPrevious.first = PAngles.Unit(); 
 		// reference vector for later step in previous frame
@@ -202,7 +206,6 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 
 		complex< GDouble > term( 0, 0 );
 
-		/*
 		// loop over possible isobars given in config file and calculate contribution to amplitude
 		for ( int i = 0; i < m_nIsobars; i++ ){
 			
@@ -225,10 +228,9 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 			if( i==0 ) term = termIso; // add 1st isobar sum over mI to the given mL term
 			else term *= termIso; // multiply additional isobar sum to the same mL term
 		}
-		*/
 
 		// decay angle constribution for X decay
-		term += Y( m_lX, mL, cosThetaBatchX, phiBatchX );
+		term *= Y( m_lX, mL, cosThetaBatchX, phiBatchX );
 
 		// add each mL term to total amplitude
 		ans += term;
