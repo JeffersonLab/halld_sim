@@ -251,6 +251,36 @@ int main( int argc, char* argv[] ){
 		locBeamConfigFile.close();
 	}
 
+	// loop to look for particular amplitude settings
+	vector< pair<TString, vector<vector<int>> > > isobarAmplitudes;
+        const vector<ConfigFileLine> configFileLinesAmplitude = parser.getConfigFileLines();
+        for (vector<ConfigFileLine>::const_iterator it=configFileLinesAmplitude.begin(); it!=configFileLinesAmplitude.end(); it++) {
+		if ((*it).keyword() == "amplitude") {
+
+			// Specific config information for IsobarAngles amplitudes
+			if(((TString)(*it).arguments()[3].c_str()).EqualTo("IsobarAngles")) {
+				TString amplitudeName = (*it).arguments()[2].c_str();
+				vector< vector<int> > isobarIndices; // particle indices for isobar daughters
+				
+				// loop over isobars in config file
+				for (uint i=7; i<(*it).arguments().size(); i++) { 
+					TString isobarArgument =  (*it).arguments()[i].c_str();
+					
+					if(isobarArgument.Length()>1) { // only retreive lists of daughters
+						vector<int> isobarDaughters; // particle indices for a given isobar
+						for(int j=0; j<isobarArgument.Length(); j++) 
+							isobarDaughters.push_back(isobarArgument[j] - '0');
+						isobarIndices.push_back(isobarDaughters);
+					}
+				}
+				
+				// store amplitude in vector with name for histograming
+				pair<TString, vector< vector<int> > > tempAmplitude(amplitudeName, isobarIndices);
+				isobarAmplitudes.push_back(tempAmplitude);
+			}
+		}
+        } 
+
 	ProductionMechanism::Type type =
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
@@ -316,20 +346,19 @@ int main( int argc, char* argv[] ){
 	TH2F* M_Phi = new TH2F( "M_Phi", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
 	TH2F* M_Phi_lab = new TH2F( "M_Phi_lab", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
 
-	TH2F* CosTheta_Phi = new TH2F( "CosTheta_Phi", "cos#theta vs. #phi", 180, -3.14, 3.14, 100, -1, 1);
-
-	// define isobars and create histograms
-	int nIsobars = 2;
-	vector<int> isobarIndex[nIsobars];
-	isobarIndex[0].push_back(2); 
-	isobarIndex[0].push_back(3);
-	//isobarIndex[0].push_back(4);
-	isobarIndex[1].push_back(4);
-	isobarIndex[1].push_back(5);
 	
-	TH2F* CosTheta_PhiIso[nIsobars];
-	for(int i=0; i<nIsobars; i++)
-		CosTheta_PhiIso[i] = new TH2F( Form("CosTheta_PhiIso%d",i), "cos#theta vs. #phi", 180, -3.14, 3.14, 100, -1, 1);
+
+	// define isobars and create histograms for each amplitude
+	int nAmplitudes = isobarAmplitudes.size();
+	vector<TH2F*> CosTheta_PhiIso[nAmplitudes];
+	TH2F* CosTheta_Phi[nAmplitudes]; 
+	for(int i=0; i<nAmplitudes; i++) {
+		CosTheta_Phi[i] = new TH2F( Form("CosTheta_Phi_%s",isobarAmplitudes[i].first.Data()), "cos#theta vs. #phi", 180, -3.14, 3.14, 100, -1, 1);
+		for(uint j=0; j<isobarAmplitudes[i].second.size(); j++) {
+			TH2F* h2 = new TH2F( Form("CosTheta_PhiIso_%s_Iso%d",isobarAmplitudes[i].first.Data(),j), "cos#theta vs. #phi", 180, -3.14, 3.14, 100, -1, 1);
+			CosTheta_PhiIso[i].push_back(h2);
+		}
+	}
 
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
@@ -364,134 +393,160 @@ int main( int argc, char* argv[] ){
 			for (unsigned int i=2; i<Particles.size(); i++)
 			  resonance += evt->particle( i );
 
-			TLorentzVector isobar;
-			for (unsigned int i=2; i<4 - 1; i++)
-			  isobar += evt->particle( i );
+			// loop over amplitudes for IsobarAngles
+			GDouble cosThetaBatchX[nAmplitudes], phiBatchX[nAmplitudes];
+			vector<GDouble> cosThetaIsoAmplitude[nAmplitudes], phiIsoAmplitude[nAmplitudes];
+			for(int iamp=0; iamp<nAmplitudes; iamp++) {
+				
+				TLorentzVector isobar;
+				for (unsigned int i=0; i<isobarAmplitudes[iamp].second[0].size(); i++)
+					isobar += evt->particle( isobarAmplitudes[iamp].second[0][i] );
 
-			/////////////////////////////////////////////////////////////////////
-			// Do user calculation here for decay angles to match IsobarAngles //
-			/////////////////////////////////////////////////////////////////////
-			TLorentzVector beam = evt->particle(0);
-			TLorentzVector recoil = evt->particle(1);
-			TLorentzVector PX = resonance;
-			TLorentzVector PBatchX = resonance - isobar;
-			
-			// calculate decay angles in resonance X rest frame
-			TVector3 XRestBoost = PX.BoostVector();
-			
-			TLorentzVector beamX   = beam;
-			TLorentzVector recoilX = recoil;
-			TLorentzVector batchX  = PBatchX;
-			beamX.Boost(-1.0*XRestBoost);
-			recoilX.Boost(-1.0*XRestBoost);
-			batchX.Boost(-1.0*XRestBoost);
-			
-			TVector3 z = beamX.Vect().Unit(); //-recoilX.Vect().Unit();
-			TVector3 y = (beamX.Vect().Unit()).Cross((-recoilX.Vect().Unit())).Unit();
-			TVector3 x = y.Cross(z);
-			
-			TVector3 anglesBatchX( (batchX.Vect()).Dot(x),
-					       (batchX.Vect()).Dot(y),
-					       (batchX.Vect()).Dot(z) );
-			
-			GDouble cosThetaBatchX = anglesBatchX.CosTheta();
-			GDouble phiBatchX = anglesBatchX.Phi();
-			
-			// build 4-vectors for isobars (only for subsequent isobars now...)
-			TLorentzVector PIsobar[nIsobars], PBatch[nIsobars];
-			TVector3 zIsoX[nIsobars];
-			for(int i=0; i<nIsobars; i++) {
-				cout<<"Isobar "<<i<<endl;
-				for(uint j=0; j<isobarIndex[i].size(); j++) { 
-					cout<<"  Particle "<<j<<" mass = "<<(evt->particle(isobarIndex[i][j])).M()<<endl;
-					if(j==0) PBatch[i] = evt->particle(isobarIndex[i][j]); // this is the problem for non-subsequent bachelors..
-					PIsobar[i] += evt->particle(isobarIndex[i][j]);
+				/////////////////////////////////////////////////////////////////////
+				// Do user calculation here for decay angles to match IsobarAngles //
+				/////////////////////////////////////////////////////////////////////
+				TLorentzVector beam = evt->particle(0);
+				TLorentzVector recoil = evt->particle(1);
+				TLorentzVector PX = resonance;
+				TLorentzVector PBatchXdecay = resonance - isobar;
+				
+				// calculate decay angles in resonance X rest frame
+				TVector3 XRestBoost = PX.BoostVector();
+				
+				TLorentzVector beamX   = beam;
+				TLorentzVector recoilX = recoil;
+				TLorentzVector batchX  = PBatchXdecay;
+				beamX.Boost(-1.0*XRestBoost);
+				recoilX.Boost(-1.0*XRestBoost);
+				batchX.Boost(-1.0*XRestBoost);
+				
+				TVector3 z = beamX.Vect().Unit(); //-recoilX.Vect().Unit();
+				TVector3 y = (beamX.Vect().Unit()).Cross((-recoilX.Vect().Unit())).Unit();
+				TVector3 x = y.Cross(z);
+				
+				TVector3 anglesBatchX( (batchX.Vect()).Dot(x),
+						       (batchX.Vect()).Dot(y),
+						       (batchX.Vect()).Dot(z) );
+				
+				cosThetaBatchX[iamp] = anglesBatchX.CosTheta();
+				phiBatchX[iamp] = anglesBatchX.Phi();
+				
+				// build 4-vectors for isobars
+				int nIsobars = isobarAmplitudes[iamp].second.size();
+				TLorentzVector PIsobar[nIsobars], PBatch[nIsobars];
+				TLorentzVector PIsobarX[nIsobars], PBatchX[nIsobars];
+				pair<TLorentzVector, TLorentzVector> PNorm[nIsobars], PNormX[nIsobars];
+				
+				for(int i=0; i<nIsobars; i++) {
+					for(uint j=0; j<isobarAmplitudes[iamp].second[i].size(); j++) { 
+						PIsobar[i] += evt->particle(isobarAmplitudes[iamp].second[i][j]);
+						if(j==0) {
+							PBatch[i] = evt->particle(isobarAmplitudes[iamp].second[i][j]); 
+							PNorm[i].first = evt->particle(isobarAmplitudes[iamp].second[i][j]);
+						}
+						else if(j==1) {
+							PNorm[i].second = evt->particle(isobarAmplitudes[iamp].second[i][j]);
+						}
+					}
+					
+					TLorentzVector temp;
+					temp = PIsobar[i]; temp.Boost(-1.0*XRestBoost); PIsobarX[i] = temp;
+					temp = PBatch[i]; temp.Boost(-1.0*XRestBoost); PBatchX[i] = temp;
+					temp = PNormX[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
+					temp = PNormX[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
 				}
 				
-				TLorentzVector PIsobarX = PIsobar[i];
-				PIsobarX.Boost(-1.0*XRestBoost);
-				zIsoX[i] = PIsobarX.Vect().Unit();
-			}
-				
-			////////////////////////////////////////////////////////////////////////////
-			// calculate decay angles in isobar rest frame (NEED TO CHECK FOR BUGS!)) //
-			////////////////////////////////////////////////////////////////////////////
-			vector<GDouble> cosThetaIso, phiIso;
-			pair<TVector3, TVector3> zIsoPrevious;
-			for( int i = 0; i < nIsobars; i++ ){
-				
-				TVector3 isoRestBoost = PIsobar[i].BoostVector();
-				TLorentzVector PIsobarIso = PIsobar[i];
-				TLorentzVector PBatchIso = PBatch[i];
-				TLorentzVector PResonanceIso = PIsobar[i] - PBatch[i];
-				//TLorentzVector PNormIso1 = PNorm[i].first;
-				//TLorentzVector PNormIso2 = PNorm[i].second;
-				PBatchIso.Boost(-1.0*isoRestBoost);
-				PResonanceIso.Boost(-1.0*isoRestBoost);
-				PIsobarIso.Boost(-1.0*isoRestBoost);
-				//PNormIso1.Boost(-1.0*isoRestBoost);
-				//PNormIso2.Boost(-1.0*isoRestBoost);
-				
-				TVector3 zIso = zIsoX[i]; // z-axis is direction of isobar in X	rest frame by default
-				TVector3 yIso = z.Cross(zIso); // decay plane from X rest frame
-				
-				// later stage of single batchelor decays (eg. omega->3pi in b1pi production)
-				if(0) {//i == 1) { //m_isBach[i]) {
-					zIso = zIsoPrevious.first;
-					yIso = zIsoPrevious.second.Cross(zIsoPrevious.first);
+				/////////////////////////////////////////////////
+				// calculate decay angles in isobar rest frame //
+				/////////////////////////////////////////////////
+				vector<GDouble> cosThetaIso, phiIso;
+				pair<TVector3, TVector3> zIsoPrevious;
+				for( int i = 0; i < nIsobars; i++ ){
+					
+					TVector3 isoRestBoost = PIsobarX[i].BoostVector();
+					TLorentzVector PIsobarIso = PIsobarX[i];
+					TLorentzVector PBatchIso = PBatchX[i];
+					TLorentzVector PResonanceIso = PIsobarX[i] - PBatchX[i];
+					TLorentzVector PNormIso1 = PNorm[i].first;
+					TLorentzVector PNormIso2 = PNorm[i].second;
+					PBatchIso.Boost(-1.0*isoRestBoost);
+					PResonanceIso.Boost(-1.0*isoRestBoost);
+					PIsobarIso.Boost(-1.0*isoRestBoost);
+					PNormIso1.Boost(-1.0*isoRestBoost);
+					PNormIso2.Boost(-1.0*isoRestBoost);
+					
+					//cout<<"isobar i = "<<i<<" M = "<<PIsobarIso.M()<<endl;
+					//cout<<"with bachelor M = "<<PBatchIso.M()<<" and resonance M = "<<PResonanceIso.M()<<endl;
+					//PResonanceIso.Print();
+					//PBatchIso.Print();
+					//(PResonanceIso+PBatchIso).Print();
+					
+					// Helicity frame z-axis is direction of isobar in X rest frame by default
+					TVector3 zIso = PIsobarX[i].Vect().Unit(); 
+					TVector3 yIso = (z.Cross(zIso)).Unit(); // decay plane from X rest frame
+					
+					// later stage of single batchelor decays (eg. omega->3pi in b1pi production)
+					if(i>0 && isobarAmplitudes[iamp].second[i].size() == isobarAmplitudes[iamp].second[i-1].size()-1 ) {
+						zIso = zIsoPrevious.first;
+						yIso = zIsoPrevious.second.Cross(zIsoPrevious.first);
+					}
+					TVector3 xIso = yIso.Cross(zIso);
+					
+					TVector3 PAngles = PBatchIso.Vect().Unit();
+					if(isobarAmplitudes[iamp].second[i].size() == 3 and isobarAmplitudes[iamp].second[i].size() == uint(nIsobars)) // 3-body decays use normal vectors (e.g. omega->3pi) 
+						PAngles = (PNormIso1.Vect()).Cross(PNormIso2.Vect());
+					
+					// Angles in isobar rest frame
+					TVector3 anglesIso( (PAngles).Dot(xIso),
+							    (PAngles).Dot(yIso),
+							    (PAngles).Dot(zIso) );
+					
+					cosThetaIso.push_back(anglesIso.CosTheta());
+					phiIso.push_back(anglesIso.Phi());
+					
+					// reference vector for later step in current frame
+					zIsoPrevious.first = PAngles.Unit();
+					// reference vector for later step in previous frame
+					zIsoPrevious.second = zIso;
 				}
-				TVector3 xIso = yIso.Cross(zIso);
-				
-				TVector3 PAngles = PBatchIso.Vect();
-				//if(m_daughtI[i].size() == 3 and m_daughtI.size() == uint(m_nIsobars)) // 3-body decay (e.g. omega) 
-				//	PAngles = (PNormIso1.Vect()).Cross(PNormIso2.Vect());
-				
-				// Angles in isobar rest frame
-				TVector3 anglesIso( (PAngles).Dot(xIso),
-						    (PAngles).Dot(yIso),
-						    (PAngles).Dot(zIso) );
-				
-				cosThetaIso.push_back(anglesIso.CosTheta());
-				phiIso.push_back(anglesIso.Phi());
-				cout<<i<<" "<<cosThetaIso[i]<<endl;
 
-				// reference vector for later step in current frame
-				zIsoPrevious.first = PAngles.Unit();
-				// reference vector for later step in previous frame
-				zIsoPrevious.second = zIso;
+				cosThetaIsoAmplitude[iamp] = cosThetaIso;
+				phiIsoAmplitude[iamp] = phiIso;
 			}
+
 			
 			double genWeight = evt->weight();
 			
 			// cannot ask for the intensity if we haven't called process events above
 			double weightedInten = ( genFlat ? 1 : ati.intensity( i ) ); 
 			// cout << " i=" << i << "  intensity_i=" << weightedInten << endl;
-
+			
 			if( !diag ){
 				
 				// obtain this by looking at the maximum value of intensity * genWeight
 				double rand = gRandom->Uniform() * maxInten;
 				
 				if( weightedInten > rand || genFlat ){
-
+					
 					mass->Fill( resonance.M() );
 					massW->Fill( resonance.M(), genWeight );
 					double loct = -1.*(TLorentzVector(0,0,0,0.938) - evt->particle(1)).M2();
 					t->Fill(loct);
-
+					
 					intenW->Fill( weightedInten );
 					intenWVsM->Fill( resonance.M(), weightedInten );
 
-					M_isobar->Fill( isobar.M() );
-
-					M_CosTheta->Fill( resonance.M(), cosThetaBatchX);
-					M_Phi->Fill( resonance.M(), phiBatchX);
-					M_Phi_lab->Fill( resonance.M(), recoil.Phi());
+					//M_isobar->Fill( isobar.M() );
+					//M_CosTheta->Fill( resonance.M(), cosThetaBatchX);
+					//M_Phi->Fill( resonance.M(), phiBatchX);
+					//M_Phi_lab->Fill( resonance.M(), recoil.Phi());
 					
-					CosTheta_Phi->Fill( phiBatchX, cosThetaBatchX);
-					for(int i=0; i<nIsobars; i++) 
-						CosTheta_PhiIso[i]->Fill( phiIso[i], cosThetaIso[i]);
-
+					for(int iamp=0; iamp<nAmplitudes; iamp++) {
+						CosTheta_Phi[iamp]->Fill( phiBatchX[iamp], cosThetaBatchX[iamp]);
+						for(uint i=0; i<isobarAmplitudes[iamp].second.size(); i++) 
+							CosTheta_PhiIso[iamp][i]->Fill( phiIsoAmplitude[iamp][i], cosThetaIsoAmplitude[iamp][i]);
+					}
+					
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
 					
@@ -530,8 +585,11 @@ int main( int argc, char* argv[] ){
 	M_Phi->Write();
 	M_Phi_lab->Write();
 
-	CosTheta_Phi->Write();
-	for(int i=0; i<nIsobars; i++) CosTheta_PhiIso[i]->Write();
+	for(int i=0; i<nAmplitudes; i++) {
+		CosTheta_Phi[i]->Write();
+		int nIsobars = isobarAmplitudes[i].second.size();
+		for(int j=0; j<nIsobars; j++) CosTheta_PhiIso[i][j]->Write();
+	}
 
 	diagOut->Close();
 	

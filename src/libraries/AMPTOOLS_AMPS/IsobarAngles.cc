@@ -124,8 +124,8 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 
 	// keep vectors for isobars in X rest frame for later angle definitions
 	for( int i = 0; i < m_nIsobars; i++ ){
-		TLorentzVector temp = PIsobar[i]; temp.Boost(-1.0*XRestBoost);
-		PIsobarX[i] = temp;
+		TLorentzVector temp;
+		temp = PIsobar[i]; temp.Boost(-1.0*XRestBoost); PIsobarX[i] = temp;
 		temp = PBatch[i]; temp.Boost(-1.0*XRestBoost); PBatchX[i] = temp;
 		temp = PNormX[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
 		temp = PNormX[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
@@ -142,9 +142,9 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 	GDouble cosThetaBatchX = anglesBatchX.CosTheta();
 	GDouble phiBatchX = anglesBatchX.Phi();
 	
-	///////////////////////////////////////////////////////////////////////////
-	// calculate decay angles in isobar rest frame (NEED TO CHECK FOR BUGS!) //
-	///////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////
+	// calculate decay angles in isobar rest frame //
+	/////////////////////////////////////////////////
 	vector<GDouble> cosThetaIso, phiIso, k, q;
 	pair<TVector3, TVector3> zIsoPrevious;
 	for( int i = 0; i < m_nIsobars; i++ ){
@@ -235,10 +235,6 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 		// add each mL term to total amplitude
 		ans += term;
 	}
-
-	// trial weighting functions for amplitudes... just for testing
-	//ans *= cos(recoil.Phi());
-	//ans *= cos(phiBatchX);
 	
 	return ans;
 }
