@@ -394,7 +394,7 @@ int main( int argc, char* argv[] ){
 			  resonance += evt->particle( i );
 
 			// loop over amplitudes for IsobarAngles
-			GDouble cosThetaBatchX[nAmplitudes], phiBatchX[nAmplitudes];
+			GDouble cosThetaX[nAmplitudes], phiX[nAmplitudes];
 			vector<GDouble> cosThetaIsoAmplitude[nAmplitudes], phiIsoAmplitude[nAmplitudes];
 			for(int iamp=0; iamp<nAmplitudes; iamp++) {
 				
@@ -408,40 +408,42 @@ int main( int argc, char* argv[] ){
 				TLorentzVector beam = evt->particle(0);
 				TLorentzVector recoil = evt->particle(1);
 				TLorentzVector PX = resonance;
-				TLorentzVector PBatchXdecay = resonance - isobar;
+				TLorentzVector PBachXdecay = resonance - isobar;
 				
 				// calculate decay angles in resonance X rest frame
 				TVector3 XRestBoost = PX.BoostVector();
 				
 				TLorentzVector beamX   = beam;
 				TLorentzVector recoilX = recoil;
-				TLorentzVector batchX  = PBatchXdecay;
+				TLorentzVector bachX  = PBachXdecay;
+				TLorentzVector isobarX = isobar;
 				beamX.Boost(-1.0*XRestBoost);
 				recoilX.Boost(-1.0*XRestBoost);
-				batchX.Boost(-1.0*XRestBoost);
-				
+				bachX.Boost(-1.0*XRestBoost);
+				isobarX.Boost(-1.0*XRestBoost);
+
 				TVector3 z = beamX.Vect().Unit(); //-recoilX.Vect().Unit();
 				TVector3 y = (beamX.Vect().Unit()).Cross((-recoilX.Vect().Unit())).Unit();
 				TVector3 x = y.Cross(z);
 				
-				TVector3 anglesBatchX( (batchX.Vect()).Dot(x),
-						       (batchX.Vect()).Dot(y),
-						       (batchX.Vect()).Dot(z) );
+				TVector3 anglesX( (isobarX.Vect()).Dot(x),
+						  (isobarX.Vect()).Dot(y),
+						  (isobarX.Vect()).Dot(z) );
 				
-				cosThetaBatchX[iamp] = anglesBatchX.CosTheta();
-				phiBatchX[iamp] = anglesBatchX.Phi();
+				cosThetaX[iamp] = anglesX.CosTheta();
+				phiX[iamp] = anglesX.Phi();
 				
 				// build 4-vectors for isobars
 				int nIsobars = isobarAmplitudes[iamp].second.size();
-				TLorentzVector PIsobar[nIsobars], PBatch[nIsobars];
-				TLorentzVector PIsobarX[nIsobars], PBatchX[nIsobars];
+				TLorentzVector PIsobar[nIsobars], PBach[nIsobars];
+				TLorentzVector PIsobarX[nIsobars], PBachX[nIsobars];
 				pair<TLorentzVector, TLorentzVector> PNorm[nIsobars], PNormX[nIsobars];
 				
 				for(int i=0; i<nIsobars; i++) {
 					for(uint j=0; j<isobarAmplitudes[iamp].second[i].size(); j++) { 
 						PIsobar[i] += evt->particle(isobarAmplitudes[iamp].second[i][j]);
 						if(j==0) {
-							PBatch[i] = evt->particle(isobarAmplitudes[iamp].second[i][j]); 
+							PBach[i] = evt->particle(isobarAmplitudes[iamp].second[i][j]); 
 							PNorm[i].first = evt->particle(isobarAmplitudes[iamp].second[i][j]);
 						}
 						else if(j==1) {
@@ -451,7 +453,7 @@ int main( int argc, char* argv[] ){
 					
 					TLorentzVector temp;
 					temp = PIsobar[i]; temp.Boost(-1.0*XRestBoost); PIsobarX[i] = temp;
-					temp = PBatch[i]; temp.Boost(-1.0*XRestBoost); PBatchX[i] = temp;
+					temp = PBach[i]; temp.Boost(-1.0*XRestBoost); PBachX[i] = temp;
 					temp = PNormX[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
 					temp = PNormX[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
 				}
@@ -465,34 +467,34 @@ int main( int argc, char* argv[] ){
 					
 					TVector3 isoRestBoost = PIsobarX[i].BoostVector();
 					TLorentzVector PIsobarIso = PIsobarX[i];
-					TLorentzVector PBatchIso = PBatchX[i];
-					TLorentzVector PResonanceIso = PIsobarX[i] - PBatchX[i];
+					TLorentzVector PBachIso = PBachX[i];
+					TLorentzVector PResonanceIso = PIsobarX[i] - PBachX[i];
 					TLorentzVector PNormIso1 = PNorm[i].first;
 					TLorentzVector PNormIso2 = PNorm[i].second;
-					PBatchIso.Boost(-1.0*isoRestBoost);
+					PBachIso.Boost(-1.0*isoRestBoost);
 					PResonanceIso.Boost(-1.0*isoRestBoost);
 					PIsobarIso.Boost(-1.0*isoRestBoost);
 					PNormIso1.Boost(-1.0*isoRestBoost);
 					PNormIso2.Boost(-1.0*isoRestBoost);
 					
 					//cout<<"isobar i = "<<i<<" M = "<<PIsobarIso.M()<<endl;
-					//cout<<"with bachelor M = "<<PBatchIso.M()<<" and resonance M = "<<PResonanceIso.M()<<endl;
+					//cout<<"with bachelor M = "<<PBachIso.M()<<" and resonance M = "<<PResonanceIso.M()<<endl;
 					//PResonanceIso.Print();
-					//PBatchIso.Print();
-					//(PResonanceIso+PBatchIso).Print();
+					//PBachIso.Print();
+					//(PResonanceIso+PBachIso).Print();
 					
 					// Helicity frame z-axis is direction of isobar in X rest frame by default
 					TVector3 zIso = PIsobarX[i].Vect().Unit(); 
 					TVector3 yIso = (z.Cross(zIso)).Unit(); // decay plane from X rest frame
 					
-					// later stage of single batchelor decays (eg. omega->3pi in b1pi production)
+					// later stage of single bachelor decays (eg. omega->3pi in b1pi production)
 					if(i>0 && isobarAmplitudes[iamp].second[i].size() == isobarAmplitudes[iamp].second[i-1].size()-1 ) {
 						zIso = zIsoPrevious.first;
 						yIso = zIsoPrevious.second.Cross(zIsoPrevious.first);
 					}
 					TVector3 xIso = yIso.Cross(zIso);
 					
-					TVector3 PAngles = PBatchIso.Vect().Unit();
+					TVector3 PAngles = PResonanceIso.Vect().Unit();
 					if(isobarAmplitudes[iamp].second[i].size() == 3 and isobarAmplitudes[iamp].second[i].size() == uint(nIsobars)) // 3-body decays use normal vectors (e.g. omega->3pi) 
 						PAngles = (PNormIso1.Vect()).Cross(PNormIso2.Vect());
 					
@@ -537,12 +539,12 @@ int main( int argc, char* argv[] ){
 					intenWVsM->Fill( resonance.M(), weightedInten );
 
 					//M_isobar->Fill( isobar.M() );
-					//M_CosTheta->Fill( resonance.M(), cosThetaBatchX);
-					//M_Phi->Fill( resonance.M(), phiBatchX);
+					//M_CosTheta->Fill( resonance.M(), cosThetaBachX);
+					//M_Phi->Fill( resonance.M(), phiBachX);
 					//M_Phi_lab->Fill( resonance.M(), recoil.Phi());
 					
 					for(int iamp=0; iamp<nAmplitudes; iamp++) {
-						CosTheta_Phi[iamp]->Fill( phiBatchX[iamp], cosThetaBatchX[iamp]);
+						CosTheta_Phi[iamp]->Fill( phiX[iamp], cosThetaX[iamp]);
 						for(uint i=0; i<isobarAmplitudes[iamp].second.size(); i++) 
 							CosTheta_PhiIso[iamp][i]->Fill( phiIsoAmplitude[iamp][i], cosThetaIsoAmplitude[iamp][i]);
 					}
