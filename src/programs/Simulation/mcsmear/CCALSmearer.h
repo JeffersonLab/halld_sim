@@ -13,15 +13,24 @@ class ccal_config_t
   public:
 	ccal_config_t(JEventLoop *loop);
 
+	double CCAL_EN_SCALE;
+	
+	double CCAL_EN_P0;
+	double CCAL_EN_P1;
+	double CCAL_EN_P2;	
+	
+	double CCAL_EN_GP0;
+	double CCAL_EN_GP1;
+	double CCAL_EN_GP2;
+
+	
 	// Time smearing factor
-	double CCAL_SIGMA;
-
-	// Photon-statistics factor for smearing hit energy for CompCal
-	double CCAL_PHOT_STAT_COEF;
-
+	double CCAL_TSIGMA;
+	
+	
 	// Single block energy threshold (applied after smearing)
 	double CCAL_BLOCK_THRESHOLD;
-
+	
 };
 
 
