@@ -58,6 +58,7 @@ UserAmplitude< IsobarAngles >( args )
 complex< GDouble >
 IsobarAngles::calcAmplitude( GDouble** pKin ) const
 {
+	//GDouble pTest[7][4] = {{8.605265,0.000000,0.000000,8.605265}, {0.957474,-0.016470,-0.008349,0.189899}, {1.698119,-0.188228,0.001651,1.681872}, {1.903256,-0.357289,0.318952,1.836714}, {0.797837,0.207803,0.013740,0.757425}, {2.544201,0.121276,-0.092830,2.535775}, {1.642650,0.232908,-0.233165,1.603580}};
 
 	TLorentzVector PX, Ptemp;
 	TLorentzVector PIsobar[m_nIsobars], PBach[m_nIsobars];
@@ -71,6 +72,8 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 		int index = atoi(num.c_str());
 		Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
 				  pKin[index][3], pKin[index][0] );
+		//Ptemp.SetPxPyPzE( pTest[index][1], pTest[index][2],
+		//		  pTest[index][3], pTest[index][0] );
 		PX += Ptemp;
 	}
 	
@@ -82,6 +85,8 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 			int index = atoi(num.c_str());
 			Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
 					  pKin[index][3], pKin[index][0] );
+			//Ptemp.SetPxPyPzE( pTest[index][1], pTest[index][2],
+			//		  pTest[index][3], pTest[index][0] );
 			PIsobar[j] += Ptemp;
 			if( i == 0 ) {
 				PBach[j] = Ptemp;
@@ -105,11 +110,9 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 	
 	TLorentzVector beamX   = beam;
 	TLorentzVector recoilX = recoil;
-	TLorentzVector bachX  = PBachXdecay;
 	TLorentzVector isobarX = PIsobar[0];
 	beamX.Boost(-1.0*XRestBoost);
 	recoilX.Boost(-1.0*XRestBoost);
-	bachX.Boost(-1.0*XRestBoost);
 	isobarX.Boost(-1.0*XRestBoost);
 
 	// keep vectors for isobars in X rest frame for later angle definitions
@@ -117,10 +120,11 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 		TLorentzVector temp;
 		temp = PIsobar[i]; temp.Boost(-1.0*XRestBoost); PIsobarX[i] = temp;
 		temp = PBach[i]; temp.Boost(-1.0*XRestBoost); PBachX[i] = temp;
-		temp = PNormX[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
-		temp = PNormX[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
+		temp = PNorm[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
+		temp = PNorm[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
 	}
-	
+
+	// For GJ frame: choose beam as z-axis for reference 
 	TVector3 z = beamX.Vect().Unit();
 	TVector3 y = (beamX.Vect().Unit()).Cross((-recoilX.Vect().Unit())).Unit();
 	TVector3 x = y.Cross(z);
@@ -132,20 +136,18 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 	GDouble cosThetaX = anglesX.CosTheta();
 	GDouble phiX = anglesX.Phi();
 	
-	/////////////////////////////////////////////////
-	// calculate decay angles in isobar rest frame //
-	/////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////
+	// calculate decay angles in isobar rest (helicity) frame //
+	////////////////////////////////////////////////////////////
 	vector<GDouble> cosThetaIso, phiIso, k, q;
-	pair<TVector3, TVector3> zIsoPrevious;
+	pair<TLorentzVector, TLorentzVector> isoPrevious;
 	for( int i = 0; i < m_nIsobars; i++ ){
 		
 		// boost from X rest frame to isobar rest frame (could do in terms of previous frame)
 		TVector3 isoRestBoost = PIsobarX[i].BoostVector();
-		TLorentzVector PBachIso = PBachX[i];
 		TLorentzVector PResonanceIso = PIsobarX[i] - PBachX[i];
 		TLorentzVector PNormIso1 = PNormX[i].first;
 		TLorentzVector PNormIso2 = PNormX[i].second;
-		PBachIso.Boost(-1.0*isoRestBoost);
 		PResonanceIso.Boost(-1.0*isoRestBoost);
 		PNormIso1.Boost(-1.0*isoRestBoost);
 		PNormIso2.Boost(-1.0*isoRestBoost);
@@ -154,16 +156,28 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 		TVector3 zIso = PIsobarX[i].Vect().Unit(); 
 		TVector3 yIso = (z.Cross(zIso)).Unit(); // decay plane from X rest frame
 		
-		// later stage of single bachelor decays (eg. omega->3pi in b1pi production)
+		// later stage of single bachelor decays (eg. omega->3pi in b1pi or K*->Kpi in K1K production)
 		if(m_isBach[i]) { 
-			zIso = zIsoPrevious.first;
-			yIso = zIsoPrevious.second.Cross(zIsoPrevious.first); 
+
+			// boost from X frame to previous isobar frame
+			TVector3 boost1 = isoPrevious.first.BoostVector();
+			// boost to previous isobar frame to current isobar frame
+			TVector3 boost2 = isoPrevious.second.BoostVector(); 
+			
+			PResonanceIso = PIsobarX[i] - PBachX[i];
+			PResonanceIso.Boost(-1.0*boost1); PResonanceIso.Boost(-1.0*boost2);
+			PNormIso1 = PNormX[i].first; PNormIso2 = PNormX[i].second;
+			PNormIso1.Boost(-1.0*boost1); PNormIso2.Boost(-1.0*boost1); 
+			PNormIso1.Boost(-1.0*boost2); PNormIso2.Boost(-1.0*boost2);
+			
+			zIso = (isoPrevious.second.Vect()).Unit();
+			yIso = ((isoPrevious.first.Vect().Unit()).Cross(zIso)).Unit();
 		}
 		TVector3 xIso = yIso.Cross(zIso);
 		
 		TVector3 PAngles = PResonanceIso.Vect();
-		if(m_daughtI[i].size() == 3 and m_daughtI.size() == uint(m_nIsobars)) // 3-body decay (e.g. omega) 
-			PAngles = (PNormIso1.Vect()).Cross(PNormIso2.Vect());
+		if(m_daughtI[i].size() == 3 && i+1 == m_nIsobars) // 3-body decay (e.g. omega) 
+			PAngles = ((PNormIso1.Vect()).Cross(PNormIso2.Vect())); 
 		
 		// Angles in isobar rest frame
 		TVector3 anglesIso( (PAngles).Dot(xIso),
@@ -176,10 +190,10 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 		k.push_back( breakupMomentum( PX.M(), PIsobar[i].M(), PBachXdecay.M() ) );
 		q.push_back( breakupMomentum( PIsobar[i].M(), PBach[i].M(), (PIsobar[i] - PBach[i]).M() ) );
 		
-		// reference vector for later step in current frame
-		zIsoPrevious.first = PAngles.Unit(); 
 		// reference vector for later step in previous frame
-		zIsoPrevious.second = zIso;
+		isoPrevious.first = PIsobarX[i];
+		// reference vector for later step in current frame
+		isoPrevious.second = PResonanceIso; 
 	}  
 	
 	const vector< int >& perm = getCurrentPermutation();
@@ -208,7 +222,7 @@ IsobarAngles::calcAmplitude( GDouble** pKin ) const
 				// decay angle contribution for Isobar decay (replace with wignerD later)
 				termIso += Y( m_jI[i], mI, cosThetaIso[i], phiIso[i] ); 
 				
-				//cout<<"Isobar "<<i<<": "<<m_jI[i]<<" "<<mI<<" "<<cosThetaIso[i]<<" "<<phiIso[i]<<" "<<Y( m_jI[i], mI, cosThetaIso[i], phiIso[i] )<<endl;
+				//cout<<"Isobar "<<i<<": "<<m_jI[i]<<" "<<mI<<" "<<cosThetaIso[i]<<" "<<phiIso[i]<<" "<<Y( m_jI[i], mI, cosThetaIso[i], phiIso[i] )<<" "<<sin(acos(cosThetaIso[i]))<<endl;
 				
 				// fixed helicity = +1 in CG (to be multiplied to termIso later)
 				//* clebschGordan( m_jI[i], m_lX, mI, mL, m_jX, 1 );

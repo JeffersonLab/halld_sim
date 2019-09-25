@@ -274,8 +274,9 @@ int main( int argc, char* argv[] ){
 					}
 				}
 				
-				// store amplitude in vector with name for histograming
+				// store amplitude in vector with name for histograming (if it doesn't exist)
 				pair<TString, vector< vector<int> > > tempAmplitude(amplitudeName, isobarIndices);
+				//if(!count(isobarAmplitudes.begin(), isobarAmplitudes.end(), testAmplitude);
 				isobarAmplitudes.push_back(tempAmplitude);
 			}
 		}
@@ -387,11 +388,11 @@ int main( int argc, char* argv[] ){
 		
 		
 		for( int i = 0; i < batchSize; ++i ){
-			
+
 			Kinematics* evt = ati.kinematics( i );
 			TLorentzVector resonance;
 			for (unsigned int i=2; i<Particles.size(); i++)
-			  resonance += evt->particle( i );
+				resonance += evt->particle( i );
 
 			// loop over amplitudes for IsobarAngles
 			GDouble cosThetaX[nAmplitudes], phiX[nAmplitudes];
@@ -408,20 +409,18 @@ int main( int argc, char* argv[] ){
 				TLorentzVector beam = evt->particle(0);
 				TLorentzVector recoil = evt->particle(1);
 				TLorentzVector PX = resonance;
-				TLorentzVector PBachXdecay = resonance - isobar;
 				
 				// calculate decay angles in resonance X rest frame
 				TVector3 XRestBoost = PX.BoostVector();
 				
 				TLorentzVector beamX   = beam;
 				TLorentzVector recoilX = recoil;
-				TLorentzVector bachX  = PBachXdecay;
 				TLorentzVector isobarX = isobar;
 				beamX.Boost(-1.0*XRestBoost);
 				recoilX.Boost(-1.0*XRestBoost);
-				bachX.Boost(-1.0*XRestBoost);
 				isobarX.Boost(-1.0*XRestBoost);
 
+				// For GJ frame: choose beam as z-axis for reference 
 				TVector3 z = beamX.Vect().Unit(); //-recoilX.Vect().Unit();
 				TVector3 y = (beamX.Vect().Unit()).Cross((-recoilX.Vect().Unit())).Unit();
 				TVector3 x = y.Cross(z);
@@ -454,49 +453,51 @@ int main( int argc, char* argv[] ){
 					TLorentzVector temp;
 					temp = PIsobar[i]; temp.Boost(-1.0*XRestBoost); PIsobarX[i] = temp;
 					temp = PBach[i]; temp.Boost(-1.0*XRestBoost); PBachX[i] = temp;
-					temp = PNormX[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
-					temp = PNormX[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
+					temp = PNorm[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
+					temp = PNorm[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
 				}
 				
-				/////////////////////////////////////////////////
-				// calculate decay angles in isobar rest frame //
-				/////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////
+				// calculate decay angles in isobar rest (helicity) frame //
+				////////////////////////////////////////////////////////////
 				vector<GDouble> cosThetaIso, phiIso;
-				pair<TVector3, TVector3> zIsoPrevious;
+				pair<TLorentzVector, TLorentzVector> isoPrevious;
 				for( int i = 0; i < nIsobars; i++ ){
 					
 					TVector3 isoRestBoost = PIsobarX[i].BoostVector();
-					TLorentzVector PIsobarIso = PIsobarX[i];
-					TLorentzVector PBachIso = PBachX[i];
 					TLorentzVector PResonanceIso = PIsobarX[i] - PBachX[i];
-					TLorentzVector PNormIso1 = PNorm[i].first;
-					TLorentzVector PNormIso2 = PNorm[i].second;
-					PBachIso.Boost(-1.0*isoRestBoost);
+					TLorentzVector PNormIso1 = PNormX[i].first;
+					TLorentzVector PNormIso2 = PNormX[i].second;
 					PResonanceIso.Boost(-1.0*isoRestBoost);
-					PIsobarIso.Boost(-1.0*isoRestBoost);
 					PNormIso1.Boost(-1.0*isoRestBoost);
 					PNormIso2.Boost(-1.0*isoRestBoost);
-					
-					//cout<<"isobar i = "<<i<<" M = "<<PIsobarIso.M()<<endl;
-					//cout<<"with bachelor M = "<<PBachIso.M()<<" and resonance M = "<<PResonanceIso.M()<<endl;
-					//PResonanceIso.Print();
-					//PBachIso.Print();
-					//(PResonanceIso+PBachIso).Print();
-					
+
 					// Helicity frame z-axis is direction of isobar in X rest frame by default
 					TVector3 zIso = PIsobarX[i].Vect().Unit(); 
 					TVector3 yIso = (z.Cross(zIso)).Unit(); // decay plane from X rest frame
 					
-					// later stage of single bachelor decays (eg. omega->3pi in b1pi production)
+					// last step of single bachelor decay chain (e.g. omega->3pi in b1pi or K*->Kpi in K1K production )
 					if(i>0 && isobarAmplitudes[iamp].second[i].size() == isobarAmplitudes[iamp].second[i-1].size()-1 ) {
-						zIso = zIsoPrevious.first;
-						yIso = zIsoPrevious.second.Cross(zIsoPrevious.first);
+
+						// boost from X frame to previous isobar frame
+						TVector3 boost1 = isoPrevious.first.BoostVector();
+						// boost to previous isobar frame to current isobar frame
+						TVector3 boost2 = isoPrevious.second.BoostVector(); 
+
+						PResonanceIso = PIsobarX[i] - PBachX[i];
+						PResonanceIso.Boost(-1.0*boost1); PResonanceIso.Boost(-1.0*boost2);
+						PNormIso1 = PNormX[i].first; PNormIso2 = PNormX[i].second;
+						PNormIso1.Boost(-1.0*boost1); PNormIso2.Boost(-1.0*boost1); 
+						PNormIso1.Boost(-1.0*boost2); PNormIso2.Boost(-1.0*boost2);
+
+						zIso = (isoPrevious.second.Vect()).Unit();
+						yIso = ((isoPrevious.first.Vect().Unit()).Cross(zIso)).Unit();
 					}
 					TVector3 xIso = yIso.Cross(zIso);
 					
-					TVector3 PAngles = PResonanceIso.Vect().Unit();
-					if(isobarAmplitudes[iamp].second[i].size() == 3 and isobarAmplitudes[iamp].second[i].size() == uint(nIsobars)) // 3-body decays use normal vectors (e.g. omega->3pi) 
-						PAngles = (PNormIso1.Vect()).Cross(PNormIso2.Vect());
+					TVector3 PAngles = PResonanceIso.Vect();
+					if(isobarAmplitudes[iamp].second[i].size() == 3 && i+1 == nIsobars) // 3-body decays use normal vectors (e.g. omega->3pi) 
+						PAngles = ((PNormIso1.Vect()).Cross(PNormIso2.Vect()));
 					
 					// Angles in isobar rest frame
 					TVector3 anglesIso( (PAngles).Dot(xIso),
@@ -505,11 +506,11 @@ int main( int argc, char* argv[] ){
 					
 					cosThetaIso.push_back(anglesIso.CosTheta());
 					phiIso.push_back(anglesIso.Phi());
-					
-					// reference vector for later step in current frame
-					zIsoPrevious.first = PAngles.Unit();
+
 					// reference vector for later step in previous frame
-					zIsoPrevious.second = zIso;
+					isoPrevious.first = PIsobarX[i];
+					// reference vector for later step in current frame
+					isoPrevious.second = PResonanceIso;
 				}
 
 				cosThetaIsoAmplitude[iamp] = cosThetaIso;
