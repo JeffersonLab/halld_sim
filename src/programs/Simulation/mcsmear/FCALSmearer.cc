@@ -90,8 +90,8 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
 	
     cout<<"get FCAL/digi_scales parameters from calibDB"<<endl;
     map<string, double> fcaldigiscales;
-    if(loop->GetCalib("FCAL/digi_scales", fcaldigiscales)) {
-    	jerr << "Problem loading FCAL/digi_scales from CCDB!" << endl;
+    if(loop->GetCalib("FCAL/MC/digi_scales", fcaldigiscales)) {
+    	jerr << "Problem loading FCAL/MC/digi_scales from CCDB!" << endl;
     } else {
         FCAL_ADC_ASCALE = fcaldigiscales["FCAL_ADC_ASCALE"];
     }
@@ -181,12 +181,12 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
          int channelnum = fcalGeom->channel(iter->getRow(), iter->getColumn()); 
 	      
          double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);    
-	 double pedestal_rms = fcal_config->FCAL_PED_RMS;
-	 double integral_peak = fcal_config->FCAL_INTEGRAL_PEAK;
-	 double MeV_FADC = fcal_config->FCAL_ADC_ASCALE;
-	 double pedestal = fcal_config->FCAL_PEDS.at(channelnum);
-	 double threshold = fcal_config->FCAL_THRESHOLD;
-	 double threshold_scaling = fcal_config->FCAL_THRESHOLD_SCALING;     
+		 double pedestal_rms = fcal_config->FCAL_PED_RMS;
+		 double integral_peak = fcal_config->FCAL_INTEGRAL_PEAK;
+		 double MeV_FADC = fcal_config->FCAL_ADC_ASCALE;
+		 double pedestal = fcal_config->FCAL_PEDS.at(channelnum);
+		 double threshold = fcal_config->FCAL_THRESHOLD;
+		 double threshold_scaling = fcal_config->FCAL_THRESHOLD_SCALING;     
 	      
          double E = titer->getE();
          if(fcal_config->FCAL_ADD_LIGHTGUIDE_HITS) {
