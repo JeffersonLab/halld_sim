@@ -305,7 +305,8 @@ int main(int narg, char *argv[])
 	int event_count = 1;
 	hddm_s::HDDM *hddmevent = new hddm_s::HDDM;
 	while(*instream >> *hddmevent) {
-		int num_particles = -1;   // number of particles in the event
+	  // next line commented out, an unused variable
+	  //		int num_particles = -1;   // number of particles in the event
 		int max_particle_id = 0;  // needed for generating decay particles
 
 		if( (event_count++%1000) == 0) {
