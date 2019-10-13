@@ -125,6 +125,7 @@ extern "C" {
 	MakeDispatcherINT(getring_);
 	MakeDispatcherINT(getrow_);
 	MakeDispatcherINT(getsector_);
+	MakeDispatcherINT(getpaired_row_);
 }
 
 
