@@ -237,6 +237,7 @@ c      write(6,*)cnames(NLEVEL)
         endif
       elseif ((cnames(NLEVEL).eq.'FTOC').or.  ! forward TOF counter
      +        (cnames(NLEVEL).eq.'FTOX').or.  ! forward TOF counter
+     +        (cnames(NLEVEL).eq.'FTOL').or.  ! forward TOF counter
      +        (cnames(NLEVEL).eq.'FTOH')) then
 #ifdef MAKE_HITS_WHEN_ILOSS_0
         if ((ILOSS.eq.0).and.(CHARGE.ne.0)) then
