@@ -19,6 +19,11 @@ else:
 	# Turn off warnings for bggen since Pythia has too many
 	fflags = env['FORTRANFLAGS'].remove('-Wall')
 	env.Replace(FORTRANFLAGS=fflags)
+        # link with gfortran as well, in order to bring in the right libraries
+        # probably should not hardcode this?  but it's an optional build
+	env['LINK'] = 'gfortran'
+        # allow	long line lengths\
+	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-132'])
 
 	sbms.AddHDDM(env)
 	sbms.executable(env, 'xsec_table')

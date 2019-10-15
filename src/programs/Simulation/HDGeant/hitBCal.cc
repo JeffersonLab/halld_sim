@@ -52,6 +52,7 @@
 // the output file.
 //-----------------
 
+#define USE_ENERGY_WEIGHTED_TIMES 1
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -90,7 +91,8 @@ static int initialized = 0;
 static double ATTEN_LENGTH = 300.0;
 static double C_EFFECTIVE = 16.75;
 static double SiPM_tbin_width = 0.100;
-static double atten_full_length = exp(-390.0/ATTEN_LENGTH);
+static double MODULE_FULL_LENGTH = 390.0;
+static double atten_full_length = exp(-MODULE_FULL_LENGTH/ATTEN_LENGTH);
 static double THRESH_ATTENUATED_GEV = (THRESH_MEV/1000.0)*atten_full_length;
 
 extern s_HDDM_t* thisInputEvent;
@@ -282,7 +284,7 @@ void initializeBarrelEMcal(void)
    }
 
    // Factors to apply effective threshold on attenuated signal.
-   atten_full_length = exp(-390.0/ATTEN_LENGTH);
+   atten_full_length = exp(-MODULE_FULL_LENGTH/ATTEN_LENGTH);
    THRESH_ATTENUATED_GEV = (THRESH_MEV/1000.0)*atten_full_length;
 
    initialized = 1;
@@ -504,12 +506,21 @@ void hitBarrelEMcal (float xin[4], float xout[4],
 
       int nshot;
       s_BcalTruthHits_t* hits;
+      s_BcalSiPMUpHits_t* uhits;
+      s_BcalSiPMDownHits_t* dhits;
       int sector = getsector_wrapper_();
       int layer  = getlayer_wrapper_();
       int module = getmodule_wrapper_();
       float zLocal = xlocal[2];
-      int mark = (module<<16)+ (layer<<9) + sector;
-      
+      int mark = (module<<16) + (layer<<9) + sector;
+
+      float udist = MODULE_FULL_LENGTH/2 + xlocal[2];
+      float ddist = MODULE_FULL_LENGTH/2 - xlocal[2];
+      float dEup = dEsum * exp(-udist/ATTEN_LENGTH);
+      float dEdown = dEsum * exp(-ddist/ATTEN_LENGTH);
+      float tup = t + udist / C_EFFECTIVE;
+      float tdown = t + ddist / C_EFFECTIVE;
+
       void** twig = getTwig(&barrelEMcalTree, mark);
       if (*twig == 0)
       {
@@ -521,6 +532,8 @@ void hitBarrelEMcal (float xin[4], float xout[4],
          cells->in[0].layer = layer;
          cells->in[0].sector = sector;
          cells->in[0].bcalTruthHits = hits = make_s_BcalTruthHits(MAX_HITS);
+         cells->in[0].bcalSiPMUpHits = uhits = make_s_BcalSiPMUpHits(MAX_HITS);
+         cells->in[0].bcalSiPMDownHits = dhits = make_s_BcalSiPMDownHits(MAX_HITS);
          bcal->bcalCells = cells;
          cellCount++;
       }
@@ -528,8 +541,11 @@ void hitBarrelEMcal (float xin[4], float xout[4],
       {
          s_BarrelEMcal_t* bcal = (s_BarrelEMcal_t*)*twig;
          hits = bcal->bcalCells->in[0].bcalTruthHits;
+         uhits = bcal->bcalCells->in[0].bcalSiPMUpHits;
+         dhits = bcal->bcalCells->in[0].bcalSiPMDownHits;
       }
 
+      // add the hit to the bcalTruthHits list
       for (nshot = 0; nshot < (int)hits->mult; nshot++)
       {
          if (fabs(hits->in[nshot].t - t) < TWO_HIT_RESOL)
@@ -539,12 +555,20 @@ void hitBarrelEMcal (float xin[4], float xout[4],
       }
       if (nshot < (int)hits->mult/* && incident_idhit == hits->in[nshot].incident_id*/)      /* merge with former hit */
       { // Merging hits based on incident ID is causing issues later (we lose hits and energy).  This may be implemented later.
+#if USE_ENERGY_WEIGHTED_TIMES
          hits->in[nshot].t =
                   (hits->in[nshot].t * hits->in[nshot].E + t * dEsum)
                 / (hits->in[nshot].E + dEsum);
          hits->in[nshot].zLocal =
                   (hits->in[nshot].zLocal * hits->in[nshot].E + zLocal * dEsum)
                 / (hits->in[nshot].E + dEsum);
+#else
+         if (hits->in[nshot].t > t)
+         {
+            hits->in[nshot].t = t;
+            hits->in[nshot].zLocal = zLocal;
+         }
+#endif
          hits->in[nshot].E += dEsum;
       }
       else if (nshot < MAX_HITS)      /* create new hit */
@@ -554,6 +578,74 @@ void hitBarrelEMcal (float xin[4], float xout[4],
          hits->in[nshot].zLocal = zLocal;
          hits->in[nshot].incident_id = incident_idhit;
          hits->mult++;
+      }
+      else
+      {
+         fprintf(stderr,"HDGeant error in hitBarrelEMcal: ");
+         fprintf(stderr,"max hit count %d exceeded, truncating!\n",MAX_HITS);
+      }
+
+      // add the hit to the bcalSiPMUpHits list
+      for (nshot = 0; nshot < (int)uhits->mult; nshot++)
+      {
+         if (fabs(uhits->in[nshot].t - tup) < TWO_HIT_RESOL)
+         {
+            break;
+         }
+      }
+      if (nshot < (int)uhits->mult)      /* merge with former hit */
+      {
+#if USE_ENERGY_WEIGHTED_TIMES
+         uhits->in[nshot].t =
+                  (uhits->in[nshot].t * uhits->in[nshot].E + tup * dEup)
+                / (uhits->in[nshot].E + dEup);
+#else
+         if (uhits->in[nshot].t > tup)
+         {
+            uhits->in[nshot].t = tup;
+         }
+#endif
+         uhits->in[nshot].E += dEup;
+      }
+      else if (nshot < MAX_HITS)      /* create new hit */
+      {
+         uhits->in[nshot].t = tup;
+         uhits->in[nshot].E = dEup;
+         uhits->mult++;
+      }
+      else
+      {
+         fprintf(stderr,"HDGeant error in hitBarrelEMcal: ");
+         fprintf(stderr,"max hit count %d exceeded, truncating!\n",MAX_HITS);
+      }
+
+      // add the hit to the bcalSiPMDownHits list
+      for (nshot = 0; nshot < (int)dhits->mult; nshot++)
+      {
+         if (fabs(dhits->in[nshot].t - tdown) < TWO_HIT_RESOL)
+         {
+            break;
+         }
+      }
+      if (nshot < (int)dhits->mult)      /* merge with former hit */
+      {
+#if USE_ENERGY_WEIGHTED_TIMES
+         dhits->in[nshot].t =
+                  (dhits->in[nshot].t * dhits->in[nshot].E + tdown * dEdown)
+                / (dhits->in[nshot].E + dEdown);
+#else
+         if (dhits->in[nshot].t > tdown)
+         {
+            dhits->in[nshot].t = tdown;
+         }
+#endif
+         dhits->in[nshot].E += dEdown;
+      }
+      else if (nshot < MAX_HITS)      /* create new hit */
+      {
+         dhits->in[nshot].t = tdown;
+         dhits->in[nshot].E = dEdown;
+         dhits->mult++;
       }
       else
       {
@@ -607,19 +699,20 @@ s_BarrelEMcal_t* pickBarrelEMcal ()
    // bcalCells items and bcalTruthShowers.
    while ( (item = (s_BarrelEMcal_t*) pickTwig(&barrelEMcalTree)) )
    {
-
-#if WRITE_OUT_BCAL_CELL_TRUTH_HITS
       s_BcalCells_t* cells = item->bcalCells;
       int cell;
       for (cell=0; cell < (int)cells->mult; ++cell)
       {
+         s_BcalTruthHits_t* hits = cells->in[cell].bcalTruthHits;
+         s_BcalSiPMUpHits_t* uhits = cells->in[cell].bcalSiPMUpHits;
+         s_BcalSiPMDownHits_t* dhits = cells->in[cell].bcalSiPMDownHits;
+
          int m = box->bcalCells->mult;
          int mok = 0;
-
-         s_BcalTruthHits_t* hits = cells->in[cell].bcalTruthHits;
-          
-         /* compress out the hits below threshold */
          int i,iok;
+
+#if WRITE_OUT_BCAL_CELL_TRUTH_HITS
+         /* compress out the hits below threshold */
          for (iok=i=0; i < (int)hits->mult; i++)
          {
             if (hits->in[i].E > THRESH_MEV/1e3)
@@ -645,6 +738,53 @@ s_BarrelEMcal_t* pickBarrelEMcal ()
             }
          }
 
+         /* compress out the upstream hits below threshold */
+         for (iok=i=0; i < (int)uhits->mult; i++)
+         {
+            if (uhits->in[i].E > THRESH_MEV/1e3)
+            {
+               if (iok < i)
+               {
+                  uhits->in[iok] = uhits->in[i];
+               }
+               ++iok;
+               ++mok;
+            }
+         }
+         if (uhits != HDDM_NULL)
+         {
+            uhits->mult = iok;
+            if (iok == 0)
+            {
+               cells->in[cell].bcalSiPMUpHits = (s_BcalSiPMUpHits_t*)HDDM_NULL;
+               FREE(uhits);
+            }
+         }
+
+         /* compress out the downstream hits below threshold */
+         for (iok=i=0; i < (int)dhits->mult; i++)
+         {
+            if (dhits->in[i].E > THRESH_MEV/1e3)
+            {
+               if (iok < i)
+               {
+                  dhits->in[iok] = dhits->in[i];
+               }
+               ++iok;
+               ++mok;
+            }
+         }
+         if (dhits != HDDM_NULL)
+         {
+            dhits->mult = iok;
+            if (iok == 0)
+            {
+               cells->in[cell].bcalSiPMDownHits = (s_BcalSiPMDownHits_t*)HDDM_NULL;
+               FREE(dhits);
+            }
+         }
+#endif //WRITE_OUT_BCAL_CELL_TRUTH_HITS
+
          if (mok)
          {
             box->bcalCells->in[m] = cells->in[cell];
@@ -655,8 +795,6 @@ s_BarrelEMcal_t* pickBarrelEMcal ()
       {
          FREE(cells);
       }
-      // ......................................................
-#endif //WRITE_OUT_BCAL_CELL_TRUTH_HITS
 
       // bcalTruthShowers
       s_BcalTruthShowers_t* showers = item->bcalTruthShowers;

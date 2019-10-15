@@ -22,8 +22,6 @@ C
       lout=6
       IERR=1
 C
-      write(*,*) 'HI'
-C
       CALL HBOOK_INI
 C
       NEVENT=0
@@ -44,6 +42,8 @@ C
       ISIMUL=0  ! regular BG (=1 - J/psi)
       IPINIT(1)=1  ! photon
       IPINIT(2)=14 ! proton
+      RADINI=0
+      RADCORR=0
 C
       LUNWR(1)=0   ! HDDS file - LUN not used
       LUNWR(2)=2   ! sequential file
@@ -84,6 +84,7 @@ C
       CALL FFKEY('SIMUL'     , ISIMUL     , 1,'INTEGER')
       CALL FFKEY('PARTINIT'  , IPINIT(1)  , 2,'INTEGER')
       CALL FFKEY('REACPAR'   , IPREAC(1)  , MXPNTR+6,'MIXED')
+      CALL FFKEY('RADCORR'   , RADCORR    , 1,'INTEGER')
 C
       CALL FFGO
 C
@@ -142,7 +143,8 @@ C
          ENDIF
          IF(ier.NE.0) THEN
             WRITE(6,1001) i,IPINIT(i)
- 1001              FORMAT('  *** Init. error: PARTINIT:',I1,I5,' not defined')
+ 1001              FORMAT('  *** Init. error: PARTINIT:',I1,I5,
+     +					  ' not defined')
             GO TO 999
          ENDIF
       ENDDO
@@ -238,7 +240,8 @@ C
         IF(NPXREAC.LT.2) ier=3
         IF(ier.NE.0) THEN
            WRITE(6,1030) IPREAC,TSLREAC,ELREAC,NPXREAC
- 1030            FORMAT('  *** Initialization error REAC: :',4I4,3E11.3,I6)
+ 1030            FORMAT('  *** Initialization error REAC: :',
+     +					4I4,3E11.3,I6)
            GO TO 999
         ENDIF
         DO i=1,NPXREAC

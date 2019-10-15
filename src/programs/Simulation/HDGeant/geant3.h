@@ -47,5 +47,5 @@ int getplane_wrapper_(void);
 int getring_wrapper_(void);
 int getrow_wrapper_(void);
 int getsector_wrapper_(void);
-
+int getpaired_row_wrapper_(void);
 

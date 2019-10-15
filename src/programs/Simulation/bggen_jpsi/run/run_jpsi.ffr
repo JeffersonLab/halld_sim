@@ -23,6 +23,8 @@ ZCOLLIM   7600.         distance to the collimator in cm
 
 EPYTHMIN     3.         minimal energy for PYTHIA simulation
 
+RADCORR   0 		FSR Radiative corrections to J/psi -> e+e-
+
 PARTINIT  1  14         GEANT types of the initial particles
 C  reac - J/psi: gamma p -> p J/psi  tslope e1 e2 np cross section in nb
 REACPAR  14 83  1.0  8.2300   13.0000   478

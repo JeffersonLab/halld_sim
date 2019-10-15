@@ -23,10 +23,10 @@ mcsmear_config_t::mcsmear_config_t()
 	SMEAR_HITS     = true;
 	//SMEAR_BCAL     = true;
 	IGNORE_SEEDS   = false;
-    DUMP_RCDB_CONFIG = false;
+	DUMP_RCDB_CONFIG = false;
 	APPLY_EFFICIENCY_CORRECTIONS = true;
-	APPLY_HITS_TRUNCATION = true;
-    FCAL_ADD_LIGHTGUIDE_HITS = false;
+	APPLY_HITS_TRUNCATION  = true;
+	FCAL_ADD_LIGHTGUIDE_HITS = false;
 
           BCAL_NO_T_SMEAR = false;             
           BCAL_NO_DARK_PULSES = false;        
@@ -140,7 +140,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
     }
 
     // Parse CODA config file 
-    vector<string> SectionNames = {"TRIGGER", "GLOBAL", "FCAL", "BCAL", "TOF", "ST", "TAGH",
+    vector<string> SectionNames = {"TRIGGER", "GLOBAL", "FCAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
                                          "TAGM", "PS", "PSC", "TPOL", "CDC", "FDC"};
     string fileContent = file->GetContent();                               // Get file content
     auto result = rcdb::ConfigParser::Parse(fileContent, SectionNames);    // Parse it!
@@ -181,9 +181,15 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
     double dvalue;
     std::stringstream deco;
     vector<string>::iterator iter;
-    vector<string> fadc250_sys = {"FCAL", "BCAL", "TOF", "ST", "TAGH",
+    vector<string> fadc250_sys = {"FCAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
                                   "TAGM", "PS", "PSC", "TPOL"};
     for (iter = fadc250_sys.begin(); iter != fadc250_sys.end(); ++iter) {
+
+      // Make sure that the sub-detector exists in the configuration file
+        auto section_length = result.Sections[*iter].Rows;
+        if(section_length.size() == 0) continue;
+
+
         deco.clear();
         deco.str(result.Sections.at(*iter).NameValues["FADC250_NPEAK"]);
         deco >> dvalue;
@@ -204,6 +210,10 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
 
     vector<string> fadc125_sys = {"FDC", "CDC"};
     for (iter = fadc125_sys.begin(); iter != fadc125_sys.end(); ++iter) {
+
+        auto section_length = result.Sections[*iter].Rows;
+        if(section_length.size() == 0) continue;
+
         deco.clear();
         deco.str(result.Sections.at(*iter).NameValues["FADC125_NPEAK"]);
         deco >> dvalue;
@@ -224,6 +234,10 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
 
     vector<string> f1tdc_sys = {"BCAL", "ST", "TAGH", "TAGM", "PSC", "FDC"};
     for (iter = f1tdc_sys.begin(); iter != f1tdc_sys.end(); ++iter) {
+
+        auto section_length = result.Sections[*iter].Rows;
+        if(section_length.size() == 0) continue;
+
         readout[*iter]["NHITS"] = 8.;
         deco.clear();
         deco.str(result.Sections.at(*iter).NameValues["F1TDC_WINDOW"]);
@@ -242,6 +256,10 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
 
     vector<string> tdc1290_sys = {"TOF"};
     for (iter = tdc1290_sys.begin(); iter != tdc1290_sys.end(); ++iter) {
+
+        auto section_length = result.Sections[*iter].Rows;
+        if(section_length.size() == 0) continue;
+
         deco.clear();
         deco.str(result.Sections.at(*iter).NameValues["TDC1290_N_HITS"]);
         deco >> dvalue;

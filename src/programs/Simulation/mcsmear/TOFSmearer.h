@@ -13,13 +13,16 @@ class tof_config_t
 	tof_config_t(JEventLoop *loop);
 	
 	inline double GetPaddleTimeResolution(int plane, int bar)  { 
-		int paddle = plane*44 + bar - 1;   // hardcode for now
+		int paddle = plane*TOF_NUM_BARS + bar - 1; 
 		return TOF_PADDLE_TIME_RESOLUTIONS.at(paddle); 
 	}
 	inline double GetHitTimeResolution(int plane, int bar)  { 
 		// assume that the paddle resolution is given by: paddle resol = (hit resol)^2
-		return GetPaddleTimeResolution(plane, bar)/TMath::Sqrt2(); 
+		return GetPaddleTimeResolution(plane, bar)*TMath::Sqrt2(); 
 	}
+
+	int TOF_NUM_PLANES = 2;  // defaults for original TOF
+    int TOF_NUM_BARS = 44;   // defaults for original TOF
 
 	double TOF_SIGMA;
 	double TOF_PHOTONS_PERMEV;

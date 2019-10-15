@@ -38,6 +38,12 @@
 *   - all cheat tags have been modified to report all three coordinates
 *     (in the global reference system) instead of only two [rtj]
 *
+* Revision 1.12  2019/02/23 09:36:34  jonesrt
+* Add 3 new fields to the end of the BEAM card in control.in:
+*  (8)  spotRMS - virtual spot rms size at the collimator (m)
+*  (9)  spotX - x offset of virtual spot from collimator axis (m)
+*  (10) spotY - y offset of virtual spot from collimator axis (m)
+*
 * Revision 1.11  2005/01/21 09:36:34  davidl
 * Read in BFIELD and NOSECONDARIES cards and store in hdtrackparams common block
 *
@@ -140,10 +146,12 @@
 #include "controlparams.inc"
 *
       integer iskip
+      integer irunno
       integer infile(20)
       integer outfile(20)
-      common /inputFile/ iskip,infile,outfile
+      common /inputFile/ iskip,irunno,infile,outfile
       data iskip/0/
+      data irunno/0/
       data infile/20*0/
       data outfile/20*0/
 
@@ -172,9 +180,9 @@
       integer openInput, skipInput, openOutput
       external openInput, skipInput, openOutput
       real beamE0, beamEpeak, beamEmin, radColDist, colDiam
-      real beamEmit, radThick
+      real beamEmit, radThick, spotRMS, spotX, spotY
       common /beamPars/ beamE0,beamEpeak,beamEmin,radColDist,colDiam,
-     +                  beamEmit, radThick
+     +                  beamEmit, radThick, spotRMS, spotX, spotY
       data beamE0/0/
       data beamEpeak/0/
       data beamEmin/0/
@@ -182,6 +190,9 @@
       data colDiam/0.0034/
       data beamEmit/1e-8/
       data radThick/20e-6/
+      data spotRMS/0/
+      data spotX/0/
+      data spotY/0/
 
 c The following parameters are declared in hdtrackparams.inc above.
       data nosecondaries/0/
@@ -214,6 +225,16 @@ C  for the coherent bremsstrahlung beam generator - see beamgen.F
       real    xMinimum,freqMaximum,beamStartZ,Theta02
       common /coherentGen/xMinimum,freqMaximum,beamStartZ,Theta02
 
+C  Common block for ffread, used to interpret control.in,
+C  included here to expand the space for additional keys.
+      parameter (NCSIZE=800, LSTACK=20)
+      COMMON /CFREAD/  NWORDS, NCHKEY, NWDKEY, NKEYS,  MAXKEY,
+     *                 NOFLEN, NOFTYP, NOFKEY,
+     *                 LINPUT, LUNIN,  LUNOUT,
+     *                 ISTACK, LUNS(LSTACK),
+     *                 IFFOPT(8), KEYOPT(3),
+     *                 IWORDS(NCSIZE)
+      call FFINIT(NCSIZE)
 *
 *     -----------------------------------------------------------------
 *
@@ -268,11 +289,12 @@ C..geant..
       CALL FFSET('SIZE',16)
       call ffkey('infile',infile,20,'MIXED')
       call ffkey('skip',iskip,1,'INTEGER')
+      call ffkey('runno',irunno,1,'INTEGER')
       call ffkey('outfile',outfile,20,'MIXED')
       call ffkey('postsmear',postsmear,1,'INTEGER')
       call ffkey('mcsmearopts',mcsmearopts,64,'MIXED')
       call ffkey('deleteunsmeared',deleteunsmeared,1,'INTEGER')
-      call ffkey('beam',beamE0,7,'REAL')
+      call ffkey('beam',beamE0,10,'REAL')
       call ffkey('genbeam',genbeam_mode,20,'MIXED')
       call ffkey('bfieldmap', bfield_map,20,'MIXED')
       call ffkey('bfieldtype', bfield_type,20,'MIXED')
@@ -292,6 +314,14 @@ C..geant..
       call FFKEY('trefsigma',trigger_time_sigma_ns,1,'REAL')
       call gtgamaff()
       CALL GFFGO
+
+c   override the run number if specified on the commandline
+
+      if (override_run_number.gt.0) then
+        IDRUN = override_run_number
+      elseif (irunno.gt.0) then
+        IDRUN = irunno
+      endif
 *
 *             Verify that the random number seeds are OK
 *
@@ -316,13 +346,12 @@ c      nevent = 0
 *            Get the run number from the input file 
         call extractRunNumber(myrunno)
 *           .. but override it with the RUNG card if IDRUN>0        
-        if (IDRUN.lt.0) then
-           IDRUN=myrunno
-        else 
-           override_run_number=1
+        if (IDRUN.gt.0) then
+           override_run_number = IDRUN
+        else
+           IDRUN = myrunno
         endif
 
-        write(6,*) 'run number ',IDRUN,override_run_number
         if (iskip .gt. 0) then
           ifail = skipInput(iskip)
         endif
@@ -427,6 +456,10 @@ c        endif
      +           ' cannot continue.'
         stop
       endif
+      if (spotRMS .gt. 0) then
+        call set_spotsize(spotRMS)
+      endif
+      call set_spotpos(spotX,spotY)
 *
 *             Initialize graphics package
 *
@@ -458,6 +491,7 @@ c        endif
 C..geant..
       CALL GGCLOS
       CALL GPART
+      CALL GUPART
       CALL GPHYSI
       CALL GRFILE(3,'hdgeant.rz','ON')
       CALL HCDIR('//RZfile',' ')

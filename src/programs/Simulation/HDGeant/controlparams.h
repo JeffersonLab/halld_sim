@@ -7,13 +7,14 @@ extern "C" {
 
 typedef struct {
 	int writenohits;
-	int shoersincol;
+	int showersincol;
 	int driftclusters;
 	float tgwidth[2];
 	int runtime_geom;
 	int get_next_evt;
 	float trigger_time_signa_ns;
 	int event_count;
+	int override_run_number;
 }controlparams_t;
 extern controlparams_t controlparams_;
 

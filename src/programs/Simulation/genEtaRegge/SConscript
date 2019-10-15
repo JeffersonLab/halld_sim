@@ -12,6 +12,7 @@ env.AppendUnique(LIBS = UTILITIES_LIBS.split())
 sbms.AddUtilities(env)
 sbms.AddROOT(env)
 sbms.AddHDDM(env)
+sbms.AddEvtGen(env)
 sbms.executable(env)
 
 
