@@ -27,6 +27,7 @@ mcsmear_config_t::mcsmear_config_t()
 	APPLY_EFFICIENCY_CORRECTIONS = true;
 	APPLY_HITS_TRUNCATION  = true;
 	FCAL_ADD_LIGHTGUIDE_HITS = false;
+	SKIP_READING_RCDB = false;
 
           BCAL_NO_T_SMEAR = false;             
           BCAL_NO_DARK_PULSES = false;        
@@ -101,10 +102,10 @@ void  mcsmear_config_t::LoadRCDBConnection()
     if(rcdb_connection != NULL)
         return;
 
-	gPARMS->SetDefaultParameter("RCDB_CONNECTION", RCDB_CONNECTION, "URL used to access RCDB.");
+    gPARMS->SetDefaultParameter("RCDB_CONNECTION", RCDB_CONNECTION, "URL used to access RCDB.");
     
-	// load connection to RCDB
-	rcdb_connection = new rcdb::Connection(RCDB_CONNECTION);
+    // load connection to RCDB
+    rcdb_connection = new rcdb::Connection(RCDB_CONNECTION);
 }
 
 //-----------
@@ -112,7 +113,6 @@ void  mcsmear_config_t::LoadRCDBConnection()
 //-----------
 bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
 {
-	// This is just for testing (right now)
 	// To get a lot of the configuration parameters we need, we need to parse the CODA configuration files
 	// which are saved in RCDB in the JSON format
 
