@@ -280,11 +280,8 @@ void hitForwardTOF (float xin[4], float xout[4],
       }
     }
 
+    int padl = (column < 2)? row : getpaired_row_wrapper_();
 
-    int padl = row;
-    if (row>44)
-      padl = row-23;
- 
     //int mark = (plane<<20) + (row<<10) + column;
     int mark = (plane<<20) + (padl<<10);// + column;
     void** twig = getTwig(&forwardTOFTree, mark);
