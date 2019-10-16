@@ -1250,8 +1250,9 @@ double ampSqPT(int rxnType,int polDirection, TLorentzVector target, TLorentzVect
   double p1p2,p1p3,p1p4,p1p5,p2p3,p2p5,p3p4,p4p5;
   double kinFac1,kinFac2,kinFac3,kinFac4;
   double kinFac5,kinFac6,kinFac7,kinFac8;
-  double m34,m35,m1,m2,m3,m4,m5;
-  m1 = 0.0;m2 = massTarget;m3 = massElectron;m4 = massElectron;m5 = massTarget;
+  // comment out next two lines to suppress warnings, variables not used
+  //  double m34,m35,m1,m2,m3,m4,m5;
+  //  m1 = 0.0;m2 = massTarget;m3 = massElectron;m4 = massElectron;m5 = massTarget;
 
   int spin1,spin2,spin3,spin4,spin5;
   QedElement u2;
@@ -1293,8 +1294,9 @@ double ampSqPT(int rxnType,int polDirection, TLorentzVector target, TLorentzVect
   double mAmplSqSum = 0.0;
 
   //Create the invariant mass square of 3,4 and 3,5 systems                     
-  m34 = sqrt(pow(E3+E4,2)-pow(px3+px4,2)-pow(py3+py4,2)-pow(pz3+pz4,2));
-  m35 = sqrt(pow(E3+E5,2)-pow(px3+px5,2)-pow(py3+py5,2)-pow(pz3+pz5,2));
+  // comment out m34 and m35, variables not used, for warning suppression
+  //  m34 = sqrt(pow(E3+E4,2)-pow(px3+px4,2)-pow(py3+py4,2)-pow(pz3+pz4,2));
+  //  m35 = sqrt(pow(E3+E5,2)-pow(px3+px5,2)-pow(py3+py5,2)-pow(pz3+pz5,2));
 
   //Define some dot products                                                    
   p1p2 = E1*E2 - px1*px2 - py1*py2 - pz1*pz2;
