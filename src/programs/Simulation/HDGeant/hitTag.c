@@ -6,6 +6,7 @@
  *
  * version 1.0 	-Richard Jones November 16, 2006
  * version 2.0 	-Richard Jones July 1, 2014
+ * version 3.0  -A.S., October 16, 2019
  *
  * Programmer's Notes:
  * -------------------
@@ -33,7 +34,39 @@
  * 4) The recorded photon energy from the tagger is computed from the
  *    endpoint energy in the ccdb multiplied by the scaled_energy_range
  *    array values.
+ *
+ *
+ *  update October 16, 2019 (version 3.0), A.S.
+ * ---------------------------------
+ * Modify calculation of the photon beam energy to account 
+ * for the fact that the energy of bremsstrahlung electrons detected
+ * by each tagger counter does not depend on the electron beam energy.
+ * The photon beam energy E_gamma has to be computed as
+ *
+ *   E_gamma = R * E_endpoint_calib  +  DE,  where
+ * 
+ *   R is the fractional energy of the beam photon corresponding to the
+ *  specific tagger counter. R is stored in the 'scaled_energy_range' 
+ *  CCDB table. R is determined using calibration runs with the 
+ *  specific electron beam energy, E_endpoint_calib
+ *
+ *   DE = Ebeam - E_endpoint_calib
+ *
+ *  Run-by-run dependent Ebeam is stored in the endpoint_energy CCDB table
+ *  
+ * 
+ *  E_endpoint_calib energy is placed in the 
+ *  /PHOTON_BEAM/hodoscope/endpoint_calib CCDB table
+ *
+ * for each specific run period. If the run (period) is not listed in the
+ * table, the photon beam energy is computed as:
+ *
+ * 
+ *  E_gamma = R * Ebeam 
+ *
+ *
  */
+
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -52,6 +85,8 @@
 #define TAG_T_MIN_NS            -200
 #define TAG_T_MAX_NS            +200
 
+float endpoint_energy_calib_GeV = 0;
+
 float endpoint_energy_GeV = 0;
 float micro_limits_Erange[2];
 float hodo_limits_Erange[2];
@@ -65,6 +100,9 @@ static int microCount = 0;
 static int hodoCount = 0;
 static int printDone = 0;
 static float beam_period = -1.0;
+
+static int read_endpoint_calib = 0;
+
 
 float get_reference_plane_();
 
@@ -108,8 +146,25 @@ void hitTagger (float xin[4], float xout[4],
       }
    }
  
+
+   if (read_endpoint_calib == 0) {
+      char dbname[] = "/PHOTON_BEAM/hodoscope/endpoint_calib";
+      unsigned int ndata = 1;
+      if (GetCalib(dbname, &ndata, &endpoint_energy_calib_GeV)) {
+	fprintf(stderr,"HDGeant error in hitTagger: failed to read endpoint_calib energy \n");
+      }
+      
+
+      read_endpoint_calib = 1;
+
+   }
+
+
    /* read microscope channel energy bounds from calibdb */
    if (micro_channel_Erange == 0) {
+
+     int i;
+
       char dbname[] = "/PHOTON_BEAM/microscope/scaled_energy_range";
       /* table microscope/scaled_energy_range has 3 columns:
        *     column  xlow  xhigh
@@ -127,24 +182,52 @@ void hitTagger (float xin[4], float xout[4],
          exit (2);
       }
       else {
-         int i;
-         micro_limits_Erange[0] = 0;
-         micro_limits_Erange[1] = 1;
-         for (i=0; i < micro_nchannels; ++i) {
-            if (micro_limits_Erange[0] < micro_channel_Erange[3*i+1])
-               micro_limits_Erange[0] = micro_channel_Erange[3*i+1];
-            if (micro_limits_Erange[1] > micro_channel_Erange[3*i+2])
-               micro_limits_Erange[1] = micro_channel_Erange[3*i+2];
-            micro_channel_Erange[3*i+1] *= endpoint_energy_GeV;
-            micro_channel_Erange[3*i+2] *= endpoint_energy_GeV;
-         }
-         micro_limits_Erange[0] *= endpoint_energy_GeV;
-         micro_limits_Erange[1] *= endpoint_energy_GeV;
+
+	micro_limits_Erange[0] = 0;
+	micro_limits_Erange[1] = 1;
+	for (i=0; i < micro_nchannels; ++i) {
+	  if (micro_limits_Erange[0] < micro_channel_Erange[3*i+1])
+	    micro_limits_Erange[0] = micro_channel_Erange[3*i+1];
+	  if (micro_limits_Erange[1] > micro_channel_Erange[3*i+2])
+	    micro_limits_Erange[1] = micro_channel_Erange[3*i+2];
+	}
+	
+	 
+	if(endpoint_energy_GeV > 0 && endpoint_energy_calib_GeV > 0) {
+
+	  printf(" Correct Beam Photon Energy  (TAGM) \n\n");
+	  
+	  double delta_E = endpoint_energy_GeV  -  endpoint_energy_calib_GeV;
+	  
+	  for (i = 0; i < micro_nchannels; ++i) {
+	    micro_channel_Erange[3*i+1]  = micro_channel_Erange[3*i+1]*endpoint_energy_calib_GeV  +  delta_E;
+	    micro_channel_Erange[3*i+2]  = micro_channel_Erange[3*i+2]*endpoint_energy_calib_GeV  +  delta_E;
+	  }
+	  
+	  micro_limits_Erange[0]  =  micro_limits_Erange[0]*endpoint_energy_calib_GeV  +  delta_E;
+	  micro_limits_Erange[1]  =  micro_limits_Erange[1]*endpoint_energy_calib_GeV  +  delta_E;
+	  
+	} else {
+	  
+	  for (i = 0; i < micro_nchannels; ++i) {
+	    
+	    micro_channel_Erange[3*i+1]  *=  endpoint_energy_GeV; 
+	    micro_channel_Erange[3*i+2]  *=  endpoint_energy_GeV;	  
+	  }
+	  
+	  micro_limits_Erange[0] *= endpoint_energy_GeV;
+	  micro_limits_Erange[1] *= endpoint_energy_GeV;	
+	}
+	       	
       }
    }
  
+
    /* read hodoscope channel energy bounds from calibdb */
    if (hodo_channel_Erange == 0) {
+
+     int i;
+
       char dbname[] = "/PHOTON_BEAM/hodoscope/scaled_energy_range";
       /* table hodoscope/scaled_energy_range has 3 columns:
        *     counter  xlow  xhigh
@@ -152,31 +235,60 @@ void hitTagger (float xin[4], float xout[4],
        */
       int ndata = 3*hodo_nchannels;
       mystr_t names[ndata];
+
       hodo_channel_Erange = malloc(ndata*sizeof(float));
+
       if (GetArrayConstants(dbname, &ndata, hodo_channel_Erange, names) ||
           ndata != 3*hodo_nchannels)
-      {
-         fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
-                 "failed to read hodoscope scaled_energy_range table",
-                 "from calibdb, cannot continue.");
-         exit (2);
-      }
+	{
+	  fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
+		  "failed to read hodoscope scaled_energy_range table",
+		  "from calibdb, cannot continue.");
+	  exit (2);
+	}
       else {
-         int i;
-         hodo_limits_Erange[0] = 0;
-         hodo_limits_Erange[1] = 1;
-         for (i=0; i < hodo_nchannels; ++i) {
-            if (hodo_limits_Erange[0] < hodo_channel_Erange[3*i+1])
-               hodo_limits_Erange[0] = hodo_channel_Erange[3*i+1];
-            if (hodo_limits_Erange[1] > hodo_channel_Erange[3*i+2])
-               hodo_limits_Erange[1] = hodo_channel_Erange[3*i+2];
-            hodo_channel_Erange[3*i+1] *= endpoint_energy_GeV;
-            hodo_channel_Erange[3*i+2] *= endpoint_energy_GeV;
-         }
-         hodo_limits_Erange[0] *= endpoint_energy_GeV;
-         hodo_limits_Erange[1] *= endpoint_energy_GeV;
+	
+	hodo_limits_Erange[0] = 0;
+	hodo_limits_Erange[1] = 1;
+	for (i=0; i < hodo_nchannels; ++i) {
+	  if (hodo_limits_Erange[0] < hodo_channel_Erange[3*i+1])
+	    hodo_limits_Erange[0] = hodo_channel_Erange[3*i+1];
+	  if (hodo_limits_Erange[1] > hodo_channel_Erange[3*i+2])
+	    hodo_limits_Erange[1] = hodo_channel_Erange[3*i+2];
+	}
       }
+
+
+      if(endpoint_energy_GeV > 0 && endpoint_energy_calib_GeV > 0) {
+
+	printf(" Correct Beam Photon Energy  (TAGH) \n\n");
+	
+	double delta_E = endpoint_energy_GeV  -  endpoint_energy_calib_GeV;
+	
+	for (i = 0; i < hodo_nchannels; ++i) {
+	  hodo_channel_Erange[3*i + 1] = hodo_channel_Erange[3*i+1]*endpoint_energy_calib_GeV  +  delta_E;
+	  hodo_channel_Erange[3*i + 2] = hodo_channel_Erange[3*i+2]*endpoint_energy_calib_GeV  +  delta_E;
+	}
+	
+	hodo_limits_Erange[0] = hodo_limits_Erange[0]*endpoint_energy_calib_GeV + delta_E;
+	hodo_limits_Erange[1] = hodo_limits_Erange[1]*endpoint_energy_calib_GeV + delta_E;
+	
+      } else {	
+	
+	for (i = 0; i < hodo_nchannels; ++i) {
+	  hodo_channel_Erange[3*i+1] *= endpoint_energy_GeV;
+	  hodo_channel_Erange[3*i+2] *= endpoint_energy_GeV;
+	}
+	
+	hodo_limits_Erange[0] *= endpoint_energy_GeV;
+	hodo_limits_Erange[1] *= endpoint_energy_GeV;
+	
+      }          
+      
    }
+   
+
+
 
    if (printDone == 0) {
       fprintf(stderr,"TAGGER: ALL parameters loaded from Data Base\n");
