@@ -25,7 +25,8 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  TCanvas *c1 = new TCanvas();
+  // comment out next line for warning suppresion, unused variable c1
+  //  TCanvas *c1 = new TCanvas();
 
   // output configuration
   int run = 10000;
@@ -59,7 +60,8 @@ int main(int argc, char **argv)
   cout << " run = " << run << endl;
 
   const double PI = 3.14159265358979312;
-  const double radian = 57.2957795130823229;
+  // comment out next line for warning suppression, variable radian unused
+  //  const double radian = 57.2957795130823229;
   const double Mp = 0.9383;
   const double Me = 0.00051;
   const double t_lim = -1.5; // limit of t distribution Max(|t|)
@@ -113,7 +115,8 @@ int main(int argc, char **argv)
   // change next line to drop crs_INT and crs_int, variable unused, for warning suppression
   //  double psf, crs_BH, crs_INT, crs_int;
   double psf, crs_BH;
-  double psf_flux, flux_factor;
+  // comment out next line for warning suppression, variables not used
+  //  double psf_flux, flux_factor;
   TLorentzVector L_em, L_ep, L_prot;
   TLorentzVector L_gprime;
   
