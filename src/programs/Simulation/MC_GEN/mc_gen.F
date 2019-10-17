@@ -1,4 +1,4 @@
-PROGRAM MC_GEN
+      PROGRAM MC_GEN
 c*********************************************************************************
 c	MC_GEN
 c	Monte Carlo generation of events with sequential N-body decays.
