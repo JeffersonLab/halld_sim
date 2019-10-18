@@ -1,17 +1,24 @@
-
-
 import sbms
 
-# get env object and clone it
 Import('*')
-env = env.Clone()
-# Turn off warnings for bggen since Pythia has too many
-fflags = env['FORTRANFLAGS'].remove('-Wall')
-env.Replace(FORTRANFLAGS=fflags)
-env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-80'])
-env.PrependUnique(FORTRANFLAGS = ['-std=legacy'])
-env.PrependUnique(FORTRANFLAGS = ['-fbounds-check'])
-print('DEBUG: call executable method')
-sbms.executables(env)
 
+# Verify CERN environment variable is set
+if os.getenv('CERN', 'nada')=='nada':
+    if env.Dir('.').srcnode().abspath.startswith(env.GetLaunchDir()):
+        print '=========================================================
+==='
+        print 'CERN environment variable not set. Skipping build of MC_GEN'
+        print '=========================================================
+==='
+else:
+    # get env object and clone it
+    env = env.Clone()
+    # Turn off warnings for bggen since Pythia has too many
+    fflags = env['FORTRANFLAGS'].remove('-Wall')
+    env.Replace(FORTRANFLAGS=fflags)
+    env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-80'])
+    env.PrependUnique(FORTRANFLAGS = ['-std=legacy'])
+    env.PrependUnique(FORTRANFLAGS = ['-fbounds-check'])
 
+    sbms.AddCERNLIB(env)
+    sbms.executables(env)
