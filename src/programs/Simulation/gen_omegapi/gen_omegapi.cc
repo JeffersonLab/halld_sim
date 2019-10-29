@@ -346,12 +346,6 @@ int main( int argc, char* argv[] ){
 			  piplus.Boost( omega.BoostVector() );			  
 			  piminus.Boost( omega.BoostVector() );
 		  
-			  omegas_pi0.Boost( b1.BoostVector() );
-			  piplus.Boost( b1.BoostVector() );			  
-			  piminus.Boost( b1.BoostVector() );
-			  
-			  bachelor_pi0.Boost( b1.BoostVector() );
-
 			  vector< TLorentzVector > allPart;
 			  //same order as omegapiAngAmp
 			  allPart.push_back( beam );
