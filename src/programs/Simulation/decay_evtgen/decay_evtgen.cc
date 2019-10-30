@@ -28,9 +28,10 @@ using namespace std;
 #include "EvtGenExternal/EvtExternalGenList.hh"
 #endif
 
-#include "particleType.h"
+//#include "particleType.h"  // manage this function locally to cover older halld_recon versions
 #include "HDDM/hddm_s.hpp"
 #include "EVTGEN_MODELS/RegisterGlueXModels.h"
+#include "evtgenParticleString.h"
 
 #include "TLorentzVector.h"
 #include "TVector3.h"
@@ -188,7 +189,7 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 		else
 			// use the standard particle type as a backup - would be nice
 			// if we didn't have these dependencies!
-			partId = EvtPDL::getId(std::string(EvtGenString(part.type))); 
+			partId = EvtPDL::getId(std::string(EvtGenOutputString(part.type))); 
 		EvtVector4R pInit(part.momentum.E(), part.momentum.Px(), 
 							part.momentum.Py(), part.momentum.Pz());
 		parent = EvtParticleFactory::particleFactory(partId, pInit);
@@ -305,7 +306,7 @@ int main(int narg, char *argv[])
 	int event_count = 1;
 	hddm_s::HDDM *hddmevent = new hddm_s::HDDM;
 	while(*instream >> *hddmevent) {
-		int num_particles = -1;   // number of particles in the event
+	  //int num_particles = -1;   // number of particles in the event
 		int max_particle_id = 0;  // needed for generating decay particles
 
 		if( (event_count++%1000) == 0) {
