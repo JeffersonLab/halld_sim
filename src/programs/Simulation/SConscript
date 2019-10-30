@@ -8,8 +8,9 @@ subdirs = ['genr8', 'genr8_2_hddm', 'HDGeant', 'mcsmear', 'bggen', 'gen_2k', 'ge
 
 # only build if	    EvtGen is installed
 EVTGEN_HOME = os.getenv('EVTGENDIR')
-if EVTGEN_HOME!=None:
-   subdirs += ['decay_evtgen']
+print('special version: will not build decay_evtgen even if EVTGENDIR is defined')
+#if EVTGEN_HOME!=None:
+#   subdirs += ['decay_evtgen']
 
 sbms.OptionallyBuild(env, ['genphoton', 'genpi', 'gen_2mu', 'stdhep_translators', 'bggen_jpsi'])
 
