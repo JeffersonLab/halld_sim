@@ -251,7 +251,9 @@ int main( int argc, char* argv[] ){
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
 	GammaPToNPartP resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
-	NBodyPhaseSpaceFactory omega_to_pions = NBodyPhaseSpaceFactory( 0.782, part_masses2);
+
+	vector< BreitWignerGenerator > m_bwGen;
+        m_bwGen.push_back( BreitWignerGenerator(0.782, 0.008) );
 	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
@@ -335,6 +337,10 @@ int main( int argc, char* argv[] ){
 			  TLorentzVector omega = step1->particle( 3 );
 			  TLorentzVector b1 = bachelor_pi0 + omega;
 
+        		  pair< double, double > bw = m_bwGen[0]();
+        		  double omega_mass_bw = bw.first;
+        		  if ( omega_mass_bw < 0.45 ) omega_mass_bw = 0.782; //Avoids Tcm < 0 in NBodyPhaseSpaceFactory
+        		  NBodyPhaseSpaceFactory omega_to_pions = NBodyPhaseSpaceFactory( omega_mass_bw, part_masses2);
 			  vector<TLorentzVector> omega_daughters = omega_to_pions.generateDecay();
 			  
 			  TLorentzVector piplus = omega_daughters[0];//second decay step
