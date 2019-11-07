@@ -202,7 +202,10 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 
 #ifdef HAVE_RCDB
 	// Pull configuration parameters from RCDB
-	bool haveRCDBConfigFile = config->ParseRCDBConfigFile(locRunNumber);
+	bool haveRCDBConfigFile = false;
+	if(!config->SKIP_READING_RCDB) {
+	  haveRCDBConfigFile = config->ParseRCDBConfigFile(locRunNumber);
+	}
 	if(haveRCDBConfigFile) {
 
 	        const double fadc250_period_ns(4.);

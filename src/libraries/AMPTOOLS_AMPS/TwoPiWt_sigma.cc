@@ -134,9 +134,9 @@ TwoPiWt_sigma::calcAmplitude( GDouble** pKin ) const
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
-  GDouble Et = Precoil.E();
-  GDouble Mt = Precoil.M();
-  // next line commented out, unused variable
+  // next three lines commented out, unused variables
+  //  GDouble Et = Precoil.E();
+  //  GDouble Mt = Precoil.M();
   //  GDouble t = -2*Precoil.M()*(Et - Mt);      
 
   
