@@ -6,16 +6,17 @@
 fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom) 
 {
 	// default values
-	FCAL_PHOT_STAT_COEF   = 0.0; //0.035;
-	FCAL_BLOCK_THRESHOLD  = 0.0; //20.0*k_MeV;
-	FCAL_TSIGMA           = 0.; // 400 ps 
-	FCAL_PED_RMS          = 0.; //3.0
-        FCAL_MC_ESCALE        = 0.; //1.54
-        FCAL_ADC_ASCALE       = 0.; //2.7E-4 
-	FCAL_INTEGRAL_PEAK    = 0.; //5.7
-	FCAL_THRESHOLD        = 0.; //108
-	FCAL_THRESHOLD_SCALING= 0.; // (110/108)
-	
+	FCAL_PHOT_STAT_COEF     = 0.0; // 0.05;
+	FCAL_BLOCK_THRESHOLD    = 0.0; // 20.0*k_MeV;
+	FCAL_TSIGMA             = 0.0; // 400 ps 
+	FCAL_PED_RMS            = 0.0; // 3.0
+	FCAL_MC_ESCALE          = 0.0; // 1.54
+	FCAL_ADC_ASCALE         = 0.0; // 2.7E-4 
+	FCAL_INTEGRAL_PEAK      = 0.0; // 5.7
+	FCAL_THRESHOLD          = 0.0; // 108
+	FCAL_THRESHOLD_SCALING  = 0.0; // (110/108)
+	FCAL_ENERGY_WIDTH_FLOOR = 0.0; // 0.03
+
 	// Get values from CCDB
 	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
     map<string, double> fcalparms;
@@ -77,7 +78,6 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
    } else {
        FCAL_THRESHOLD_SCALING = FCAL_THRESHOLD_SCALING_TEMP;
    }
-	
 
    cout<<"get FCAL/MC/mc_escale from calibDB"<<endl;
    double FCAL_MC_ESCALE_TEMP;
@@ -87,7 +87,14 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
         FCAL_MC_ESCALE = FCAL_MC_ESCALE_TEMP;
    }
 
-	
+    cout<<"get FCAL/MC/energy_width_floor from calibDB"<<endl;
+    double FCAL_ENERGY_WIDTH_FLOOR_TEMP;
+    if(loop->GetCalib("FCAL/MC/energy_width_floor", FCAL_ENERGY_WIDTH_FLOOR_TEMP)) {
+        jerr << "Problem loading FCAL/MC/energy_width_floor from CCDB!" << endl;
+    } else {
+        FCAL_ENERGY_WIDTH_FLOOR = FCAL_ENERGY_WIDTH_FLOOR_TEMP;
+    }
+
     cout<<"get FCAL/digi_scales parameters from calibDB"<<endl;
     map<string, double> fcaldigiscales;
     if(loop->GetCalib("FCAL/MC/digi_scales", fcaldigiscales)) {
@@ -202,10 +209,11 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
          double t = titer->getT(); 
 
          if(config->SMEAR_HITS) {
-         	// Smear the energy and timing of the hit
-         	double sigma = fcal_config->FCAL_PHOT_STAT_COEF/sqrt(titer->getE());
-
+			// Smear the timing and energy of the hit
 			t += gDRandom.SampleGaussian(fcal_config->FCAL_TSIGMA);
+
+			// Energy width has stochastic and floor terms
+			double sigma = sqrt( pow(fcal_config->FCAL_PHOT_STAT_COEF,2)/titer->getE() + pow(fcal_config->FCAL_ENERGY_WIDTH_FLOOR,2));
 			E *= (1.0 + gDRandom.SampleGaussian(sigma));
 		 }
 		 
