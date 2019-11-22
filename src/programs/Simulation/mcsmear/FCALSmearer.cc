@@ -113,7 +113,6 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	double FCAL_gain=1.; 
 	double E = titer->getE();
 
-	printf("col %d row %d\n",column,row);
 	if (row<100 && column<100){
 	  // Simulation simulates a grid of blocks for simplicity. 
 	  // Do not bother smearing inactive blocks. They will be
