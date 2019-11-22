@@ -125,6 +125,7 @@ extern "C" {
 	MakeDispatcherINT(getring_);
 	MakeDispatcherINT(getrow_);
 	MakeDispatcherINT(getsector_);
+	MakeDispatcherINT(getpaired_row_);
 }
 
 
@@ -154,8 +155,29 @@ void init_runtime_xml_(void)
 
 	// Generate FORTRAN code from XML
 	cout<<endl;
-	cout << "Generating FORTRAN from XML source ...." << endl;
-	string cmd = "$HDDS_HOME/bin/$BMS_OSNAME/hdds-geant " + HDDS_XML + " > tmp.F";
+	cout << "Generating FORTRAN from XML source " << HDDS_XML << endl;
+    if (HDDS_XML.find("ccdb://GEOMETRY/main_HDDS.xml,run=") == 0) {
+        char xmldir[] = ".hdds_tmp_XXXXXX";
+        string tempdir(mkdtemp(xmldir));
+        string url = HDDS_XML.substr(0,HDDS_XML.find(",run="));
+        int runno = stoi(HDDS_XML.substr(34));
+        JCalibration *jcalib = japp->GetJCalibration(runno);
+        vector<string> xmlfiles;
+        jcalib->GetListOfNamepaths(xmlfiles);
+        vector<string>::iterator xiter;
+        for (xiter = xmlfiles.begin(); xiter != xmlfiles.end(); ++xiter) {
+            if (xiter->find("GEOMETRY/") == 0) {
+                cout << *xiter << endl;
+                vector<map<string, string> > vals;
+                jcalib->GetCalib(*xiter, vals);
+                string &xml = vals[0].begin()->second;
+                ofstream xmlout(tempdir + xiter->substr(xiter->find("/")));
+                xmlout << xml;
+            }
+        }
+        HDDS_XML = tempdir + "/main_HDDS.xml";
+    }
+	string cmd = "$HDDS_HOME/$BMS_OSNAME/bin/hdds-geant " + HDDS_XML + " > tmp.F";
 	cout << cmd << endl;
 	retcode = system(cmd.c_str());
 	if(retcode) cerr << "Error running command: " << retcode << endl;
@@ -199,6 +221,7 @@ void init_runtime_xml_(void)
 	GetRoutine((void**)&getring_ptr, "getring_");
 	GetRoutine((void**)&getrow_ptr, "getrow_");
 	GetRoutine((void**)&getsector_ptr, "getsector_");
+	GetRoutine((void**)&getpaired_row_ptr, "getpaired_row_");
 
 	// Clean up (this won't delete the tmp.so file right away since
 	// we still have it open).
@@ -225,7 +248,7 @@ void GetRoutine(void **ptr, const char *rname)
 	// checksum, not this one.
 
 	// Create, compile and link shared object if needed.
-//	if(!dlgeom_handle) init_runtime_xml();
+//	if(!dlgeom_handle) init_runtime_xml_();
 
 	// Grab md5geom routine from shared object
 	void *my_ptr = dlsym(dlgeom_handle, rname);

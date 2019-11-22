@@ -34,7 +34,8 @@ class mcsmear_config_t
 	bool ADD_NOISE;
 	bool DROP_TRUTH_HITS;
 	bool SMEAR_HITS;
-    bool DUMP_RCDB_CONFIG;
+	bool DUMP_RCDB_CONFIG;
+	bool SKIP_READING_RCDB;
 
 	//bool SMEAR_BCAL;
 	//bool FDC_ELOSS_OFF;
@@ -52,6 +53,7 @@ class mcsmear_config_t
 	double BCAL_NO_SAMPLING_FLOOR_TERM;
 	double BCAL_NO_POISSON_STATISTICS;
 	double BCAL_NO_FADC_SATURATION;
+	double BCAL_NO_SIPM_SATURATION;
 	
 	
 #ifdef HAVE_RCDB

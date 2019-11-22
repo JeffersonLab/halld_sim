@@ -23,6 +23,7 @@ PlotGenerator( results )
   bookHistogram( kPsi, new Histogram1D( 50, -1*PI, PI, "psi", "#psi" ) );
   // bookHistogram( kt, new Histogram1D( 100, 0, 5, "t", "-t" ) );
   bookHistogram( kt, new Histogram1D( 100, 0, 0.05, "t", "-t" ) );
+  bookHistogram( ktheta_scat, new Histogram1D( 100, 0, 2, "costhe_scat", "#theta_{scat}" ) );
 }
 
 void
@@ -33,6 +34,16 @@ TwoZPiPlotGenerator::projectEvent( Kinematics* kin ){
   TLorentzVector p1 = kin->particle( 1 );
   TLorentzVector p2 = kin->particle( 2 );
   TLorentzVector resonance = p1 + p2; 
+
+  // first compute the scattering angle of the resonance, theta_scat (degrees), in the lab
+
+  TVector3 z(0.,0.,1.);
+  
+  GDouble costhe_scat = resonance.Vect().Dot(z)/resonance.Vect().Mag();
+  if (costhe_scat > 1) costhe_scat = 1;
+  if (costhe_scat < -1) costhe_scat = -1;
+  GDouble theta_scat = acos(costhe_scat)*180./PI;
+
   // double weight = kin->weight();
 
   /*cout << endl << endl << "beam= "; beam.Print();
@@ -55,7 +66,7 @@ TwoZPiPlotGenerator::projectEvent( Kinematics* kin ){
   TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();   // redefine y normal to production plane
   
   // choose helicity frame: z-axis opposite recoil proton in rho rest frame
-  TVector3 z = -1. * recoil_res.Vect().Unit();
+  z = -1. * recoil_res.Vect().Unit();
   TVector3 x = y.Cross(z).Unit();
   TVector3 angles(   (p1_res.Vect()).Dot(x),
                      (p1_res.Vect()).Dot(y),
@@ -76,7 +87,7 @@ TwoZPiPlotGenerator::projectEvent( Kinematics* kin ){
   GDouble t = (beam - p1 - p2).M2();     // use measured particles to compute t
   
   // calls to fillHistogram go here
-  // cout << " TwoZPiPlotGenerator: mp1=" << p1.M() << " mp2=" << p2.M() << " mrecoil=" << recoil.M() << " m2pi=" << resonance.M() << endl;
+  // cout << " TwoZPiPlotGenerator: mp1=" << p1.M() << " mp2=" << p2.M() << " mrecoil=" << recoil.M() << " m2pi=" << resonance.M() << " theta_scat=" << theta_scat << endl;  
   
   fillHistogram( k2PiMass, ( resonance ).M() );
   
@@ -89,4 +100,5 @@ TwoZPiPlotGenerator::projectEvent( Kinematics* kin ){
 
   fillHistogram( kPsi, psi );
   fillHistogram( kt, -t );      // fill with -t to make positive
+  fillHistogram( ktheta_scat, theta_scat );  
 }

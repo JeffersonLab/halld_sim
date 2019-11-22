@@ -84,8 +84,8 @@ float get_target_momentum_(const int *comp) {
 }
 
 int extractRunNumber(int *runNo) {
-  thisInputEvent = read_s_HDDM(thisInputStream);
-  return *runNo = thisInputEvent->physicsEvents->in[0].runNo;
+   thisInputEvent = read_s_HDDM(thisInputStream);
+   return *runNo = thisInputEvent->physicsEvents->in[0].runNo;
 }
 
 
@@ -107,7 +107,20 @@ int openInput (char* filename)
  */
 int skipInput (int count)
 {
-   return count - skip_s_HDDM(thisInputStream,count);
+   if (count <= 0)
+   {
+      return 0;
+   }
+   else if (thisInputEvent)
+   {
+      flush_s_HDDM(thisInputEvent, 0);
+   }
+   if (count > 1)
+   {
+      count -= skip_s_HDDM(thisInputStream, count-1);
+   }
+   thisInputEvent = read_s_HDDM(thisInputStream);
+   return --count;
 }
 
 /*-------------------------

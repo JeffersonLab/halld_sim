@@ -6,9 +6,13 @@ import sbms
 Import('*')
 env = env.Clone()
 
-sbms.AddCobrems(env)
+UTILITIES_LIBS = "UTILITIES"
+env.AppendUnique(LIBS = UTILITIES_LIBS.split())
+
+sbms.AddUtilities(env)
 sbms.AddROOT(env)
 sbms.AddHDDM(env)
+sbms.AddEvtGen(env)
 sbms.executable(env)
 
 

@@ -598,6 +598,10 @@ def AddRECONPaths(env):
 	halld_recon_home = os.getenv('HALLD_RECON_HOME', 'halld_recon')
 	env.AppendUnique(CPPPATH = ["%s/%s/include" % (halld_recon_home, env['OSNAME'])])
 	env.AppendUnique(LIBPATH = ["%s/%s/lib" % (halld_recon_home, env['OSNAME'])])
+        
+        # skip smearing DIRC if hit object doesn't exist in halld_recon (ie. it's an old version)
+        if os.path.exists(halld_recon_home+"/src/libraries/DIRC/DDIRCPmtHit.h"):
+                AddCompileFlags(env, "-DSMEARDIRC")
 
 ##################################
 # DANA
@@ -1062,6 +1066,7 @@ def AddAmpTools(env):
 			AMPTOOLS_LIBS = 'AmpTools_GPU'
 			print 'Using GPU enabled AMPTOOLS library'
 
+                env.AppendUnique(CXXFLAGS = ['-DHAVE_AMPTOOLS_MCGEN'])
 		env.AppendUnique(CPPPATH = AMPTOOLS_CPPPATH)
 		env.AppendUnique(LIBPATH = AMPTOOLS_LIBPATH)
 		env.AppendUnique(LIBS    = AMPTOOLS_LIBS)
@@ -1081,19 +1086,73 @@ def AddAmpPlotter(env):
 
 
 ##################################
-# Cobrems
+# HepMC
 ##################################
-def AddCobrems(env):
-	pyincludes = subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0]
-	cobrems_home = os.getenv('HALLD_SIM_HOME', 'halld_sim')
-	env.AppendUnique(CPPPATH = ["%s/src/libraries/AMPTOOLS_MCGEN" % (cobrems_home)])
-	env.AppendUnique(LIBPATH = ["%s/%s/lib" % (cobrems_home, env['OSNAME'])])
-	env.AppendUnique(LIBS    = 'AMPTOOLS_MCGEN')
+def AddHepMC(env):
+	HEPMC_HOME = os.getenv('HEPMCDIR')
+	if HEPMC_HOME==None:
+		print ''
+		print 'HepMC is being requested but the HEPMCDIR environment variable is not set!'
+		print ''
+        else:
+                HEPMC_CPPPATH = "%s/include" % (HEPMC_HOME)
+                HEPMC_LIBPATH = "%s/lib" % (HEPMC_HOME)
+                HEPMC_LIBS = "HepMC"
+                env.AppendUnique(CPPPATH = HEPMC_CPPPATH)
+                env.AppendUnique(LIBPATH = HEPMC_LIBPATH)
+                env.AppendUnique(LIBS    = HEPMC_LIBS)
+
+
+##################################
+# PHOTOS
+##################################
+def AddPhotos(env):
+	PHOTOS_HOME = os.getenv('PHOTOSDIR')
+	if PHOTOS_HOME==None:
+		print ''
+		print 'Photos is being requested but the PHOTOSDIR environment variable is not set!'
+		print ''
+        else:
+                PHOTOS_CPPPATH = "%s/include" % (PHOTOS_HOME)
+                PHOTOS_LIBPATH = "%s/lib" % (PHOTOS_HOME)
+                PHOTOS_LIBS = [ "Photospp", "PhotosppHepMC" ]
+                env.AppendUnique(CXXFLAGS = ['-DEVTGEN_PHOTOS'])
+                env.AppendUnique(CPPPATH = PHOTOS_CPPPATH)
+                env.AppendUnique(LIBPATH = PHOTOS_LIBPATH)
+                env.AppendUnique(LIBS    = PHOTOS_LIBS)
+
+
+##################################
+# EvtGen
+##################################
+def AddEvtGen(env):
+	EVTGEN_HOME = os.getenv('EVTGENDIR')
+	if EVTGEN_HOME==None:
+		print ''
+		print 'EvtGen is being requested but the EVTGENDIR environment variable is not set!'
+		print ''
+        else:
+                AddHepMC(env)
+                AddPhotos(env)
+                EVTGEN_CPPPATH = "%s/" % (EVTGEN_HOME)
+                EVTGEN_LIBPATH = [ "%s/lib" % (EVTGEN_HOME), "%s/lib64" % (EVTGEN_HOME) ]   # either of these could be true
+                EVTGEN_LIBS = [ "EvtGen", "EvtGenExternal" ] 
+                EVTGEN_LIBS += [ "EVTGEN_MODELS" ]
+                env.AppendUnique(CXXFLAGS = ['-DHAVE_EVTGEN', '-DEVTGEN_EXTERNAL'])
+                env.AppendUnique(CPPPATH = EVTGEN_CPPPATH)
+                env.AppendUnique(LIBPATH = EVTGEN_LIBPATH)
+                env.AppendUnique(LIBS    = EVTGEN_LIBS)
+
+
+##################################
+# Utilities for generators (CCDB and Cobrems)
+##################################
+def AddUtilities(env):
+	AddCCDB(env)
+     	pyincludes = subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0]
 	env.AppendUnique(CCFLAGS = pyincludes.rstrip().split())
 	# BOOST is required by cobrems and if it is not installed in /usr or /usr/local then we must get it from the environment
 	boost_root = os.getenv('BOOST_ROOT')
 	if boost_root != None:
 		env.AppendUnique(CPPPATH = [boost_root + "/include"])
-
-
 

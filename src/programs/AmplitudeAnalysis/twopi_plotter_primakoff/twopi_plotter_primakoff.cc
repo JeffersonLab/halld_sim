@@ -2,6 +2,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <complex>
+#include <algorithm>
+#include <cassert>
 
 #include "TClass.h"
 #include "TApplication.h"
@@ -12,6 +15,9 @@
 #include "TClass.h"
 #include "TFile.h"
 
+#include "IUAmpTools/PlotGenerator.h"
+#include "IUAmpTools/AmplitudeManager.h"
+#include "IUAmpTools/NormIntInterface.h"
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/FitResults.h"
 
@@ -22,8 +28,31 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
+#include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
+#include "AMPTOOLS_AMPS/TwoPitdist.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+
+
+using namespace std;
+
+// for string delimiter
+vector<string> stringSplit (string s, string delimiter) {
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    string token;
+    vector<string> res;
+
+    while ((pos_end = s.find (delimiter, pos_start)) != string::npos) {
+        token = s.substr (pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back (token);
+    }
+
+    res.push_back (s.substr (pos_start));
+    return res;
+}
+
+
 
 typedef TwoZPiPlotGenerator PlotGen;
 
@@ -32,6 +61,8 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
   AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
   AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
+  AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+  AmpToolsInterface::registerAmplitude( TwoPitdist() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
 }
@@ -107,30 +138,51 @@ int main( int argc, char* argv[] ){
   TFile* plotfile = new TFile( outName.c_str(), "recreate");
   TH1::AddDirectory(kFALSE);
 
+  vector <string> paramlist;
+  paramlist = results.ampList("Primakoff");
+
+  vector <string> amplist;
+
+  for (auto parsum : paramlist) {
+    // cout << " sum segment=" << parsum << endl;
+    vector<string> parbreak = stringSplit (parsum, "::");
+
+    if (parbreak[1] == "Aplus") { 
+      amplist.push_back(parbreak[2]);
+      cout << " amp =" << parbreak[2] << endl;
+       }
+  }
+
+  // for (auto amp : amplist) cout << " amp=" << amp << endl;
+  
+
   string reactionName = results.reactionList()[0];
   plotGen.enableReaction( reactionName );
   vector<string> sums = plotGen.uniqueSums();
 
+  // for (auto isum : sums) cout << " isum=" << isum << endl;
 
-  // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
-  for (unsigned int isum = 0; isum <= sums.size(); isum++){
+  // Enable both Aplus and Aminus sum
+  plotGen.enableSum(0);
+  plotGen.enableSum(1);
+  // for (unsigned int isum = 0; isum < sums.size(); isum++){
+  //     plotGen.disableSum(isum);
+  // }
 
-    // turn on all sums by default
-    for (unsigned int i = 0; i < sums.size(); i++){
-      plotGen.enableSum(i);
+
+
+  // loop over sum, with all amplitudes turned on
+  for (unsigned int iamp = 0; iamp < amplist.size(); iamp++){
+
+    // turn on all amplist by default
+    for (unsigned int i = 0; i < amplist.size(); i++){
+      plotGen.enableAmp(i);
     }
-
-    // for individual contributions turn off all sums but the one of interest
-    if (isum < sums.size()){
-      for (unsigned int i = 0; i < sums.size(); i++){
-        if (i != isum) plotGen.disableSum(i);
-      }
-    }
+  }
 
 
-    // loop over data, accMC, and genMC and kBkgnd
+    // loop over sum, accMC, and genMC and kBkgnd
     for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
-      if (isum < sums.size() && iplot == PlotGenerator::kData) continue; // only plot data once
 
       // loop over different variables
       for (unsigned int ivar  = 0; ivar  < TwoZPiPlotGenerator::kNumHists; ivar++){
@@ -143,6 +195,7 @@ int main( int argc, char* argv[] ){
         else if (ivar == TwoZPiPlotGenerator::kphi)  histname += "phi";
         else if (ivar == TwoZPiPlotGenerator::kPsi)  histname += "psi";
         else if (ivar == TwoZPiPlotGenerator::kt)  histname += "t";
+        else if (ivar == TwoZPiPlotGenerator::ktheta_scat)  histname += "theta_scat";
         else continue;
 
         if (iplot == PlotGenerator::kData) histname += "dat";
@@ -150,15 +203,57 @@ int main( int argc, char* argv[] ){
         if (iplot == PlotGenerator::kGenMC) histname += "gen";
         if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
 
-        if (isum < sums.size()){
-          //ostringstream sdig;  sdig << (isum + 1);
-          //histname += sdig.str();
+        Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
+        TH1* thist = hist->toRoot();
+        thist->SetName(histname.c_str());
+        plotfile->cd();
+        thist->Write();
 
-	  // get name of sum for naming histogram
-          string sumName = sums[isum];
+      }
+    }
+
+
+
+  // loop over sum, once per each amplitude
+  for (unsigned int iamp = 0; iamp < amplist.size(); iamp++){
+
+    // turn on all amplist by default
+    for (unsigned int i = 0; i < amplist.size(); i++){
+      plotGen.enableAmp(i);
+    }
+
+    // for individual contributions turn off all amplist but the one of interest
+    for (unsigned int i = 0; i < amplist.size(); i++){
+        if (i != iamp) plotGen.disableAmp(i);
+      }
+
+
+    // loop over data, accMC, and genMC and kBkgnd
+    for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
+
+      // loop over different variables
+      for (unsigned int ivar  = 0; ivar  < TwoZPiPlotGenerator::kNumHists; ivar++){
+
+        // set unique histogram name for each plot (could put in directories...)
+        string histname =  "";
+        if (ivar == TwoZPiPlotGenerator::k2PiMass)  histname += "M2pi";
+	else if (ivar == TwoZPiPlotGenerator::kPiPCosTheta)  histname += "cosTheta";
+        else if (ivar == TwoZPiPlotGenerator::kPhi)  histname += "Phi";
+        else if (ivar == TwoZPiPlotGenerator::kphi)  histname += "phi";
+        else if (ivar == TwoZPiPlotGenerator::kPsi)  histname += "psi";
+        else if (ivar == TwoZPiPlotGenerator::kt)  histname += "t";
+        else if (ivar == TwoZPiPlotGenerator::ktheta_scat)  histname += "theta_scat";
+        else continue;
+
+        if (iplot == PlotGenerator::kData) histname += "dat";
+        if (iplot == PlotGenerator::kAccMC) histname += "acc";
+        if (iplot == PlotGenerator::kGenMC) histname += "gen";
+        if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
+
+	  // get name of amp for naming histogram
+          string ampName = amplist[iamp];
           histname += "_";
-          histname += sumName;
-        }
+          histname += ampName;
 
         Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
         TH1* thist = hist->toRoot();

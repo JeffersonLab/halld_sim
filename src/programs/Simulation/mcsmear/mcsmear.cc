@@ -79,7 +79,7 @@ int main(int narg,char* argv[])
    if(error_code != NOERROR) 
        return static_cast<int>(error_code);
    else
-       return 0;
+       return dapp.GetExitCode();
 }
 
 //-----------
@@ -104,14 +104,16 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'e': config->APPLY_EFFICIENCY_CORRECTIONS=false;  break;
           case 'm': config->APPLY_HITS_TRUNCATION=false;         break;
           case 'E': config->FCAL_ADD_LIGHTGUIDE_HITS=true;       break;
+	  case 'R': config->SKIP_READING_RCDB=true;              break;
 
-	      // BCAL parameters
+          // BCAL parameters
           case 'G': config->BCAL_NO_T_SMEAR = true;              break;
           case 'H': config->BCAL_NO_DARK_PULSES = true;          break;
           case 'K': config->BCAL_NO_SAMPLING_FLUCTUATIONS = true; break;
           case 'L': config->BCAL_NO_SAMPLING_FLOOR_TERM = true;  break;
           case 'M': config->BCAL_NO_POISSON_STATISTICS = true;   break;
-	  case 'S': config->BCAL_NO_FADC_SATURATION = true;      break;
+          case 'S': config->BCAL_NO_FADC_SATURATION = true;      break;
+          case 'T': config->BCAL_NO_SIPM_SATURATION = true;      break;
          }
       }
       else {
@@ -216,6 +218,7 @@ void Usage(void)
 //   cout << "    -B       Don't process BCAL hits at all (def. process)" << endl;
  //  cout << "    -Vthresh BCAL ADC threshold (def. " << BCAL_ADC_THRESHOLD_MEV << " MeV)" << endl;
  //  cout << "    -Xsigma  BCAL fADC time resolution (def. " << BCAL_FADC_TIME_RESOLUTION << " ns)" << endl;
+   cout << "    -R       Don't load information from RCDB" << endl;
    cout << "    -D       Dump configuration debug information" << endl;
    cout << "    -G       Don't smear BCAL times (def. smear)" << endl;
    cout << "    -H       Don't add BCAL dark hits (def. add)" << endl;
@@ -223,6 +226,7 @@ void Usage(void)
    cout << "    -L       Don't apply BCAL sampling floor term (def. apply)" << endl;
    cout << "    -M       Don't apply BCAL Poisson statistics (def. apply)" << endl;
    cout << "    -S       Don't apply BCAL fADC saturation (def. apply)" << endl;
+   cout << "    -T       Don't apply BCAL SiPM saturation (def. apply)" << endl;
  //  cout << "    -f#      TOF sigma in psec (def: " <<  TOF_SIGMA/k_psec << ")" << endl;
    cout << "    -h       Print this usage statement." << endl;
    cout << endl;

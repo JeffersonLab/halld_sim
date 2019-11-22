@@ -25,7 +25,8 @@ public:
   GammaPToXYZP( float lowMassXYZ, float highMassXYZ, 
                 float massX, float massY, float massZ,
                 ProductionMechanism::Type type, 
-                float beamMaxE = 12.0, float beamPeakE = 9.0, float beamLowE = 7.0, float beamHighE = 12.0, float slope = 7.5);
+                float slope = 7.5,
+		TString beamConfigFile = "");
   
   Kinematics* generate();
 //  AmpVecs* generateMany( int nEvents );

@@ -22,7 +22,7 @@ using namespace jana;
 #include <CCALSmearer.h>
 #include <TOFSmearer.h>
 #include <SCSmearer.h>
-#include <FDIRCSmearer.h>
+#include <DIRCSmearer.h>
 #include <TAGHSmearer.h>
 #include <TAGMSmearer.h>
 #include <PSSmearer.h>

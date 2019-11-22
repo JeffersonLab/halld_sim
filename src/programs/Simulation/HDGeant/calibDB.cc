@@ -49,8 +49,6 @@ bool nofield=false;
 DMagneticFieldMap *Bmap=NULL;
 DMagneticFieldMapPS *PS_Bmap=NULL;
 static JCalibration *jcalib=NULL;
-//static void *dlgeom_handle=NULL;
-//string HDDS_XML = "$HDDS_HOME/main_HDDS.xml";
 
 extern "C" {
    void md5geom_wrapper_(char *md5);

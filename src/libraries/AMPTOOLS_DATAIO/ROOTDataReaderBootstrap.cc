@@ -76,6 +76,15 @@ m_useWeight( false )
     
     m_useWeight = false;
   }
+
+  unsigned int nEvents = numEvents();
+  
+  for( unsigned int i = 0; i < nEvents; ++i ){
+
+    m_entryOrder.insert( (unsigned int)floor( m_randGenerator->Rndm()*nEvents ) );
+  }
+
+  m_nextEntry = m_entryOrder.begin();
 }
 
 ROOTDataReaderBootstrap::~ROOTDataReaderBootstrap()
@@ -93,6 +102,7 @@ ROOTDataReaderBootstrap::resetSource()
   
   // this will cause the read to start back at event 0
   m_eventCounter = 0;
+  m_nextEntry = m_entryOrder.begin();
 }
 
 Kinematics*
@@ -100,9 +110,9 @@ ROOTDataReaderBootstrap::getEvent()
 {
   if( m_eventCounter++ < numEvents() ){
 
-    int thisEntry = (int)floor( m_randGenerator->Rndm()*numEvents() );
+    assert( m_nextEntry != m_entryOrder.end() );
     
-    m_inTree->GetEntry( thisEntry );
+    m_inTree->GetEntry( *m_nextEntry++ );
     assert( m_nPart < Kinematics::kMaxParticles );
     
     vector< TLorentzVector > particleList;

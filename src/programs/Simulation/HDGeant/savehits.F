@@ -235,18 +235,9 @@ c      write(6,*)cnames(NLEVEL)
           call hitCerenkov(xin,xout,pin,pout,-dEsum,ITRA,ISTAK,ISTORY,
      >          IPART)
         endif
-      elseif (cnames(NLEVEL).eq.'RAWN') then ! DIRC window: truth
-        if (dEsum.gt.0) then
-          call hitDirc(xin,xout,pin,pout,dEsum,ITRA,ISTAK,ISTORY,
-     >          IPART)
-        endif
-      elseif (cnames(NLEVEL).eq.'RDCD') then ! DIRC Cathode: counter
-        if ((dEsum.gt.0).and.(IPART.eq.50)) then
-          call hitDirc(xin,xout,pin,pout,-dEsum,ITRA,ISTAK,ISTORY,
-     >          IPART)
-        endif
       elseif ((cnames(NLEVEL).eq.'FTOC').or.  ! forward TOF counter
      +        (cnames(NLEVEL).eq.'FTOX').or.  ! forward TOF counter
+     +        (cnames(NLEVEL).eq.'FTOL').or.  ! forward TOF counter
      +        (cnames(NLEVEL).eq.'FTOH')) then
 #ifdef MAKE_HITS_WHEN_ILOSS_0
         if ((ILOSS.eq.0).and.(CHARGE.ne.0)) then
@@ -279,7 +270,7 @@ c      write(6,*)cnames(NLEVEL)
      >          IPART)
           ISTORY = 1  ! this particle has entered the GCal (inherited trait)
         endif
-      elseif (cnames(NLEVEL).eq.'LGBL'.or.cnames(NLEVEL).eq.'LTBK') then  ! forward calorimeter
+      elseif (cnames(NLEVEL).eq.'LGBL'.or.cnames(NLEVEL).eq.'LTB1') then  ! forward calorimeter
 #ifdef MAKE_HITS_WHEN_ILOSS_0
         if ((ILOSS.eq.0).and.(CHARGE.ne.0)) then
           dEsum = 1e-2   ! 10 MeV in the calorimeter block

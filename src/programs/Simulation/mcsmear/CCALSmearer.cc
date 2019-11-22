@@ -1,14 +1,66 @@
+
 #include "CCALSmearer.h"
+
+DCCALGeometry *ccalGeom = NULL;
 
 //-----------
 // ccal_config_t  (constructor)
 //-----------
 ccal_config_t::ccal_config_t(JEventLoop *loop) {
-  // default values
-  // (This is just a rough estimate 11/30/2010 DL)
-  CCAL_PHOT_STAT_COEF = 0.035/2.0;
-  CCAL_BLOCK_THRESHOLD = 20.0*k_MeV;
-  CCAL_SIGMA = 200.0e-3;
+
+  // Default Parameters
+
+        CCAL_EN_SCALE  =  1.0962;
+ 	
+	// Measured energy resolution
+	CCAL_EN_P0     =  3.08e-2;
+	CCAL_EN_P1     =  1.e-2;
+	CCAL_EN_P2     =  0.7e-2;	
+
+	// Energy deposition in Geant
+	CCAL_EN_GP0     =  1.71216e-2;
+	CCAL_EN_GP1     =  1.55070e-2;
+	CCAL_EN_GP2     =  0.0;		
+	
+	// Time smearing factor
+	CCAL_TSIGMA     =  0.4;
+	
+	
+	// Single block energy threshold (applied after smearing)
+	CCAL_BLOCK_THRESHOLD = 15.0*k_MeV;
+
+
+
+        // Get values from CCDB
+
+        cout << "Get CCAL/mc_energy parameters from CCDB..." << endl;
+
+	map<string, double> ccalparms;
+
+	if(loop->GetCalib("CCAL/mc_energy", ccalparms)) { 
+	  jerr << "Problem loading CCAL/mc_energy from CCDB!" << endl;
+	} else {
+	  CCAL_EN_SCALE   = ccalparms["CCAL_EN_SCALE"]; 
+
+	  CCAL_EN_P0    =  ccalparms["CCAL_EN_P0"]; 
+	  CCAL_EN_P1    =  ccalparms["CCAL_EN_P1"]; 
+	  CCAL_EN_P2    =  ccalparms["CCAL_EN_P2"]; 
+
+	  CCAL_EN_GP0   =  ccalparms["CCAL_EN_GP0"]; 
+	  CCAL_EN_GP1   =  ccalparms["CCAL_EN_GP1"]; 
+	  CCAL_EN_GP2   =  ccalparms["CCAL_EN_GP2"]; 
+        }
+
+	cout<<"get CCAL/mc_time parameters from calibDB"<<endl;
+
+	map<string, double> ccaltime;
+	if(loop->GetCalib("CCAL/mc_time", ccaltime)) {
+	  jerr << "Problem loading CCAL/mc_time from CCDB!" << endl;
+	} else {
+	  CCAL_TSIGMA = ccaltime["CCAL_TSIGMA"];
+	}
+	
+
 }
 
 
@@ -17,12 +69,11 @@ ccal_config_t::ccal_config_t(JEventLoop *loop) {
 // SmearEvemt
 //-----------
 void CCALSmearer::SmearEvent(hddm_s::HDDM *record){
-  /// Smear the CCAL hits using the same procedure as the FCAL above.
-  /// See those comments for details.
   
   //   if (!ccalGeom)
   //   ccalGeom = new DCCALGeometry();
   
+
   hddm_s::CcalBlockList blocks = record->getCcalBlocks();   
   hddm_s::CcalBlockList::iterator iter;
   for (iter = blocks.begin(); iter != blocks.end(); ++iter) {
@@ -37,31 +88,39 @@ void CCALSmearer::SmearEvent(hddm_s::HDDM *record){
       
       if (!ccalGeom->isBlockActive(iter->getRow(), iter->getColumn()))
 		continue;
-      // Smear the energy and timing of the hit
-      //      double sigma = ccal_config->CCAL_PHOT_STAT_COEF/sqrt(titer->getE()) ;
+
       
       // A.S.  new calibration of the CCAL
       double E = titer->getE();
       double t = titer->getT();
-
-	  if(config->SMEAR_HITS) {
-      	double nphav = E * 2.3e3; // per GeV  Corrections
       
-      	if(nphav < 30)
-			E *= gDRandom.SamplePoisson(nphav)/nphav;           //photostatistics
-      	else 
-			E *= 1.0 + gDRandom.SampleGaussian(1./sqrt(nphav)); //photostatistics
+      E *= ccal_config->CCAL_EN_SCALE;
       
-      	E *= 1.167 + gDRandom.SampleGaussian(0.006);          // calibration
-      	t += gDRandom.SampleGaussian(ccal_config->CCAL_SIGMA);
+      if(config->SMEAR_HITS) {
+	
+	// Expected detector resolution
+	double de_e_expect  =   pow(ccal_config->CCAL_EN_P0/sqrt(E),2) + 
+	  pow(ccal_config->CCAL_EN_P1/E,2) + ccal_config->CCAL_EN_P2*ccal_config->CCAL_EN_P2; 
+	
+	// Subtract intrinsic Geant resolution
+	double de_e_geant   =   pow(ccal_config->CCAL_EN_GP0/sqrt(E),2) + pow(ccal_config->CCAL_EN_GP1/E,2);
+	
+	double sig_res      =   sqrt(de_e_expect - de_e_geant);
+	
+	if(sig_res > 0) 
+	  E *= (1. + gDRandom.SampleGaussian(sig_res));
+	
+	t += gDRandom.SampleGaussian(ccal_config->CCAL_TSIGMA);
+	
       }
-        
-      // Apply a single block threshold. If the (smeared) energy is below this,
-      // then set the energy and time to zero. 	 
-      // A.S. 
+      
+      
+      
+      // A.S.  Don't apply energy threshold at the moment
+
       //         if (E > ccal_config->CCAL_BLOCK_THRESHOLD) {
       hddm_s::CcalHitList hits = iter->addCcalHits();
-      hits().setE(E);
+      hits().setE(E*1000.);
       hits().setT(t);
       //         }
     }

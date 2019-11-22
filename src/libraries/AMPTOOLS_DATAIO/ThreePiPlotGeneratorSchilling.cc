@@ -10,6 +10,20 @@
 ThreePiPlotGeneratorSchilling::ThreePiPlotGeneratorSchilling( const FitResults& results ) :
 PlotGenerator( results )
 {
+
+  createHistograms();
+
+}
+
+ThreePiPlotGeneratorSchilling::ThreePiPlotGeneratorSchilling( ) :
+PlotGenerator( )
+{
+
+  createHistograms();
+
+}
+
+void ThreePiPlotGeneratorSchilling::createHistograms( ) {
   // calls to bookHistogram go here
   bookHistogram( k3PiMass, new Histogram1D( 75, 0.6, 0.9, "M3pi", "Invariant Mass of #pi^{+} #pi^{-} #pi^{0}") );
   bookHistogram( kCosThetaPiPlus, new Histogram1D( 50, -1., 1., "cosTheta", "cos( #theta ) of #pi^{+}") );

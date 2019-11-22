@@ -22,8 +22,6 @@ using namespace std;
 #endif
 
 
-DCCALGeometry *ccalGeom = NULL;
-
 //-----------
 // Smear (constructor)
 //-----------
@@ -46,7 +44,7 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 		smearers[SYS_PS]    = static_cast<Smearer*>(new PSSmearer(loop,config));
 		smearers[SYS_PSC]   = static_cast<Smearer*>(new PSCSmearer(loop,config));
 		smearers[SYS_TPOL]  = static_cast<Smearer*>(new TPOLSmearer(loop,config));
-		smearers[SYS_DIRC]  = static_cast<Smearer*>(new FDIRCSmearer(loop,config));
+		smearers[SYS_DIRC]  = static_cast<Smearer*>(new DIRCSmearer(loop,config));
 		smearers[SYS_CCAL]  = static_cast<Smearer*>(new CCALSmearer(loop,config));
 		smearers[SYS_FMWPC] = static_cast<Smearer*>(new FMWPCSmearer(loop,config));
 	} else {
@@ -67,13 +65,15 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 				case SYS_PS:     smearers[the_detector] = static_cast<Smearer*>(new PSSmearer(loop,config));  break;
 				case SYS_PSC:    smearers[the_detector] = static_cast<Smearer*>(new PSCSmearer(loop,config));  break;
 				case SYS_TPOL:   smearers[the_detector] = static_cast<Smearer*>(new TPOLSmearer(loop,config));  break;
-				case SYS_DIRC:   smearers[the_detector] = static_cast<Smearer*>(new FDIRCSmearer(loop,config));  break;
+				case SYS_DIRC:   smearers[the_detector] = static_cast<Smearer*>(new DIRCSmearer(loop,config));  break;
 				case SYS_CCAL:   smearers[the_detector] = static_cast<Smearer*>(new CCALSmearer(loop,config));  break;
 				case SYS_FMWPC:  smearers[the_detector] = static_cast<Smearer*>(new FMWPCSmearer(loop,config));  break;
                 default:  break;   // don't smear any other detectors
 			}
 		}
 	}
+
+	jout << "Finished initializing detector smearing ..." << endl;
 }
 		
 //-----------

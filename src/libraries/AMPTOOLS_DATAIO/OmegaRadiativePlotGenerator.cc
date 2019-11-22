@@ -7,9 +7,21 @@
 #include "IUAmpTools/Histogram1D.h"
 #include "IUAmpTools/Kinematics.h"
 
+/* Constructor to display FitResults */
 OmegaRadiativePlotGenerator::OmegaRadiativePlotGenerator( const FitResults& results ) :
 PlotGenerator( results )
 {
+	createHistograms();
+}
+
+/* Constructor for event generator (no FitResult) */
+OmegaRadiativePlotGenerator::OmegaRadiativePlotGenerator( ) :
+PlotGenerator( )
+{
+	createHistograms();
+}
+
+void OmegaRadiativePlotGenerator::createHistograms( ) {
   // calls to bookHistogram go here
   
    bookHistogram( kOmegaMass, new Histogram1D( 200, 0.2, 0.8, "MOmega", "Invariant Mass of #pi^{0} #gamma") );

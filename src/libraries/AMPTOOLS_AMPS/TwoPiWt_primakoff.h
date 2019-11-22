@@ -42,8 +42,9 @@ public:
   
 private:
 	
-  AmpParameter m_par1;    // for the moment assume W cross section has 2 parameters
+  AmpParameter m_par1;    // for the moment assume W cross section has 5 parameters
   AmpParameter m_par2;
+  AmpParameter Bgen;
   
   pair< string, string > m_daughters;  
 };

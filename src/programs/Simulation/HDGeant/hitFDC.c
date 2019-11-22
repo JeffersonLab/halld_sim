@@ -62,6 +62,11 @@ static float DIFFUSION_COEFF  =   1.1e-6; // cm^2/s --> 200 microns at 1 cm
 static float FDC_TIME_WINDOW = 1000.0; //time window for accepting FDC hits, ns
 static float GAS_GAIN = 8e4;
 
+static float drift_table[1000];  // time-to-distance table
+static float bscale[2]; // scale factors for B-dependence of drift time
+static float lorentz_parms[4]; // parameters for modeling shift of avalanche along wire due to Lorentz force
+
+
 // Note by RTJ:
 // This constant "MAX_HITS" is a convenience constant
 // that I introduced to help with preallocating arrays
@@ -333,7 +338,7 @@ void AddFDCCathodeHits(int PackNo,float xwire,float avalanche_y,float tdrift,
 
 // Add wire information
 int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
-           float xwire,float xyz[3],float dE,float t,float *tdrift){
+		   float xwire,float xyz[3],float dE,float t,float *tdrift){
  
   // Generate 2 random numbers from a Gaussian distribution
   // 
@@ -362,9 +367,8 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
   // magnetic field in the x-y plane
   float wire_dir[2];
   float wire_theta=1.0472*(float)((layer%3)-1);
-  float phi=0.;;
+  float phi=0.;
   float Br=sqrt(B[0]*B[0]+B[1]*B[1]); 
-  float Bmag=sqrt(B[2]*B[2]+Br*Br);
 
   wire_dir[0]=sin(wire_theta);
   wire_dir[1]=cos(wire_theta);
@@ -380,8 +384,8 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
   // Next compute the avalanche position along wire.  
   // Correct avalanche position with deflection along wire due to 
   // Lorentz force.
-  xyz[1]+=( -0.125*B[2]*(1.-0.048*Br) )*dx
-    +(-0.18-0.0129*(B[2]))*(Br*cos(phi))*xyz[2]
+  xyz[1]+=(lorentz_parms[0]*B[2]*(1.+lorentz_parms[1]*Br) )*dx
+    +(lorentz_parms[2]+lorentz_parms[3]*(B[2]))*(Br*cos(phi))*xyz[2]
     +( -0.000176 )*dx*dx2/(dz2+0.001);
   // Add transverse diffusion
   xyz[1]+=(( 0.01 )*pow(dx2+dz2,0.125)+( 0.0061 )*dx2)*rndno[0];
@@ -393,19 +397,44 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
 
   // Model the drift time and longitudinal diffusion as a function of 
   // position of the cluster within the cell            
-  float tdrift_unsmeared=1086.0*(1.+0.039*Bmag)*dx2+( 1068.0 )*dz2
-    +dx4*(( -2.675 )/(dz2+0.001)+( 2.4e4 )*dz2);    
-  float dt=(( 39.44   )*dx4/(0.5-dz2)+( 56.0  )*dz4/(0.5-dx2)
-      +( 0.01566 )*dx4/(dz4+0.002)/(0.251-dx2))*rndno[1];
+  double dradius=sqrt(dx2+dz2);
+  // locate the position in the drift table for the time corresponding to this 
+  // distance
+  int index=0;
+  locate(drift_table,1000,dradius,&index);
+#if OLD_LINEAR_DRIFT_TIME_LOOKUP_INTERPOLATOR
+  float dd=drift_table[index+1]-drift_table[index];
+  float frac=(dradius-drift_table[index])/dd;
+  float tdrift_unsmeared=0.5*((float)index+frac);
+#else
+  // use a quadratic interpolator on the lookup table
+  float *dd = &drift_table[(index < 997)? index : 997];
+  double tt = 0.5; //ns
+  double dd10 = dd[1] - dd[0];
+  double dd20 = dd[2] - dd[0];
+  double dd21 = dd[2] - dd[1];
+  double qa = tt*index;
+  double qb = (dd20/dd10 - 2*dd10/dd20) * tt/dd21;
+  double qc = (2/dd20 - 1/dd10) * tt/dd21;
+  double d0 = dradius - dd[0];
+  double tdrift_unsmeared = qa + qb*d0 + qc*d0*d0;
+#endif
+  // Apply small B-field dependence on the drift time
+  tdrift_unsmeared*=1.+bscale[0]+bscale[1]*B[2]*B[2];
 
   // Minimum drift time for docas near wire (very crude approximation)
   double v_max=0.08; // guess for now based on Garfield, near wire 
-  double dradius=sqrt(dx2+dz2);
   double tmin=dradius/v_max;
+
+  // longitidinal diffusion, derived from Garfield calculations
+  float dt=(( 39.44   )*dx4/(0.5-dz2)+( 56.0  )*dz4/(0.5-dx2)
+      +( 0.01566 )*dx4/(dz4+0.002)/(0.251-dx2))*(rndno[1]-0.5);
+
   double tdrift_smeared=tdrift_unsmeared+dt;
   if (tdrift_smeared<tmin){
     tdrift_smeared=tmin;
   }
+  
 
   // Avalanche time
   *tdrift=t+tdrift_smeared;
@@ -442,7 +471,7 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
        * of just keeping the time of the first hit recorded.
        */
         ahits->in[nhit].t = 
-            (ahits->in[nhit].t * ahits->in[nhit].dE + tdrift * dE)
+            (ahits->in[nhit].t * ahits->in[nhit].dE + *tdrift * dE)
             / (ahits->in[nhit].dE += dE);
 #endif
 
@@ -480,7 +509,7 @@ void hitForwardDC (float xin[4], float xout[4],
   float xoutlocal[3];
   float dradius=0;
   float alpha,sinalpha,cosalpha;
-
+ 
   if (!initializedx){
       mystr_t strings[250];
       float values[250];
@@ -561,6 +590,49 @@ void hitForwardDC (float xin[4], float xout[4],
     U_OF_WIRE_ZERO     = (-((WIRES_PER_PLANE-1.)*WIRE_SPACING)/2);
     U_OF_STRIP_ZERO       = (-((STRIPS_PER_PLANE-1.)*STRIP_SPACING)/2);
   
+    int num_drift_values=4;
+    float my_drift_values[4]; 
+    mystr_t my_drift_strings[4];
+    status=GetArrayConstants("FDC/drift_function_parms",&num_drift_values,
+			     my_drift_values,my_drift_strings);
+    if (!status){
+      int num_ext_values=2;
+      float my_ext_values[2];
+      mystr_t my_ext_strings[2];
+      status=GetArrayConstants("FDC/drift_function_ext",&num_ext_values,
+			       my_ext_values,my_ext_strings);
+      if (!status){
+	float t_high=my_ext_values[0];
+	int j=0;
+	for (j=0;j<1000;j++){
+	  float t=0.5*(float)j;
+	  if (t<t_high){
+	    float tsq=t*t;
+	    drift_table[j]=my_drift_values[0]*sqrt(t)+my_drift_values[1]*t
+	      +my_drift_values[2]*tsq+my_drift_values[3]*tsq*t;
+	  }
+	  else{
+	    float t_high_sq=t_high*t_high;
+	    drift_table[j]=my_drift_values[0]*sqrt(t_high)
+	      +my_drift_values[1]*t_high
+	      +my_drift_values[2]*t_high_sq
+	      +my_drift_values[3]*t_high_sq*t_high
+	      +my_ext_values[1]*(t-t_high);
+	  }
+	}
+      }
+      mystr_t my_bscale_strings[2];
+      status=GetArrayConstants("FDC/fdc_drift_parms",&num_ext_values,
+			       bscale,my_bscale_strings);
+      int num_lorentz_values=4;
+      mystr_t my_lorentz_strings[4];
+      status=GetArrayConstants("FDC/lorentz_deflection_parms",
+			       &num_lorentz_values,
+			       lorentz_parms,my_lorentz_strings);
+    }
+ 
+
+  
     if (ncounter==16){
           printf("FDC: ALL parameters loaded from Data Base\n");
         } else if (ncounter<16){
@@ -586,6 +658,7 @@ void hitForwardDC (float xin[4], float xout[4],
     }
 #endif
       }
+     
       initializedx = 1 ;
   }
 
@@ -670,7 +743,7 @@ void hitForwardDC (float xin[4], float xout[4],
 
   /* post the hit to the truth tree */
 
-  int itrack = (stack == 0)? gidGetId(track) : -1;
+  itrack = (stack == 0)? gidGetId(track) : -1;
  
   if (history == 0)
   {
@@ -827,8 +900,7 @@ void hitForwardDC (float xin[4], float xout[4],
       */
       if (sqrt(xlocal[0]*xlocal[0]+xlocal[1]*xlocal[1])
           >=wire_dead_zone_radius[PackNo]){     
-        if (AddFDCAnodeHit(ahits,layer,ipart,track,xwire,xlocal,dE,t,
-                   &tdrift)){
+        if (AddFDCAnodeHit(ahits,layer,ipart,track,xwire,xlocal,dE,t,&tdrift)){
           AddFDCCathodeHits(PackNo,xwire,xlocal[1],tdrift,n_p,track,ipart,
                 chamber,module,layer,global_wire_number);
         }
@@ -852,8 +924,7 @@ void hitForwardDC (float xin[4], float xout[4],
         */
         if (sqrt(xlocal[0]*xlocal[0]+xlocal[1]*xlocal[1])
             >=wire_dead_zone_radius[PackNo]){       
-          if (AddFDCAnodeHit(ahits,layer,ipart,track,xwire,xlocal,dE,t,
-                 &tdrift)){
+          if (AddFDCAnodeHit(ahits,layer,ipart,track,xwire,xlocal,dE,t,&tdrift)){
         AddFDCCathodeHits(PackNo,xwire,xlocal[1],tdrift,n_p,track,ipart,
                   chamber,module,layer,global_wire_number);
           }

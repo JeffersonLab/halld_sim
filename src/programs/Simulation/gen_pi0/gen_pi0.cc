@@ -13,6 +13,7 @@
 
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
 #include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_DATAIO/Pi0PlotGenerator.h"
 
 #include "AMPTOOLS_AMPS/Pi0Regge.h"
 #include "AMPTOOLS_AMPS/Pi0SAID.h"
@@ -21,6 +22,8 @@
 
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/ConfigFileParser.h"
+#include "IUAmpTools/PlotGenerator.h"
+#include "IUAmpTools/FitResults.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -43,9 +46,9 @@ int main( int argc, char* argv[] ){
 	
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 9.0;
-	double beamLowE   = 0.5;
+	double beamLowE   = 0.135;
 	double beamHighE  = 12.0;
-	
+
 	int runNum = 9001;
 	int seed = 0;
 
@@ -69,18 +72,18 @@ int main( int argc, char* argv[] ){
 		if (arg == "-n"){  
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  nEvents = atoi( argv[++i] ); }
-		if (arg == "-m"){  
+		if (arg == "-m"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  beamMaxE = atof( argv[++i] ); }
-		if (arg == "-p"){  
+		if (arg == "-p"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-			else  beamPeakE = atof( argv[++i] ); }
-		if (arg == "-a"){  
+			else beamPeakE = atof( argv[++i] ); }
+		if (arg == "-a"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-			else  beamLowE = atof( argv[++i] ); }
-		if (arg == "-b"){  
-			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-			else  beamHighE = atof( argv[++i] ); }
+                        else  beamLowE = atof( argv[++i] ); }
+                if (arg == "-b"){
+                        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+                        else  beamHighE = atof( argv[++i] ); }
 		if (arg == "-r"){
                         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
                         else  runNum = atoi( argv[++i] ); }
@@ -98,9 +101,9 @@ int main( int argc, char* argv[] ){
 			cout << "\t -hd <name>\t HDDM file output name [optional]" << endl;
 			cout << "\t -n  <value>\t Minimum number of events to generate [optional]" << endl;
 			cout << "\t -m  <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
-			cout << "\t -p  <value>\t Coherent peak photon energy [optional]" << endl;
-			cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
-			cout << "\t -b  <value>\t Maximum photon energy to simulate events [optional]" << endl;
+                        cout << "\t -p  <value>\t Coherent peak photon energy [optional]" << endl;
+                        cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
+                        cout << "\t -b  <value>\t Maximum photon energy to simulate events [optional]" << endl;
 			cout << "\t -r  <value>\t Run number assigned to generated events [optional]" << endl;
 			cout << "\t -s  <value>\t Random number seed initialization [optional]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
@@ -128,8 +131,32 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Pi0SAID() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 	
+	// loop to look for beam configuration file
+	TString beamConfigFile;
+	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
+	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
+		if ((*it).keyword() == "define") {
+			TString beamArgument =  (*it).arguments()[0].c_str();
+			if(beamArgument.Contains("beamconfig")) {
+				beamConfigFile = (*it).arguments()[1].c_str();
+			}
+		}
+	}
+	if(beamConfigFile.Length() == 0) {
+		cout<<"WARNING: Couldn't find beam configuration file -- write local version"<<endl;
+
+		beamConfigFile = "local_beam.conf";
+		ofstream locBeamConfigFile;
+		locBeamConfigFile.open(beamConfigFile.Data());
+		locBeamConfigFile<<"ElectronBeamEnergy "<<beamMaxE<<endl;       // electron beam energy
+		locBeamConfigFile<<"CoherentPeakEnergy "<<beamPeakE<<endl;      // coherent peak energy
+		locBeamConfigFile<<"PhotonBeamLowEnergy "<<beamLowE<<endl;      // photon beam low energy
+		locBeamConfigFile<<"PhotonBeamHighEnergy "<<beamHighE<<endl;    // photon beam high energy
+		locBeamConfigFile.close();
+	}
+
 	// generate single pi0 production
-	GammaPToXP phasespace( 0.135, beamMaxE, beamPeakE, beamLowE, beamHighE); 
+	GammaPToXP phasespace( 0.135, beamConfigFile);
 	
 	vector< int > pTypes;
 	pTypes.push_back( Gamma );
@@ -140,9 +167,9 @@ int main( int argc, char* argv[] ){
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum );
 	ROOTDataWriter rootOut( outname );
 	
-	TFile* diagOut = new TFile( "gen_ppi0_diagnostic.root", "recreate" );
-	TH2F* hCosTheta_phi = new TH2F( "CosTheta_phi", "cos#theta vs. #phi; #phi; cos#theta", 180, -3.14, 3.14, 100, -1, 1);
-	TH2F* ht_phi = new TH2F( "t_phi", "-t vs. #phi; #phi; -t (GeV^{2})", 100, -3.14, 3.14, 100, 0, 2);
+	// use plot generator for diagnostic histograms
+	TFile* diagOut = new TFile( "gen_diagnostic.root", "recreate" );
+	Pi0PlotGenerator plotGen;
 	
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
@@ -183,26 +210,8 @@ int main( int argc, char* argv[] ){
 				
 				if( weightedInten > rand || genFlat ){
 					
-					// calculate angular variables
-					TLorentzVector target  ( 0., 0., 0., 0.938);	
-					TLorentzVector beam = evt->particle ( 0 );
-					TLorentzVector recoil = evt->particle ( 1 );
-					TLorentzVector p1 = evt->particle ( 2 );
-					
-					TLorentzVector cm = recoil + p1;
-					TLorentzRotation cmBoost( -cm.BoostVector() );
-					
-					TLorentzVector recoil_cm = cmBoost * recoil;
-					TLorentzVector p1_cm = cmBoost * p1;
-					
-					GDouble t = (target - recoil).M2();
-					GDouble CosTheta = p1_cm.CosTheta();
-					GDouble phi = p1_cm.Phi();
-					if(phi < -1*PI) phi += 2*PI;
-					if(phi > PI) phi -= 2*PI;
-					
-					hCosTheta_phi->Fill( phi, CosTheta);
-					ht_phi->Fill( phi, -1.*t);
+					// fill PlotGenerator histograms
+					plotGen.projectEvent(evt);
 					
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
@@ -223,8 +232,14 @@ int main( int argc, char* argv[] ){
 		cout << eventCounter << " events were processed." << endl;
 	}
 	
-	hCosTheta_phi->Write();
-	ht_phi->Write();
+	// write PlotGenerator histograms to file
+	for(int iHist=0; iHist<plotGen.kNumHists; iHist++) {
+		Histogram* hist = plotGen.getHistogram(iHist);
+		if(hist) {
+			TH1* thist = hist->toRoot();
+			thist->Write();
+		}
+	}
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;

@@ -6,7 +6,12 @@ import os
 Import('env osname')
 
 # Loop over libraries, building each
-subdirs = ['AMPTOOLS_AMPS', 'AMPTOOLS_DATAIO', 'AMPTOOLS_MCGEN']
+subdirs = ['UTILITIES', 'AMPTOOLS_AMPS', 'AMPTOOLS_DATAIO', 'AMPTOOLS_MCGEN']
+
+# only build if EvtGen is installed
+EVTGEN_HOME = os.getenv('EVTGENDIR')
+if EVTGEN_HOME!=None:
+   subdirs += ['EVTGEN_MODELS']
 
 
 SConscript(dirs=subdirs, exports='env osname', duplicate=0)

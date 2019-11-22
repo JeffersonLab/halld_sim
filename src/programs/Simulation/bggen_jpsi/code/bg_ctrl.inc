@@ -5,7 +5,8 @@ C
       INTEGER    MXPGEANT,MXPKC
       PARAMETER (MXPGEANT=1000,MXPKC=1000)
 C
-      COMMON/PHCTRL/ NEVENT,RUNNO,EPH_LIM(2),EELEC,EPEAK,ZCOLL,EPYMIN,ELOWMIN
+      COMMON/PHCTRL/ NEVENT,RUNNO,EPH_LIM(2),EELEC,EPEAK,ZCOLL
+     +				,EPYMIN,ELOWMIN
      +              ,DCOLL
      +              ,IWROUT(3),LUNWR(3),IRND_SEQ,NPRIEV
      +              ,IDBEAM,NHBEA
@@ -16,6 +17,7 @@ C
      +              ,RATESEC
      +              ,VERTEX(3)
      +              ,ISIMUL,IPINIT(2)
+     +              ,RADCORR,RADINI
       INTEGER   NEVENT    ! number of events to simulate (F)
      +         ,RUNNO     ! run number to use
      +         ,IWROUT    ! (1)>0 - write out the HDDS file (events) (F)
@@ -46,6 +48,8 @@ C                         the value may be adjusted to the bin boundary of IDBEA
      +         ,ELOWMIN ! minimal energy for the low energy generator (F) 
      +         ,RATESEC ! reference interation rate (Hz), calculated
      +         ,VERTEX  ! Vertex set in HDDM output file (cm)  n.b. 0,0,0 is the default which means hdgeant will use its default, 0,0,65
+      INTEGER   RADCORR ! =1 use PHOTOS for two-body decays (ISIMUL=1), =0 do not use PHOTOS
+      INTEGER   RADINI  ! =1 PHOTOS is initialized, =0 need to init
 C
 
 
