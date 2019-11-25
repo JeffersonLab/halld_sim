@@ -25,7 +25,17 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
  		CDC_TIME_WINDOW    = cdcparms["CDC_TIME_WINDOW"];
  		CDC_PEDESTAL_SIGMA = cdcparms["CDC_PEDESTAL_SIGMA"]; 
 		// 		CDC_THRESHOLD_FACTOR = cdcparms["CDC_THRESHOLD_FACTOR"];
-	}
+	}	// load data from CCDB
+ 	
+    jout << "get CDC/diffusion_parms parameters from CCDB..." << endl;
+    map<string, double> diffusionparms;
+    if(loop->GetCalib("CDC/diffusion_parms", diffusionparms)) {
+      jerr << "Problem loading CDC/diffusion_parms from CCDB!" << endl;
+    } else {
+      CDC_DIFFUSION_PAR1  = diffusionparms["d1"];
+      CDC_DIFFUSION_PAR2  = diffusionparms["d2"]; 
+      CDC_DIFFUSION_PAR3  = diffusionparms["d3"]; 
+    }
 	
  	jout << "get CDC/digi_scales parameters from CCDB..." << endl;
     map<string, double> digi_scales;
@@ -234,12 +244,18 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
         double smearcharge = 0;   // Using the same smearing for both amp and integral for the time being
 
         if(config->SMEAR_HITS) {
-         	// Smear out the CDC drift time using the specified sigma.
-         	// This is for timing resolution from the electronics;
-         	// diffusion is handled in hdgeant.
-		t += gDRandom.SampleGaussian(cdc_config->CDC_TDRIFT_SIGMA)*1.0e9;
-         	// Pedestal-smeared charge
-         	smearcharge =  gDRandom.SampleGaussian(cdc_config->CDC_PEDESTAL_SIGMA);
+	  // Smear out the CDC drift time using the specified sigma.
+     	  double dsq=d*d;
+	  double sig_diffusion=cdc_config->CDC_DIFFUSION_PAR1*d
+	    +cdc_config->CDC_DIFFUSION_PAR2*dsq
+	    +cdc_config->CDC_DIFFUSION_PAR3*dsq*d;
+	  double sig_electronics=cdc_config->CDC_TDRIFT_SIGMA*1.0e9;
+	  double t_sig=sqrt(sig_electronics*sig_electronics
+			    +sig_diffusion*sig_diffusion);
+
+	  t += gDRandom.SampleGaussian(t_sig);
+	  // Pedestal-smeared charge
+	  smearcharge =  gDRandom.SampleGaussian(cdc_config->CDC_PEDESTAL_SIGMA);
 	}
 
         q += smearcharge;
