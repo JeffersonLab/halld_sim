@@ -6,10 +6,16 @@
 fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom) 
 {
 	// default values
-	FCAL_PHOT_STAT_COEF   = 0.0; //0.035;
-	FCAL_BLOCK_THRESHOLD  = 0.0; //20.0*k_MeV;
-	// FCAL_TSIGMA           = 0.0; // 200 ps
-	FCAL_TSIGMA           = 0.; // 400 ps 
+	FCAL_PHOT_STAT_COEF     = 0.0; // 0.05;
+	FCAL_BLOCK_THRESHOLD    = 0.0; // 20.0*k_MeV;
+	FCAL_TSIGMA             = 0.0; // 400 ps 
+	FCAL_PED_RMS            = 0.0; // 3.0
+	FCAL_MC_ESCALE          = 0.0; // 1.54
+	FCAL_ADC_ASCALE         = 0.0; // 2.7E-4 
+	FCAL_INTEGRAL_PEAK      = 0.0; // 5.7
+	FCAL_THRESHOLD          = 0.0; // 108
+	FCAL_THRESHOLD_SCALING  = 0.0; // (110/108)
+	FCAL_ENERGY_WIDTH_FLOOR = 0.0; // 0.03
 
 	// Get values from CCDB
 	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
@@ -31,12 +37,70 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
     	}
     }
      
+   cout<<"get FCAL/pedestals from calibDB"<<endl;
+   vector <double> FCAL_PEDS_TEMP;
+   if(loop->GetCalib("FCAL/pedestals", FCAL_PEDS_TEMP)) {
+      jerr << "Problem loading FCAL/pedestals from CCDB!" << endl;
+   } else {
+       for (unsigned int i = 0; i < FCAL_PEDS_TEMP.size(); i++) {
+         FCAL_PEDS.push_back(FCAL_PEDS_TEMP.at(i));
+      }
+   }
+   
+   cout<<"get FCAL/MC/pedestal_rms from calibDB"<<endl;
+   double FCAL_PED_RMS_TEMP;
+   if(loop->GetCalib("FCAL/MC/pedestal_rms", FCAL_PED_RMS_TEMP)) {
+      jerr << "Problem loading FCAL/MC/pedestal_rms from CCDB!" << endl;
+   } else {
+      FCAL_PED_RMS = FCAL_PED_RMS_TEMP;
+   }
+	
+   cout<<"get FCAL/MC/integral_peak_ratio from calibDB"<<endl;
+   double FCAL_INT_PEAK_TEMP;
+   if(loop->GetCalib("FCAL/MC/integral_peak_ratio", FCAL_INT_PEAK_TEMP)) {
+      jerr << "Problem loading FCAL/MC/integral_peak_ratio from CCDB!" << endl;
+   } else {
+      FCAL_INTEGRAL_PEAK = FCAL_INT_PEAK_TEMP;
+   }
+   
+   cout<<"get FCAL/MC/threshold from calibDB"<<endl;
+   double FCAL_THRESHOLD_TEMP;
+   if(loop->GetCalib("FCAL/MC/threshold", FCAL_THRESHOLD_TEMP)) {
+      jerr << "Problem loading FCAL/MC/threshold from CCDB!" << endl;
+   } else {
+      FCAL_THRESHOLD = FCAL_THRESHOLD_TEMP;
+   }
+   
+   cout<<"get FCAL/MC/threhsold_scaling from calibDB"<<endl;
+   double FCAL_THRESHOLD_SCALING_TEMP;
+   if(loop->GetCalib("FCAL/MC/threshold_scaling", FCAL_THRESHOLD_SCALING_TEMP)) {
+       jerr << "Problem loading FCAL/MC/threshold_scaling from CCDB!" << endl;
+   } else {
+       FCAL_THRESHOLD_SCALING = FCAL_THRESHOLD_SCALING_TEMP;
+   }
+
+   cout<<"get FCAL/MC/mc_escale from calibDB"<<endl;
+   double FCAL_MC_ESCALE_TEMP;
+   if(loop->GetCalib("FCAL/MC/mc_escale", FCAL_MC_ESCALE_TEMP)) {
+        jerr << "Problem loading FCAL/MC/mc_escale from CCDB!" << endl;
+   } else {
+        FCAL_MC_ESCALE = FCAL_MC_ESCALE_TEMP;
+   }
+
+    cout<<"get FCAL/MC/energy_width_floor from calibDB"<<endl;
+    double FCAL_ENERGY_WIDTH_FLOOR_TEMP;
+    if(loop->GetCalib("FCAL/MC/energy_width_floor", FCAL_ENERGY_WIDTH_FLOOR_TEMP)) {
+        jerr << "Problem loading FCAL/MC/energy_width_floor from CCDB!" << endl;
+    } else {
+        FCAL_ENERGY_WIDTH_FLOOR = FCAL_ENERGY_WIDTH_FLOOR_TEMP;
+    }
+
     cout<<"get FCAL/digi_scales parameters from calibDB"<<endl;
     map<string, double> fcaldigiscales;
-    if(loop->GetCalib("FCAL/digi_scales", fcaldigiscales)) {
-    	jerr << "Problem loading FCAL/digi_scales from CCDB!" << endl;
+    if(loop->GetCalib("FCAL/MC/digi_scales", fcaldigiscales)) {
+    	jerr << "Problem loading FCAL/MC/digi_scales from CCDB!" << endl;
     } else {
-        FCAL_MC_ESCALE = fcaldigiscales["FCAL_ADC_ASCALE"];
+        FCAL_ADC_ASCALE = fcaldigiscales["FCAL_ADC_ASCALE"];
     }
 
     cout<<"get FCAL/mc_timing_smear parameters from calibDB"<<endl;
@@ -86,83 +150,91 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
 //-----------
 void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 {
-   /// Smear the FCAL hits using the nominal resolution of the individual blocks.
-   /// The way this works is a little funny and warrants a little explanation.
-   /// The information coming from hdgeant is truth information indexed by 
-   /// row and column, but containing energy deposited and time. The mcsmear
-   /// program will copy the truth information from the fcalTruthHit element
-   /// to a new fcalHit element, smearing the values with the appropriate detector
-   /// resolution.
-   ///
-   /// To access the "truth" values in DANA, get the DFCALHit objects using the
-   /// "TRUTH" tag.
+  /// Smear the FCAL hits using the nominal resolution of the individual blocks.
+  /// The way this works is a little funny and warrants a little explanation.
+  /// The information coming from hdgeant is truth information indexed by 
+  /// row and column, but containing energy deposited and time. The mcsmear
+  /// program will copy the truth information from the fcalTruthHit element
+  /// to a new fcalHit element, smearing the values with the appropriate detector
+  /// resolution.
+  ///
+  /// To access the "truth" values in DANA, get the DFCALHit objects using the
+  /// "TRUTH" tag.
+  
+  //if (!fcalGeom)
+  //   fcalGeom = new DFCALGeometry();
+  
+  hddm_s::FcalBlockList blocks = record->getFcalBlocks();
+  hddm_s::FcalBlockList::iterator iter;
+  for (iter = blocks.begin(); iter != blocks.end(); ++iter) {
+    iter->deleteFcalHits();
+    hddm_s::FcalTruthHitList thits = iter->getFcalTruthHits();
+    hddm_s::FcalTruthHitList::iterator titer;
+    for (titer = thits.begin(); titer != thits.end(); ++titer) {
+      int row=iter->getRow();
+      int column=iter->getColumn();
+    
+      // Simulation simulates a grid of blocks for simplicity. 
+      // Do not bother smearing inactive blocks. They will be
+      // discarded in DEventSourceHDDM.cc while being read in
+      // anyway.
+      if (!fcalGeom->isBlockActive(row, column))
+	continue;
+      
+      double E = titer->getE();
+      double Ethreshold=config->FCAL_BLOCK_THRESHOLD;
 
-   //if (!fcalGeom)
-   //   fcalGeom = new DFCALGeometry();
-
-   hddm_s::FcalBlockList blocks = record->getFcalBlocks();
-   hddm_s::FcalBlockList::iterator iter;
-   for (iter = blocks.begin(); iter != blocks.end(); ++iter) {
-      iter->deleteFcalHits();
-      hddm_s::FcalTruthHitList thits = iter->getFcalTruthHits();
-      hddm_s::FcalTruthHitList::iterator titer;
-      for (titer = thits.begin(); titer != thits.end(); ++titer) {
+      if (row<100 && column<100){
+	// correct simulation efficiencies 
+	if (config->APPLY_EFFICIENCY_CORRECTIONS
+	    && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(row, column))) {
+	  continue;
+	} 
 	
-	int row=iter->getRow();
-	int column=iter->getColumn();
-	double FCAL_gain=1.; 
-	double E = titer->getE();
-
-	if (row<100 && column<100){
-	  // Simulation simulates a grid of blocks for simplicity. 
-	  // Do not bother smearing inactive blocks. They will be
-	  // discarded in DEventSourceHDDM.cc while being read in
-	  // anyway.
-	  if (!fcalGeom->isBlockActive(row, column))
-            continue;
-	  
-	  // correct simulation efficiencies 
-	  if (config->APPLY_EFFICIENCY_CORRECTIONS
-	      && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(row, column))) {
-	    continue;
-	  } 
-	  
-	  // Get gain constant per block
-	  int channelnum = fcalGeom->channel(row, column); 
-	  FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);
-              
-	  if(fcal_config->FCAL_ADD_LIGHTGUIDE_HITS) {
-	    hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
-	    hddm_s::FcalTruthLightGuideList::iterator lgiter;
-	    for (lgiter = lghits.begin(); lgiter != lghits.end(); lgiter++) {
-	      E += lgiter->getE();
-	    }
-	  }
-	  // Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
-	  E *= fcal_config->FCAL_MC_ESCALE; 
+	// Get gain constant per block
+	int channelnum = fcalGeom->channel(row, column); 
+	
+	double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);    
+	double pedestal_rms = fcal_config->FCAL_PED_RMS;
+	double integral_peak = fcal_config->FCAL_INTEGRAL_PEAK;
+	double MeV_FADC = fcal_config->FCAL_ADC_ASCALE;
+	double pedestal = fcal_config->FCAL_PEDS.at(channelnum);
+	double threshold = fcal_config->FCAL_THRESHOLD;
+	double threshold_scaling = fcal_config->FCAL_THRESHOLD_SCALING;
+	Ethreshold=FCAL_gain*integral_peak*MeV_FADC*(threshold*threshold_scaling - pedestal+gDRandom.SampleGaussian(pedestal_rms));
+	
+	if(fcal_config->FCAL_ADD_LIGHTGUIDE_HITS) {
+	  hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
+	  hddm_s::FcalTruthLightGuideList::iterator lgiter;
+	  for (lgiter = lghits.begin(); lgiter != lghits.end(); lgiter++) {
+	    E += lgiter->getE();
+	   }
 	}
-	  
-	double t = titer->getT(); 
-	
-         if(config->SMEAR_HITS) {
-	   // Smear the energy and timing of the hit
-	   double sigma = fcal_config->FCAL_PHOT_STAT_COEF/sqrt(titer->getE());
-
-			t += gDRandom.SampleGaussian(fcal_config->FCAL_TSIGMA);
-			E *= (1.0 + gDRandom.SampleGaussian(sigma));
-	 }
-		 
-         // Apply a single block threshold. 
-         // Scale threshold by gains         
-         if (E >= fcal_config->FCAL_BLOCK_THRESHOLD * FCAL_gain ){
-               hddm_s::FcalHitList hits = iter->addFcalHits();
-               hits().setE(E);
-               hits().setT(t);
-         }
-        
+	// Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
+	E *= fcal_config->FCAL_MC_ESCALE; 
       }
-
-      if (config->DROP_TRUTH_HITS)
-         iter->deleteFcalTruthHits();
-   }
+      double t = titer->getT(); 
+      
+      if(config->SMEAR_HITS) {
+	// Smear the timing and energy of the hit
+	t += gDRandom.SampleGaussian(fcal_config->FCAL_TSIGMA);
+	
+	// Energy width has stochastic and floor terms
+	double sigma = sqrt( pow(fcal_config->FCAL_PHOT_STAT_COEF,2)/titer->getE() + pow(fcal_config->FCAL_ENERGY_WIDTH_FLOOR,2));
+	E *= (1.0 + gDRandom.SampleGaussian(sigma));
+      }
+      
+      // Apply a single block threshold. 
+      // Scale threshold by gains         
+      if (E >= Ethreshold){
+	hddm_s::FcalHitList hits = iter->addFcalHits();
+	hits().setE(E);
+	hits().setT(t);
+      }
+      
+    }
+    
+    if (config->DROP_TRUTH_HITS)
+      iter->deleteFcalTruthHits();
+  }
 }
