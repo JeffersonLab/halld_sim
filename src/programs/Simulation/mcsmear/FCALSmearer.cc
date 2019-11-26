@@ -182,7 +182,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	continue;
       
       double E = titer->getE();
-      double Ethreshold=config->FCAL_BLOCK_THRESHOLD;
+      double Ethreshold=fcal_config->FCAL_BLOCK_THRESHOLD;
 
       if (row<100 && column<100){
 	// correct simulation efficiencies 
