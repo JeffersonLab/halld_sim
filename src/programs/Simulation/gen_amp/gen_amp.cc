@@ -177,14 +177,41 @@ int main( int argc, char* argv[] ){
 	    threshold += ParticleMass(Particles[i]);
 	  }
 	}
+	
+	//switch recoil particle
+	ProductionMechanism::Recoil recoil;
+	bool isBaryonResonance = false;
+	switch(Particles[1]){
+	case Proton:
+	  recoil = ProductionMechanism::kProton; 
+	  break;
+	case Neutron:
+	  recoil = ProductionMechanism::kNeutron; 
+	  break;
+	case Pb208:
+	  recoil = ProductionMechanism::kZ;
+	  break;
+	case PiPlus:
+	case PiMinus: // works like an OR statement
+	  recoil = ProductionMechanism::kPion;
+	  isBaryonResonance = true;
+	  break;
+	case KPlus:
+	case KMinus:
+	  recoil = ProductionMechanism::kKaon;
+	  isBaryonResonance = true;
+	  break;
+	default: 
+	  cout << "ConfigFileParser WARNING: not supported recoil particle type \"" << reaction->particleList()[1].c_str()
+	       << "\", defaulted to Proton" << endl;
+	  recoil = ProductionMechanism::kProton; 
+	}
 
 	// loop to look for resonance in config file
 	// currently only one at a time is supported 
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
 	double resonance[]={1.0, 1.0};
 	bool foundResonance = false;
-	bool isKaonRecoil = false;
-	bool isPionRecoil = false;
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
 	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
@@ -193,8 +220,6 @@ int main( int argc, char* argv[] ){
 	      resonance[0]=atof((*it).arguments()[1].c_str());
 	      resonance[1]=atof((*it).arguments()[2].c_str());
 	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
-	      if((*it).arguments()[0] == "Lambda1520")
-		 isKaonRecoil = true;
 	      foundResonance = true;
 	      break;
 	    }
@@ -255,12 +280,7 @@ int main( int argc, char* argv[] ){
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
 	GammaPToNPartP resProd;
-	if(isKaonRecoil)
-		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kKaon, type, slope, lowT, highT, seed, beamConfigFile );
-	else if(isPionRecoil)
-		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kPion, type, slope, lowT, highT, seed, beamConfigFile );
-	else
-		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
+	resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, recoil, type, slope, lowT, highT, seed, beamConfigFile );
 	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
@@ -378,7 +398,7 @@ int main( int argc, char* argv[] ){
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector target(0,0,0,recoil[3]);
 					
-					if(isKaonRecoil || isPionRecoil)
+					if(isBaryonResonance) // assume t-channel
 						t->Fill(-1*(beam-evt->particle(1)).M2());
 					else
 						t->Fill(-1*(evt->particle(1)-target).M2());
