@@ -275,7 +275,10 @@ void hitForwardEMcal (float xin[4], float xout[4],
       int column = getcolumn_wrapper_();
       
       LENGTH_OF_BLOCK=45.0;
-      if (row>=100 || column>=100) LENGTH_OF_BLOCK=20.0;
+      if (row>=100 || column>=100){
+	LENGTH_OF_BLOCK=20.0;
+	transformCoord(x,"global",xfcal,"LTB1");
+      }
 
       float dist = 0.5*LENGTH_OF_BLOCK-xfcal[2];
       float dEcorr = dEsum * exp(-dist/ATTEN_LENGTH);
