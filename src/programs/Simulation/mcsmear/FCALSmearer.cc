@@ -16,6 +16,12 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
 	FCAL_THRESHOLD          = 0.0; // 108
 	FCAL_THRESHOLD_SCALING  = 0.0; // (110/108)
 	FCAL_ENERGY_WIDTH_FLOOR = 0.0; // 0.03
+	INSERT_PHOT_STAT_COEF     = 0.01;
+	gPARMS->SetDefaultParameter("FCALSmear:INSERT_PHOT_STAT_COEF",
+				    INSERT_PHOT_STAT_COEF); 
+	INSERT_ENERGY_WIDTH_FLOOR = 0.0; 
+	gPARMS->SetDefaultParameter("FCALSmear:INSERT_ENERGY_WIDTH_FLOOR",
+				    INSERT_ENERGY_WIDTH_FLOOR); 
 
 	// Get values from CCDB
 	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
@@ -183,6 +189,8 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
       
       double E = titer->getE();
       double Ethreshold=fcal_config->FCAL_BLOCK_THRESHOLD;
+      double sigEfloor=fcal_config->FCAL_ENERGY_WIDTH_FLOOR;
+      double sigEstat=fcal_config->FCAL_PHOT_STAT_COEF;
 
       if (row<100 && column<100){
 	// correct simulation efficiencies 
@@ -213,6 +221,10 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	// Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
 	E *= fcal_config->FCAL_MC_ESCALE; 
       }
+      else{
+	sigEfloor=fcal_config->INSERT_ENERGY_WIDTH_FLOOR;
+	sigEstat=fcal_config->INSERT_PHOT_STAT_COEF;
+      }
       double t = titer->getT(); 
       
       if(config->SMEAR_HITS) {
@@ -220,7 +232,8 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	t += gDRandom.SampleGaussian(fcal_config->FCAL_TSIGMA);
 	
 	// Energy width has stochastic and floor terms
-	double sigma = sqrt( pow(fcal_config->FCAL_PHOT_STAT_COEF,2)/titer->getE() + pow(fcal_config->FCAL_ENERGY_WIDTH_FLOOR,2));
+	double sigma = sqrt( pow(sigEstat,2)/titer->getE() 
+			     + pow(sigEfloor,2));
 	E *= (1.0 + gDRandom.SampleGaussian(sigma));
       }
       
