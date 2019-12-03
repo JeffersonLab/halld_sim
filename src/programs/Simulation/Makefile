@@ -1,4 +1,4 @@
-DIRS += genr8 genr8_2_hddm HDGeant mcsmear genpi gamp2hddm bggen
+DIRS += GEN2HDDM GEN2HDDM_ppbar genr8 genr8_2_hddm HDGeant mcsmear genpi gamp2hddm bggen
 
 ifdef AMPTOOLS
 ifdef CLHEP
