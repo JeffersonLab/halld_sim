@@ -11,12 +11,7 @@
 
 #include "particleType.h"
 
-#include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
-#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
-
-#include "AMPTOOLS_AMPS/Compton.h"
-
-#include "AMPTOOLS_MCGEN/GammaPToXP.h"
+#include "UTILITIES/BeamProperties.h"
 
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -74,16 +69,16 @@ int main( int argc, char* argv[] ){
 	string  configfile("");
 	string  outname("");
 	string  hddmname("");
-		
+	
 	double beamLowE   = 3.0;
-	double beamHighE  = 12.0;
+	double beamHighE  = 12.0;	
 	const double M_e = 0.51099892e-3;
 	
 	int runNum = 9001;
 	int seed = 0;
 
 	int nEvents = 10000;
-	
+		
 	//parse command line:
 	for (int i = 1; i < argc; i++){
 		
@@ -127,14 +122,24 @@ int main( int argc, char* argv[] ){
 		}
 	}
 	
+	if( configfile.size() == 0 || outname.size() == 0 ){
+	  cout << "No config file or output specificed:  run gen_compton -h for help" << endl;
+	  exit(1);
+	}
+	
+	if( outname.size() == 0 && hddmname == 0){
+		cout << "No output specificed:  run gen_compton_simple -h for help" << endl;
+		exit(1);
+	}
+
+	// random number initialization (set to 0 by default)
+	gRandom->SetSeed(seed);
+	
 	if( outname.size() == 0 && hddmname == 0){
 		cout << "No output specificed:  run gen_compton_simple -h for help" << endl;
 		exit(1);
 	}
 	
-	// random number initialization (set to 0 by default)
-	gRandom->SetSeed(seed);
-
 	// initialize HDDM output
 	HddmOut *hddmWriter = nullptr;
 	if(hddmname != "")
@@ -144,17 +149,25 @@ int main( int argc, char* argv[] ){
 	ofstream *asciiWriter = nullptr;
 	if(outname != "")
 		asciiWriter = new ofstream(outname.c_str());
-
+	
 	// Assume a beam energy spectrum of 1/E(gamma)
 	TF1 ebeam_spectrum("beam_spectrum","1/x",beamLowE,beamHighE);
-	
+
+	// get beam properties from configuration file
+	TString beamConfigFile;
+	BeamProperties beamProp(beamConfigFile);
+	TH1D * cobrem_vs_E = (TH1D*)beamProp.GetFlux();
+		
 	for( int i = 0; i < nEvents; ++i ) {
 		if(i%1000 == 1)
 			cout << "event " << i <<endl;
-	
+		
 		// get beam energy
-		double ebeam = ebeam_spectrum.GetRandom();
-
+		double ebeam = 0;
+		  if (beamConfigFile != "")
+		  ebeam = cobrem_vs_E->GetRandom();
+		if (beamConfigFile == "")
+		  ebeam = ebeam_spectrum.GetRandom();
 		// generate cos(theta) according to dsig/dOmega
 		double gamma_costheta = gen_costheta(ebeam);
 
