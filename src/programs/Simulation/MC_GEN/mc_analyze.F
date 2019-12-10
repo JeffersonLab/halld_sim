@@ -81,7 +81,8 @@ c                8-24-18	- resurrect the K0Y0 code
 c                2-01-19        - adapt the code to treat Sigma0-anti-Sigma0, too
 c	         7-01-19        - morph to keep up with developing MC_GEN code
 c                7-02-19        - huge amounts of analysis code for old projects was removed       
-c
+c               11-30-19        - add histograms for p-bar-p study
+c     
 c	Coding for the list of particles generated in the decay chain:
 c	All variables in this list are measured in the laboratory frame.
 c	
@@ -207,7 +208,8 @@ c	parameter (ebinmin = 0.350) !GeV
 c	parameter (ebinmax = 2.500) !GeV
 	parameter (cbinmin = -0.85)  !GeV
 	parameter (cbinmax = +0.95)  !GeV
-	parameter (rmneut = 0.93956536)   !GeV neutron mass
+	parameter (rmprot = 0.938272081)   !GeV proton mass
+	parameter (rmneut = 0.939565413)   !GeV neutron mass
 	parameter (rmmuon = 0.105658)     !GeV muon mass
 	parameter (rmelectron = 0.000511) !GeV electron mass
 	character*256 prg_name, histnm, filenm, prefix
@@ -256,7 +258,9 @@ c	real ppione(5),ppitwo(5)
 	real xhatphyp(5),yhatphyp(5),zhatphyp(5)  !need 5 entries for 3 vectors to avoid cross product issue
 	real xhatahyp(5),yhatahyp(5),zhatahyp(5)
 	real corrsum(3,5),correrr(3,5)
-	
+	real pair12(5),pair13(5),pair23(5)
+        real ptargetlab(5),ptargetcm(5)
+        
 	logical ifirst,ifirstprocess,iacc_piplus,iacc_piminus,iacc_kplus,
      1      iacc_kminus,
      1      iacc_kstar,iacc_phi,iacc_l3h,iacc_proton,iacc_firstk,
@@ -272,11 +276,11 @@ c
 	logical iexpt_trigger,ifiddle
 c	data twopi   /6.283185308/
 	data piover2 /1.570796327/
-	data rmK0  /0.497614/   !GeV/c^2
-	data rmkaon/0.493677/   !GeV/c^2
-	data rmpion/0.13957/  !GeV/c^2
+	data rmK0  /0.497614/       !GeV/c^2
+	data rmkaon/0.493677/       !GeV/c^2
+	data rmpion/0.13957/        !GeV/c^2
+	data rmproton  /.938272081/ !proton mass 
 	data rmasslambda,rmasssigma/1.11568,1.19255/
-	data rmneut,rmprot/0.93956536,0.9382703/
 	data clight/29.9792458/ !speed of light in cm/nsec
 	data rade /57.29577951/
 	data ifirst/.true./
@@ -362,6 +366,8 @@ c             Streamlined the program for GlueX era.
 c--------------------------------------------------------------------------
 c
 	      call hbook1(28,'Beam Momentum (GeV/c)' , 100,  3.5, 12.0,0.)	      
+c	      call hbook1(2800,'Beam Momentum (GeV/c)' , 1000,  6000., 7000.,0.)	      
+	      call hbook1(2800,'Beam Momentum (GeV/c)' , 1000,  3500., 4500.,0.)	      
 c
 c------ Histograms for GlueX baryonium study (p pbar)--------------
 c
@@ -373,19 +379,54 @@ c
 	      call hbook1(135,'P1 Lab Angle (deg)'     ,90,0.,90.0,0.)
 	      call hbook1(136,'P2 Lab Angle (deg)'     ,90,0.,90.0,0.)
 	      call hbook1(137,'p&^-!  Lab Angle (deg)'     ,90,0.,90.0,0.)
-c       
+
+	      call hbook1(138,'Beam (GeV) - 0 FCAL hits' , 300,  3.5, 6.5,0.)	      
+	      call hbook1(139,'Beam (GeV) - 1 FCAL hits' , 300,  3.5, 6.5,0.)	      
+	      call hbook1(140,'Beam (GeV) - 2 FCAL hits' , 300,  3.5, 6.5,0.)	      
+	      call hbook1(141,'Beam (GeV) - 3 FCAL hits' , 300,  3.5, 6.5,0.)	      
+	      call hbook1(142,'Beam (GeV)              ' , 300,  3.5, 6.5,0.)	      
+c     
+	      call hbook1(148,'FCAL (GeV) - 0 FCAL hits' , 300,  0.01, 2.5,0.)	      
+	      call hbook1(149,'FCAL (GeV) - 1 FCAL hits' , 300,  0.01, 2.5,0.)	      
+	      call hbook1(150,'FCAL (GeV) - 2 FCAL hits' , 300,  0.01, 2.5,0.)	      
+	      call hbook1(151,'FCAL (GeV) - 3 FCAL hits' , 300,  0.01, 2.5,0.)	      
+	      call hbook1(152,'FCAL (GeV) - ALL        ' , 300,  0.01, 2.5,0.)	      
+	      call hbook1(153,'CM momentum (GeV/c)' , 200,  0.00, 0.8 ,0.)	      
+	      call hbook1(154,'CM pairwise momentum (GeV/c)',200,0.00, 0.75,0.)	      
+c     
 
 	      call hbook2(209,'PROTON  [Q] (deg) vs. p (GeV/c)'       
      1  					,100,0.,8.,100,0.,90.,0.)
 	      call hbook2(230,'ANTI-PROTON  [Q] (deg) vs. p (GeV/c)'       
      1  					,100,0.,8.,100,0.,90.,0.)
+
+	      call hbook2(231,'beta vs. p (GeV/c) - ALL '       
+     1  					,100,0.,3.0,100,0.4,1.1,0.)
+	      call hbook2(232,'beta vs. p (GeV/c) - 0 FCAL hits '       
+     1  					,100,0.,3.0,100,0.4,1.1,0.)
+	      call hbook2(233,'beta vs. p (GeV/c) - 1 FCAL hits '       
+     1  					,100,0.,3.0,100,0.4,1.1,0.)
+	      call hbook2(234,'beta vs. p (GeV/c) - 2 FCAL hits '       
+     1  					,100,0.,3.0,100,0.4,1.1,0.)
+	      call hbook2(235,'beta vs. p (GeV/c) - 3 FCAL hits '       
+     1  					,100,0.,3.0,100,0.4,1.1,0.)
+
+
+              call hbook1(8611,'Momentum in pp&^-! pair rest frame (GeV/c)',
+     1                                           100, 0.0, 1.5, 0.)
+              call hbook1(8616,'Mom. pp&^-! (GeV/c) (q-weighted)',
+     1                                           100, 0.0, 1.5, 0.)
+              call hbook1(8617,
+     1         'Mom. pp&^-! (GeV/c) (q and k weighted)',
+     1                                           100, 0.0, 1.5, 0.)
               
 	      call hbook2(8850,'IM (p2 p&^-!) vs IM (p1 p2)'
      1                                ,100,1.6,4.0,100,1.6,4.0,0)
 	      call hbook1(8851, 'IM (p1 p&^-!) (GeV/c^2!) '
-     1  						 ,100,1.8,4.0,0.)
+     1  						 ,880,1.8,4.0,0.) ! 2.5 MeV bins
 	      call hbook1(8852, 'IM (p2 p&^-!) (GeV/c^2!) '
-     1  						 ,100,1.8,4.0,0.)
+     1  						 ,880,1.8,4.0,0.)
+c     1  						 ,440,1.8,2.0,0.)
 	      call hbook1(8871, 'IM (p1 p2) (GeV/c^2!) '
      1  						 ,100,1.8,4.0,0.)
 	      call hbook2(8853,'IM (p2 p&^-!) vs IM (p1 p&^-!)'
@@ -463,7 +504,14 @@ c
 	1	   50,-1.,+1.0,50,0.0,3.0,0.)
 	      call hbook2(8901,'Beam Energy (GeV) vs. p&^-! cos [Q]?cm!',
 	1	   50,-1.,+1.0,90,3.0,12.0,0.)
-c 
+
+              call hbook1(8902, 'IM (p2 p&^-!) (GeV/c^2!) (q-weighted) ',
+	1	                         100,1.8,4.0,0.)
+              call hbook1(8904,
+     1             'IM (p2 p&^-!) (GeV/c^2!) (q and k weighted)',
+	1	                         100,1.8,4.0,0.)
+              
+c
 c------Histograms for GlueX baryonium study (Lambda anti-Lambda)--------------
 c
 
@@ -537,20 +585,32 @@ c	1	                         100,1.05,1.50,0)
 	1	                            ,100,2.0,4.0,100,2.0,4.0,0)
 	      call hbook2(9855,'IM (p [L]&^-!) vs IM ([L]&^-! [L])'
 	1	                            ,100,2.0,4.0,100,2.0,4.0,0)
-	      call hbook2(9854,'IM^2! (p [L]&^-!) vs IM^2! (p [L]) (Dalitz Plot)' !Dalitz
-	1       	                    ,100,3.0,11.0,100,3.0,11.0,0)
+	      call hbook2(9849,
+     1        'IM^2! (p [L]&^-!) vs IM^2! ([L]&^-! [L]) (Dalitz PLot)'
+     1                        ,100,4.5,10.5,100,4.0,10.0,0)
+	      call hbook2(9854,
+     1             'IM^2! (p [L]&^-!) vs IM^2! (p [L]) (Dalitz Plot)'
+     1                        ,100,4.0,10.0,100,4.0,10.0,0)
 
               call hbook1(9851, 'IM ([L]&^-![L]) (GeV/c^2!) ',
 	1	                         100,2.0,4.0,0.)
 	      call hbook1(9852, 'IM ([L]&^-!p) (GeV/c^2!) ',
 	1	                         100,2.0,4.0,0.)
+	      call hbook1(9860, 'IM ([L] p) (GeV/c^2!) ',
+	1	                         100,2.0,4.0,0.)
               call hbook1(9853, 'IM ([L]&^-![L]) (GeV/c^2!) (q-weighted) ',
 	1	                         100,2.0,4.0,0.)
               call hbook1(9858, 'IM ([L]&^-![L]) (GeV/c^2!) (q and k weighted)',
 	1	                         100,2.0,4.0,0.)
-	      call hbook1(9856, '-(t - tmin) (GeV^2!)  [L]&^-! [L]',
+	      call hbook1(9856, '-t^prime! (GeV^2!)  [g L]&^-! [L]',
 	1	                         100,0.0,3.0,0.)
-	      call hbook1(9857, '-(t - tmin) (GeV^2!)  [L]&^-! p',
+	      call hbook1(9857, '-t^prime! (GeV^2!)  [g L]&^-! p',
+	1	                         100,0.0,3.0,0.)
+	      call hbook1(9859, '-t^prime! (GeV^2!) p p recoil',
+	1	                         100,0.0,3.0,0.)
+	      call hbook1(9861, '-t^prime! (GeV^2!) [g L]',
+	1	                         100,0.0,3.0,0.)
+	      call hbook1(9862, '-t^prime! (GeV^2!) [g L]&^-!',
 	1	                         100,0.0,3.0,0.)
 
 	      call hbook2(9869,'cos [Q]?cm! anti-Lambda vs. Lambda',
@@ -589,7 +649,28 @@ c	1	                         100,1.05,1.50,0)
 	      call hbook1(9620,'Overall Missing Energy (GeV)',100,-0.5,0.5,0.)
 	      call hbook2(9621,'Missing Energy vs. Missing Mass',
      1	                           50,-1.E-1,+5.E-2, 50,-0.5, 0.5,0)
-c	      
+c
+              call hbook2(9625,
+     1             '-t^prime! (GeV^2!) [L] vs. IM [L][L]&^-!',
+     1                                100,2.2,4.0,  100,0.0,3.0,0.)
+              call hbook2(9626,
+     1             '-t^prime! (GeV^2!) [L]&^-!  vs. IM [L][L]&^-!',
+     1                                100,2.2,4.0,  100,0.0,3.0,0.)
+              call hbook2(9627,
+     1             '-t^prime! (GeV^2!) p p vs. IM [L][L]&^-!',
+     1                                100,2.2,4.0,  100,0.0,3.0,0.)
+              call hbook2(9628,
+     1             '-t^prime! (GeV^2!) [L][L]&^-!  vs. IM [L][L]&^-!',
+     1                                100,2.2,4.0,  100,0.0,3.0,0.)
+              call hbook2(9630,
+     1         '-t (GeV^2!) p p vs. -t (GeV^2!) [g L L]',
+     1                            100,-10.0,10.0,  100,-10.0,10.0,0.)
+
+              call hbook2(9631,
+     1         '-t^prime! (GeV^2!) p p vs. -t^prime! (GeV^2!) [g L L]',
+     1                            100,-10.0,10.0,  100,-10.0,10.0,0.)
+
+c              
 c	      For Lambda anti-Lambda computationns
 c
 	      write(6,*)'Initializing correlation sums...'
@@ -659,6 +740,7 @@ c	      call hbook1(10100,'IM(p pi-) ([L])'     ,200 ,1.0,1.6,0.)
  20	   continue
 	end if    !histogram file opening
 c
+        paverage = 0.0
 	end if    !first call to analyzer
 c
 c	Top of loop to decide whether this event should be histogrammed at all
@@ -926,12 +1008,12 @@ c
 c        write(6,*)'>>> ',imark
 	iprocess  = 0  ! flag to say whether this event is to be processed
 	itrigmask = 1           ! event is accepted in any case 
-        if(imark.eq.4)then
+        if(imark.eq.4 .or. imark.eq.5)then
            itrigmask = 2  ! event is accepted if we have p, pbar, p   -  hard code this for now
-        elseif(imark.eq.8)then
+        elseif(imark.eq.8 .or. imark.eq.9)then
            itrigmask = 3        ! event is accepted if we have p, pbar, p, pi+, pi-   -  hard code this for now
         else
-           write(6,*)'Analyzer needs to be told what to accept...'
+           write(6,*)'Analyzer needs to be told what to accept...', imark
         endif
 	if(iexpt_trigger)then
 	   if(itrigmask.eq.1)then
@@ -1025,7 +1107,7 @@ c		write(6,*)'Skipping event with >3 final state tracks', imark
 	   goto 910
 	endif
 c
-c	write(6,*)'Starting p - pbar code'
+c	write(6,*)'Starting p - pbar code',iloop
 c	call prevent(plist,imark+1,ikeep)   !temporary	
 
  	do i=2,imark
@@ -1045,9 +1127,9 @@ c                   write(6,*)'anti-proton:',(plist(ix,k),  ix=1,4)
 		       acceptweight_antipro = acceptlist(k)
 c
 c	       write(6,*)i,j,k
-c	       write(6,*)'Proton 1    :',(plist(ix,i),ix=1,4),acceptweight_proton1
-c	       write(6,*)'Proton 2    :',(plist(ix,j),ix=1,4),acceptweight_proton2
-c	       write(6,*)'Anti-proton :',(plist(ix,k),ix=1,4),acceptweight_antipro
+c	       write(6,*)'Proton 1    :',(plist(ix,i),ix=1,5),acceptweight_proton1
+c	       write(6,*)'Proton 2    :',(plist(ix,j),ix=1,5),acceptweight_proton2
+c	       write(6,*)'Anti-proton :',(plist(ix,k),ix=1,5),acceptweight_antipro
 c
 		 if(iloop.eq.1 .and. iprocess.eq.1) ikeep = ikeep + 1 ! This event has "passed all cuts"
 c       
@@ -1082,18 +1164,19 @@ c
 		 costhp2cm = dot(p2cm,nbeam)/sqrt(psq(p2cm))
 		 thp2cm    = acos(costhp2cm)*rade
 c
+c                 if(iloop.eq.1)write(6,*)'Proton CM momenta:', pmomp1cm,pmomp2cm
 		 call hf2(8894,costhp1cm,costhp2cm,weight)
-		 if(thp2cm.gt.thp1cm)then !this is what we do with the real data
-c		 if(thp2cm.lt.thp1cm)then  !hack to try reverse assignment
-		    do n=1,5
-		       ptemp(n) = p1cm(n)
-		       p1cm(n)  = p2cm(n)
-		       p2cm(n)  = ptemp(n)
-		       ptemp(n) = plist(n,i)
-		       plist(n,i) = plist(n,j)
-		       plist(n,j) = ptemp(n)
-		    enddo
-		 endif
+c		 if(thp2cm.gt.thp1cm)then !this is what we do with the real data
+cc		 if(thp2cm.lt.thp1cm)then  !hack to try reverse assignment
+c		    do n=1,5
+c		       ptemp(n) = p1cm(n)
+c		       p1cm(n)  = p2cm(n)
+c		       p2cm(n)  = ptemp(n)
+c		       ptemp(n) = plist(n,i)
+c		       plist(n,i) = plist(n,j)
+c		       plist(n,j) = ptemp(n)
+c		    enddo
+c		 endif
 c       
 c                Now proceed to do all the invariant mass calculations
 c		       
@@ -1110,18 +1193,22 @@ c
 		 call hf2(8854,rmp1ap2,rmp2ap2,weight) ! Dalitz plot
 		 call hf2(8897,rmp2ap,ppbeam,weight) !See how invariant mass range varies with beam energy
 c       
-c                Fill a bunch of "basic" momentum and angle histograms for comparison to real data
+c                Fill a bunch of "basic" momentum and angle histograms in the LAB for comparison to real data
 c
-		 call hf1(28,ppbeam,weight) !beam momentum		
+		 call hf1(28,ppbeam,weight)   !beam momentum		
+		 call hf1(2800,ppbeam*1000,weight) !beam momentum	(fine grained)	
 		 call getangles(plist(1,i),pval1,thp1lab,costhp1lab,phip1lab)
 		 call getangles(plist(1,j),pval2,thp2lab,costhp2lab,phip2lab)
 		 call getangles(plist(1,k),pvala,thpalab,costhpalab,phipalab)
-		       
-c                pval1 = absp(plist(1,i))   !proton1
+                 beta1 = pval1/plist(5,i)
+                 beta2 = pval2/plist(5,j)
+                 betaa = pvala/plist(5,k)
+                 ep1 = plist(5,i) - rmprot
+                 ep2 = plist(5,j) - rmprot
+                 epa = plist(5,k) - rmprot
+                 
 		 call hf1(131,pval1,weight) !proton 1
-c		 pval2 = absp(plist(1,j))   !proton2
 		 call hf1(132,pval2,weight) !proton 2
-c		 pvala = absp(plist(1,k))    !anti-proton
 		 call hf1(133,pvala,weight) !anti-proton 
 		 call hf2(134,pval1,pval2,weight)
 		 call hf1(135,thp1lab,weight) !proton 1
@@ -1129,7 +1216,81 @@ c		 pvala = absp(plist(1,k))    !anti-proton
 		 call hf1(137,thpalab,weight) !anti-proton
                  call hf2(209,pval1,thp1lab,weight)
                  call hf2(230,pvala,thpalab,weight)
-c       
+c
+c                Estimate the number of tracks that hit the FCAL in GlueX
+c
+                 plimit = 4.0 !hack to set the cutoff on beam energy for certain histograms
+                 numfcal = 0
+                 esuma = 0  !all together
+                 esum0 = 0
+                 esum1 = 0
+                 esum2 = 0
+                 esum3 = 0
+                 
+                 if(thp1lab.le.10.0)numfcal = numfcal + 1
+                 if(thp2lab.le.10.0)numfcal = numfcal + 1
+                 if(thpalab.le.10.0)numfcal = numfcal + 1
+                 if(numfcal.eq.0)then
+                    call hf1(138,ppbeam,weight)
+                    if(ppbeam.le.plimit)then
+                       if(thp1lab.lt.10.0)call hf2(232,pval1,beta1,weight)
+                       if(thp2lab.lt.10.0)call hf2(232,pval2,beta2,weight)
+                       if(thpalab.lt.10.0)call hf2(232,pvala,betaa,weight)
+                       if(thp1lab.lt.10.0)esum0 = esum0 + ep1
+                       if(thp2lab.lt.10.0)esum0 = esum0 + ep2
+                       if(thpalab.lt.10.0)esum0 = esum0 + epa
+                    endif
+                 endif
+                 if(numfcal.eq.1)then
+                    call hf1(139,ppbeam,weight)
+                    if(ppbeam.le.plimit)then
+                       if(thp1lab.lt.10.0)call hf2(233,pval1,beta1,weight)
+                       if(thp2lab.lt.10.0)call hf2(233,pval2,beta2,weight)
+                       if(thpalab.lt.10.0)call hf2(233,pvala,betaa,weight)
+                       if(thp1lab.lt.10.0)esum1 = esum1 + ep1
+                       if(thp2lab.lt.10.0)esum1 = esum1 + ep2
+                       if(thpalab.lt.10.0)esum1 = esum1 + epa
+                    endif
+                 endif
+                 if(numfcal.eq.2)then
+                    call hf1(140,ppbeam,weight)
+                    if(ppbeam.le.plimit)then
+                       if(thp1lab.lt.10.0)call hf2(234,pval1,beta1,weight)
+                       if(thp2lab.lt.10.0)call hf2(234,pval2,beta2,weight)
+                       if(thpalab.lt.10.0)call hf2(234,pvala,betaa,weight)
+                       if(thp1lab.lt.10.0)esum2 = esum2 + ep1
+                       if(thp2lab.lt.10.0)esum2 = esum2 + ep2
+                       if(thpalab.lt.10.0)esum2 = esum2 + epa
+                    endif
+                 endif
+                 if(numfcal.eq.3)then
+                    call hf1(141,ppbeam,weight)
+                    if(ppbeam.le.plimit)then
+                       if(thp1lab.lt.10.0)call hf2(235,pval1,beta1,weight)
+                       if(thp2lab.lt.10.0)call hf2(235,pval2,beta2,weight)
+                       if(thpalab.lt.10.0)call hf2(235,pvala,betaa,weight)
+                       if(thp1lab.lt.10.0)esum3 = esum3 + ep1
+                       if(thp2lab.lt.10.0)esum3 = esum3 + ep2
+                       if(thpalab.lt.10.0)esum3 = esum3 + epa
+                    endif
+                 endif
+                 if(numfcal.le.3)then
+                    call hf1(142,ppbeam,weight)      !sum over all of them
+                    if(ppbeam.le.plimit)then
+                       if(thp1lab.lt.10.0)call hf2(231,pval1,beta1,weight)
+                       if(thp2lab.lt.10.0)call hf2(231,pval2,beta2,weight)
+                       if(thpalab.lt.10.0)call hf2(231,pvala,betaa,weight)
+                       if(thp1lab.lt.10.0)esuma = esuma + ep1
+                       if(thp2lab.lt.10.0)esuma = esuma + ep2
+                       if(thpalab.lt.10.0)esuma = esuma + epa
+                    endif
+                 endif
+                 call hf1(148,esum0,weight) !sum of kinetic energy deposited in FCAL
+                 call hf1(149,esum1,weight) 
+                 call hf1(150,esum2,weight) 
+                 call hf1(151,esum3,weight) 
+                 call hf1(152,esuma,weight) 
+c     
 c                Calculations for Proton 1 (repeat these in case protons were swapped)
 c		     
 		 pmomp1cm  = absp(p1cm)
@@ -1152,7 +1313,48 @@ c
 		 thpbarcm    = acos(costhpbarcm)*rade
 
 		 call boost(pbeamlab,beta,pbeamcm) !beam photon
+c
+c                Momentum correlations in the CM frame
 
+		 call getangles(p1cm,pvalcm1,thp1cm,costhp1cm,phip1cm)
+		 call getangles(p2cm,pvalcm2,thp2cm,costhp2cm,phip2cm)
+		 call getangles(apcm,pvalcma,thpacm,costhpacm,phipacm)
+c                 if(iloop.eq.1)write(6,*)pvalcm1,pvalcm2,pvalcma
+                 call hf1(153,pvalcm1,weight)
+                 call hf1(153,pvalcm2,weight)
+                 call hf1(153,pvalcma,weight)
+c                 if(iloop.eq.1)then
+c                    plocal = (pvalcm1 + pvalcm2 + pvalcma)/3.
+c                    paverage = (float(icount-1)*paverage + plocal)/float(icount)
+c                    write(6,*)'Average CM momentum : ',icount, paverage
+c                 end if
+c              
+c                Compute the pair-wise momentum of the particles in the CM frame
+c
+                 pair12(1) = p1cm(1) - p2cm(1)
+                 pair12(2) = p1cm(2) - p2cm(2)
+                 pair12(3) = p1cm(3) - p2cm(3)
+		 call getangles(pair12,pvalcm12,thp12cm,costhp12cm,phip12cm)
+                 pair13(1) = p1cm(1) - apcm(1)
+                 pair13(2) = p1cm(2) - apcm(2)
+                 pair13(3) = p1cm(3) - apcm(3)
+		 call getangles(pair13,pvalcm13,thp13cm,costhp13cm,phip13cm)
+                 pair23(1) = p2cm(1) - apcm(1)
+                 pair23(2) = p2cm(2) - apcm(2)
+                 pair23(3) = p2cm(3) - apcm(3)
+		 call getangles(pair23,pvalcm23,thp23cm,costhp23cm,phip23cm)
+                 call hf1(154,pvalcm12,weight)
+                 call hf1(154,pvalcm13,weight)
+                 call hf1(154,pvalcm23,weight)
+c                 if(iloop.eq.1)then
+c                    plocal = (pvalcm12 + pvalcm13 + pvalcm23)/3.
+c                    paverage = (float(icount-1)*paverage + plocal)/float(icount)
+c                    write(6,*)'Average CM momentum : ',icount, paverage
+c                 end if
+
+c
+c                Pair correlations
+c                 
 		 call boost(pimp1ap,beta,pimp1apcm) !p1 anti-proton combination
 		 call boost(pimp2ap,beta,pimp2apcm) !p2 anti-proton combination
 		 call getangles
@@ -1232,7 +1434,7 @@ c		 do n=1,3
 c		    beta(n) = pimp2apcm(n)/e0
 c	 	 end do
 cc                write(6,*)'beta',beta
-                 call getbeta(pimp2apcm,beta)  !not tested yet...
+                 call getbeta(pimp2apcm,beta)
 		 call boost(p1cm,beta,p1bb) !proton 1
 		 call boost(p2cm,beta,p2bb) !proton 2
 		 call boost(apcm,beta,apbb) !antiproton
@@ -1244,12 +1446,27 @@ cc                write(6,*)'beta',beta
 		 costhgj       = dot(apbb,pbeambb)/ !Gottfried Jackson polar angle of pbar
      1  			       sqrt(psq(apbb)*psq(pbeambb))
 		 costhadair    = costhapbb !Adair system angle of pbar
-
+                 
 		 call hf1(8886,costhadair,weight)
 		 call hf1(8887,costhhelicity,weight)
 		 call hf1(8888,costhgj,weight)
-
 c                write(6,*)wtarget,ww,rmprot,twomp2,scale,pmomp1rescale,pmomp2cmscale
+c
+c                Replot the b-anti-b invariant mass distribution weighted so as to remove the
+c                phase space factors
+c                 
+                 weightq = p2mombb     ! momentum of decaying pair in its own rest frame
+                 weightk = pmomimp2ap  ! momentum of pair in the CM frame
+                 phasespaceq = weightq !/rmplamalam !phase space factor for two-body decay of pair
+                 phasespacek = weightk !/ww         !phase space factor for CM system of two bodies
+                 pscale = 0.5   !arbitrary scaling
+                 reweight  = weight/phasespaceq * pscale
+                 reweight2 = reweight/phasespacek
+                 call hf1(8611,p2mombb,weight)      !momentum in pair rest frame
+                 call hf1(8616,p2mombb,reweight)    !momentum in pair rest frame
+                 call hf1(8617,p2mombb,reweight2)   !momentum in pair rest frame
+                 call hf1(8902,rmp2ap,reweight)  !look at the p-anti-p mass distribution
+                 call hf1(8904,rmp2ap,reweight2) !look at the p-anti-p mass distribution
 c       
 c                Using the longitudinal center-of-mass momenta for the three particles
 c                proceed to compute the VanHove plot values
@@ -1344,18 +1561,21 @@ c	enddo
 c	write(6,*)'Just before 5-track search'
 c	call prevent(plist,imark+1,ikeep)   !hack	
 c
-c       Hacky cheat to see whether we are simulating Mechanism 1, 2, 3 or 4
+c       Hacky cheat to see whether we are simulating Mechanism 1, 2, 3, 4, or 5
 c
 	if(iloop.eq.1)then
 	   ipart2 = plist(6,2)  !the LundID of the second particle in the decay table for this event
+	   ipart3 = plist(6,3)  !the LundID of the third  particle in the decay table for this event
 	   if(ipart2.eq.41)then	!proton in slot 2 of the particle table
 	      imechanism = 1
-	   elseif(ipart2.eq.57)then !Lambda in slot 2 of the particle table
+	   elseif(ipart2.eq.57.and.ipart3.eq.96)then !Lambda in slot 2 of the particle table
 	      imechanism = 2
 	   elseif(ipart2.eq.96)then !anti-Lambda p in slot 2 of the particle table
 	      imechanism = 3
 	   elseif(ipart2.eq.94)then !"wide" anti-Lambda Lambda in slot 2 of the particle table
 	      imechanism = 4
+	   elseif(ipart2.eq.57.and.ipart3.eq.41)then !Lambda at top vertex, proton & anti-Lambda at bottom vertex
+	      imechanism = 5
 	   endif
 c          write(6,*)'Reaction mechanism:',imechanism
 	endif
@@ -1420,6 +1640,12 @@ c
 		call hf1(9909,costhpiplab,weight)
 		call hf1(9910,costhpimlab,weight)
 c       
+                ptargetlab(1) = 0.0 !target proton in lab frame
+                ptargetlab(2) = 0.0
+                ptargetlab(3) = 0.0
+                ptargetlab(4) = rmproton
+                ptargetlab(5) = rmproton
+c
 c               We want the overall c.m quantities
 c               
 c		e0 = etot(plist(1,1)) !defines the beam plus target
@@ -1450,6 +1676,7 @@ c                write(6,*)'Beta>',beta
 		   enddo
 		endif
 		call boost(plist(1,1),beta,psystem)
+		call boost(ptargetlab,beta,ptargetcm)
 c
 c               Next let us look at the raw center-of-mass frame momentum and angle distributions
 c
@@ -1524,14 +1751,40 @@ c		   write(6,*)'Three'
 		   call invarmass(p1cm,plamcm,ppplam, rmpplam) !IM of proton1 (recoil) and Lambda 
 		   call invarmass(p1cm,alamcm,ppalam, rmpalam) !IM of proton1 (recoil) and anti-Lambda 
 c		   write(6,*)'Four'
+		elseif(imechanism.eq.5)then !Mechanism 5   Lambda at upper vertex
+		   rvertex(1) = plist(7,i)  !recoil proton vertex   - check for correctness!
+		   rvertex(2) = plist(8,i)
+		   rvertex(3) = plist(9,i)
+		   dvertex(1) = plist(7,j)  !decay proton production vertex
+		   dvertex(2) = plist(8,j)
+		   dvertex(3) = plist(9,j)
+		   call invarmass(plist(1,j),plist(1,m),plamlab,rmplamlab)
+		   call invarmass(p2cm,pimcm,plamcm, rmplam) !IM of proton2 and piminus    --> Lambda 
+		   call invarmass(p1cm,plamcm,ppplam, rmpplam) !IM of proton1 (recoil) and Lambda 
+		   call invarmass(p1cm,alamcm,ppalam, rmpalam) !IM of proton1 (recoil) and anti-Lambda 
+c		   write(6,*)'Five'
 		else
 		   write(6,*)'This hack is messed up at top...',i
 		   call exit()
 		endif
-		call invarmass(plamcm,alamcm,plamalam, rmplamalam)     !IM of Lambda and anti-Lambda 
-		call gett(pbeamcm,plamalam,ttplamalam,ttprimeplamalam) !Mandelstam t for beam and Lambda anti-Lambda pair
-		call gett(pbeamcm,ppalam,ttp1alam,ttprimep1alam)      !Mandelstam t for beam and proton anti-Lambda pair
-		if(imechanism.eq.1)then  !dreadful hack to make all reaction sequences work
+		call invarmass(plamcm,alamcm,plamalam, rmplamalam)           !IM of Lambda and anti-Lambda 
+		call gett(pbeamcm,plamcm,ttplamcm,ttmin,ttprimeplamcm)       !Mandelstam t for beam & Lambda
+		call gett(pbeamcm,plamcm,ttalamcm,ttmin,ttprimealamcm)       !Mandelstam t for beam & anti-Lambda
+		call gett(pbeamcm,alamcm,ttalamcm,ttmin,ttprimealamcm)       !Mandelstam t for beam & anti-Lambda	
+                call gett(pbeamcm,ppalam,ttp1alam,ttmin,ttprimep1alam) !Mandelstam t for beam & proton anti-Lambda pair
+		call gett(ptargetcm,p1cm,ttprecoil,ttmin,ttprimeprecoil)     !Mandelstam t for target and recoil proton
+		call gett(pbeamcm,plamalam,ttplamalam,ttmin,ttprimeplamalam) !Mandelstam t for beam & Lambda anti-Lambda pair
+c                if(iloop.eq.1)then
+c                   write(6,*)'Calling GETT:'
+c                   write(6,*)pbeamcm
+c                   write(6,*)plamalam
+c                   write(6,*)'>>beam t',-ttplamalam,-ttmin,-ttprimeplamalam
+cc                   write(6,*)ptargetcm
+cc                   write(6,*)p1cm
+cc                   write(6,*)'>>target t',-ttprecoil,-ttmin,-ttprimeprecoil
+cc                   if(ttprimeprecoil.gt.0.0)call exit()
+c                endif
+		if(imechanism.eq.1)then !dreadful hack to make all reaction sequences work
 		   call invarmass(plamalam,p1cm,ptemp, rmtemp) !IM of Lambda, anti-Lambda, and remaining proton 
                    call invarmass(p1cm,alamcm,ppalam, rmpalam) !IM of proton and anti-Lambda 
 		elseif(imechanism.eq.2)then
@@ -1541,6 +1794,9 @@ c		   write(6,*)'Four'
 		   call invarmass(plamalam,p1cm,ptemp, rmtemp) !IM of Lambda, anti-Lambda, and remaining proton 
                    call invarmass(p1cm,alamcm,ppalam, rmpalam) !IM of proton and anti-Lambda 
 		elseif(imechanism.eq.4)then 
+		   call invarmass(plamalam,p1cm,ptemp, rmtemp) !IM of Lambda, anti-Lambda, and remaining proton 
+                   call invarmass(p1cm,alamcm,ppalam, rmpalam) !IM of proton and anti-Lambda 
+		elseif(imechanism.eq.5)then 
 		   call invarmass(plamalam,p1cm,ptemp, rmtemp) !IM of Lambda, anti-Lambda, and remaining proton 
                    call invarmass(p1cm,alamcm,ppalam, rmpalam) !IM of proton and anti-Lambda 
 		else
@@ -1567,18 +1823,46 @@ c               Plots of invariants
 c
 		call hf1(9801,rmplam,weight) !look at the Lambda  mass distribution 
 		call hf1(9802,rmalam,weight) !look at the anti-Lambda  mass distribution 
-c               if(costhplamcm.gt.0.0)then
-		   call hf1(9851,rmplamalam,weight) !look at the anti-Lambda Lambda mass distribution
-		   call hf1(9856,-ttprimeplamalam,weight) !look at the t distribution for the produced pair 
-c		else
-		   call hf1(9852,rmpalam,weight)   !look at the anti-Lambda proton mass distribution
-		   call hf1(9857,-ttprimep1alam,weight)   !look at the t distribution for the produced pair 
-c		endif
+                call hf1(9851,rmplamalam,weight)       !look at the anti-Lambda Lambda mass distribution
+                call hf1(9852,rmpalam,weight)          !look at the anti-Lambda proton mass distribution
+                call hf1(9860,rmpplam,weight)          !look at the      Lambda proton mass distribution
+
+c                call hf1(9856,-ttplamalam,weight) !look at the t distribution for the produced pair 
+c                call hf1(9857,-ttp1alam,weight)   !look at the t distribution for the produced pair 
+c                call hf1(9859,-ttprecoil,weight)  !look at the t distribution for the recoil proton
+c                call hf1(9861,-ttplamcm,weight)   !look at the t distribution for the created Lambda
+c                call hf1(9862,-ttalamcm,weight)   !look at the t distribution for the created anti-Lambda
+                call hf1(9856,-ttprimeplamalam,weight) !look at the t distribution for the produced pair 
+                call hf1(9857,-ttprimep1alam,weight)   !look at the t distribution for the produced pair 
+                call hf1(9859,-ttprimeprecoil,weight)  !look at the t distribution for the recoil proton
+                call hf1(9861,-ttprimeplamcm,weight)   !look at the t distribution for the created Lambda
+                call hf1(9862,-ttprimealamcm,weight)   !look at the t distribution for the created anti-Lambda
+
                 call hf2(9850,rmpplam,rmpalam,weight) !correlation (not Dalitz plot)
-		call hf2(9855,rmplamalam,rmpalam,weight) !correlation (not Dalitz plot)
-		rmpplam2 = rmpplam**2.
-		rmpalam2 = rmpalam**2.
-		call hf2(9854,rmpplam2,rmpalam2,weight) ! Dalitz plot
+		call hf2(9855,rmplamalam,rmpalam,weight)   !correlation (not Dalitz plot)
+		rmpplam2    = rmpplam**2.
+		rmpalam2    = rmpalam**2.
+                rmplamalam2 = rmplamalam**2.
+		call hf2(9854,rmpplam2,rmpalam2,weight   ) ! Dalitz plot
+		call hf2(9849,rmplamalam2,rmpalam2,weight) ! Dalitz plot
+
+c                call hf2(9625,rmplamalam,-ttplamcm,weight)
+c                call hf2(9626,rmplamalam,-ttalamcm,weight)
+c                call hf2(9627,rmplamalam,-ttprecoil,weight)
+c                call hf2(9628,rmplamalam,-ttplamalam,weight)
+                call hf2(9625,rmplamalam,-ttprimeplamcm,weight)
+                call hf2(9626,rmplamalam,-ttprimealamcm,weight)
+                call hf2(9627,rmplamalam,-ttprimeprecoil,weight)
+                call hf2(9628,rmplamalam,-ttprimeplamalam,weight)
+                call hf2(9630,-ttplamalam,-ttprecoil,weight)            !sanity check that t's are consistent
+                call hf2(9631,-ttprimeplamalam,-ttprimeprecoil,weight)
+c                if(iloop.eq.1)then
+c                   diff1 = ttprimeplamalam-ttprimeprecoil
+c                   diff2 = ttplamalam-ttprecoil
+c               write(6,*)'>>>1',-ttprimeplamalam,-ttprimeprecoil,diff1
+c                   write(6,*)'>>>2',-ttplamalam,-ttprecoil,diff2
+c                endif
+                
 c
 c               Look at quantities in the LAB frame
 c               
@@ -1717,6 +2001,9 @@ c
                 elseif(imechanism.eq.4)then
                    p3long   = p1cm(3)
                    p3trans  = sqrt(p1cm(1)**2. + p1cm(2)**2)
+                elseif(imechanism.eq.5)then  ! CHECK for correctness
+                   p3long   = p1cm(3)
+                   p3trans  = sqrt(p1cm(1)**2. + p1cm(2)**2)
                 endif
                 plongsum = p1long + p2long + p3long !should be zero
                 q1 = p1long
@@ -1730,7 +2017,7 @@ c               The pi term is to cope with the principle value issue.
 c               
                 omega = atan2(-sqrt(3.)*q1,(q1+2.*q2)) + 3.14159265
 c       
-c               Hackery to determine the sector of this event, numbered ccw from q1=0 axis
+c               Hackery to determine the van Hove sector of this event, numbered ccw from q1=0 axis
 c
                 isector = 0
                 if    (q1.ge.0 .and. q2.le.0 .and. q3.ge.0)then
@@ -1812,7 +2099,8 @@ c
 		   call getbeta(plampair,betatophyp)
 		   if(imechanism.eq.2)then  !hack to resolve combinatoric issue
 		      call boost(p1pair, betatophyp, pphyp) !the Lambda's proton in the Lambda rest frame
-		   elseif(imechanism.eq.1 .or. imechanism.eq.3 .or. imechanism.eq.4)then
+		   elseif(imechanism.eq.1 .or. imechanism.eq.3
+     1               .or. imechanism.eq.4 .or. imechanism.eq.5)then
 		      call boost(p2pair, betatophyp, pphyp) !the Lambda's proton in the Lambda rest frame
 		   else
 		      write(6,*)'very confused...'
@@ -2000,7 +2288,7 @@ c	2 = Y = up
 c	3 = Z = beam direction
 c	angles are in degrees
 c
-c       The cut-off values are pure fiction at this point
+c       The cut-off values are rough estimates at this point
 c       
 		
 	function iaccept_GlueX(theta,phi,pmom,icharge,vertex,path,
@@ -2209,34 +2497,5 @@ c	write(6,*)' Thetadecay',thetadecay
 	return
 	end
 
-c*******************************************************************************
-c       Compute Mandelstam t for two given 4-vectors
-c       P1 is the incident particle
-c       P3 is the "produced" particle that couples at a vertex with P1
-c
-c       tt is the Mandelstam invariant t;  it will be < 0
-c       ttprime is the reduced value of t, namely t - tmin
-c
-c       R.A.Sch. 8-2017
-c
-	subroutine gett(p1,p3,tt,ttprime)
-	real p1(5),p3(5),p0(5)
-	tt = (p3(1)-p1(1))**2. + (p3(2)-p1(2))**2. + (p3(3)-p1(3))**2.
-	tt = (p3(5)-p1(5))**2. - tt
-c
-	pmagp3 = sqrt(p3(1)**2.+p3(2)**2.+p3(3)**2.)
-	p0(1) = 0.0
-	p0(2) = 0.0
-	p0(3) = pmagp3
-	p0(4) = p3(4)
-	p0(5) = p3(5)
-	ttprime = (p0(1)-p1(1))**2. + (p0(2)-p1(2))**2. + (p0(3)-p1(3))**2.
-	ttprime = (p0(5)-p1(5))**2. - ttprime
-	ttprime = tt - ttprime
-c	write(6,*)'Computing t',tt,ttprime
-c	write(6,*)p1
-c	write(6,*)p3
-	return
-	end
 	
 cccccccccccccccccccccc  END of MC_ANALYZE CODE  ccccccccccccccccccccccccccccccccccc

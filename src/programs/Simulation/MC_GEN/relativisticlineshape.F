@@ -28,20 +28,34 @@ c       11-18-08 - started with BWRAN code and made major changes
 c       11-24-08 - widen the range over which the lineshape is computed.  Make
 c                  the range asymmetric, reflecting the fact that the long tail
 c                  is on the high side of the distribution
-c        1-21-11 - modified to give a momentum-independent lineshape in cases when
+c       01-21-11 - modified to give a momentum-independent lineshape in cases when
 c                  the requested decay products are more massive than the centroid
 c                  of the parent particle
-c	8-29-17 - Introduce the phase space factor for the recoiling particle in the CM
+c	08-29-17 - Introduce the phase space factor for the recoiling particle in the CM
 c                 frame, e.g. the recoiling target proton in the case of pbar-p creation
-c	9-02-17 - this is a rather complete re-write to adopt the "dart-throwing" monte-carlo method
+c	09-02-17 - this is a rather complete re-write to adopt the "dart-throwing" monte-carlo method
 c	          rather than the integration method... on account of every call being for
 c	          a different value of W, so we cannot pre-compute the entire line shape.
-c       9-22-17 - If the width is "-9999", return just the value drawn from phase-space
-c       3-06-19 - Trap possible failure in computing RMMAX
-c       7-17-19 - Improve comments written to screen
+c       09-22-17 - If the width is "-9999", return just the value drawn from phase-space
+c       03-06-19 - Trap possible failure in computing RMMAX
+c       07-17-19 - Improve comments written to screen
+c       11-08-19 - turn off some rare and not helpful error messages
 c       
 	subroutine relativisticlineshape(rmnot,gammanot,rm1,rm2,lvalue,
      1                             	rm3,ww,bwmass,ifail)
+c       Inputs:
+c	RMNOT     - Mass of centroid of relativisitc Breit Wigner being generated
+c	GAMMANOT  - Nominal width of the resonance, before q-dependence inclusion
+c	RM1       - Mass of the first decay product
+c	RM2       - Mass of the second decay product
+c	LVALUE    - Orbital angular momentum of the decaying pair - for Gamma(q)
+c	RM3       - Mass of recoiling particle in 3-body final state - for phase space calc.
+c	WW        - Total available energy
+c
+c	Outputs:
+c	BWMASS    - Monte Carlo selection of mass 
+c	IFAIL     - error flag
+c
 	logical ifirst
 	data ifirst/.true./
 	common /monte/ iseed,xflat,xnormal,xbw
@@ -65,7 +79,12 @@ c	   write(6,*)' '
 	   rmnotsave = rmnot
 	   bwmaxval = 1000.
 	   scale = 1000.
+c	   call exit()
 	endif
+c
+c       Establish the limits of the mass generation to be between
+c       4 gamma below to 20 gamma above the nominal centroid,
+c       as long as these masses are legal.
 c
 	rmmin     = max(rmnot -  4.*gammanot,rm1+rm2)
 	rmmax     = min(ww-rm3, rmnot + 20.*gammanot)
@@ -90,22 +109,30 @@ c
 	if(rad.ge.0.0)then
 	   pcm = sqrt(rad)/(2.*ww)
 	else
-	   write(6,*)'P bad...',ww,rmnot,rm3,rm1,rm2,rm
-	   write(6,*)rmmin,rmmax,rad
+c	   write(6,*)'P bad...',ww,rmnot,rm3,rm1,rm2,rm
+c	   write(6,*)rmmin,rmmax,rad
 	   pcm = 0.0
-c	   call exit()
+	   ifail = 3
+	   bwmass = rmnot
+	   return
+c           call exit()
 	endif
 c
 c       Scale the first part of the phase space calculation using the
 c       CM momentum evaluated at the threshold of the reaction
+c       (It makes no difference which mass is used when computing the ratio.)
 c
 	rad = (ww**2.-(rmmin**2.+rm3**2.))**2. - (2.*rmmin*rm3)**2.
+c	rad = (ww**2.-(rmnot**2.+rm3**2.))**2. - (2.*rmnot*rm3)**2.
 	if(rad.ge.0.0)then
 	   pcmnot = sqrt(rad)/(2.*ww)
 	else
 	   write(6,*)'P0 bad...',ww,rmnot,rm3,rm1,rm2,rm
 	   write(6,*)rmmin,rmmax,rad
-	   call exit()
+	   ifail = 4
+	   bwmass = rmnot
+	   return
+c           call exit()
 	endif
 	pratio = pcm/pcmnot
 c
@@ -113,7 +140,7 @@ c       Compute the momentum of the final state into which the resonance decays
 c
 	rad = (rm**2.-(rm1**2.+rm2**2.))**2. - (2.*rm1*rm2)**2.
 	if(rad.ge.0.0)then
-	   qcm     = sqrt(rad)/(2.*rmnot)
+	   qcm     = sqrt(rad)/(2.*rm)
 	else
 	   write(6,*)'Q bad...',ww,rmnot,rm3,rm1,rm2,rm
 	   ifail = 2
@@ -151,7 +178,7 @@ c
 c	write(6,*)'Generating a line shape: ',icount,rm,ytest,bwvalue,bwmaxval
 	if(bwvalue.gt.bwmaxval)then
 	   bwmaxval = bwvalue
-c	   write(6,*)'New maximal test value in BW lineshape:',bwmaxval
+c	   write(6,*)'New maximal value in BW lineshape:',bwmaxval,qratio,pratio
 	endif
 	if(ytest.gt.bwvalue)then
 c	   write(6,*)'Go back'

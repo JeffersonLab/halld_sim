@@ -143,9 +143,9 @@ c                          to run larger-scale simulations on computer clusters
 c                7-19-19 - Introduce a decay mode with 3-body decay followd by Regge slope selection
 c                8-26-19 - Small bug fix in writing out ASCII data for Mechanism G2 - order of particles
 c               10-29-19 - Tiny bug fix in Reggepick to trap rare machine precision issue    
-c               11-19-19 - Code to allow simulation of the "double Regge" process vi a "Mechanism 5"
+c               11-19-19 - Code to allow "double Regge" process
 c     
-        parameter (version=11.0) !Version of the program... keep this updated
+        parameter (version=10.50) !Version of the program... keep this updated
 c      
 	external ran  !forces the use of "my" version of random number generator (see RNDNOR.F)
 	parameter (maxnumpar=65) !Maximum number of particles in the table
@@ -163,7 +163,7 @@ c
 	real plist(24,maxnumlis)
 	real pp(5,maxnumpar)
 	real ptot(5),pv(5),pvsmear(5),p1(5),p2(5),p3(5),p4(5),p5(5) !4-vectors in KINPACK
-	real pc(5),ptotrest(5),p23(5),pvtemp(5),ptarget(5)
+	real pc(5),ptotrest(5),p23(5),pvtemp(5)
 	real r0(3),r1(3)
 	real polv(3),pol1(3),pol2(3),pol3(3),pol4(3),pol5(3)
 	logical idolund,idogluex,idocuts,ihackflag,iwidthflag,imess
@@ -186,7 +186,7 @@ c	data iseed /123456/
 	common /analysis/dpoverp_in,dpoverp_out,ptotrest
         common /bremselectname/fluxfilename,lfluxfilename
 	common /target/icode,size1,size2,size3,size4,maxtstep
-	common /misc/cthcm_gen,itoken          !for tests and hacks
+	common /misc/cthcm_gen,itoken           !for tests and hacks
 	common /temp/eloss_clas,eloss_prop,pcmag_clas,pvmag_prop
 c
 c       Iargc: Unix function to return the number of command line args.
@@ -257,7 +257,7 @@ c	write(6,*)pbeammax
 	read(1,*,err=8) iprule  !rule for generating photons
 c	write(6,*)iprule
  9      continue
-	read(1,'(a)',err=9)fluxfilename   !used if we are reading an external file for photon beam shape 
+	read(1,'(a)',err=9)fluxfilename   !used if we are reading an external file for photon beam shape  @@@
 	lfluxfilename = iscan(fluxfilename,' ')-1  !KERNLIB routine
  10     continue
 	read(1,*,err=10) nprint
@@ -1379,6 +1379,7 @@ c                    write(6,*)p2
                     write(6,*)'Bloody Hell: POL1 is bad',pol1,pol2
                  endif
 		 if(ierr.ne.0)write(6,*)'product_stuffit is messed...'
+                 itoken=itoken+1
                  
 	      else if(ndynamics.eq.4)then !isotropic angle & polarization transfer
 		 call kin1r(pv,p1,p2,cthcm,pcm,ierr)
@@ -1455,18 +1456,18 @@ c                call getmasses(indexparent,rm1,rm2,1)  !works only for the firs
                  rm1 = p1(4)  !we already know the specific (possibly "wide") decay masses of the products
                  rm2 = p2(4)
 c                write(6,*)'Decay masses:', rm1,rm2
-                 bslope1    = dyncode1 ! was set in definition file
+                 bslope     = dyncode1 ! was set in definition file
                  rmproduce  = rm2 ! the "produced" thing is the forward-going object at the photon vertex
                  rmrecoil   = rm1 ! the recoiling thing is listed first in the definition file
                  rmtarget   = rmproton
                  wthreshold = dyncode2 !specified in the definition file
                  sminf      = 0.001 !parameter controling the "flatness" at back angles
-                 call reggepick(ppbeam,pbeammax,wthreshold,bslope1,sminf,
+                 call reggepick(ppbeam,pbeammax,wthreshold,bslope,sminf,
      1                rmtarget,rmproduce,rmrecoil,cosinethetacm,iregge)
 
 c                 cosinethetacm = .5      !Test hack
                  
-c                 write(6,*)'RP> ',ppbeam,pbeammax,cosinethetacm,iregge,bslope1
+c                 write(6,*)'RP> ',ppbeam,pbeammax,cosinethetacm,iregge,bslope
 c                 write(6,*)'    ',rmtarget,rmrecoil,rmproduce,wthreshold
                  if(iregge.lt.0)then !abandon this event
                     write(6,*)'Reggepick error'
@@ -1488,6 +1489,7 @@ c                 write(6,*)'    ',rmtarget,rmrecoil,rmproduce,wthreshold
                     write(6,*)'POL1', pol1
                     write(6,*)'POL2', pol2
                  endif            
+                 itoken=itoken+1
 
               else
 		 write(6,*)'Unspecified decay dynamics ',ndynamics
@@ -1525,12 +1527,9 @@ c
 c             First generate pure 3-body phase space.   Then create a pseudo particle out of P2 and P3.
 c             Arrange that this particle P23 satisfies the specified t-slope requirement.
 c             Thus, we do not have to pre-select a mass of the intermediate state particle.
-c             NDYNAMICS = 3  - rotate the 3-body phase-space state so the P23 combo has give t-slope
-c             NDYNAMICS = 4  - rotate the 3-body phase-space state so the P23 combo has give t-slope and
-c             also enforce the t-slope at the bottom vertex:  "double - Regge" mechanism
-c
+c                 
               else if(ndynamics.eq.3 .or. ndynamics.eq.4)then !combine 3-body phase space & Regge picture
- 240             pvtemp(1) = 0
+                 pvtemp(1) = 0
                  pvtemp(2) = 0
                  pvtemp(3) = 0
                  pvtemp(4) = pv(4)
@@ -1551,15 +1550,14 @@ c                call getmasses(indexparent,rm1,rm2,1)  !works only for the firs
                  rm2 = p2(4)
                  rm3 = p3(4)
                  call invarmass(p2,p3,p23,rmassinv)
-c                 write(6,*)'3 body decay in the CM frame >>'
-c                 write(6,*)'PV >>',pv
-c                 write(6,*)'P1 >>',p1
-c                 write(6,*)'P2 >>',p2
-c                 write(6,*)'P3 >>',p3
-c                 write(6,*)'P23>>',p23
+                 write(6,*)'3 body decay in the CM frame >>'
+                 write(6,*)'PV >>',pv
+                 write(6,*)'P1 >>',p1
+                 write(6,*)'P2 >>',p2
+                 write(6,*)'P3 >>',p3
+                 write(6,*)'P23>>',p23
                  rm23 = p23(4)
-                 bslope1     = dyncode1 ! was set in definition file
-                 bslope2     = dyncode2 ! was set in definition file
+                 bslope     = dyncode1 ! was set in definition file
                  if(ndynamics.eq.3)then
                     rmproduce  = rm23 ! the "produced" thing is the forward-going object at the photon vertex
                     rmrecoil   = rm1  ! the recoiling thing is listed first in the definition file (e.g. target proton)
@@ -1568,11 +1566,11 @@ c                 write(6,*)'P23>>',p23
                     rmrecoil   = rm23 ! the recoiling thing here the pair of other particles taken together
                  endif
                  rmtarget   = rmproton
-                 wdummy     = xdummy !(actually not used at this time)
+                 wdummy = dyncode2 !specified in the definition file (actually not used at this time)
                  sminf      = 0.001 !parameter controling the "flatness" at back angles
-                 call reggepick(ppbeam,pbeammax,wdummy,bslope1,sminf,
+                 call reggepick(ppbeam,pbeammax,wdummy,bslope,sminf,
      1                rmtarget,rmproduce,rmrecoil,cosinethetacm,iregge)
-c                 write(6,*)'RP> ',ppbeam,pbeammax,cosinethetacm,iregge,bslope1
+c                 write(6,*)'RP> ',ppbeam,pbeammax,cosinethetacm,iregge,bslope
 c                 write(6,*)'    ',rmtarget,rmrecoil,rmproduce,wdummy
                  if(iregge.lt.0)then !abandon this event
                     write(6,*)'Reggepick error'
@@ -1584,52 +1582,25 @@ c                 write(6,*)'    ',rmtarget,rmrecoil,rmproduce,wdummy
                  if(ndynamics.eq.3)then
 c                    write(6,*)'Rotating P23 to the desired t'
                  elseif(ndynamics.eq.4)then
-c                    write(6,*)'Rotating P1 to the desired t'
+                    write(6,*)'Rotating P1 to the desired t'
                     cosinethetacm = -cosinethetacm   !kinematic trick to save coding steps
                  else
                     write(6,*)'Inconsistent dynamics specified'
                     call exit()
                  endif
-c                 write(6,*)'>> CM angle',cosinethetacm
+                 write(6,*)'>> CM angle',cosinethetacm
 		 call product_rotate(pv,p1,p2,p3,p23,cosinethetacm,ierr)
-c
-c                We have done the "double Regge" tests in the CM frame.
-c                Return the tracks to the Lab frame.
-c                 
-                 call boost_to_lab(pv,p1,p2,p3,p23,ierr)
-                 if(ierr.ne.0)then !abandon this event
-c                    write(6,*)' > Returning from product_rotate'
-c                    write(6,*)cosinethetacm
+c                 if(ierr.ne.0)then  !abandon this event
+                    write(6,*)' > Returning from product_rotate'
+                    write(6,*)cosinethetacm
                     write(6,*)'PV  ', pv
                     write(6,*)'P1  ', p1
                     write(6,*)'P2  ', p2
                     write(6,*)'P3  ', p3
                     write(6,*)'P23 ', p23
-                    goto 105
-                 endif            
-c
-c                Now test whether the momentum transfer at the bottom vertex is small.
-c                Remember we are in the lab now.  The momentum transfer is between the 
-c                target proton (must construct it first) and the recoiling target particle.
-c
-c                We must hard code this to be particle 2 in the decay list and be
-c                sure the input definition file has the proton in that slot.
-c
-c                In the lab frame, tprime is always 0, by construction becasue tmin and t 
-c                are the same.
-c                 
-                 ptarget(1) = 0.0
-                 ptarget(2) = 0.0
-                 ptarget(3) = 0.0
-                 ptarget(4) = rmproton
-                 ptarget(5) = rmproton
-                 call gett(ptarget,p2,tt,ttmin,ttprime)
-c                 write(6,*)'t at bottom vertex',tt,ttmin,ttprime
-                 call doublereggepick(tt,bslope2,iyesno,ierr)
-                 if(iyesno.eq.0)then
-c                    write(6,*)'Lower vertex t is not in range'
-                    goto 240
-                 endif
+c                    goto 105
+c                 endif            
+                 itoken=itoken+1
 c 
 	      else
 		 write(6,*)'Unspecified 3-body dynamics ',ndynamics
@@ -2591,7 +2562,7 @@ c
 	call crossprod(polv,p0,rot,angle)
 	if(abs(angle-piover2).gt.0.001)then
            temp = angle-piover2
-c           write(6,*)'POLV is not normal to P0',temp
+           write(6,*)'POLV is not normal to P0',temp
 	end if
 c	write(6,*)'POLV ',polv
 c	write(6,*)'P0   ',p0
@@ -2881,7 +2852,7 @@ c	Check the polar angle of P23 with respect to beam axis
 c
 	cthcm = dot(p23,ze)/(absp(p23)*absp(ze))
 	if(abs(cthcm-cos(theta)).gt.0.001)then
-           write(6,*)'Trouble in rotating system:',cthcm,cos(theta)
+           write(6,*)'Deep trouble in rotating system:',cthcm,cos(theta)
            ierr = 1
            return
 c           call exit()
@@ -2896,59 +2867,31 @@ c        pzz = p1(3) + p23(3)
 c        write(6,*)'Momentum',px,py,pz
 c        write(6,*)'Momentum',pxx,pyy,pzz
 c
-        return
-        end
-
-c
-
-c
-c*************************************************************************
-c     BOOST_TO_LAB
-c     Ad hoc porgram to boost the set of particles that have been
-c     rotated in the CM frame back to the Lab frame.
-c     Input:
-c       P0    - parent particle 4-vector (px,py,pz,M,E) in the LAB frame
-c       P1    - the recoiling particle decay 4-vector in the zero-momemtum frame (not lab frame)
-c       P23   - the created particle 4-vector in the zero-momentum frame that we want to rotate to COSTHETACM 
-c       P2    - the decay product of particle P23 in the zero-momentum frame (not lab frame)
-c       P3    - the decay product of particle P23 in the zero-momentum frame (not lab frame)
-
-c     Output: (modified 4-vectors of the produced particles, all in the LAB frame
-c       P1  - decay particle 4-vector (px,py,pz,M,E) in the LAB frame ("recoil')
-c       P23 - decay of the composite particle 4-vector (px,py,pz,M,E) in the LAB frame
-c       P2  - decay particle 4-vector (px,py,pz,M,E) in the LAB frame (decay of Particle 23)
-c       P3  - decay particle 4-vector (px,py,pz,M,E) in the LAB frame (decay of Particle 23)
-c     
-c       R.A.Schumacher, CMU
-c       12-2019
+c	Velocity of laboratory frame relative to CM
+c       (Note that P0 has been in the lab frame throughout this routine.)
 c        
-      subroutine boost_to_lab(p0,p1,p2,p3,p23,ierr)
-      real p0(5),p1(5),p2(5),p3(5),p23(5)
-      real p0tmp(5),p1tmp(5),p2tmp(5),p3tmp(5),p23tmp(5),dtmp(5)
-      real beta(3),ex(5),ze(5)
-c
-c     Velocity of laboratory frame relative to CM
-c     (Note that P0 has been in the lab frame throughout this routine.)
-c        
-      do i=1,3
-         beta(i)  = -p0(i)/p0(5)
-      enddo
+	do i=1,3
+	   beta(i)  = -p0(i)/p0(5)
+	enddo
 c	
-c     Boost the particles fro the CM to the lab frame.
-c     Note that we are engaging in the dubious practice of
-c     modifying the input variables to the program to make the
-c     output variables.
+
 c
-      do i=1,5
-         p1tmp(i) = p1(i)
-         p2tmp(i) = p2(i)
-         p3tmp(i) = p3(i)
-         p23tmp(i) = p23(i)
-      enddo
-      call boost(p1tmp,beta,p1)
-      call boost(p2tmp,beta,p2)
-      call boost(p3tmp,beta,p3)
-      call boost(p23tmp,beta,p23)
+
+c        Boost the particles to the lab frame.
+c       Note that we are engaging in the dubious practice of
+c       modifying the input variables to the program to make the
+c       output variables.
+c
+        do i=1,5
+           p1tmp(i) = p1(i)
+           p2tmp(i) = p2(i)
+           p3tmp(i) = p3(i)
+           p23tmp(i) = p23(i)
+        enddo
+	call boost(p1tmp,beta,p1)
+	call boost(p2tmp,beta,p2)
+	call boost(p3tmp,beta,p3)
+	call boost(p23tmp,beta,p23)
 c        write(6,*)'Boost to the lab frame',beta
 c        write(6,*)'P0   lab',p0
 c        write(6,*)'P1   lab',p1
@@ -2964,8 +2907,9 @@ c        pyy = p1(2) + p23(2)
 c        pzz = p1(3) + p23(3)
 c        write(6,*)'Momentum',px,py,pz
 c        write(6,*)'Momentum',pxx,pyy,pzz
-      return
-      end
+
+	return
+	end
 
 
 c****************************************************************************
@@ -3114,45 +3058,6 @@ c     1                           pbeammin,pbeammax
 	return
 	end
 
-c**************************************************************************
-c      Decide whether to keep an event with -t of tt according to the
-c      desired t-slope.
-c
-c      Input:
-c      TT      - t of the reaction
-c      BSLOPE2 - exponential slope we need
-c      IYESNO  - flag to keep or reject this candidate
-c
-c      Output:
-c      IYESNO - flag to keep or reject this candidate
-c
-c      R.A.Sch,  December 2019
-c      
-      subroutine doublereggepick(tt,bslope2,iyesno,ierr)
-      data ifirst/1/
-      data scale/1000./
-      common /doublelocal/ifirst
-      common /monte/ iseed,xflat,xnormal,xbw
-c
-      if(ifirst.eq.1)then
-         ifirst=0
-         write(6,*)'First call to DOUBLEREGGEPICK'
-      endif
-      ierr = 0
-      probdensity = scale * exp(bslope2*tt) !key statement...
-c
-c     Throw the dart
-c
-      ytest = scale*ran(iseed)
-      if(ytest.lt.probdensity)then
-
-         iyesno = 1
-      else
-         iyesno = 0
-      endif
-c      write(6,*)bslope2,probdensity,ytest,iyesno
-      return
-      end
       
 c***************************************************************************
 c       Model the cross section as a rough Regge-like, i.e. t-channel-
@@ -3302,6 +3207,153 @@ c	write(6,*)' ',tmin,tmax
 c
 	return
 	end
+
+c***************************************************************************
+c       Model the cross section as a rough Regge-like, i.e. t-channel-
+c       dominant distribution.
+c
+c       Input: ppbeam        = previously selected beam momentum
+c              ppbeammax     = maximum beam (photon) energy
+c              wdummy       = W scaling factor (not used in this version of the code)
+c              bslope        = Regge slope parameter
+c              sminf         = minimum fraction of largest cross section to pick
+c              rmproduce     = mass of the object produced in the final state 
+c              rmrecoil      = mass of system recoiling against the produced object, in GeV
+c              rmtarget      = mass of target
+c       Output:cosinethetacm = c.m. production angle selected with "t-channel" weighting
+c              iregge        = error flag
+c
+c       The formula used is essentially Eq 4.86 from Perkins, 2nd Ed. with
+c       invented coefficients.
+c
+c       This version allows two different values of the b-slope, which we may need when
+c       studying the anti-Lambda Lambda channel.
+c
+c       R.A.Sch. November 2019
+c       11-19-2019 - Based on REGGEPICK code but totally different algorithm
+c
+	subroutine doublepick(ppbeam,pbeammax,wdummy,bslope,sminf,rmtarget,
+     1                        rmproduce,rmrecoil,cosinethetacm,iregge)
+	data rmg/0.0/		!photon mass  (use this term so the equations look symmetric)
+	data ifirst/1/  
+	common /monte/ iseed,xflat,xnormal,xbw
+	common /doublelocal/ifirst,snot,dsigmadtnot,dsdtmax,dsdtmin,bslopelocal
+c       
+        write(6,*)'Entering DOUBLEPICK'
+        snot        = 1./bslope !See Donnachie and Landshoff, hep-ph/9912312 (12 Dec 1999)
+c        snot        = 1./(wscale*wscale)
+c        wmax        = sqrt(2.*pbeammax*rmtarget + rmtarget**2.)
+c        smax        = wmax*wmax
+c        wthreshold  = 2. * 0.93827 + rmrecoil !hack for tests
+c
+	if(ifirst.eq.1 .or. bslope.ne.bslopelocal)then
+	   dsigmadtnot = 1000.0       !arbitrary scale
+	   dsdtmax     = dsigmadtnot
+	   dsdtmin     = dsigmadtnot*sminf !set "floor" for production cross section
+           if(ifirst.eq.1)then
+              ifirst = 0
+              write(6,*)' ' 
+              write(6,*)'Regge exchange parameters:' 
+              write(6,5)bslope,snot,wscale,dsdtmax,dsdtmin
+ 5            format(1x,
+     1         't-slope (b)                   = ',f8.3,' GeV^-2',/,1x,
+     1         'Scale factor s_not            = ',f8.3,' GeV^2',/,1x,
+     1         'W scale (if used)             = ',f8.3,' GeV',/,1x,
+     1         'D(t=0)                        = ',f8.3,' microbarn/GeV^2',/,1x,
+     1         't-independent minimum         = ',f8.3,' microbarn/GeV^2')
+              write(6,*)' '
+           endif
+           bslopelocal = bslope
+c          call exit()
+	end if
+c     
+	iflag     = 0
+	iregge    = 0
+	ww        = sqrt(2.*ppbeam*rmtarget + rmtarget**2.)
+	ss        = ww**2.
+	eg        = ppbeam
+	egcm      = (ww*ww - (rmtarget**2. - rmg**2.    ))/(2.*ww)
+	pgcm      = egcm
+
+        tmin = -0.0   !natural minimum value
+        tmax = -3.0   !hard-coded maximum value
+c
+c       Top of loop to find a random t value that follows the
+c       prescribed 'cross section';  use the simple 'dart throwing' method.
+c
+
+ 10	iregge = iregge + 1
+	if(iregge.ge.2000)then
+	   iflag = 1
+	endif
+	tt = tmin + ran(iseed)*(tmax-tmin)
+        tt = -1.5  !@@@@@@@@@@@@
+        dsdt = dsigmadtnot * exp(2.*bslope*log(ss/snot)*tt) !key statement...
+c	dsdt = max(dsdt,dsdtmin)  !enforce non-zero values
+	xtest = ran(iseed)*dsdtmax
+        write(6,*)'Find a tt>',dsdt,xtest,dsigmadtnot,tt,ww,ss,snot
+	if(xtest.gt.dsdt)goto 10
+c
+c       We have a value of t that is consistent with the desired cross section shape
+c
+	write(6,*)' Got>',iregge,tt,dsdt,xtest
+        
+	eproducecm   = (ww*ww - (rmrecoil**2. - rmproduce**2.))/(2.*ww)
+	erecoilcm    = (ww*ww + (rmrecoil**2. - rmproduce**2.))/(2.*ww)
+	pproducecm   = eproducecm*eproducecm - rmproduce*rmproduce
+        if(pproducecm.lt.0.0 .and. pproducecm.gt.-2.0e-5)then
+c           write(6,*)'Reggepick round-off error fix:',pproducecm
+           pproducecm = 1.0e-6     ! put it right at threshold
+        endif
+        if(pproducecm.ge.1.0e-8)then
+           pproducecm = sqrt(pproducecm)
+        else
+           write(6,*)'CM momentum incorrect:',eg,ww,rmtarget,pproducecm,
+     1                              egcm,eproducecm,erecoilcm,
+     2                              rmproduce,rmrecoil         
+           iregge = -1
+           return
+        endif
+	tmin = (rmproduce*rmproduce + rmg*rmg) - 
+     1         2.*(egcm*eproducecm - pgcm*pproducecm)
+	tmax = (rmproduce*rmproduce + rmg*rmg) - 
+     1         2.*(egcm*eproducecm + pgcm*pproducecm)
+c        write(6,*)'>>>',ww,eg,egcm,eproducecm,erecoilcm,pproducecm,tmin,tmax
+c        write(6,*)'   ',rmproduce,rmrecoil
+
+        cosinethetacm = (tt-(rmproduce*rmproduce + rmg*rmg)+2.*
+     1   (egcm*eproducecm))/
+     1                                              (2.*pgcm*pproducecm)
+	if(iflag.eq.1)then
+	   write(6,*)'Inefficient t-channel generation:', 
+     1                                            iregge,tmin,tmax
+	endif
+
+c        cosinethetacm = 0.7071  !test value 
+        if(cosinethetacm==cosinethetacm)then   !test for NaN
+           continue
+        else
+           write(6,*)'How on Earth...?'
+           write(6,*)ww,wscale,eg,egcm,eproducecm,erecoilcm,pgcm
+           write(6,*)tt,rmproduce,rmg,pproducecm
+           write(6,*)tmin,tmax
+        endif
+        if(cosinethetacm.gt.1.0)then   !yes, this can happen
+           write(6,*)'REGGEPICK selected cosine theta =',cosinethetacm
+           cosinethetacm = 1.0
+        endif
+        if(cosinethetacm.lt.-1.0)then
+           write(6,*)'REGGEPICK selected cosine theta =',cosinethetacm
+           cosinethetacm = -1.0
+        endif
+c
+c       write(6,*)'Returning'
+c	write(6,*)'>',iregge,cosinethetacm,tt,dsdt,xtest,dsdtmin
+c	write(6,*)' ',tmin,tmax
+c
+	return
+	end
+
 
 c***************************************************************************
 c       Model the cross section for as a simple exponential slope.
@@ -3977,57 +4029,6 @@ c
 	return
 	end
 
-c*******************************************************************************
-c       Compute Mandelstam t for two given 4-vectors
-c       PA is the first ("incident/beam") particle
-c       PB is the second ("produced/recoil") particle that couples at a vertex with PA
-c
-c       tt is the Mandelstam invariant t;  it will be < 0
-c       ttprime is the reduced value of t, namely t - tmin, where
-c       tmin the the 4-momentum transfer at 0 degrees
-c
-c       PA - 4-vector of the first  particle (px,py,pz,mass,E)
-c       PB - 4-vector of the second particle (px,py,pz,mass,E)
-c       P0 - intermediate 4-vector with particle B pointing in the "beam" direction
-c       tt - Mandelstam invariant momentum transfer
-c       ttmin - minimum value of tt when the particle are moving in the same direction
-c       ttprime - reduced tt given be tt - ttmin
-c      
-c       R.A.Sch. 8-2017
-c
-	subroutine gett(pa,pb,tt,ttmin,ttprime)
-	real pa(5),pb(5),p0(5)
-	tt = (pb(1)-pa(1))**2. + (pb(2)-pa(2))**2. + (pb(3)-pa(3))**2.
-	tt = (pb(5)-pa(5))**2. - tt
-c
-	pmagp = sqrt(pb(1)**2.+pb(2)**2.+pb(3)**2.)
-c        costh = pa(1)*pb(1)+pa(2)*pb(2)+pa(3)*pb(3) !just need the sign
-	p0(1) = 0.0
-	p0(2) = 0.0
-        if(pa(3).gt.0.0)then
-           if(pb(3).gt.0.0)then
-              p0(3) = +pmagp
-           else
-              p0(3) = +pmagp
-           endif
-        else
-           if(pb(3).gt.0.0)then
-              p0(3) = -pmagp
-           else
-              p0(3) = -pmagp
-           endif
-        endif
-        p0(4) = pb(4)
-	p0(5) = pb(5)
-	ttmin = (p0(1)-pa(1))**2. + (p0(2)-pa(2))**2. + (p0(3)-pa(3))**2.
-	ttmin = (p0(5)-pa(5))**2. - ttmin
-	ttprime = tt - ttmin
-c	write(6,*)'Computing t',tt,ttprime
-c	write(6,*)p1
-c	write(6,*)p3
-c	write(6,*)p0
-	return
-	end
 
 
 c========================== End of MC_GEN code ==============================

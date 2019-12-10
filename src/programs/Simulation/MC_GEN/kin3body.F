@@ -6,6 +6,15 @@ c	R.D.Dickson,    CMU 03-2005 - replaces RS version: this one works.
 c
 c       05-15-15 - make the 4-vectors to have length 5 to add total energy
 c
+c	Inputs:  (the parent particle is at rest)
+c	P0   : The decaying system in the "lab" frame
+c	P1(4): The mass of decay particle 1
+c	P2(4): The mass of decay particle 2
+c	P3(4): The mass of decay particle 3
+c
+c	Outputs:
+c	The same vectors but with the momentum components of P1, P2, P3 filled in
+c	
 c       This algorithm could be improved to remove the hit-or-miss
 c       search for a legal combination of rm23.  Compute the "local limits"
 c       given a chosen rm12 and pick uniformly between those limits.
@@ -84,9 +93,9 @@ c	write(6,*)'P23>',p23
 
 c	Check momentum conservation
 
-	sumx = p1(1) + p2(1) + p3(1)
-	sumy = p1(2) + p2(2) + p3(2)
-	sumz = p1(3) + p2(3) + p3(3)
+c	sumx = p1(1) + p2(1) + p3(1)
+c	sumy = p1(2) + p2(2) + p3(2)
+c	sumz = p1(3) + p2(3) + p3(3)
 c	write(6,*)'SUM>',sumx,sumy,sumz
 	return
 	end

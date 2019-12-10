@@ -10,6 +10,7 @@ c       9-97 Unix version - got rid of real*4
 c       - tweaked cross product routine for speed
 c	6-28-17 - make vectors of length 5 for compatibility with mc_gen changes
 c                 even though we are doing simple 3-vector operations
+c       7-22-19 - fix the angle calculation in the cross product routine
 c	
 	subroutine carrot(vec,rot,rotang)
 	real vec(5),rot(5),rhat(5),vecpara(5),vecperp(5)
@@ -65,19 +66,14 @@ c
 	c(5) = 0.
 	aa = a(1)*a(1) + a(2)*a(2) + a(3)*a(3)
 	bb = b(1)*b(1) + b(2)*b(2) + b(3)*b(3)
-	cc = c(1)*c(1) + c(2)*c(2) + c(3)*c(3)
-	dd = aa*bb
-	if(dd.ne.0.0)then
-		sinang = sqrt(cc/dd)
-		if(sinang.gt.1.0)sinang=1.0
-	else
-		sinang = 0.0
-	end if
+c	cc = c(1)*c(1) + c(2)*c(2) + c(3)*c(3)
+	dd = a(1)*b(1) + a(2)*b(2) + a(3)*b(3)
+	cosang = dd/sqrt(aa*bb)
+	angle = acos(cosang)
 c	write(6,*)'Cross prod:',a
 c	write(6,*)'Cross prod:',b
 c	write(6,*)'Cross prod:',c
-c	write(6,*)'Cross prod:',aa,bb,cc,sinang
-	angle  = asin(sinang)
+c	write(6,*)'Cross prod:',aa,bb,cc,angle
 	return
 	end
 
