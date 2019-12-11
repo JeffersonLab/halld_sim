@@ -3,10 +3,11 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include <math.h>
 using namespace std;
 
 #include "HDDM/hddm_s.hpp"
-#include "particleType.h"
+//#include "particleType.h"
 
 char *INPUT_FILE=NULL;
 string OUTPUT_FILE("output.hddm");
@@ -74,8 +75,9 @@ int main(int narg, char *argv[])
 
       int nParticles=0;
       float beamEnergy = 0.0;
+      int mechFlag = 0;
 
-      *infile >> nParticles >>  beamEnergy;
+      *infile >> nParticles >> beamEnergy >> mechFlag;
               
       
       // if (runNumber == 0 && eventNumber == 0 && nParticles == 0)
@@ -87,10 +89,12 @@ int main(int narg, char *argv[])
    
       // Start a new event
       hddm_s::HDDM record;
+
       hddm_s::PhysicsEventList pes = record.addPhysicsEvents();
       pes().setRunNo(runNumber);
-      std::cout << runNumber<< endl;
+      //std::cout << runNumber<< endl;
       pes().setEventNo(eventNumber);
+
       hddm_s::ReactionList rs = pes().addReactions();
       hddm_s::TargetList ts = rs().addTargets();
       ts().setType(targetType);
@@ -111,133 +115,184 @@ int main(int narg, char *argv[])
       bmoms().setPx(-tmoms().getPx());
       bmoms().setPy(-tmoms().getPy());
       bmoms().setPz(beamEnergy);
-      bmoms().setE(beamEnergy);                     
-      hddm_s::VertexList vs = rs().addVertices();
-      hddm_s::OriginList os = vs().addOrigins();
-      hddm_s::ProductList ps = vs().addProducts(1);
+      bmoms().setE(beamEnergy); 
+
+      hddm_s::VertexList vs = rs().addVertices(3); //primary vertex and two detached vertices
+
+      //Primary Vertex: vs(0)
+      hddm_s::OriginList  os_primary = vs(0).addOrigins();
+      hddm_s::ProductList ps_primary = vs(0).addProducts(3);//three final states: recoiling proton, lambda, anti-lambda
       
-      
+      //products
+
+             //recoiling proton
+             char typestr[256];
+             float px, py, pz, E, x, y, z, t;
+             t=0.0;
+             *infile >> typestr >> E >> px >> py >> pz;
+             *infile >> x >> y >> z;
+             //t =  (z-65.0)/29.9792458 ;
+             int type = Str2GeantParticleID(typestr);
+             if (type < 0) type = atoi(typestr);
+
+             ps_primary(0).setType((Particle_t)type);
+             ps_primary(0).setPdgtype(PDGtype((Particle_t)type));
+             ps_primary(0).setId(1);         // unique value for this particle within the event //
+             ps_primary(0).setParentid(0);     // All internally generated particles have no parent //
+             ps_primary(0).setMech(mechFlag);         // maybe this should be set to something? //
+             hddm_s::MomentumList  pmoms_proton1 = ps_primary(0).addMomenta();  
+                                   pmoms_proton1().setPx(px);
+                                   pmoms_proton1().setPy(py);
+                                   pmoms_proton1().setPz(pz);
+                                   pmoms_proton1().setE(E);            
+
+             os_primary().setT(0.0);
+             os_primary().setVx(0.0);
+             os_primary().setVy(0.0);
+             os_primary().setVz(0.0);
+
+            //Lambda
+             type = 0;                         // set the particel type as -18 (unknown), so that it won't decay again later
+             //Particle_t type1 = Lambda;
+             ps_primary(1).setType((Particle_t)type);
+             ps_primary(1).setPdgtype(PDGtype((Particle_t)type));
+             ps_primary(1).setId(2);           // unique value for this particle within the event 
+             ps_primary(1).setParentid(0);     // All internally generated particles have no parent 
+             ps_primary(1).setMech(mechFlag);         // maybe this should be set to something? 
+             ps_primary(1).setDecayVertex(1);
+             //anti-Lambda
+             type = 0;                         // set the particel type as -26 (unknown), so that it won't decay again later
+             //Particle_t type2 = AntiLambda;
+             ps_primary(2).setType((Particle_t)type);
+             ps_primary(2).setPdgtype(PDGtype((Particle_t)type));
+             ps_primary(2).setId(3);           // unique value for this particle within the event 
+             ps_primary(2).setParentid(0);     // All internally generated particles have no parent 
+             ps_primary(2).setMech(mechFlag);         // maybe this should be set to something? 
+             ps_primary(2).setDecayVertex(2);
 
 
-      // if (vertex[2] < vertex[3]) {
-      //   os().setVz(randm(vertex[2],vertex[3]));
-      // }
-      // else {
-      //   os().setVz(vertex[2]);
-      // }
       
-
-      for (int i=0; i < 1; i++) 
+      //for the two detached vertices
+             //Lambda Vertex: vs(1)
+              float px_lambda, py_lambda, pz_lambda, E_lambda, d_lambda, t_lambda;
+              px_lambda = 0;
+              py_lambda = 0;
+              pz_lambda = 0;
+              E_lambda  = 0;
+              d_lambda  = 0;
+              t_lambda  = 0;
+              hddm_s::OriginList  os_lambda = vs(1).addOrigins();
+              hddm_s::ProductList ps_lambda = vs(1).addProducts(2);//three final states: recoiling proton, lambda, anti-lambda
+       
+       for (int i= 0; i < 2; i++) 
       {
-         char typestr[256];
-         float px, py, pz, E, x, y, z;
+         char dtypestr[256];
+         float dpx, dpy, dpz, dE, dx, dy, dz;
          
-         *infile >> typestr >> E >> px >> py >> pz;
-         *infile >> x >> y >> z;
+         *infile >> dtypestr >> dE >> dpx >> dpy >> dpz;
+         *infile >> dx >> dy >> dz;
 
-         int type = Str2GeantParticleID(typestr);
-         if (type < 0)
-            type = atoi(typestr);
+         int dtype = Str2GeantParticleID(dtypestr);
+         if (dtype < 0)  dtype = atoi(dtypestr);
 
-         hddm_s::MomentumList pmoms = ps(i).addMomenta();
+         ps_lambda(i).setType((Particle_t)dtype);
+         ps_lambda(i).setPdgtype(PDGtype((Particle_t)dtype));
+         ps_lambda(i).setId(i+4);         // unique value for this particle within the event 
+         ps_lambda(i).setParentid(2);     // All internally generated particles have no parent 
+         ps_lambda(i).setMech(0);         //  
+         ps_lambda(i).setDecayVertex(0);
 
-         ps(i).setType((Particle_t)type);
-         ps(i).setPdgtype(PDGtype((Particle_t)type));
-         ps(i).setId(i+1);         /* unique value for this particle within the event */
-         ps(i).setParentid(0);     /* All internally generated particles have no parent */
-         ps(i).setMech(0);         /* maybe this should be set to something? */
+         hddm_s::MomentumList pmoms = ps_lambda(i).addMomenta();
+         pmoms().setPx(dpx);
+         pmoms().setPy(dpy);
+         pmoms().setPz(dpz);
+         pmoms().setE(dE);
+
+         px_lambda += dpx;
+         py_lambda += dpy;
+         pz_lambda += dpz;
+         E_lambda  += dE;
+
+         d_lambda = sqrt( (dx-x)*(dx-x) + (dy-y)*(dy-y) + (dz-z)*(dz-z) );
+
+         os_lambda().setVx(dx-x);
+         os_lambda().setVy(dy-y);
+         os_lambda().setVz(dz-z);
+      } 
+      
+      t_lambda = t + d_lambda*E_lambda/(29.9792458*sqrt(px_lambda*px_lambda+py_lambda*py_lambda+pz_lambda*pz_lambda));
+      os_lambda().setT(t_lambda);
+        
+
+      hddm_s::MomentumList pmoms_lambda = ps_primary(1).addMomenta();
+       pmoms_lambda().setPx(px_lambda);
+       pmoms_lambda().setPy(py_lambda);
+       pmoms_lambda().setPz(pz_lambda);
+       pmoms_lambda().setE(E_lambda);
+
+
+
+             //anti-Lambda Vertex: vs(2)
+              float px_lambdabar, py_lambdabar, pz_lambdabar, E_lambdabar, d_lambdabar, t_lambdabar;
+              px_lambdabar = 0;
+              py_lambdabar = 0;
+              pz_lambdabar = 0;
+              E_lambdabar  = 0;
+              d_lambdabar  = 0;
+              t_lambdabar  = 0;
+              hddm_s::OriginList  os_lambdabar = vs(2).addOrigins();
+              hddm_s::ProductList ps_lambdabar = vs(2).addProducts(2);//three final states: recoiling proton, lambda, anti-lambda
+      
+      for (int i= 0; i < 2; i++) 
+      {
+         char dtypestr[256];
+         float dpx, dpy, dpz, dE, dx, dy, dz;
          
-         pmoms().setPx(px);
-         pmoms().setPy(py);
-         pmoms().setPz(pz);
-         pmoms().setE(E);
+         *infile >> dtypestr >> dE >> dpx >> dpy >> dpz;
+         *infile >> dx >> dy >> dz;
 
-         // bmoms().setPx(bmoms().getPx() + px); 
-         // bmoms().setPy(bmoms().getPy() + py); 
-         // bmoms().setPz(bmoms().getPz() + pz); 
-         // // bmoms().setE(bmoms().getE() + E);
-         os().setT(0.0);
-         os().setVx(x);
-         os().setVy(y);
-         os().setVz(z);
+         int dtype = Str2GeantParticleID(dtypestr);
+         if (dtype < 0)  dtype = atoi(dtypestr);
+
+         ps_lambdabar(i).setType((Particle_t)dtype);
+         ps_lambdabar(i).setPdgtype(PDGtype((Particle_t)dtype));
+         ps_lambdabar(i).setId(i+6);         // unique value for this particle within the event 
+         ps_lambdabar(i).setParentid(3);     // All internally generated particles have no parent 
+         ps_lambdabar(i).setMech(0);         // maybe this should be set to something? 
+         ps_lambdabar(i).setDecayVertex(0);
+
+         hddm_s::MomentumList pmoms2 = ps_lambdabar(i).addMomenta();
+         pmoms2().setPx(dpx);
+         pmoms2().setPy(dpy);
+         pmoms2().setPz(dpz);
+         pmoms2().setE(dE);
+
+         px_lambdabar += dpx;
+         py_lambdabar += dpy;
+         pz_lambdabar += dpz;
+         E_lambdabar  += dE;
+
+         d_lambdabar = sqrt( (dx-x)*(dx-x) + (dy-y)*(dy-y) + (dz-z)*(dz-z) );
+         
+         os_lambdabar().setVx(dx-x);
+         os_lambdabar().setVy(dy-y);
+         os_lambdabar().setVz(dz-z);
       }
 
+      t_lambdabar = t + d_lambdabar*E_lambdabar/(29.9792458*sqrt(px_lambdabar*px_lambdabar+py_lambdabar*py_lambdabar+pz_lambdabar*pz_lambdabar));
+      os_lambdabar().setT(t_lambdabar);
 
-      hddm_s::ReactionList decay1 = pes().addReactions();
-      hddm_s::VertexList vs1 = decay1().addVertices();
-      hddm_s::OriginList os1 = vs1().addOrigins();
-      hddm_s::ProductList ps1 = vs1().addProducts(2);
+      hddm_s::MomentumList pmoms_lambdabar = ps_primary(2).addMomenta();
+       pmoms_lambdabar().setPx(px_lambdabar);
+       pmoms_lambdabar().setPy(py_lambdabar);
+       pmoms_lambdabar().setPz(pz_lambdabar);
+       pmoms_lambdabar().setE(E_lambdabar);
+      
 
-      for (int i=0; i < 2; i++) 
-      {
-         char typestr[256];
-         float px, py, pz, E, x, y, z;
-         
-         *infile >> typestr >> E >> px >> py >> pz;
-         *infile >> x >> y >> z;
 
-         int type = Str2GeantParticleID(typestr);
-         if (type < 0)
-            type = atoi(typestr);
-         
-         ps1(i).setType((Particle_t)type);
-         ps1(i).setPdgtype(PDGtype((Particle_t)type));
-         ps1(i).setId(i+2);         /* unique value for this particle within the event */
-         ps1(i).setParentid(0);     /* All internally generated particles have no parent */
-         ps1(i).setMech(0);         /* maybe this should be set to something? */
-         hddm_s::MomentumList pmoms1 = ps1(i).addMomenta();
-         pmoms1().setPx(px);
-         pmoms1().setPy(py);
-         pmoms1().setPz(pz);
-         pmoms1().setE(E);
+   
 
-         // bmoms().setPx(bmoms().getPx() + px); 
-         // bmoms().setPy(bmoms().getPy() + py); 
-         // bmoms().setPz(bmoms().getPz() + pz); 
-         // // bmoms().setE(bmoms().getE() + E);
-         os1().setT(0.0);
-         os1().setVx(x);
-         os1().setVy(y);
-         os1().setVz(z);
-      }
-
-      hddm_s::ReactionList decay2 = pes().addReactions();
-      hddm_s::VertexList vs2 = decay2().addVertices();
-      hddm_s::OriginList os2 = vs2().addOrigins();
-      hddm_s::ProductList ps2 = vs2().addProducts(2);
-
-      for (int i=0; i < 2; i++) 
-      {
-         char typestr[256];
-         float px, py, pz, E, x, y, z;
-         
-         *infile >> typestr >> E >> px >> py >> pz;
-         *infile >> x >> y >> z;
-
-         int type = Str2GeantParticleID(typestr);
-         if (type < 0)
-            type = atoi(typestr);
-         
-         ps2(i).setType((Particle_t)type);
-         ps2(i).setPdgtype(PDGtype((Particle_t)type));
-         ps2(i).setId(i+4);         /* unique value for this particle within the event */
-         ps2(i).setParentid(0);     /* All internally generated particles have no parent */
-         ps2(i).setMech(0);         /* maybe this should be set to something? */
-         hddm_s::MomentumList pmoms2 = ps2(i).addMomenta();
-         pmoms2().setPx(px);
-         pmoms2().setPy(py);
-         pmoms2().setPz(pz);
-         pmoms2().setE(E);
-
-         // bmoms().setPx(bmoms().getPx() + px); 
-         // bmoms().setPy(bmoms().getPy() + py); 
-         // bmoms().setPz(bmoms().getPz() + pz); 
-         // // bmoms().setE(bmoms().getE() + E);
-         os2().setT(0.0);
-         os2().setVx(x);
-         os2().setVy(y);
-         os2().setVz(z);
-      }
+    
       
       // If a specific beam momentum was specified, overwrite
       // the calculated momentum with it.
@@ -258,7 +313,7 @@ int main(int narg, char *argv[])
       
       if (nParticles > 0) {
          *outstream << record;
-         if (eventNumber%1000 == 0) {
+         if (eventNumber%10000 == 0) {
             std::cout << "Wrote event " << eventNumber << "\r";
             std::cout.flush();
          }
@@ -278,6 +333,13 @@ int main(int narg, char *argv[])
    
    return 0;
 }
+
+
+
+
+
+
+
 
 //-------------------------------
 // ParseCommandLineArguments
@@ -350,7 +412,7 @@ void Usage(void)
 {
   std::cout << std::endl;
   std::cout << "Usage:" << std::endl;
-  std::cout << "       genr8_2_hddm [options] file.ascii" << std::endl;
+  std::cout << "       GEN2HDDM [options] file.ascii" << std::endl;
   std::cout << std::endl;
   std::cout << "Convert an ascii file of events generated by genr8 into HDDM"
             << std::endl;
