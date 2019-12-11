@@ -11,6 +11,8 @@
 
 #include "particleType.h"
 
+#include "UTILITIES/BeamProperties.h"
+
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
 #include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
 
@@ -148,12 +150,22 @@ int main( int argc, char* argv[] ){
 	// Assume a beam energy spectrum of 1/E(gamma)
 	TF1 ebeam_spectrum("beam_spectrum","1/x",beamLowE,beamHighE);
 	
+	// get beam properties from configuration file
+	TH1D * cobrem_vs_E = 0;
+	if (configfile.size() != 0) {
+	  BeamProperties beamProp( configfile );
+	  cobrem_vs_E = (TH1D*)beamProp.GetFlux();
+	}
 	for( int i = 0; i < nEvents; ++i ) {
 		if(i%1000 == 1)
 			cout << "event " << i <<endl;
 	
 		// get beam energy
-		double ebeam = ebeam_spectrum.GetRandom();
+		double ebeam = 0;
+		if (configfile == "") 
+		  ebeam = ebeam_spectrum.GetRandom();
+		if (configfile != "")
+		  ebeam = cobrem_vs_E->GetRandom();
 
 		// generate cos(theta) according to dsig/dOmega
 		double gamma_costheta = gen_costheta(ebeam);

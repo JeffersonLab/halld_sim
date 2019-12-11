@@ -30,7 +30,7 @@ int getrow_(void);
 int getcolumn_(void);
 int getplane_(void);
 int getring_(void);
-
+int getpaired_row_(void);
 
 void hddsgeant3_wrapper_(void);
 void md5geom_wrapper_(char *md5);
