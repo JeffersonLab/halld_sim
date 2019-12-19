@@ -1,5 +1,13 @@
+***************************************************************************                                                                                                                           
+* HallD software                                                          * 
+* Copyright(C) 2007-2019  PrimeEX, GlueX, and PrimEX-D Collaborations     * 
+*                                                                         *                                                                                                                               
+* Author: The PrimeEX, GlueX, and PrimEX-D Collaboration                  *
+* Contributors: Ilya Ilarin, Igal Jaegle                                  *                                                                                                                               
+*                                                                         *                                                                                                                               
+* This software is provided "as is" without any warranty.                 *
+***************************************************************************
 *
-* Dec-12-2019, modified by I.Jaegle to accept command line arguments
 *
       program ds_eta_he4
       implicit none
@@ -12,7 +20,7 @@
       PARAMETER (DEGRAD = PI/180.d0)
 *
       integer ntetdv, nebin
-      parameter (ntetdv = 100, nebin = 1)
+      parameter (ntetdv = 10000, nebin = 1)
 *
       character(100) :: num1char
       character(100) :: num2char
@@ -65,7 +73,7 @@
      &         form='formatted', status='old')
       do i = 1, nebin
         do j = 1, ntetdv
-          read(20,'(2(i4,1x),2(1x,E12.5))') ic, jc, ffd1, ffd2
+          read(20,'(2(i6,1x),2(1x,E12.5))') ic, jc, ffd1, ffd2
           if(i.ne.ic.or.j.ne.jc) then
             print*, 'Bad data given for coul ff'
             stop
@@ -82,15 +90,15 @@
      &         form='formatted', status='old')
       do i = 1, nebin
         do j = 1, ntetdv
-          read(20,'(2(i4,1x),4(1x,E12.5))') ic, jc, ffd1, ffd2,
+          read(20,'(2(i6,1x),4(1x,E12.5))') ic, jc, ffd1, ffd2,
      &                                              ffd3, ffd4
           if(i.ne.ic.or.j.ne.jc) then
             print*, 'Bad data given for stro ff'
             stop
           endif
 *
-          fs_b1(i,j) = ffd1
-          fs_b2(i,j) = ffd2
+          fs_b1(i,j) = ffd1 * 0.585
+          fs_b2(i,j) = ffd2 * 0.585
           fs_c1(i,j) = ffd3
           fs_c2(i,j) = ffd4
 *
@@ -118,22 +126,26 @@
 *
 * Coulomb:
 *
-          ds(1) = BCOULM*dsdo(1)*dom
+*          ds(1) = BCOULM*dsdo(1)*dom
+          ds(1) = BCOULM*dsdo(1)
 *
 * Nuclear Coherent:
 *
-          ds(3) = BNCOHE*dsdo(3)*dom
+*          ds(3) = BNCOHE*dsdo(3)*dom
+          ds(3) = BNCOHE*dsdo(3)
 *
 * Their interference:
 *
-          ds(2) = SQRT(BCOULM*BNCOHE)*dom*
+*          ds(2) = SQRT(BCOULM*BNCOHE)*dom*
+          ds(2) = SQRT(BCOULM*BNCOHE)*
      &           (COS(BFIINT)*dsdo(2)+SIN(BFIINT)*dsdo(5))
 *
 * Eta incoherent:
 *
-          ds(4) = BNINCO*dsdo(4)*dom
+*          ds(4) = BNINCO*dsdo(4)*dom
+          ds(4) = BNINCO*dsdo(4)
 *
-          write(23,'(2(i4,1x),4(1x,E12.5))') j, i, ds
+          write(23,'(2(i6,1x),4(1x,E12.5))') j, i, ds
 *
         enddo
       enddo
@@ -161,7 +173,7 @@
       COMMON/pi0_gen_par_com/ ebeam, BCOULM, BNCOHE, BFIINT, BNINCO
 *
       integer ntetdv, nebin
-      parameter(ntetdv = 100, nebin = 1)
+      parameter(ntetdv = 10000, nebin = 1)
 *
       real    fc_a1, fc_a2, fs_b1, fs_b2, fs_c1, fs_c2
       common /ff_com/ fc_a1(nebin,ntetdv), fc_a2(nebin,ntetdv),

@@ -1,4 +1,12 @@
-*
+***************************************************************************                                                                                                                           
+* HallD software                                                          * 
+* Copyright(C) 2007-2019  PrimeEX, GlueX, and PrimEX-D Collaborations     * 
+*                                                                         *                                                                                                                               
+* Author: The PrimeEX, GlueX, and PrimEX-D Collaboration                  *
+* Contributors: Ilya Ilarin, S. Gevorgyan, Igal Jaegle                    *                                                                                                                               
+*                                                                         *                                                                                                                               
+* This software is provided "as is" without any warranty.                 *
+****************************************************************************
 *   Jan-16-2007, I.Larin implementation of
 *   S.Gevorgyan calculations for Coulomb formfactor
 *   with different nuclear and charge (ocsillator model) densities
@@ -29,7 +37,7 @@
       character*(32) :: fnam
 *
       integer ntetdv, nebin
-      parameter (ntetdv =  100, nebin = 1)
+      parameter (ntetdv =  10000, nebin = 1)
 *
       include 'nucl.inc'
       external  nucl_data
@@ -61,7 +69,7 @@
           theta  = (DBLE(itheta)-0.5d0)*dth
 *
           call formfactorc(ebeam,theta,w1,w2)
-          write(21,'(2(i4,1x),2(1x,E12.5))') iebeam, itheta, w1, w2
+          write(21,'(2(i6,1x),2(1x,E12.5))') iebeam, itheta, w1, w2
           call flush(21)
         enddo
 c       call flush(21)
