@@ -49,8 +49,8 @@ using std::complex;
 using namespace std;
 
 #define eta_TYPE 17
-#define gamma_TYPE 22
-#define Helium_TYPE 1000020040
+#define gamma_TYPE 1
+#define Helium_TYPE 47
 
 int main( int argc, char* argv[] ){
   

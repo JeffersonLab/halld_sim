@@ -138,10 +138,10 @@ class HddmOut {
     products->in[2].parentid = 0;
     products->in[2].mech = 0;
     products->in[2].momentum = make_s_Momentum();
-    products->in[2].momentum->px = evt.q2.Px();
-    products->in[2].momentum->py = evt.q2.Py();
-    products->in[2].momentum->pz = evt.q2.Pz();
-    products->in[2].momentum->E = evt.q2.E();
+    products->in[2].momentum->px = evt.q3.Px();
+    products->in[2].momentum->py = evt.q3.Py();
+    products->in[2].momentum->pz = evt.q3.Pz();
+    products->in[2].momentum->E = evt.q3.E();
 
     flush_s_HDDM(hddmEvt, ostream);
 
