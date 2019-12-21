@@ -19,7 +19,7 @@ MyReadConfig::MyReadConfig() {
   
   strCaLibPath = gSystem->pwd();
   
-  this->ReadConfigFile( "config.dat" );
+  //this->ReadConfigFile( "config.dat" );
 }
 
 //------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ MyReadConfig::~MyReadConfig() {
 //------------------------------------------------------------------------------
 void MyReadConfig::ReadConfigFile( const Char_t *szFin ) {
   // Build File name
-  char szCalibFile[128];
+  char szCalibFile[400];
   sprintf( szCalibFile, 
 	   "%s/%s",
 	   strCaLibPath.Data(),

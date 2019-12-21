@@ -3,7 +3,7 @@
 * Copyright(C) 20??-2019  GlueX and PrimEX-D Collaborations               * 
 *                                                                         *                                                                                                                               
 * Author: The GlueX and PrimEX-D Collaborations                           *                                                                                                                                
-* Contributors: ????, Igal Jaegle                                         *                                                                                                                               
+* Contributors: Liping Gan, Igal Jaegle                                   *                                                                                                                               
 *                                                                         *                                                                                                                               
 * This software is provided "as is" without any warranty.                 *
 **************************************************************************/
