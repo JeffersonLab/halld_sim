@@ -1,5 +1,12 @@
-*
-* Dec-12-2019, modified by I.Jaegle to accept command line arguments
+***************************************************************************                                                                                                                           
+* HallD software                                                          * 
+* Copyright(C) 2007-2019  PrimeEX, GlueX, and PrimEX-D Collaborations     * 
+*                                                                         *                                                                                                                               
+* Author: The PrimeEX, GlueX, and PrimEX-D Collaboration                  *
+* Contributors: Ilya Ilarin, Igal Jaegle                                  *                                                                                                                               
+*                                                                         *                                                                                                                               
+* This software is provided "as is" without any warranty.                 *
+***************************************************************************
 *
 * f77 inc_eta_helium.f -o inc_eta_helium -L $CERN/2004/lib -lpacklib -lmathlib -lkernlib
 *
@@ -61,9 +68,9 @@
 *
       open(23, file=fnam, form='formatted', status='new')
 *
-      do n = 1, 100
+      do n = 1, 10000
 *
-        theta = (n-0.1)*0.01
+        theta = (n-0.1)*0.001
         Q= 2.D0*5.0684*ebeam*DSIN(theta*RADDEG*0.5d0)
 *
         func  = 1

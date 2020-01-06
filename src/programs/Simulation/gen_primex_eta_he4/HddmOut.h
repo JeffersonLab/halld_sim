@@ -1,9 +1,12 @@
-/*
- * HddmOut.h
- *
- *  Created on: Nov 14, 2013
- *      Author: ben
- */
+/**************************************************************************                                                                                                                           
+* HallD software                                                          * 
+* Copyright(C) 2013-2019  GlueX and PrimEX-D Collaborations               * 
+*                                                                         *                                                                                                                               
+* Author: The GlueX and PrimEX-D Collaborations                           *                                                                                                                                
+* Contributors: Benidikt Zihlmann, Igal Jaegle                            *                                                                                                                               
+*                                                                         *                                                                                                                               
+* This software is provided "as is" without any warranty.                 *
+**************************************************************************/
 
 #ifndef HDDMOUT_H_
 #define HDDMOUT_H_
@@ -19,6 +22,7 @@ struct tmpEvt_t {
   TLorentzVector target;
   TLorentzVector q1;
   TLorentzVector q2;
+  TLorentzVector q3;
 };
 
 class HddmOut {
@@ -42,7 +46,7 @@ class HddmOut {
   HddmOut(string filename) {
       cout << "opening HDDM file: " << filename << endl;
     ostream = init_s_HDDM((char*)filename.c_str());
-    targetType = Proton;
+    targetType = Helium;
     beamType = Gamma;
   }
   
@@ -103,9 +107,9 @@ class HddmOut {
     products->mult = evt.nGen;
     reaction->weight = evt.weight;
 
-    //PRODUCED ELECTRON
-    products->in[0].type = Electron;
-    products->in[0].pdgtype = 11;
+    //PRODUCED PHOTON
+    products->in[0].type = Gamma;
+    products->in[0].pdgtype = 22;
     products->in[0].id = 1;
     products->in[0].parentid = 0;
     products->in[0].mech = 0;
@@ -115,7 +119,7 @@ class HddmOut {
     products->in[0].momentum->pz = evt.q1.Pz();
     products->in[0].momentum->E = evt.q1.E();
 
-    //PRODUCED ELECTRON
+    //PRODUCED PHOTON
     products->in[1].type = Gamma;
     products->in[1].pdgtype = 22;
     products->in[1].id = 2;
@@ -126,6 +130,18 @@ class HddmOut {
     products->in[1].momentum->py = evt.q2.Py();
     products->in[1].momentum->pz = evt.q2.Pz();
     products->in[1].momentum->E = evt.q2.E();
+
+    //PRODUCED Nucleus recoil
+    products->in[2].type = Helium;
+    products->in[2].pdgtype = 1000020040;
+    products->in[2].id = 3;
+    products->in[2].parentid = 0;
+    products->in[2].mech = 0;
+    products->in[2].momentum = make_s_Momentum();
+    products->in[2].momentum->px = evt.q3.Px();
+    products->in[2].momentum->py = evt.q3.Py();
+    products->in[2].momentum->pz = evt.q3.Pz();
+    products->in[2].momentum->E = evt.q3.E();
 
     flush_s_HDDM(hddmEvt, ostream);
 
