@@ -6,6 +6,10 @@
  *
  *	version 1.0 	-Richard Jones July 16, 2001
  *
+ *      version 1.1     -A. Somov  
+ *      Add interface with CCDB,  change module length and attenuation length
+ *
+ *
  */
 
 #include <stdlib.h>
@@ -18,23 +22,26 @@
 #include <bintree.h>
 #include <gid_map.h>
 
+#include "calibDB.h"
+
 extern s_HDDM_t* thisInputEvent;
 
-#define ATTEN_LENGTH	60.  //effective attenuation length in PbWO
-#define C_EFFECTIVE	13.  //effective speed of light in PbWO
-#define WIDTH_OF_BLOCK  2.   //cm
-#define LENGTH_OF_BLOCK 18.  //cm
-#define TWO_HIT_RESOL   75.  //ns
-#define MAX_HITS        100
-#define THRESH_MEV      20.
-#define CENTRAL_ROW     8
-#define CENTRAL_COLUMN  8
+
+static float   ATTEN_LENGTH     =   200.;     //effective attenuation length in PbWO
+static float   C_EFFECTIVE      =   13.;      //effective speed of light in PbWO cm/ns
+static float   WIDTH_OF_BLOCK   =   2.;       //cm
+static float   LENGTH_OF_BLOCK  =   20.;      //cm
+static float   TWO_HIT_RESOL    =   75.;      //ns
+static int     MAX_HITS         =   100;
+static float   THRESH_MEV       =   5.;
+
 
 
 binTree_t* ComptonCalTree = 0;
 static int blockCount = 0;
 static int showerCount = 0;
 
+static int initialized = 0;
 
 /* register hits during tracking (from gustep) */
 
@@ -44,6 +51,70 @@ void hitComptonEMcal (float xin[4], float xout[4],
 {
    float x[3], t;
    float xccal[3];
+
+
+  if (!initialized){
+     
+     mystr_t strings[50];
+     float  values[50];
+     int  nvalues = 50;
+     int status = GetConstants("CCAL/ccal_parms", &nvalues, values, strings);
+
+     if (!status) {
+       
+       int ncounter = 0;
+       int i;
+       for ( i = 0; i < (int)nvalues; i++){
+
+	 if (!strcmp(strings[i].str,"CCAL_ATTEN_LENGTH")) {
+	   ATTEN_LENGTH  = values[i];
+	   ncounter++;
+	 }
+	 if (!strcmp(strings[i].str,"CCAL_C_EFFECTIVE")) {
+	   C_EFFECTIVE  = values[i];
+	   ncounter++;
+	 }
+	 if (!strcmp(strings[i].str,"CCAL_WIDTH_OF_BLOCK")) {
+	   WIDTH_OF_BLOCK  = values[i];
+	   ncounter++;
+	 }
+	 if (!strcmp(strings[i].str,"CCAL_LENGTH_OF_BLOCK")) {
+	   LENGTH_OF_BLOCK  = values[i];
+	   ncounter++;
+	 }
+	 if (!strcmp(strings[i].str,"CCAL_TWO_HIT_RESOL")) {
+	   TWO_HIT_RESOL  = values[i];
+	   ncounter++;
+	 }
+	 if (!strcmp(strings[i].str,"CCAL_MAX_HITS")) {
+	   MAX_HITS  = (int)values[i];
+	   ncounter++;
+	 }
+	 if (!strcmp(strings[i].str,"CCAL_THRESH_MEV")) {
+	   THRESH_MEV  = values[i];
+	   ncounter++;
+	 }
+
+       }
+
+
+       const int nparams = 7;
+
+       if (ncounter == nparams){
+	 printf("CCAL: ALL parameters loaded from Data Base\n");
+       } else if (ncounter < nparams){
+         printf("CCAL: NOT ALL necessary parameters found in Data Base %d out of %d\n",ncounter,nparams);
+       } else {
+	 printf("CCAL: SOME parameters found more than once in Data Base\n");
+       }
+     } else {
+       printf("CCAL: Cannot Load Parameters from Data Base. Use default values. \n");
+     }
+
+     initialized = 1;
+
+   }
+
 
    x[0] = (xin[0] + xout[0])/2;
    x[1] = (xin[1] + xout[1])/2;

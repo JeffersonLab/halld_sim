@@ -35,7 +35,7 @@
  30      -3322    ! antiXi0
  31      -3312    ! antiXi+
  32      -3334    ! antiOmega+
--80        113    ! rho 0
--81        223    ! omega0
--82       2224    ! Delta++
+ 44        113    ! rho 0
+ 33        223    ! omega0
+182       2224    ! Delta++
 

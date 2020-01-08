@@ -25,7 +25,8 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  TCanvas *c1 = new TCanvas();
+  // comment out next line for warning suppresion, unused variable c1
+  //  TCanvas *c1 = new TCanvas();
 
   // output configuration
   int run = 10000;
@@ -59,7 +60,8 @@ int main(int argc, char **argv)
   cout << " run = " << run << endl;
 
   const double PI = 3.14159265358979312;
-  const double radian = 57.2957795130823229;
+  // comment out next line for warning suppression, variable radian unused
+  //  const double radian = 57.2957795130823229;
   const double Mp = 0.9383;
   const double Me = 0.00051;
   const double t_lim = -1.5; // limit of t distribution Max(|t|)
@@ -87,7 +89,8 @@ int main(int argc, char **argv)
   
   //const double Q2min = 2*Mp*Eg + t_lim - (Eg/Mp)*( 2*Mp*Mp - t_lim - sqrt(t_lim*t_lim - 4*Mp*Mp*t_lim) );
   const double Q2min = 2*Me;
-  const double Minv_min = sqrt(Q2min);
+  // comment out Minv_min to supress warning, variable unused
+  //  const double Minv_min = sqrt(Q2min);
 
   TRandom3 rand;
   rand.SetSeed(seedVal);    // need to set this
@@ -106,9 +109,14 @@ int main(int argc, char **argv)
   TH1D *h_mee = new TH1D("mee", "", 200, 0, 4.);
 
   //================= Definition of Tree Variables =================
-  double Minv, t, Q2;
-  double psf, crs_BH, crs_INT, crs_int;
-  double psf_flux, flux_factor;
+  // change next line to drop Minv, variable unused, for warning suppression
+  //  double Minv, t, Q2;
+  double t, Q2;
+  // change next line to drop crs_INT and crs_int, variable unused, for warning suppression
+  //  double psf, crs_BH, crs_INT, crs_int;
+  double psf, crs_BH;
+  // comment out next line for warning suppression, variables not used
+  //  double psf_flux, flux_factor;
   TLorentzVector L_em, L_ep, L_prot;
   TLorentzVector L_gprime;
   

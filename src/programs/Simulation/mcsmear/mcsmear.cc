@@ -104,6 +104,7 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'e': config->APPLY_EFFICIENCY_CORRECTIONS=false;  break;
           case 'm': config->APPLY_HITS_TRUNCATION=false;         break;
           case 'E': config->FCAL_ADD_LIGHTGUIDE_HITS=true;       break;
+	  case 'R': config->SKIP_READING_RCDB=true;              break;
 
           // BCAL parameters
           case 'G': config->BCAL_NO_T_SMEAR = true;              break;
@@ -217,6 +218,7 @@ void Usage(void)
 //   cout << "    -B       Don't process BCAL hits at all (def. process)" << endl;
  //  cout << "    -Vthresh BCAL ADC threshold (def. " << BCAL_ADC_THRESHOLD_MEV << " MeV)" << endl;
  //  cout << "    -Xsigma  BCAL fADC time resolution (def. " << BCAL_FADC_TIME_RESOLUTION << " ns)" << endl;
+   cout << "    -R       Don't load information from RCDB" << endl;
    cout << "    -D       Dump configuration debug information" << endl;
    cout << "    -G       Don't smear BCAL times (def. smear)" << endl;
    cout << "    -H       Don't add BCAL dark hits (def. add)" << endl;

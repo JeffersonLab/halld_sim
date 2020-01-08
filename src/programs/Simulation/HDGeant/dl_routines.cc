@@ -125,6 +125,7 @@ extern "C" {
 	MakeDispatcherINT(getring_);
 	MakeDispatcherINT(getrow_);
 	MakeDispatcherINT(getsector_);
+	MakeDispatcherINT(getpaired_row_);
 }
 
 
@@ -220,6 +221,7 @@ void init_runtime_xml_(void)
 	GetRoutine((void**)&getring_ptr, "getring_");
 	GetRoutine((void**)&getrow_ptr, "getrow_");
 	GetRoutine((void**)&getsector_ptr, "getsector_");
+	GetRoutine((void**)&getpaired_row_ptr, "getpaired_row_");
 
 	// Clean up (this won't delete the tmp.so file right away since
 	// we still have it open).
@@ -246,7 +248,7 @@ void GetRoutine(void **ptr, const char *rname)
 	// checksum, not this one.
 
 	// Create, compile and link shared object if needed.
-//	if(!dlgeom_handle) init_runtime_xml();
+//	if(!dlgeom_handle) init_runtime_xml_();
 
 	// Grab md5geom routine from shared object
 	void *my_ptr = dlsym(dlgeom_handle, rname);

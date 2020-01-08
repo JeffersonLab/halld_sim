@@ -24,7 +24,8 @@ class fcal_config_t
         double FCAL_THRESHOLD_SCALING;
         double FCAL_THRESHOLD;
         double FCAL_INTEGRAL_PEAK;
-	
+	double FCAL_ENERGY_WIDTH_FLOOR;
+
     bool FCAL_ADD_LIGHTGUIDE_HITS;
 	
 	vector< vector<double > > block_efficiencies;
