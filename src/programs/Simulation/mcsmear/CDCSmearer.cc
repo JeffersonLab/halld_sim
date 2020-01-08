@@ -250,8 +250,7 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 	    +cdc_config->CDC_DIFFUSION_PAR2*dsq
 	    +cdc_config->CDC_DIFFUSION_PAR3*dsq*d;
 	  double sig_electronics=cdc_config->CDC_TDRIFT_SIGMA*1.0e9;
-	  double t_sig=sqrt(sig_electronics*sig_electronics
-			    +sig_diffusion*sig_diffusion);
+	  double t_sig=sig_electronics+sig_diffusion;
 
 	  t += gDRandom.SampleGaussian(t_sig);
 	  // Pedestal-smeared charge
