@@ -261,8 +261,23 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 
         amplitude += smearcharge;   // add on pedestal noise, then convert from charge to amplitude
 
+
+        // raw_amplitude mimics the signal in adc units 0-4095. This is used here for comparison with the threshold.
+        // amplitude is in charge units. This is included in the hddm file and used for dE_amp/dx
+
         double raw_amplitude = amplitude * cdc_config->CDC_INTEGRAL_TO_AMPLITUDE / cdc_config->CDC_ASCALE;
 
+        // the fadc signal saturates at 4095; the pedestal is approximately 100
+        double saturation = 3995;
+
+        // apply saturation to raw_amplitude
+        if (raw_amplitude > saturation) raw_amplitude = saturation;
+
+        // convert this from raw amplitude scale back into amplitude scale 
+        saturation = 3995*cdc_config->CDC_ASCALE/cdc_config->CDC_INTEGRAL_TO_AMPLITUDE;
+
+        // apply saturation to amplitude
+        if (amplitude > saturation) amplitude = saturation;
        
         // per-wire threshold in ADC units
         double threshold = cdc_config->GetWireThreshold(iter->getRing(), iter->getStraw());
