@@ -1,9 +1,12 @@
-/*
- * HddmOut.h
- *
- *  Created on: Nov 14, 2013
- *      Author: ben
- */
+/**************************************************************************                                                                                                                           
+* HallD software                                                          * 
+* Copyright(C) 2020       GlueX and PrimEX-D Collaborations               * 
+*                                                                         *                                                                                                                               
+* Author: The GlueX and PrimEX-D Collaborations                           *                                                                                                                                
+* Contributors: Igal Jaegle                                               *                                                                                                                               
+*                                                                         *                                                                                                                               
+* This software is provided "as is" without any warranty.                 *
+**************************************************************************/
 
 #ifndef HDDMOUT_H_
 #define HDDMOUT_H_
