@@ -1,4 +1,4 @@
-source ~/Env/custom_wo.sh
+source /work/halld/home/ijaegle/Env/custom_wo.sh
 
 type=$1
 evtnb=$2
@@ -32,7 +32,7 @@ mkdir -p $outdir
 
 sed 's,SEED,'${seed}',g; s,VIS,'${vis}',g; s,EVTNB,'${evtnb}',g; s,EGAM,'${egam}',g' temp.sin > $store/run.sin
 
-echo 'source ~/Env/custom_wo.sh' > $store/run.sh
+echo 'source /work/halld/home/ijaegle/Env/custom_wo.sh' > $store/run.sh
 echo "cd ${store}" >> $store/run.sh 
 echo 'whizard run.sin' >> $store/run.sh
 echo "mv NAME.lhe ../${file}.lhe" >> $store/run.sh 

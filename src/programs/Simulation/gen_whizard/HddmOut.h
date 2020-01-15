@@ -115,7 +115,7 @@ class HddmOut {
       if (evt.pdg[i] == 22) TYPE = Gamma; 
       products->in[i].type = TYPE;
       products->in[i].pdgtype = evt.pdg[i];
-      products->in[i].id = 1;
+      products->in[i].id = i;
       products->in[i].parentid = 0;
       products->in[i].mech = 0;
       products->in[i].momentum = make_s_Momentum();
@@ -130,9 +130,9 @@ class HddmOut {
     if (evt.rxn == "ae_to_ae") 
       ID = 1;
     else if (evt.rxn == "ae_to_eee" || evt.rxn == "ae_to_aae")
-      ID = 3;
+      ID = 2;
     else if (evt.rxn == "ae_to_aeee")
-      ID = 4;
+      ID = 3;
     products->in[ID].type = Electron;
     products->in[ID].id = ID;
     products->in[ID].parentid = 0;
