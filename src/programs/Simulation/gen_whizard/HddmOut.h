@@ -1,12 +1,9 @@
-/**************************************************************************                                                                                                                           
-* HallD software                                                          * 
-* Copyright(C) 2013-2019  GlueX and PrimEX-D Collaborations               * 
-*                                                                         *                                                                                                                               
-* Author: The GlueX and PrimEX-D Collaborations                           *                                                                                                                                
-* Contributors: Benidikt Zihlmann, Igal Jaegle                            *                                                                                                                               
-*                                                                         *                                                                                                                               
-* This software is provided "as is" without any warranty.                 *
-**************************************************************************/
+/*
+ * HddmOut.h
+ *
+ *  Created on: Nov 14, 2013
+ *      Author: ben
+ */
 
 #ifndef HDDMOUT_H_
 #define HDDMOUT_H_
@@ -17,12 +14,13 @@ using namespace std;
 
 struct tmpEvt_t {
   int nGen;
+  TString rxn;
   double weight;
   TLorentzVector beam;
   TLorentzVector target;
-  TLorentzVector q1;
-  TLorentzVector q2;
-  TLorentzVector q3;
+  TLorentzVector q[10];
+  TLorentzVector recoil;
+  int pdg[10];
 };
 
 class HddmOut {
@@ -46,7 +44,7 @@ class HddmOut {
   HddmOut(string filename) {
       cout << "opening HDDM file: " << filename << endl;
     ostream = init_s_HDDM((char*)filename.c_str());
-    targetType = Helium;
+    targetType = Proton;
     beamType = Gamma;
   }
   
@@ -86,8 +84,8 @@ class HddmOut {
 
   }
   
-  void write(tmpEvt_t evt, int runNum, int eventNum) {
-    init(runNum);
+  void write(tmpEvt_t evt, int eventNum) {
+    init(10000);
     phyEvt->in[0].eventNo = eventNum;
     reaction->vertices = vertices = make_s_Vertices(1);
     vertices->mult = 1;
@@ -103,45 +101,44 @@ class HddmOut {
     beam->momentum->py = evt.beam.Py();
     beam->momentum->pz = evt.beam.Pz();
     beam->momentum->E  = evt.beam.E();
-
+    
     products->mult = evt.nGen;
     reaction->weight = evt.weight;
-
-    //PRODUCED PHOTON
-    products->in[0].type = Gamma;
-    products->in[0].pdgtype = 22;
-    products->in[0].id = 1;
-    products->in[0].parentid = 0;
-    products->in[0].mech = 0;
-    products->in[0].momentum = make_s_Momentum();
-    products->in[0].momentum->px = evt.q1.Px();
-    products->in[0].momentum->py = evt.q1.Py();
-    products->in[0].momentum->pz = evt.q1.Pz();
-    products->in[0].momentum->E = evt.q1.E();
-
-    //PRODUCED PHOTON
-    products->in[1].type = Gamma;
-    products->in[1].pdgtype = 22;
-    products->in[1].id = 2;
-    products->in[1].parentid = 0;
-    products->in[1].mech = 0;
-    products->in[1].momentum = make_s_Momentum();
-    products->in[1].momentum->px = evt.q2.Px();
-    products->in[1].momentum->py = evt.q2.Py();
-    products->in[1].momentum->pz = evt.q2.Pz();
-    products->in[1].momentum->E = evt.q2.E();
-
-    //PRODUCED Nucleus recoil
-    products->in[2].type = Helium;
-    products->in[2].pdgtype = 1000020040;
-    products->in[2].id = 3;
-    products->in[2].parentid = 0;
-    products->in[2].mech = 0;
-    products->in[2].momentum = make_s_Momentum();
-    products->in[2].momentum->px = evt.q3.Px();
-    products->in[2].momentum->py = evt.q3.Py();
-    products->in[2].momentum->pz = evt.q3.Pz();
-    products->in[2].momentum->E = evt.q3.E();
+    
+    for (int i = 0; i < (evt.nGen -1); i ++) {
+      Particle_t TYPE;
+      if (evt.pdg[i] == 11) TYPE = Electron; 
+      if (evt.pdg[i] == -11) TYPE = Positron;
+      if (evt.pdg[i] == 22) TYPE = Gamma; 
+      products->in[i].type = TYPE;
+      products->in[i].pdgtype = evt.pdg[i];
+      products->in[i].id = 1;
+      products->in[i].parentid = 0;
+      products->in[i].mech = 0;
+      products->in[i].momentum = make_s_Momentum();
+      products->in[i].momentum->px = evt.q[i].Px();
+      products->in[i].momentum->py = evt.q[i].Py();
+      products->in[i].momentum->pz = evt.q[i].Pz();
+      products->in[i].momentum->E = evt.q[i].E();
+    }
+    
+    //RECOIL
+    int ID = 0;
+    if (evt.rxn == "ae_to_ae") 
+      ID = 1;
+    else if (evt.rxn == "ae_to_eee" || evt.rxn == "ae_to_aae")
+      ID = 3;
+    else if (evt.rxn == "ae_to_aeee")
+      ID = 4;
+    products->in[ID].type = Electron;
+    products->in[ID].id = ID;
+    products->in[ID].parentid = 0;
+    products->in[ID].mech = 0;
+    products->in[ID].momentum = make_s_Momentum();
+    products->in[ID].momentum->px = evt.recoil.Px();
+    products->in[ID].momentum->py = evt.recoil.Py();
+    products->in[ID].momentum->pz = evt.recoil.Pz();
+    products->in[ID].momentum->E = evt.recoil.E();
 
     flush_s_HDDM(hddmEvt, ostream);
 

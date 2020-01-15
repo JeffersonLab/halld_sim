@@ -306,12 +306,20 @@ int main( int argc, char* argv[] ){
 	    TLorentzVector electron_4Vec[10];
 	    int npart_photon = 0;
 	    int npart_electron = 0;
+	    double Emax = 0;
+	    int nid_recoil = 0;
+	    TLorentzVector e_recoil_4Vec(0,0,0,0);
 	    for (int i = 0; i < npart; i ++) {
 	      photon_4Vec[i] = TLorentzVector(0,0,0,0);
 	      electron_4Vec[i] = TLorentzVector(0,0,0,0);
 	      if (i == 0) gamma_4Vec = TLorentzVector(0, 0, e[i], e[i]);
 	      if (status[i] == 1 && pdg[i] == 11) {
 		electron_4Vec[npart_electron] = TLorentzVector(px[i], py[i], pz[i], e[i]);
+		if (Emax < e[i]) {
+		  Emax = e[i];
+		  e_recoil_4Vec = electron_4Vec[i];
+		  nid_recoil = i;
+		}
 		npart_electron ++;
 	      }
 	      if (status[i] == 1 && pdg[i] == 22) {
@@ -319,20 +327,7 @@ int main( int argc, char* argv[] ){
 		npart_photon ++;
 	      }
 	    }
-	    
-	    TLorentzVector e_recoil_4Vec(0,0,0,0);
-	    if (npart_electron == 1) 
-	      e_recoil_4Vec = electron_4Vec[0];
-	    if (npart_electron > 1) {
-	      double Emax = 0;
-	      for (int i = 0; i < npart_electron; i ++) {
-		if (Emax < electron_4Vec[i].E()) {
-		  Emax = electron_4Vec[i].E();
-		  e_recoil_4Vec = electron_4Vec[i];
-		}
-	      }
-	    }
-	    
+	    	    
 	    TLorentzVector moTransfer = e_recoil_4Vec - Target_4Vec;
 	    double e_gamma = gamma_4Vec.E();
 	    h_lgam1->Fill(e_gamma, Luminosity);
@@ -363,6 +358,24 @@ int main( int argc, char* argv[] ){
 	      h_Tkin_gam->Fill(photon_4Vec[i].E());
 	      h_theta_vs_Tkin_gam->Fill(photon_4Vec[i].E(), log10(photon_4Vec[i].Theta() * TMath::RadToDeg()));
 	    }
+	    
+	    //HDDM STUFF
+	    tmpEvt_t tmpEvt;
+	    tmpEvt.beam = gamma_4Vec;
+	    tmpEvt.target = Target_4Vec;
+	    int j = 0;
+	    for (int i = 2; i < npart; i ++) {
+	      if (nid_recoil != i) {
+		tmpEvt.q[j] = TLorentzVector(px[i], py[i], pz[i], e[i]);
+		tmpEvt.pdg[j] = pdg[i];
+		j ++;
+	      }
+	    }
+	    tmpEvt.recoil = e_recoil_4Vec;
+	    tmpEvt.nGen = npart - 2;
+	    tmpEvt.rxn = m_process;
+	    tmpEvt.weight = xs;
+
 	  }
 	}
       }
