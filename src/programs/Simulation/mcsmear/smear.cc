@@ -72,6 +72,8 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 			}
 		}
 	}
+
+	jout << "Finished initializing detector smearing ..." << endl;
 }
 		
 //-----------
