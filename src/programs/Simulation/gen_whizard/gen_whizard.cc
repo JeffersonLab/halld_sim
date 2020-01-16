@@ -55,18 +55,6 @@ using namespace std;
 #define GAMMA_TYPE 1
 #define ELECTRON_TYPE 3
 
-
-typedef struct {
-	int id = -1;
-	Particle_t type = Unknown;
-	int pdgtype = -1;   
-	bool decayed = false;
-	TLorentzVector momentum;
-	TVector3 vertex;
-	hddm_s::ProductList::iterator hddmProduct;
-} gen_particle_info_t;
-
-
 int main( int argc, char* argv[] ){
   
   string  beamconfigfile("");
@@ -142,7 +130,6 @@ int main( int argc, char* argv[] ){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
       cout << "\t -c  <file>\t Beam config file" << endl;
       cout << "\t -e  <file>\t Generator config file" << endl;
-      cout << "\t -o  <name>\t ASCII file output name" << endl;
       cout << "\t -hd <name>\t HDDM file output name [optional]" << endl;
       cout << "\t -n  <value>\t Number of events to generate [optional]" << endl;
       cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
@@ -172,11 +159,6 @@ int main( int argc, char* argv[] ){
   if (hddmname != "")
     hddmWriter = new HddmOut(hddmname.c_str());
   
-  // initialize ASCII output
-  ofstream *asciiWriter = nullptr;
-  if (outname != "")
-    asciiWriter = new ofstream(outname.c_str());
-  
   // Assume a beam energy spectrum of 1/E(gamma)
   TF1 ebeam_spectrum("beam_spectrum","1/x",beamLowE,beamHighE);
   
@@ -194,7 +176,7 @@ int main( int argc, char* argv[] ){
   TString m_run_wo = ReadFile->GetConfigName("run_wo"); 
   TString m_process = ReadFile->GetConfigName("process"); 
   TString m_lhe_dir = ReadFile->GetConfigName("lhe_dir"); 
-  TString m_lhe_file = ReadFile->GetConfigName("lhe_dir"); 
+  TString m_lhe_file = ReadFile->GetConfigName("lhe_file"); 
   TString m_out_dir = ReadFile->GetConfigName("out_dir"); 
   Double_t * m_target = ReadFile->GetConfig4Par("target");  
   TString m_XS_pair = ReadFile->GetConfigName("XS_pair"); 
@@ -207,7 +189,8 @@ int main( int argc, char* argv[] ){
   double Luminosity = Na / A * rho * Ltarget * 1e-27; // cm^2 to mb^-1
 
   TFile * diagOut = new TFile( TString::Format("gen_whizard_%s.root", m_process.Data()), "recreate" );
-  TH1F * h_egam = new TH1F("egam", ";E_{#gamma} [GeV];Count/MeV", 12000, 0.0, 12.0);
+  TH1F * h_egam1 = new TH1F("egam1", ";E_{#gamma} [GeV];Count/MeV", 12000, 0.0, 12.0);
+  TH1F * h_egam2 = new TH1F("egam2", ";E_{#gamma} [GeV];Count/MeV", 12000, 0.0, 12.0);
   TH1F * h_Tkin_gam = new TH1F("Tkin_gam", ";T_{#gamma}^{kin} [GeV];Count/10MeV", 1200, 0.0, 12.0);
   TH1F * h_Tkin_rec = new TH1F("Tkin_rec", ";T_{e^{-}-recoil}^{kin} [GeV];Count/10MeV", 1200, 0.0, 12.0);
   TH2F * h_theta_vs_Tkin_gam = new TH2F("theta_vs_Tkin_gam", ";T_{#gamma}^{kin} [GeV];log_{10}(#theta) [^{o}];Count/10MeV", 1200, 0.0, 12.0, 1200, -10, 2.25);
@@ -229,24 +212,24 @@ int main( int argc, char* argv[] ){
       else if (beamconfigfile != "")
 	ebeam = cobrem_vs_E->GetRandom();
       
-      h_egam->Fill(ebeam);
+      h_egam1->Fill(ebeam);
     }
     
-    for (int i = 0; i < h_egam->GetNbinsX(); i ++) { //Generate LHE file
-      double egam = h_egam->GetBinCenter(i + 1);
+    for (int i = 0; i < h_egam1->GetNbinsX(); i ++) { //Generate LHE file
+      double egam = h_egam1->GetBinCenter(i + 1);
       egam *= 1e3;
-      int nbofevt =  h_egam->GetBinContent(i + 1);
+      int nbofevt =  h_egam1->GetBinContent(i + 1);
       if (nbofevt > 0) {
 	system(TString::Format("./whizard.sh %s %d %d %d %d %s %s", m_process.Data(), nbofevt, (int) egam, runNum, seed_nb, m_workflow.Data(), m_out_dir.Data()));
       }
     }
   }
   
-  if (m_run_wo == "false" || m_lhe_dir != "") { //Read and loop over a single or all root file
+  if (m_run_wo == "false" || m_lhe_dir != "" || m_lhe_file != "") { //Read and loop over a single or all root file
     
     TSystemDirectory dir(m_lhe_dir.Data(), m_lhe_dir.Data());
     TList * files = dir.GetListOfFiles(); 
-
+    
     TGraph * grXS_pair = new TGraph(m_XS_pair);
     TGraph * grXS_trip = new TGraph(m_XS_trip);
     
@@ -267,118 +250,120 @@ int main( int argc, char* argv[] ){
       m[i] = 0;
     }
     
+    TChain * m_tree = new TChain("lhe");
+    
     if (files) {
       TSystemFile *file;
       TString fname;
       TIter next(files);
       while ((file=(TSystemFile*)next()) ) {
 	fname = file->GetName();
-	
 	if (!file->IsDirectory() && fname.Contains(".root") && fname.Contains(m_process)) {
-	  
 	  TString RootFileName = m_lhe_dir + fname;
-	  	  
-	  TChain * m_tree = new TChain("lhe");
 	  m_tree->Add(RootFileName);
-    
-	  Long64_t NbOfEvent = m_tree->GetEntries();
-    
-	  m_tree->SetBranchAddress("npart",&npart);
-	  m_tree->SetBranchAddress("weight",&weight);
-	  m_tree->SetBranchAddress("xs",&xs);
-	  m_tree->SetBranchAddress("er_xs",&er_xs);
-	  m_tree->SetBranchAddress("pdg", pdg);
-	  m_tree->SetBranchAddress("status", status);
-	  m_tree->SetBranchAddress("first_daughter", first_daughter);
-	  m_tree->SetBranchAddress("last_daughter", last_daughter);
-	  m_tree->SetBranchAddress("px", px);
-	  m_tree->SetBranchAddress("py", py);
-	  m_tree->SetBranchAddress("pz", pz);
-	  m_tree->SetBranchAddress("e", e);
-	  m_tree->SetBranchAddress("m", m);  
-	  
-	  for (int counter = 0; counter < NbOfEvent; counter ++) {
-	    
-	    m_tree->GetEntry(counter);
-	    
-	    TLorentzVector gamma_4Vec(0, 0, 0, 0);
-	    TLorentzVector photon_4Vec[10];
-	    TLorentzVector electron_4Vec[10];
-	    int npart_photon = 0;
-	    int npart_electron = 0;
-	    double Emax = 0;
-	    int nid_recoil = 0;
-	    TLorentzVector e_recoil_4Vec(0,0,0,0);
-	    for (int i = 0; i < npart; i ++) {
-	      photon_4Vec[i] = TLorentzVector(0,0,0,0);
-	      electron_4Vec[i] = TLorentzVector(0,0,0,0);
-	      if (i == 0) gamma_4Vec = TLorentzVector(0, 0, e[i], e[i]);
-	      if (status[i] == 1 && pdg[i] == 11) {
-		electron_4Vec[npart_electron] = TLorentzVector(px[i], py[i], pz[i], e[i]);
-		if (Emax < e[i]) {
-		  Emax = e[i];
-		  e_recoil_4Vec = electron_4Vec[i];
-		  nid_recoil = i;
-		}
-		npart_electron ++;
-	      }
-	      if (status[i] == 1 && pdg[i] == 22) {
-		photon_4Vec[npart_photon] = TLorentzVector(px[i], py[i], pz[i], e[i]); 
-		npart_photon ++;
-	      }
-	    }
-	    	    
-	    TLorentzVector moTransfer = e_recoil_4Vec - Target_4Vec;
-	    double e_gamma = gamma_4Vec.E();
-	    h_lgam1->Fill(e_gamma, Luminosity);
-	    //Calculation of screening and radiative corrections
-	    //Screening factor
-	    double SF = 1.0 / pow(1 + pow(bohrRadius * moTransfer.P() / 2.0, 2), 2);
-	    double ScreeningFactor = 1.0 - pow(SF, 2); 
-	    //Radiative factor
-	    double xs_p = grXS_pair->Eval(e_gamma * 1e3);
-	    double xs_t = grXS_trip->Eval(e_gamma * 1e3);
-	    if (e_gamma > 100.0) {
-	      xs_p = grXS_pair->Eval(100.0 * 1e3);
-	      xs_t = grXS_trip->Eval(100.0 * 1e3);
-	    }
-	    double RadiativeFactorConstant = 0.0093;
-	    double xs_ratio = xs_t / xs_p;
-	    double RadiativeFactor = 1.0 + RadiativeFactorConstant / xs_ratio;
-
-	    h_lgam2->Fill(e_gamma, 1.0 / xs);
-	    
-	    xs *= (Z * ScreeningFactor * RadiativeFactor); 
-	    er_xs *= (Z * ScreeningFactor * RadiativeFactor);
-	    
-	    h_lgam3->Fill(e_gamma, 1.0 / xs);
-	    h_Tkin_rec->Fill(e_recoil_4Vec.E());
-	    h_theta_vs_Tkin_rec->Fill(e_recoil_4Vec.E(), log10(e_recoil_4Vec.Theta() * TMath::RadToDeg()));
-	    for (int i = 0; i < npart_photon; i ++) {
-	      h_Tkin_gam->Fill(photon_4Vec[i].E());
-	      h_theta_vs_Tkin_gam->Fill(photon_4Vec[i].E(), log10(photon_4Vec[i].Theta() * TMath::RadToDeg()));
-	    }
-	    
-	    //HDDM STUFF
-	    tmpEvt_t tmpEvt;
-	    tmpEvt.beam = gamma_4Vec;
-	    tmpEvt.target = Target_4Vec;
-	    int j = 0;
-	    for (int i = 2; i < npart; i ++) {
-	      if (nid_recoil != i) {
-		tmpEvt.q[j] = TLorentzVector(px[i], py[i], pz[i], e[i]);
-		tmpEvt.pdg[j] = pdg[i];
-		j ++;
-	      }
-	    }
-	    tmpEvt.recoil = e_recoil_4Vec;
-	    tmpEvt.nGen = npart - 2;
-	    tmpEvt.rxn = m_process;
-	    tmpEvt.weight = xs;
-
-	  }
 	}
       }
+    }
+    
+    if (m_lhe_file != "") 
+      m_tree->Add(m_lhe_file);
+    
+    Long64_t NbOfEvent = m_tree->GetEntries();
+    
+    m_tree->SetBranchAddress("npart",&npart);
+    m_tree->SetBranchAddress("weight",&weight);
+    m_tree->SetBranchAddress("xs",&xs);
+    m_tree->SetBranchAddress("er_xs",&er_xs);
+    m_tree->SetBranchAddress("pdg", pdg);
+    m_tree->SetBranchAddress("status", status);
+    m_tree->SetBranchAddress("first_daughter", first_daughter);
+    m_tree->SetBranchAddress("last_daughter", last_daughter);
+    m_tree->SetBranchAddress("px", px);
+    m_tree->SetBranchAddress("py", py);
+    m_tree->SetBranchAddress("pz", pz);
+    m_tree->SetBranchAddress("e", e);
+    m_tree->SetBranchAddress("m", m);  
+    
+    for (int counter = 0; counter < NbOfEvent; counter ++) {
+      
+      m_tree->GetEntry(counter);
+      
+      TLorentzVector gamma_4Vec(0, 0, 0, 0);
+      TLorentzVector photon_4Vec[10];
+      TLorentzVector electron_4Vec[10];
+      int npart_photon = 0;
+      int npart_electron = 0;
+      double Emax = 0;
+      int nid_recoil = 0;
+      TLorentzVector e_recoil_4Vec(0,0,0,0);
+      for (int i = 0; i < npart; i ++) {
+	photon_4Vec[i] = TLorentzVector(0,0,0,0);
+	electron_4Vec[i] = TLorentzVector(0,0,0,0);
+	if (status[i] == -1 && pdg[i] == 22) gamma_4Vec = TLorentzVector(0, 0, e[i], e[i]);
+	if (status[i] == 1 && pdg[i] == 11) {
+	  electron_4Vec[npart_electron] = TLorentzVector(px[i], py[i], pz[i], e[i]);
+	  if (e[i] > Emax) {
+	    Emax = e[i];
+	    e_recoil_4Vec = TLorentzVector(px[i], py[i], pz[i], e[i]);
+	    nid_recoil = i;
+	  }
+	  npart_electron ++;
+	}
+	if (status[i] == 1 && pdg[i] == 22) {
+	  photon_4Vec[npart_photon] = TLorentzVector(px[i], py[i], pz[i], e[i]); 
+	  npart_photon ++;
+	}
+      }
+      
+      TLorentzVector moTransfer = e_recoil_4Vec - Target_4Vec;
+      double e_gamma = gamma_4Vec.E();
+      h_egam2->Fill(e_gamma);
+      h_lgam1->Fill(e_gamma, Luminosity);
+      //Calculation of screening and radiative corrections
+      //Screening factor
+      double SF = 1.0 / pow(1 + pow(bohrRadius * moTransfer.P() / 2.0, 2), 2);
+      double ScreeningFactor = 1.0 - pow(SF, 2); 
+      //Radiative factor
+      double xs_p = grXS_pair->Eval(e_gamma * 1e3);
+      double xs_t = grXS_trip->Eval(e_gamma * 1e3);
+      if (e_gamma > 100.0) {
+	xs_p = grXS_pair->Eval(100.0 * 1e3);
+	xs_t = grXS_trip->Eval(100.0 * 1e3);
+      }
+      double RadiativeFactorConstant = 0.0093;
+      double xs_ratio = xs_t / xs_p;
+      double RadiativeFactor = 1.0 + RadiativeFactorConstant / xs_ratio;
+      
+      h_lgam2->Fill(e_gamma, 1.0 / xs);
+      
+      xs *= (Z * ScreeningFactor * RadiativeFactor); 
+      er_xs *= (Z * ScreeningFactor * RadiativeFactor);
+      
+      h_lgam3->Fill(e_gamma, 1.0 / xs);
+      h_Tkin_rec->Fill(e_recoil_4Vec.E());
+      h_theta_vs_Tkin_rec->Fill(e_recoil_4Vec.E(), log10(e_recoil_4Vec.Theta() * TMath::RadToDeg()));
+      for (int i = 0; i < npart_photon; i ++) {
+	h_Tkin_gam->Fill(photon_4Vec[i].E());
+	h_theta_vs_Tkin_gam->Fill(photon_4Vec[i].E(), log10(photon_4Vec[i].Theta() * TMath::RadToDeg()));
+      }
+      
+      //HDDM STUFF
+      tmpEvt_t tmpEvt;
+      tmpEvt.beam = gamma_4Vec;
+      tmpEvt.target = Target_4Vec;
+      int j = 0;
+      for (int i = 2; i < npart; i ++) {
+	if (i != nid_recoil) {
+	  tmpEvt.q[j] = TLorentzVector(px[i], py[i], pz[i], e[i]);
+	  tmpEvt.pdg[j] = pdg[i];
+	  j ++;
+	}
+      }
+      tmpEvt.recoil = e_recoil_4Vec;
+      tmpEvt.nGen = npart - 2;
+      tmpEvt.rxn = m_process;
+      tmpEvt.weight = xs;
+      hddmWriter->write(tmpEvt, runNum, counter);
     }
   }
   
@@ -386,16 +371,14 @@ int main( int argc, char* argv[] ){
   h_Tkin_rec->Write();
   h_theta_vs_Tkin_gam->Write();
   h_theta_vs_Tkin_rec->Write();
-  h_egam->Write();
+  h_egam1->Write();
+  h_egam2->Write();
   h_lgam1->Write();
   h_lgam2->Write();
   h_lgam3->Write();
   diagOut->Close();
   
   if (hddmWriter) delete hddmWriter;
-  if (asciiWriter) delete asciiWriter;
   
   return 0;
 }
-
-

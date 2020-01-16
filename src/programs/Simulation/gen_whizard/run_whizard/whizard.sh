@@ -36,7 +36,7 @@ echo 'source /work/halld/home/ijaegle/Env/custom_wo.sh' > $store/run.sh
 echo "cd ${store}" >> $store/run.sh 
 echo 'whizard run.sin' >> $store/run.sh
 echo "mv NAME.lhe ../${file}.lhe" >> $store/run.sh 
-echo 'rm *.vg *.evx *.log *.la *.lo *.phs *.o *.mod *.f90 *.makefile' >> $store/run.sh
+echo 'rm *.vg *.evx *.log *.la *.lo *.phs *.o *.mod *.f90 *.makefile .libs' >> $store/run.sh
 chmod +x $store/run.sh
 
 errfile=$errdir/stderr_wo.err
