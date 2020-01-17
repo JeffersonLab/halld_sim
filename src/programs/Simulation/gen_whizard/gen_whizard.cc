@@ -152,8 +152,6 @@ int main( int argc, char* argv[] ){
   // random number initialization (set to 0 by default)
   gRandom->SetSeed(seed);
   
-  int seed_nb = gRandom->Uniform(0, 1e9);
-
   // initialize HDDM output
   HddmOut *hddmWriter = nullptr;
   if (hddmname != "")
@@ -193,8 +191,8 @@ int main( int argc, char* argv[] ){
   TH1F * h_egam2 = new TH1F("egam2", ";E_{#gamma} [GeV];Count/MeV", 12000, 0.0, 12.0);
   TH1F * h_Tkin_gam = new TH1F("Tkin_gam", ";T_{#gamma}^{kin} [GeV];Count/10MeV", 1200, 0.0, 12.0);
   TH1F * h_Tkin_rec = new TH1F("Tkin_rec", ";T_{e^{-}-recoil}^{kin} [GeV];Count/10MeV", 1200, 0.0, 12.0);
-  TH2F * h_theta_vs_Tkin_gam = new TH2F("theta_vs_Tkin_gam", ";T_{#gamma}^{kin} [GeV];log_{10}(#theta) [^{o}];Count/10MeV", 1200, 0.0, 12.0, 1200, -10, 2.25);
-  TH2F * h_theta_vs_Tkin_rec = new TH2F("theta_vs_Tkin_rec", ";T_{e^{-}-recoil}^{kin} [GeV];log_{10}(#theta) [^{o}];Count/10MeV", 1200, 0.0, 12.0, 1200, -10, 2.25);
+  TH2F * h_theta_vs_Tkin_gam = new TH2F("theta_vs_Tkin_gam", ";T_{#gamma}^{kin} [GeV];log_{10}(#theta) [^{o}];Count/10MeV", 1200, 0.0, 12.0, 1200, -5, 2.25);
+  TH2F * h_theta_vs_Tkin_rec = new TH2F("theta_vs_Tkin_rec", ";T_{e^{-}-recoil}^{kin} [GeV];log_{10}(#theta) [^{o}];Count/10MeV", 1200, 0.0, 12.0, 1200, -5, 2.25);
   TH1F * h_lgam1 = new TH1F("lgam1", ";E_{#gamma} [GeV]; Luminosity MeV^{1} #cdot mb^{-1}", 12000, 0.0, 12.0);
   TH1F * h_lgam2 = new TH1F("lgam2", ";E_{#gamma} [GeV]; Luminosity MeV^{1} #cdot mb^{-1}", 12000, 0.0, 12.0);
   TH1F * h_lgam3 = new TH1F("lgam3", ";E_{#gamma} [GeV]; Luminosity MeV^{1} #cdot mb^{-1}", 12000, 0.0, 12.0);
@@ -220,6 +218,7 @@ int main( int argc, char* argv[] ){
       egam *= 1e3;
       int nbofevt =  h_egam1->GetBinContent(i + 1);
       if (nbofevt > 0) {
+	int seed_nb = gRandom->Uniform(0, 1e9);
 	system(TString::Format("./whizard.sh %s %d %d %d %d %s %s", m_process.Data(), nbofevt, (int) egam, runNum, seed_nb, m_workflow.Data(), m_out_dir.Data()));
       }
     }

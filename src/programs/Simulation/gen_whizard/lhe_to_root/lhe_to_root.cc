@@ -1,3 +1,13 @@
+/**************************************************************************                                                                                                                           
+* HallD software                                                          * 
+* Copyright(C) 2020       GlueX and PrimEX-D Collaborations               * 
+*                                                                         *                                                                                                                               
+* Author: The GlueX and PrimEX-D Collaborations                           *                                                                                                                                
+* Contributors: Igal Jaegle                                               *                                                                                                                               
+*                                                                         *                                                                                                                               
+* This software is provided "as is" without any warranty.                 *
+**************************************************************************/
+
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -11,8 +21,19 @@ using namespace std;
 #include <TH2.h>
 
 int main(int argc, char * argv[]) {
-
-  TString RootDirName = std::string(argv[1]);
+  
+  TString RootDirName = "";
+  if (argc == 2) {
+    RootDirName = std::string(argv[1]);
+  } else {
+    std::cout << "lhe_to_root" << std::endl;
+    std::cout << "===========" << std::endl;
+    std::cout << "This program converts a LHE file into a ROOT file containing the events in the lhe tree" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Usage:                                                                                 " << std::endl;
+    std::cout << "Method : ./lhe_to_root input_directory_path/                                           " << std::endl;
+  }
+  
   TSystemDirectory dir(RootDirName, RootDirName);
   TList * files = dir.GetListOfFiles(); 
  

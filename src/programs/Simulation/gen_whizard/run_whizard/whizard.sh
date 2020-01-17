@@ -1,12 +1,23 @@
+#
+# HallD software                                                       
+# Copyright(C) 2020       GlueX and PrimEX-D Collaborations            
+#                                                                      
+# Author: The GlueX and PrimEX-D Collaborations                        
+# Contributors: Igal Jaegle                                            
+#                                                                      
+# This software is provided "as is" without any warranty.              
+#
+
 source /work/halld/home/ijaegle/Env/custom_wo.sh
 
 type=$1
 evtnb=$2
 egam=$3
-runnb=$4
-seed=$5
-wf=$6
-path=$7
+runnb_min=$4
+runnb_max=$5
+seed=$6
+wf=$7
+path=$8
 
 echo 'type ' $type ' evtnb ' $evtnb ' egam ' $egam ' seed ' $seed
 if [ "$type" == "ae_to_ae" ]; then
@@ -22,7 +33,7 @@ if [ "$type" == "ae_to_aeee" ]; then
     vis="\"gamma\"\,\"e\+\"\,\"e\-\"\,\"e\-\""
 fi
 #seed=`od -An -N3 -l /dev/random |  sed 's/^ *\(.*\) *$/\1/'`
-file=${type}_${runnb}_$egam
+file=${type}_${runnb_min}_${runnb_max}_$egam
 
 store=$path/$file
 errdir=$store/err
@@ -42,11 +53,3 @@ chmod +x $store/run.sh
 errfile=$errdir/stderr_wo.err
 outfile=$outdir/stdout_wo.out
 swif add-job -workflow $wf -project gluex -track analysis -stdout $outfile -stderr $errfile $store/./run.sh 
-
-#whizard $file.sin
-#mv NAME.lhe $file.lhe
-#rm -rf NAME* default* opr_name_i1.mod whizard.log
-
-
-#swif create $wf
-#swif run $wf
