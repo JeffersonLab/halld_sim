@@ -32,21 +32,33 @@ int main(int argc, char * argv[]) {
   Int_t run_nb_max = 0;
   Char_t * workflow = 0;
   Char_t * out_dir = 0;
+  Char_t * shell = 0;
+  int iswf = 1;
   if (argc == 7) {
+    NbOfEvt = atof(argv[1]);
+    genconfigfile = argv[2];
+    run_nb_min = atof(argv[3]);
+    run_nb_max = atof(argv[4]);
+    iswf = 0;
+    out_dir = argv[5];
+    shell = argv[6];
+  } else if (argc == 8) {
     NbOfEvt = atof(argv[1]);
     genconfigfile = argv[2];
     run_nb_min = atof(argv[3]);
     run_nb_max = atof(argv[4]);
     workflow = argv[5];
     out_dir = argv[6];
+    shell = argv[7];
   } else {
     std::cout << "run_whizard" << std::endl;
     std::cout << "===========" << std::endl;
-    std::cout << "This program calculates the number of events to be launched for different fixed incident photon-beam energy" << std::endl;
-    std::cout << "                                                                 , launches WHIZAR, and produced a LHE file"<< std::endl;
+    std::cout << "This program calculates the number of events to be launched for different fixed incident photon-beam energy, launches " << std::endl;
+    std::cout << "                                                                                     WHIZARD, and produced a LHE file "<< std::endl;
     std::cout << std::endl;
-    std::cout << "Usage:                                                                                                     " << std::endl;
-    std::cout << "Method : ./run_whizard NbOfEvt generator_configfile RunNbMin RunNbMax workflow_name output_directory_path  " << std::endl;
+    std::cout << "Usage:                                                                                                                " << std::endl;
+    std::cout << "Method 1 :./run_whizard NbOfEvt generator_configfile RunNbMin RunNbMax output_directory_path your_shell               " << std::endl;
+    std::cout << "Method 2 :./run_whizard NbOfEvt generator_configfile RunNbMin RunNbMax workflow_name output_directory_path your_shell " << std::endl;
   }
   gRandom->SetSeed(0);
   
@@ -96,13 +108,21 @@ int main(int argc, char * argv[]) {
     }
     //cout << " bin nb " << h_egam->GetNbinsX() << endl;
     int npts = 0;
+    
     for (int i = 0; i < h_egam->GetNbinsX(); i ++) {
       double egam = h_egam->GetBinCenter(i + 1);
       egam *= 1e3;
       int nbofevt =  h_egam->GetBinContent(i + 1);
       if (nbofevt > 0) {
 	int seed_nb = gRandom->Uniform(0, 1e9);
-	system(TString::Format("./whizard.sh %s %d %d %d %d %d %s %s", m_process.Data(), nbofevt, (int) egam, run_nb_min, run_nb_max, seed_nb, workflow, out_dir));
+	if (strcmp(shell,"tcsh") == 0 && iswf == 0)
+	  system(TString::Format("./whizard_prompt.csh %s %d %d %d %d %d %s", m_process.Data(), nbofevt, (int) egam, run_nb_min, run_nb_max, seed_nb, out_dir));
+	else if (strcmp(shell,"tcsh") == 0 && iswf == 1)
+	  system(TString::Format("./whizard_slurm.csh %s %d %d %d %d %d %s %s", m_process.Data(), nbofevt, (int) egam, run_nb_min, run_nb_max, seed_nb, workflow, out_dir));
+	else if (strcmp(shell,"bash") == 0 && iswf == 0)
+	  system(TString::Format("./whizard_prompt.sh %s %d %d %d %d %d %s", m_process.Data(), nbofevt, (int) egam, run_nb_min, run_nb_max, seed_nb, out_dir));
+	else if (strcmp(shell,"bash") == 0 && iswf == 1)
+	  system(TString::Format("./whizard_slurm.sh %s %d %d %d %d %d %s %s", m_process.Data(), nbofevt, (int) egam, run_nb_min, run_nb_max, seed_nb, workflow, out_dir));
 	npts ++;
       }
     }

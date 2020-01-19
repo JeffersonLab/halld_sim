@@ -176,6 +176,7 @@ int main( int argc, char* argv[] ){
   TString m_lhe_dir = ReadFile->GetConfigName("lhe_dir"); 
   TString m_lhe_file = ReadFile->GetConfigName("lhe_file"); 
   TString m_out_dir = ReadFile->GetConfigName("out_dir"); 
+  TString m_shell = ReadFile->GetConfigName("shell");
   Double_t * m_target = ReadFile->GetConfig4Par("target");  
   TString m_XS_pair = ReadFile->GetConfigName("XS_pair"); 
   TString m_XS_trip = ReadFile->GetConfigName("XS_trip"); 
@@ -219,7 +220,14 @@ int main( int argc, char* argv[] ){
       int nbofevt =  h_egam1->GetBinContent(i + 1);
       if (nbofevt > 0) {
 	int seed_nb = gRandom->Uniform(0, 1e9);
-	system(TString::Format("./whizard.sh %s %d %d %d %d %s %s", m_process.Data(), nbofevt, (int) egam, runNum, seed_nb, m_workflow.Data(), m_out_dir.Data()));
+	if (m_workflow != "" && m_shell == "bash")
+	  system(TString::Format("./whizard_slurm.sh %s %d %d %d %d %s %s", m_process.Data(), nbofevt, (int) egam, runNum, seed_nb, m_workflow.Data(), m_out_dir.Data()));
+	else if (m_workflow != "" && m_shell == "tcsh")
+	  system(TString::Format("./whizard_slurm.csh %s %d %d %d %d %s %s", m_process.Data(), nbofevt, (int) egam, runNum, seed_nb, m_workflow.Data(), m_out_dir.Data()));
+	else if (m_workflow == "" && m_shell == "bash")
+	  system(TString::Format("./whizard_prompt.sh %s %d %d %d %d %s", m_process.Data(), nbofevt, (int) egam, runNum, seed_nb, m_out_dir.Data()));
+	else if (m_workflow == "" && m_shell == "tcsh")
+	  system(TString::Format("./whizard_prompt.csh %s %d %d %d %d %s", m_process.Data(), nbofevt, (int) egam, runNum, seed_nb, m_out_dir.Data()));
       }
     }
   }

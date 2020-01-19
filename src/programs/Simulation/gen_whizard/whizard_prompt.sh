@@ -16,8 +16,7 @@ egam=$3
 runnb_min=$4
 runnb_max=$5
 seed=$6
-wf=$7
-path=$8
+path=$7
 
 echo 'type ' $type ' evtnb ' $evtnb ' egam ' $egam ' seed ' $seed
 if [ "$type" == "ae_to_ae" ]; then
@@ -47,9 +46,10 @@ echo 'source /work/halld/home/ijaegle/Env/custom_wo.sh' > $store/run.sh
 echo "cd ${store}" >> $store/run.sh 
 echo 'whizard run.sin' >> $store/run.sh
 echo "mv NAME.lhe ../${file}.lhe" >> $store/run.sh 
-echo 'rm *.vg *.evx *.log *.la *.lo *.phs *.o *.mod *.f90 *.makefile .libs' >> $store/run.sh
+echo 'rm *.vg *.evx *.log *.la *.lo *.phs *.o *.mod *.f90 *.makefile' >> $store/run.sh
+echo 'cd ..'  >> $store/run.sh
+echo "rm -rf ${file}" >> $store/run.sh
 chmod +x $store/run.sh
+/$store/./run.sh
 
-errfile=$errdir/stderr_wo.err
-outfile=$outdir/stdout_wo.out
-swif add-job -workflow $wf -project gluex -track analysis -stdout $outfile -stderr $errfile $store/./run.sh 
+echo "completed"
