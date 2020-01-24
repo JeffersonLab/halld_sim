@@ -178,7 +178,8 @@ int main( int argc, char* argv[] ){
 	
 	// generate over a range of mass -- the daughters are two charged pions
 	float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
-	GammaZToXYZ resProd( lowMass, highMass, 0.140, 0.140, type, beamConfigFile , Bslope);
+	double PiMass = ParticleMass(PiPlus);
+	GammaZToXYZ resProd( lowMass, highMass, PiMass, PiMass, type, beamConfigFile , Bslope);
 	
 	// seed the distribution with a sum of noninterfering s-wave amplitudes
 	// we can easily compute the PDF for this and divide by that when
