@@ -107,7 +107,7 @@ GammaPToNPartP::addResonance( float mass, float width, float bf ){
 }
 
 void
-GammaPToNPartP::SetChildMasses( vector<double> &Masses ){
+GammaPToNPartP::setChildMasses( vector<double> &Masses ){
 
    m_ChildMass = Masses;
 }
