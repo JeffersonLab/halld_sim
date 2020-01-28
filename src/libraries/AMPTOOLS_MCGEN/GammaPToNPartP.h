@@ -30,7 +30,7 @@ public:
   
   Kinematics* generate();
 
-  void SetChildMasses(vector<double> &Masses);
+  void setChildMasses(vector<double> &Masses);
   ProductionMechanism& getProductionMechanism (){ return m_prodMech; }
 
   void addResonance( float mass, float width, float bf );
