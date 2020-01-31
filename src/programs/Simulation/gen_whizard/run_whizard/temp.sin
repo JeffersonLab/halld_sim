@@ -1,0 +1,31 @@
+# WHIZARD SINDARIN script for GlueX & PRIMEX setups
+
+# The generic SM model build in WHIZARD is used
+
+alias elm = "e+":"e-":"gamma"
+
+model = SM
+
+seed = SEED
+
+process NAME = "gamma", "e-" => VIS
+
+iterations = 8:20000,3:40000
+
+compile
+
+!!! Tests can be run multi-threaded
+! openmp_num_threads = 4
+
+beams = "gamma", "e-"
+beams_momentum = EGAM MeV, 0 MeV
+
+integrate (NAME) {cuts = all E > 5.11 keV ["gamma"]}
+
+n_events = EVTNB
+
+sample_format = lhef
+
+simulate (NAME)
+
+
