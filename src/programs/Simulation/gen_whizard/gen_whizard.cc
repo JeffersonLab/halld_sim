@@ -140,7 +140,7 @@ int main( int argc, char* argv[] ){
     }
   }
   
-  if (outname.size() == 0 && hddmname == 0) {
+  if (outname.size() == 0 && hddmname == "") {
     cout << "No output specificed:  run gen_compton_simple -h for help" << endl;
     exit(1);
   }
