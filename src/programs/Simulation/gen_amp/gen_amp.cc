@@ -27,6 +27,7 @@
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
+#include "AMPTOOLS_AMPS/IsobarAngles.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -214,7 +215,7 @@ int main( int argc, char* argv[] ){
 	bool foundResonance = false;
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
-	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
+	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520" || (*it).arguments()[0] == "X"){
 	      if ( (*it).arguments().size() != 3 )
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
@@ -248,6 +249,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
+	AmpToolsInterface::registerAmplitude( IsobarAngles() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file

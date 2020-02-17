@@ -23,6 +23,7 @@
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 #include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
+#include "AMPTOOLS_AMPS/IsobarAngles.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
