@@ -139,15 +139,6 @@ void AddCDCCluster(s_CdcStrawTruthHits_t* hits, int ipart, int track, int n_p,
    }
    float tdrift=my_t/(BSCALE_PAR1+BSCALE_PAR2*Bmag);
 
-   //Longitudinal diffusion 
-   int two=2;
-   float rndno[2];
-   grndm_(rndno,&two);
-   float rho = sqrt(-2*log(rndno[0]));
-   float phi = rndno[1]*2*M_PI;
-   float dt=(7.515*dradius-2.139*d2+12.63*d3)*rho*cos(phi);
-   tdrift+=dt;
-
    // Prevent unphysical times (drift electrons arriving at wire before particle
    // passes the doca to the wire) 
    double v_max=0.08; // guess for now based on Garfield, near wire 

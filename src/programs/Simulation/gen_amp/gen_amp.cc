@@ -27,7 +27,6 @@
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
-#include "AMPTOOLS_AMPS/IsobarAngles.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -58,7 +57,7 @@ int main( int argc, char* argv[] ){
 	
 	// default upper and lower bounds 
 	double lowMass = 0.2;
-	double highMass = 3.0;
+	double highMass = 2.0;
 
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 9.0;
@@ -178,24 +177,49 @@ int main( int argc, char* argv[] ){
 	    threshold += ParticleMass(Particles[i]);
 	  }
 	}
+	
+	//switch recoil particle
+	ProductionMechanism::Recoil recoil;
+	bool isBaryonResonance = false;
+	switch(Particles[1]){
+	case Proton:
+	  recoil = ProductionMechanism::kProton; 
+	  break;
+	case Neutron:
+	  recoil = ProductionMechanism::kNeutron; 
+	  break;
+	case Pb208:
+	  recoil = ProductionMechanism::kZ;
+	  break;
+	case PiPlus:
+	case PiMinus: // works like an OR statement
+	  recoil = ProductionMechanism::kPion;
+	  isBaryonResonance = true;
+	  break;
+	case KPlus:
+	case KMinus:
+	  recoil = ProductionMechanism::kKaon;
+	  isBaryonResonance = true;
+	  break;
+	default: 
+	  cout << "ConfigFileParser WARNING: not supported recoil particle type \"" << reaction->particleList()[1].c_str()
+	       << "\", defaulted to Proton" << endl;
+	  recoil = ProductionMechanism::kProton; 
+	}
 
 	// loop to look for resonance in config file
 	// currently only one at a time is supported 
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
 	double resonance[]={1.0, 1.0};
 	bool foundResonance = false;
-	bool isKaonRecoil = false;
-	bool isPionRecoil = false;
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
-	      if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520" || (*it).arguments()[0] == "X"){
+	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
 	      if ( (*it).arguments().size() != 3 )
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
 	      resonance[1]=atof((*it).arguments()[2].c_str());
 	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
-	      if((*it).arguments()[0] == "Lambda1520")
-		 isKaonRecoil = true;
 	      foundResonance = true;
 	      break;
 	    }
@@ -224,7 +248,6 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
-	AmpToolsInterface::registerAmplitude( IsobarAngles() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
@@ -251,49 +274,13 @@ int main( int argc, char* argv[] ){
 		locBeamConfigFile.close();
 	}
 
-	// loop to look for particular amplitude settings
-	vector< pair<TString, vector<vector<int>> > > isobarAmplitudes;
-        const vector<ConfigFileLine> configFileLinesAmplitude = parser.getConfigFileLines();
-        for (vector<ConfigFileLine>::const_iterator it=configFileLinesAmplitude.begin(); it!=configFileLinesAmplitude.end(); it++) {
-		if ((*it).keyword() == "amplitude") {
-
-			// Specific config information for IsobarAngles amplitudes
-			if(((TString)(*it).arguments()[3].c_str()).EqualTo("IsobarAngles")) {
-				TString amplitudeName = (*it).arguments()[2].c_str();
-				vector< vector<int> > isobarIndices; // particle indices for isobar daughters
-				
-				// loop over isobars in config file
-				for (uint i=7; i<(*it).arguments().size(); i++) { 
-					TString isobarArgument =  (*it).arguments()[i].c_str();
-					
-					if(isobarArgument.Length()>1) { // only retreive lists of daughters
-						vector<int> isobarDaughters; // particle indices for a given isobar
-						for(int j=0; j<isobarArgument.Length(); j++) 
-							isobarDaughters.push_back(isobarArgument[j] - '0');
-						isobarIndices.push_back(isobarDaughters);
-					}
-				}
-				
-				// store amplitude in vector with name for histograming (if it doesn't exist)
-				pair<TString, vector< vector<int> > > tempAmplitude(amplitudeName, isobarIndices);
-				//if(!count(isobarAmplitudes.begin(), isobarAmplitudes.end(), testAmplitude);
-				isobarAmplitudes.push_back(tempAmplitude);
-			}
-		}
-        } 
-
 	ProductionMechanism::Type type =
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
 	GammaPToNPartP resProd;
-	if(isKaonRecoil)
-		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kKaon, type, slope, lowT, highT, seed, beamConfigFile );
-	else if(isPionRecoil)
-		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kPion, type, slope, lowT, highT, seed, beamConfigFile );
-	else
-		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
+	resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, recoil, type, slope, lowT, highT, seed, beamConfigFile );
 	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
@@ -346,21 +333,7 @@ int main( int argc, char* argv[] ){
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
 	TH2F* M_Phi = new TH2F( "M_Phi", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
 	TH2F* M_Phi_lab = new TH2F( "M_Phi_lab", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
-
 	
-
-	// define isobars and create histograms for each amplitude
-	int nAmplitudes = isobarAmplitudes.size();
-	vector<TH2F*> CosTheta_PhiIso[nAmplitudes];
-	TH2F* CosTheta_Phi[nAmplitudes]; 
-	for(int i=0; i<nAmplitudes; i++) {
-		CosTheta_Phi[i] = new TH2F( Form("CosTheta_Phi_%s",isobarAmplitudes[i].first.Data()), "cos#theta vs. #phi", 180, -3.14, 3.14, 100, -1, 1);
-		for(uint j=0; j<isobarAmplitudes[i].second.size(); j++) {
-			TH2F* h2 = new TH2F( Form("CosTheta_PhiIso_%s_Iso%d",isobarAmplitudes[i].first.Data(),j), "cos#theta vs. #phi", 180, -3.14, 3.14, 100, -1, 1);
-			CosTheta_PhiIso[i].push_back(h2);
-		}
-	}
-
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
 		
@@ -388,167 +361,79 @@ int main( int argc, char* argv[] ){
 		
 		
 		for( int i = 0; i < batchSize; ++i ){
-
+			
 			Kinematics* evt = ati.kinematics( i );
 			TLorentzVector resonance;
 			for (unsigned int i=2; i<Particles.size(); i++)
-				resonance += evt->particle( i );
+			  resonance += evt->particle( i );
 
-			// loop over amplitudes for IsobarAngles
-			GDouble cosThetaX[nAmplitudes], phiX[nAmplitudes];
-			vector<GDouble> cosThetaIsoAmplitude[nAmplitudes], phiIsoAmplitude[nAmplitudes];
-			for(int iamp=0; iamp<nAmplitudes; iamp++) {
-				
-				TLorentzVector isobar;
-				for (unsigned int i=0; i<isobarAmplitudes[iamp].second[0].size(); i++)
-					isobar += evt->particle( isobarAmplitudes[iamp].second[0][i] );
-
-				/////////////////////////////////////////////////////////////////////
-				// Do user calculation here for decay angles to match IsobarAngles //
-				/////////////////////////////////////////////////////////////////////
-				TLorentzVector beam = evt->particle(0);
-				TLorentzVector recoil = evt->particle(1);
-				TLorentzVector PX = resonance;
-				
-				// calculate decay angles in resonance X rest frame
-				TVector3 XRestBoost = PX.BoostVector();
-				
-				TLorentzVector beamX   = beam;
-				TLorentzVector recoilX = recoil;
-				TLorentzVector isobarX = isobar;
-				beamX.Boost(-1.0*XRestBoost);
-				recoilX.Boost(-1.0*XRestBoost);
-				isobarX.Boost(-1.0*XRestBoost);
-
-				// For GJ frame: choose beam as z-axis for reference 
-				TVector3 z = beamX.Vect().Unit(); //-recoilX.Vect().Unit();
-				TVector3 y = (beamX.Vect().Unit()).Cross((-recoilX.Vect().Unit())).Unit();
-				TVector3 x = y.Cross(z);
-				
-				TVector3 anglesX( (isobarX.Vect()).Dot(x),
-						  (isobarX.Vect()).Dot(y),
-						  (isobarX.Vect()).Dot(z) );
-				
-				cosThetaX[iamp] = anglesX.CosTheta();
-				phiX[iamp] = anglesX.Phi();
-				
-				// build 4-vectors for isobars
-				int nIsobars = isobarAmplitudes[iamp].second.size();
-				TLorentzVector PIsobar[nIsobars], PBach[nIsobars];
-				TLorentzVector PIsobarX[nIsobars], PBachX[nIsobars];
-				pair<TLorentzVector, TLorentzVector> PNorm[nIsobars], PNormX[nIsobars];
-				
-				for(int i=0; i<nIsobars; i++) {
-					for(uint j=0; j<isobarAmplitudes[iamp].second[i].size(); j++) { 
-						PIsobar[i] += evt->particle(isobarAmplitudes[iamp].second[i][j]);
-						if(j==0) {
-							PBach[i] = evt->particle(isobarAmplitudes[iamp].second[i][j]); 
-							PNorm[i].first = evt->particle(isobarAmplitudes[iamp].second[i][j]);
-						}
-						else if(j==1) {
-							PNorm[i].second = evt->particle(isobarAmplitudes[iamp].second[i][j]);
-						}
-					}
-					
-					TLorentzVector temp;
-					temp = PIsobar[i]; temp.Boost(-1.0*XRestBoost); PIsobarX[i] = temp;
-					temp = PBach[i]; temp.Boost(-1.0*XRestBoost); PBachX[i] = temp;
-					temp = PNorm[i].first; temp.Boost(-1.0*XRestBoost); PNormX[i].first = temp;
-					temp = PNorm[i].second; temp.Boost(-1.0*XRestBoost); PNormX[i].second = temp;
-				}
-				
-				////////////////////////////////////////////////////////////
-				// calculate decay angles in isobar rest (helicity) frame //
-				////////////////////////////////////////////////////////////
-				vector<GDouble> cosThetaIso, phiIso;
-				pair<TLorentzVector, TLorentzVector> isoPrevious;
-				for( int i = 0; i < nIsobars; i++ ){
-					
-					TVector3 isoRestBoost = PIsobarX[i].BoostVector();
-					TLorentzVector PResonanceIso = PIsobarX[i] - PBachX[i];
-					TLorentzVector PNormIso1 = PNormX[i].first;
-					TLorentzVector PNormIso2 = PNormX[i].second;
-					PResonanceIso.Boost(-1.0*isoRestBoost);
-					PNormIso1.Boost(-1.0*isoRestBoost);
-					PNormIso2.Boost(-1.0*isoRestBoost);
-
-					// Helicity frame z-axis is direction of isobar in X rest frame by default
-					TVector3 zIso = PIsobarX[i].Vect().Unit(); 
-					TVector3 yIso = (z.Cross(zIso)).Unit(); // decay plane from X rest frame
-					
-					// last step of single bachelor decay chain (e.g. omega->3pi in b1pi or K*->Kpi in K1K production )
-					if(i>0 && isobarAmplitudes[iamp].second[i].size() == isobarAmplitudes[iamp].second[i-1].size()-1 ) {
-
-						// boost from X frame to previous isobar frame
-						TVector3 boost1 = isoPrevious.first.BoostVector();
-						// boost to previous isobar frame to current isobar frame
-						TVector3 boost2 = isoPrevious.second.BoostVector(); 
-
-						PResonanceIso = PIsobarX[i] - PBachX[i];
-						PResonanceIso.Boost(-1.0*boost1); PResonanceIso.Boost(-1.0*boost2);
-						PNormIso1 = PNormX[i].first; PNormIso2 = PNormX[i].second;
-						PNormIso1.Boost(-1.0*boost1); PNormIso2.Boost(-1.0*boost1); 
-						PNormIso1.Boost(-1.0*boost2); PNormIso2.Boost(-1.0*boost2);
-
-						zIso = (isoPrevious.second.Vect()).Unit();
-						yIso = ((isoPrevious.first.Vect().Unit()).Cross(zIso)).Unit();
-					}
-					TVector3 xIso = yIso.Cross(zIso);
-					
-					TVector3 PAngles = PResonanceIso.Vect();
-					if(isobarAmplitudes[iamp].second[i].size() == 3 && i+1 == nIsobars) // 3-body decays use normal vectors (e.g. omega->3pi) 
-						PAngles = ((PNormIso1.Vect()).Cross(PNormIso2.Vect()));
-					
-					// Angles in isobar rest frame
-					TVector3 anglesIso( (PAngles).Dot(xIso),
-							    (PAngles).Dot(yIso),
-							    (PAngles).Dot(zIso) );
-					
-					cosThetaIso.push_back(anglesIso.CosTheta());
-					phiIso.push_back(anglesIso.Phi());
-
-					// reference vector for later step in previous frame
-					isoPrevious.first = PIsobarX[i];
-					// reference vector for later step in current frame
-					isoPrevious.second = PResonanceIso;
-				}
-
-				cosThetaIsoAmplitude[iamp] = cosThetaIso;
-				phiIsoAmplitude[iamp] = phiIso;
-			}
-
+			TLorentzVector isobar;
+			for (unsigned int i=3; i<Particles.size(); i++)
+			  isobar += evt->particle( i );
 			
 			double genWeight = evt->weight();
 			
 			// cannot ask for the intensity if we haven't called process events above
 			double weightedInten = ( genFlat ? 1 : ati.intensity( i ) ); 
 			// cout << " i=" << i << "  intensity_i=" << weightedInten << endl;
-			
+
 			if( !diag ){
 				
 				// obtain this by looking at the maximum value of intensity * genWeight
 				double rand = gRandom->Uniform() * maxInten;
 				
 				if( weightedInten > rand || genFlat ){
-					
+
 					mass->Fill( resonance.M() );
 					massW->Fill( resonance.M(), genWeight );
-					double loct = -1.*(TLorentzVector(0,0,0,0.938) - evt->particle(1)).M2();
-					t->Fill(loct);
 					
 					intenW->Fill( weightedInten );
 					intenWVsM->Fill( resonance.M(), weightedInten );
 
-					//M_isobar->Fill( isobar.M() );
-					//M_CosTheta->Fill( resonance.M(), cosThetaBachX);
-					//M_Phi->Fill( resonance.M(), phiBachX);
-					//M_Phi_lab->Fill( resonance.M(), recoil.Phi());
+					M_isobar->Fill( isobar.M() );
 					
-					for(int iamp=0; iamp<nAmplitudes; iamp++) {
-						CosTheta_Phi[iamp]->Fill( phiX[iamp], cosThetaX[iamp]);
-						for(uint i=0; i<isobarAmplitudes[iamp].second.size(); i++) 
-							CosTheta_PhiIso[iamp][i]->Fill( phiIsoAmplitude[iamp][i], cosThetaIsoAmplitude[iamp][i]);
-					}
+					// calculate angular variables
+					TLorentzVector beam = evt->particle ( 0 );
+					TLorentzVector recoil = evt->particle ( 1 );
+					TLorentzVector p1 = evt->particle ( 2 );
+					TLorentzVector target(0,0,0,recoil[3]);
+					
+					if(isBaryonResonance) // assume t-channel
+						t->Fill(-1*(beam-evt->particle(1)).M2());
+					else
+						t->Fill(-1*(evt->particle(1)-target).M2());
+
+					TLorentzRotation resonanceBoost( -resonance.BoostVector() );
+					
+					TLorentzVector beam_res = resonanceBoost * beam;
+					TLorentzVector recoil_res = resonanceBoost * recoil;
+					TLorentzVector p1_res = resonanceBoost * p1;
+					
+					// normal to the production plane
+                                        TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();
+
+                                        // choose helicity frame: z-axis opposite recoil proton in rho rest frame
+                                        TVector3 z = -1. * recoil_res.Vect().Unit();
+                                        TVector3 x = y.Cross(z).Unit();
+                                        TVector3 angles( (p1_res.Vect()).Dot(x),
+                                                         (p1_res.Vect()).Dot(y),
+                                                         (p1_res.Vect()).Dot(z) );
+
+                                        double cosTheta = angles.CosTheta();
+                                        double phi = angles.Phi();
+
+					M_CosTheta->Fill( resonance.M(), cosTheta);
+					M_Phi->Fill( resonance.M(), phi);
+					M_Phi_lab->Fill( resonance.M(), recoil.Phi());
+					
+					TVector3 eps(1.0, 0.0, 0.0); // beam polarization vector
+                                        double Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
+
+                                        GDouble psi = phi - Phi;
+                                        if(psi < -1*PI) psi += 2*PI;
+                                        if(psi > PI) psi -= 2*PI;
+					
+					CosTheta_psi->Fill( psi, cosTheta);
 					
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
@@ -587,12 +472,6 @@ int main( int argc, char* argv[] ){
 	M_CosTheta->Write();
 	M_Phi->Write();
 	M_Phi_lab->Write();
-
-	for(int i=0; i<nAmplitudes; i++) {
-		CosTheta_Phi[i]->Write();
-		int nIsobars = isobarAmplitudes[i].second.size();
-		for(int j=0; j<nIsobars; j++) CosTheta_PhiIso[i][j]->Write();
-	}
 
 	diagOut->Close();
 	

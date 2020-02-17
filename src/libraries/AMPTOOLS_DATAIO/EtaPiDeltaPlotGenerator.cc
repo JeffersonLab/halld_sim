@@ -78,7 +78,8 @@ EtaPiDeltaPlotGenerator::projectEvent( Kinematics* kin ){
     TVector3 v(locEtaP4_GJ.Vect()*x_hat_GJ, locEtaP4_GJ.Vect()*y_hat_GJ,
                locEtaP4_GJ.Vect()*z_hat_GJ);
     double cosTheta = v.CosTheta();
-    double theta = v.Theta();
+    // comment out next line, unused variable
+    //    double theta = v.Theta();
     double phi = v.Phi()*180./TMath::Pi();
     
     // normal to the production plane

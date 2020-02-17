@@ -49,7 +49,8 @@ double TTCS_crs::BH_crs_section( double *x, double *par)
   
   double beta = sqrt( 1 - (4*m_e*m_e)/Q2 );
   double r = sqrt( (s - Q2 - M_p*M_p)*(s - Q2 - M_p*M_p) - 4*Q2*M_p*M_p );
-  double tau = Q2/( s - M_p*M_p );
+  // variable tau not used, commented out to suppress warning
+  //  double tau = Q2/( s - M_p*M_p );
   double cos_TH_Cm = (2*s*(t - 2*M_p*M_p) + (s + M_p*M_p)*(s + M_p*M_p - Q2))/sqrt(LambdaFunc(s, M_p*M_p, 0)*LambdaFunc(s, M_p*M_p, Q2));
   double sin_TH_Cm = sqrt( 1 - cos_TH_Cm*cos_TH_Cm );
   double Delta_Perp = sin_TH_Cm*r/(2*sqrt(s));
@@ -98,12 +99,13 @@ double TTCS_crs::INT_crs_section(double *x, double *par)
   double t = par[2];
   double sc_D = par[3]; // Scale of Dterm;
   double weight;
-  
-  double ImH = par[5];
+
+  // variables ImH, ImE, and ImHtild unused, commented out to suppress warnings  
+  //  double ImH = par[5];
   double ReH = par[6];
-  double ImE = par[7];
+  //  double ImE = par[7];
   double ReE = par[8];
-  double ImHtild = par[9];
+  //  double ImHtild = par[9];
   double ReHtild = par[10];
   double Dterm = par[11];
 
@@ -117,7 +119,8 @@ double TTCS_crs::INT_crs_section(double *x, double *par)
   double sin_TH_Cm = sqrt( 1 - cos_TH_Cm*cos_TH_Cm );
   double Delta_Perp = sin_TH_Cm*r/(2*sqrt(s));
   //double Delta_Perp = sqrt((-t)*(1 - tau) - tau*tau*M_p*M_p );
-  double a = beta*r*cos(theta);
+  // variable a not used, commented out to suppress warning
+  //  double a = beta*r*cos(theta);
   double b = sigma*beta*sqrt( (Q2-t)*(Q2-t) - TMath::Power((2*(s-M_p*M_p)*sqrt(Q2)*Delta_Perp)/r , 2) )*cos(theta) - 
     beta*( (2*(s-M_p*M_p)*sqrt(Q2)*Delta_Perp)/r )*sin(theta)*cos(phi);
   double L_BH = ((Q2 - t)*(Q2 - t) - b*b)/4.;

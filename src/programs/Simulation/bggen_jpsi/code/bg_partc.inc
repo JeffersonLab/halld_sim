@@ -2,7 +2,7 @@ C
 C---  Particle masses
 C
       INTEGER MXPART
-      PARAMETER (MXPART=100)
+      PARAMETER (MXPART=200)
       COMMON/BG_PARTC/ AM_PART(MXPART),WG_PART(MXPART)
      +                ,KD_PART(4,MXPART),IFLPART(MXPART)
       REAL AM_PART      !  (i) - particle mass GeV/c^2, i - GEANT number

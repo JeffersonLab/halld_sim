@@ -28,9 +28,10 @@ using namespace std;
 #include "EvtGenExternal/EvtExternalGenList.hh"
 #endif
 
-#include "particleType.h"
+//#include "particleType.h"  // manage this function locally to cover older halld_recon versions
 #include "HDDM/hddm_s.hpp"
 #include "EVTGEN_MODELS/RegisterGlueXModels.h"
+#include "evtgenParticleString.h"
 
 #include "TLorentzVector.h"
 #include "TVector3.h"
@@ -48,6 +49,10 @@ typedef struct {
 string INPUT_FILE = "";
 string OUTPUT_FILE = "";
 EvtGen *myGenerator = nullptr;
+
+bool PROCESS_ALL_EVENTS = true;
+int NUM_EVENTS_TO_PROCESS = -1;
+
 
 void InitEvtGen();
 void ParseCommandLineArguments(int narg,char *argv[]);
@@ -188,7 +193,7 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 		else
 			// use the standard particle type as a backup - would be nice
 			// if we didn't have these dependencies!
-			partId = EvtPDL::getId(std::string(EvtGenString(part.type))); 
+			partId = EvtPDL::getId(std::string(EvtGenOutputString(part.type))); 
 		EvtVector4R pInit(part.momentum.E(), part.momentum.Px(), 
 							part.momentum.Py(), part.momentum.Pz());
 		parent = EvtParticleFactory::particleFactory(partId, pInit);
@@ -238,11 +243,21 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 				ps(i).setId(++max_particle_id);   // unique value for this particle within the event
 				ps(i).setParentid(part.id);       // set ID of parent particle
 				ps(i).setMech(0);        // ???     
-		        hddm_s::MomentumList pmoms = ps(i).addMomenta();
-				pmoms().setPx(parent->getDaug(i)->getP4Lab().get(1));
-				pmoms().setPy(parent->getDaug(i)->getP4Lab().get(2));
-				pmoms().setPz(parent->getDaug(i)->getP4Lab().get(3));
-				pmoms().setE(parent->getDaug(i)->getP4Lab().get(0));
+				hddm_s::MomentumList pmoms = ps(i).addMomenta();
+				//pmoms().setPx(parent->getDaug(i)->getP4Lab().get(1));
+				//pmoms().setPy(parent->getDaug(i)->getP4Lab().get(2));
+				//pmoms().setPz(parent->getDaug(i)->getP4Lab().get(3));
+				// recalculate the energy to make sure we get the "correct" mass without round-off errors, since
+				// HDDM stores floating point numbers as floats
+				float px = parent->getDaug(i)->getP4Lab().get(1);
+				float py = parent->getDaug(i)->getP4Lab().get(2);
+				float pz = parent->getDaug(i)->getP4Lab().get(3);
+				float mass =  EvtPDL::getMass(EvtPDL::evtIdFromStdHep(parent->getDaug(i)->getPDGId()));
+				float E = sqrt(mass*mass + px*px + py*py + pz*pz);
+				pmoms().setPx(px);
+				pmoms().setPy(py);
+				pmoms().setPz(pz);
+				pmoms().setE(E);
 				
 				// save the same info so that we can go through these particles and see if they need to decay
 				gen_particle_info_t part_info;
@@ -305,7 +320,8 @@ int main(int narg, char *argv[])
 	int event_count = 1;
 	hddm_s::HDDM *hddmevent = new hddm_s::HDDM;
 	while(*instream >> *hddmevent) {
-		int num_particles = -1;   // number of particles in the event
+	  // next line commented out, an unused variable
+	  //		int num_particles = -1;   // number of particles in the event
 		int max_particle_id = 0;  // needed for generating decay particles
 
 		if( (event_count++%1000) == 0) {
@@ -318,6 +334,12 @@ int main(int narg, char *argv[])
 		DecayParticles(hddmevent, particle_info, max_particle_id, vertex_id);   // run EvtGen decays based on particle info vector
 	
 	   	*outstream << *hddmevent;  // save event
+
+		// see if we should stop processing
+		if(!PROCESS_ALL_EVENTS) {
+		  if(event_count >= NUM_EVENTS_TO_PROCESS)
+		    break;
+		}
 	}
 
 	// cleanup
@@ -332,6 +354,8 @@ int main(int narg, char *argv[])
 //-------------------------------
 void ParseCommandLineArguments(int narg,char *argv[])
 {
+  string num_events_str;
+
    if (narg < 2) {
       Usage();
       exit(0);
@@ -341,6 +365,11 @@ void ParseCommandLineArguments(int narg,char *argv[])
       if (argv[i][0]=='-') {
          char *ptr = &argv[i][1];
          switch(*ptr) {
+            case 'n':
+	      PROCESS_ALL_EVENTS = false;
+	      num_events_str = &ptr[1];
+	      NUM_EVENTS_TO_PROCESS = std::stoi(num_events_str);
+              break;
             case 'o':
               OUTPUT_FILE = &ptr[1];
               break;
@@ -377,6 +406,8 @@ void Usage(void)
   cout << endl;
   cout << " options:" << endl;
   cout << endl;
+  cout << "  -nNumEvents               "
+               "number of events to process (default: all)" << endl;
   cout << "  -o\"output_file_name\"    "
                "set the file name used for output." << endl;
   cout << "  -h                        "
