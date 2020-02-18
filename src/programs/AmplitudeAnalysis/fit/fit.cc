@@ -93,6 +93,7 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
   AmpToolsInterface::registerAmplitude( Zlm() );
+  AmpToolsInterface::registerAmplitude( IsobarAngles() );
   AmpToolsInterface::registerAmplitude( b1piAngAmp() );
   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
   AmpToolsInterface::registerAmplitude( polCoef() );
