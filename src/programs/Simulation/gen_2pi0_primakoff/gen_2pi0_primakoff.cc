@@ -50,7 +50,7 @@ int main( int argc, char* argv[] ){
 	// double lowMass = 0.2;
 	// double highMass = 2.0; 
 	double lowMass = 0.28;
-	double highMass = 0.58 ;
+	double highMass = 0.9 ;    // almost up to f0(980)
 	
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 6.0;
@@ -178,7 +178,8 @@ int main( int argc, char* argv[] ){
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 	
 	// generate over a range of mass -- the daughters are two charged pions
-	float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
+	// float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
+	float Bslope= 2;   // exponential slope, make it smaller than any slope in the generator.
 	// GammaZToXYZ resProd( lowMass, highMass, 0.140, 0.140, type, beamConfigFile , Bslope);
 	// Double_t kMPion = ParticleMass(PiPlus);
         Double_t kMPi0 = ParticleMass(Pi0);

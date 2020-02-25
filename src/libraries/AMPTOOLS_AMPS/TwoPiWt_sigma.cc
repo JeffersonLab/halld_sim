@@ -10,6 +10,8 @@
 #include "barrierFactor.h"
 #include "breakupMomentum.h"
 
+#include "particleType.h"
+
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
 
@@ -40,8 +42,8 @@ complex<double> Aw_func (Double_t *x, Double_t *par) {
     
     // S-wave I=0 phase shift as a function of center of mass energy
     
-    Double_t Mpi = 0.13957;
-    Double_t Mk = 0.493677;
+    Double_t Mpi = ParticleMass(Pi0);
+    Double_t Mk = ParticleMass(KPlus);
     Double_t s = W*W;            // center of mass energy ^2
     Double_t s0 = (2*Mk)*(2*Mk);
     

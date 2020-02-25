@@ -145,7 +145,8 @@ ProductionMechanism::produceResonanceZ ( const TLorentzVector& beam){
     resMomCM  = cmMomentum( cmEnergy, resMass, m_recMass );
   
     tMaxkin = 4. * beamMomCM * resMomCM;
-    tMax = 0.05;   // restrict max to make more efficient for Primakoff generation
+    // tMax = 0.05;   // restrict max to make more efficient for Primakoff generation
+    tMax = 1.;   // restrict max to make more efficient for Primakoff generation
     t = random( 0, tMax ); 
   } 
   // while( random( 0., exptMax ) > t*exp(-m_slope*t) );   // Elton 8/19/2016.  t*exp(Bt)
