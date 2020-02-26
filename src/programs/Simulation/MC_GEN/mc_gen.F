@@ -1,4 +1,3 @@
-      PROGRAM MC_GEN
 c*********************************************************************************
 c	MC_GEN
 c	Monte Carlo generation of events with sequential N-body decays.
@@ -146,7 +145,7 @@ c                8-26-19 - Small bug fix in writing out ASCII data for Mechanism
 c               10-29-19 - Tiny bug fix in Reggepick to trap rare machine precision issue    
 c               11-19-19 - Code to allow simulation of the "double Regge" process vi a "Mechanism 5"
 c     
-        parameter (version=11.0) !Version of the program... keep this updated
+        parameter (version=11.51) !Version of the program... keep this updated
 c      
 	external ran  !forces the use of "my" version of random number generator (see RNDNOR.F)
 	parameter (maxnumpar=65) !Maximum number of particles in the table
@@ -155,7 +154,7 @@ c
 	character*8 names(maxnumpar)
 	character   dummy*50,letter*1
 	character*80  title 
-        character*100 fluxfilename
+        character*200 fluxfilename
 	integer lundid(maxnumpar),numdecays(maxnumpar)
 	real rm(maxnumpar),width(maxnumpar),ct(maxnumpar)
 	real zpart(maxnumpar)
@@ -178,7 +177,8 @@ c
 	data rmsigma   /1.198/      !highest sigma mass 
 	data rmdeuteron/1.875/      !deuteron mass 
 	data rmx1280   /1.282/      !x(1280) mass 
-c	data iseed /123456/
+        data idcountmax/0/
+c        data iseed /123456/
 	common /decaytable/idecay,lundid,rm
 	common /monte/ iseed,xflat,xnormal,xbw
 	common /stuff/poldir(4),xx,icount,ikeep,ihackflag,iattempt
@@ -1526,11 +1526,12 @@ c
 c             First generate pure 3-body phase space.   Then create a pseudo particle out of P2 and P3.
 c             Arrange that this particle P23 satisfies the specified t-slope requirement.
 c             Thus, we do not have to pre-select a mass of the intermediate state particle.
-c             NDYNAMICS = 3  - rotate the 3-body phase-space state so the P23 combo has give t-slope
-c             NDYNAMICS = 4  - rotate the 3-body phase-space state so the P23 combo has give t-slope and
+c             NDYNAMICS = 3  - rotate the 3-body phase-space state so the P23 combo has given t-slope
+c             NDYNAMICS = 4  - rotate the 3-body phase-space state so the P23 combo has given t-slope and
 c             also enforce the t-slope at the bottom vertex:  "double - Regge" mechanism
 c
               else if(ndynamics.eq.3 .or. ndynamics.eq.4)then !combine 3-body phase space & Regge picture
+                 idcount   = 0
  240             pvtemp(1) = 0
                  pvtemp(2) = 0
                  pvtemp(3) = 0
@@ -1543,7 +1544,7 @@ c                 write(6,*)'P1    ',p1
 c                 write(6,*)'P2    ',p2
 c                 write(6,*)'P3    ',p3
 c                Group particles 2 and 3 together (P23), recoiling against particle 1 P(1)
-c                Let the *.def file have the recoiling object FIRST in the list of decay particles,
+c                Let the *.def file have the recoiling object P(1) FIRST in the list of decay particles,
 c                Particles 2 and 3 taken together form the SECOND particle to which 4-mometum t transfers
 c
 c                indexparent = 3 !the third particle in the list is the c.m. particle
@@ -1594,18 +1595,17 @@ c                    write(6,*)'Rotating P1 to the desired t'
 c                 write(6,*)'>> CM angle',cosinethetacm
 		 call product_rotate(pv,p1,p2,p3,p23,cosinethetacm,ierr)
 c
-c                We have done the "double Regge" tests in the CM frame.
 c                Return the tracks to the Lab frame.
 c                 
                  call boost_to_lab(pv,p1,p2,p3,p23,ierr)
                  if(ierr.ne.0)then !abandon this event
 c                    write(6,*)' > Returning from product_rotate'
 c                    write(6,*)cosinethetacm
-                    write(6,*)'PV  ', pv
-                    write(6,*)'P1  ', p1
-                    write(6,*)'P2  ', p2
-                    write(6,*)'P3  ', p3
-                    write(6,*)'P23 ', p23
+c                    write(6,*)'PV  ', pv
+c                    write(6,*)'P1  ', p1
+c                    write(6,*)'P2  ', p2
+c                    write(6,*)'P3  ', p3
+c                    write(6,*)'P23 ', p23
                     goto 105
                  endif            
 c
@@ -1613,11 +1613,11 @@ c                Now test whether the momentum transfer at the bottom vertex is 
 c                Remember we are in the lab now.  The momentum transfer is between the 
 c                target proton (must construct it first) and the recoiling target particle.
 c
-c                We must hard code this to be particle 2 in the decay list and be
-c                sure the input definition file has the proton in that slot.
-c
-c                In the lab frame, tprime is always 0, by construction becasue tmin and t 
+c                Note: in the lab frame, tprime is always 0, by construction, because tmin and t 
 c                are the same.
+c
+c                Warning: we must hard-code the target/recoil particle to be number 2 in the decay list. 
+c                Be sure the input definition file has the proton in the second slot.
 c                 
                  ptarget(1) = 0.0
                  ptarget(2) = 0.0
@@ -1626,10 +1626,17 @@ c
                  ptarget(5) = rmproton
                  call gett(ptarget,p2,tt,ttmin,ttprime)
 c                 write(6,*)'t at bottom vertex',tt,ttmin,ttprime
-                 call doublereggepick(tt,bslope2,iyesno,ierr)
+                 call doublereggepick(ppbeam,rmtarget,tt,bslope2,iyesno,ierr)
                  if(iyesno.eq.0)then
-c                    write(6,*)'Lower vertex t is not in range'
-                    goto 240
+                    idcount = idcount + 1
+c                    write(6,*)'Lower vertex t is too shallow; try again'
+                    if(idcount.ge.idcountmax)then
+                       idcountmax = idcount
+                       if(mod(idcountmax,1000).eq.0)then
+                          write(6,*)'Slow bottom vertex selection',idcount
+                       endif
+                    endif
+                    goto 240 ! re-throw the 3-body phase space particles
                  endif
 c 
 	      else
@@ -1919,6 +1926,7 @@ c
 	return
 	end 
 
+c********************************************************************************
 c
 c	Close the histogramming function 
 c
@@ -1952,13 +1960,14 @@ c
 	return
 	end 
       
+c********************************************************************************
 c
 c       Output to file in text format suitable for conversion to full-scale Monte Carlo modeling
 c        -MC_GENERATOR_2_HDDM (for GlueX) 
 c
  	subroutine write_output(plist,imark,imechanism)
 	parameter (maxnumlis=60) !Maximum number of particles in the decay list
-	character nam*4,fname*150
+	character nam*4,fname*200
 	real plist(24,maxnumlis),pgsim(4)
 	integer igsimid(maxnumlis)
 	logical ifirst
@@ -2260,6 +2269,7 @@ c	      write(6,*)plist(6,i),igsimid(i)
         return 
 	end 
 
+c********************************************************************************
 c
 c	Input from file in TXT2BOS format 
 c
@@ -2812,11 +2822,8 @@ c
         theta = acos(costhetacm) !polar angle wrt beam that results in correct t distribution
 	phik  = twopi*ran(iseed)	!phi angle wrt x-axis
 c        phik  = 0   ! Test Hack
-
-c     
-c     Test parameter passing
 c
-c        write(6,*)' '
+c     write(6,*)' '
 c        write(6,*)'Product_rotate',costhetacm,theta*rade
 c        write(6,*)'P0   lab',p0
 c        write(6,*)'P1    cm',p1
@@ -2834,6 +2841,7 @@ c
         call carrot(p1,rot,angle)
         call carrot(p2,rot,angle)
         call carrot(p3,rot,angle)
+c
 c        write(6,*)'Rotate P23 to zero degrees',angle,angle*rade
 c        write(6,*)'P0   lab',p0
 c        write(6,*)'P1    cm',p1
@@ -2841,7 +2849,7 @@ c        write(6,*)'P2    cm',p2
 c        write(6,*)'P3    cm',p3
 c        write(6,*)'P23   cm',p23
 c     
-c       Rotate system such that P23 angle results in the desired t value
+c       Rotate the system such that P23 angle results in the desired t value
 c
 	call carrot(p23,ex,theta)	!polar angle rotation
 	call carrot(p1 ,ex,theta)	!polar angle rotation
@@ -2882,27 +2890,14 @@ c	Check the polar angle of P23 with respect to beam axis
 c
 	cthcm = dot(p23,ze)/(absp(p23)*absp(ze))
 	if(abs(cthcm-cos(theta)).gt.0.001)then
-           write(6,*)'Trouble in rotating system:',cthcm,cos(theta)
+c           write(6,*)'Trouble in rotating system:',
+c     1         cthcm,cos(theta),costhetacm
            ierr = 1
            return
-c           call exit()
         end if
-c       Check that mometum is still conserved.
-c        px = p1(1)+p2(1)+p3(1) 
-c        py = p1(2)+p2(2)+p3(2) 
-c        pz = p1(3)+p2(3)+p3(3)
-c        pxx = p1(1) + p23(1)
-c        pyy = p1(2) + p23(2)
-c        pzz = p1(3) + p23(3)
-c        write(6,*)'Momentum',px,py,pz
-c        write(6,*)'Momentum',pxx,pyy,pzz
-c
         return
         end
 
-c
-
-c
 c*************************************************************************
 c     BOOST_TO_LAB
 c     Ad hoc porgram to boost the set of particles that have been
@@ -2968,7 +2963,6 @@ c        write(6,*)'Momentum',pxx,pyy,pzz
       return
       end
 
-
 c****************************************************************************
 c	Put the primary vertex somewhere in the target
 c
@@ -3030,7 +3024,6 @@ c	   call rannor(x,y)
 	end if
 	return
 	end
-
 
 c****************************************************************************
 c       DSDOMAKE
@@ -3116,20 +3109,26 @@ c     1                           pbeammin,pbeammax
 	end
 
 c**************************************************************************
-c      Decide whether to keep an event with -t of tt according to the
-c      desired t-slope.
+c      Decide whether to keep an event with momentum transfer -t according
+c     to the desired t-slope.
 c
-c      Input:
-c      TT      - t of the reaction
-c      BSLOPE2 - exponential slope we need
-c      IYESNO  - flag to keep or reject this candidate
+c     The algorithm assumes the parent t distribution is flat, which is not
+c     strictly true, resulting in an effective t distribution skewed slightly
+c     to larger values of t
+c
+c     Input:
+c      PPBEAM   - beam momentum for computing W
+c      RMTARGET - target rest mass for computing W
+c      TT       - t of the vertex of interest
+c      BSLOPE2  - exponential slope we require at this vertex
+c      IYESNO   - flag to keep or reject this candidate
 c
 c      Output:
 c      IYESNO - flag to keep or reject this candidate
 c
 c      R.A.Sch,  December 2019
 c      
-      subroutine doublereggepick(tt,bslope2,iyesno,ierr)
+      subroutine doublereggepick(ppbeam,rmtarget,tt,bslope2,iyesno,ierr)
       data ifirst/1/
       data scale/1000./
       common /doublelocal/ifirst
@@ -3137,21 +3136,26 @@ c
 c
       if(ifirst.eq.1)then
          ifirst=0
+         ierr = 0
          write(6,*)'First call to DOUBLEREGGEPICK'
       endif
       ierr = 0
-      probdensity = scale * exp(bslope2*tt) !key statement...
-c
+      ss = 2.0*ppbeam*rmtarget + rmtarget**2.
+c      snot = 1./bslope2
+c      snot        = 1./0.25     !For Pomeron trajectory 
+      snot        = 1.0          !We have no reliable way to estimate this, so pick a default value
+c      probdensity = scale * exp(2.*bslope2*tt) !key statement...
+      probdensity = scale * exp(2.*bslope2*log(ss/snot)*tt) !key statement...
+c     
 c     Throw the dart
 c
-      ytest = scale*ran(iseed)
+      ytest = scale*ran(iseed) 
       if(ytest.lt.probdensity)then
-
          iyesno = 1
+c         write(6,*)'Double:',sqrt(ss),ss,snot,tt,bslope2,probdensity,ytest,iyesno
       else
          iyesno = 0
       endif
-c      write(6,*)bslope2,probdensity,ytest,iyesno
       return
       end
       
@@ -3185,8 +3189,14 @@ c
 	data ifirst/1/  
 	common /monte/ iseed,xflat,xnormal,xbw
 	common /reggelocal/ifirst,snot,dsigmadtnot,dsdtmax,dsdtmin,bslopelocal
-c       
-        snot        = 1./bslope !See Donnachie and Landshoff, hep-ph/9912312 (12 Dec 1999)
+c
+c     The problem with s_not, the Regge scale parameter
+c     See Donnachie and Landshoff, hep-ph/9912312 (12 Dec 1999) = Phys. Lett B, 478, 146, (2000)
+c
+c        wscale = 3.17           !proton plus 2 Lambdas
+c        snot        = 1./bslope   !Their recipe in general, which leads to bad numerics for us
+c        snot        = 1./0.25     !For Pomeron trajectory 
+        snot        = 1.           !We have no way to estimate this reasonably, so pick a default value
 c        snot        = 1./(wscale*wscale)
 c        wmax        = sqrt(2.*pbeammax*rmtarget + rmtarget**2.)
 c        smax        = wmax*wmax
@@ -3262,11 +3272,12 @@ c
 	   iflag = 1
 	endif
 	tt = tmin + ran(iseed)*(tmax-tmin)
+c	dsdt = dsdtmax * exp(2.*bslope*log(ss/snot)*tt)  !key statement...
 	dsdt = dsigmadtnot * exp(2.*bslope*log(ss/snot)*tt)  !key statement...
-c        write(6,*)'>>>>',dsdt,dsigmadtnot,tt,ss,snot,bslope
+c        write(6,*)'>>>>',dsdt,dsdtmax,bslope,tt,ss,snot
 	dsdt = max(dsdt,dsdtmin)
 	if(dsdt.gt.dsdtmax)then
-	   write(6,*)'Yikes!',dsdt,dsdtmax,dsigmadtnot,bslope,tt,ss,snot
+	   write(6,*)'Raising dsdtmax:',dsdt,dsdtmax,bslope,tt,ss,snot
            dsdtmax = dsdt
 	endif
 	xtest = ran(iseed)*dsdtmax
@@ -3390,7 +3401,7 @@ c
 	tt = tmin + ran(iseed)*(tmax-tmin)
 	dsdt = max(dsigmadtnot * exp(2.*bslope*tt),dsdtmin)
 	if(dsdt.gt.dsdtmax)then
-	   write(6,*)'Yikes!',dsdt,dsdtmax,dsigmadtnot,bslope,tt,ss,snot
+	   write(6,*)'Exp.pick: Yikes!',dsdt,dsdtmax,dsigmadtnot,bslope,tt,ss,snot
 	endif
 	xtest = ran(iseed)*dsdtmax
 c	write(6,*)'>',iregge,tt,dsdt,xtest
@@ -3423,7 +3434,6 @@ c	write(6,*)' ',tmin,tmax
 c
 	return
 	end
-
 
 c************************************************************************
 c       GETMASSES
@@ -3500,8 +3510,8 @@ c     1                                 id1,id2,rm1save,rm2save
 	rm2 = rm2save
 	return
 	end
-
-c
+      
+c********************************************************************************
 c       Do a two-body phase-space weighting of the decaying state
 c       P0 4-vector of parent particle
 c       P1 4-vector of first daughter
@@ -3540,6 +3550,7 @@ c     1                  psratio,psratiomax,pcmtest,ipskeep
 	end
 
 
+c********************************************************************************
 c
 c       Do a THREE-body phase-space weighting of the decaying state
 c       We are computing a 3-body decay as a sequence of two quasi-2-body
@@ -3698,7 +3709,7 @@ c     This version of the code is intended to be adapted for use with 2017, 2018
 c     GlueX data.
 c
       subroutine bremselect(ppbeam,ibremkeep)
-      character*100 fluxfilename
+      character*200 fluxfilename
       data fvaluemax/0.0/
       data ppbeamnot/0.65/  !GeV
       data wparam/0.1/  !dimensionless
@@ -3953,7 +3964,7 @@ c 10	format(1x,a,6f8.4,i4,2f8.4)
 	return
 	end
 
-c
+c********************************************************************************
 c	Compute invariant rest mass
 c	1 = px; 2 = py; 3=pz; 4=rmass; 5=total energy
 c	Input is in GeV, output is in GeV/c2

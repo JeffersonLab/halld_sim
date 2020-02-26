@@ -75,19 +75,19 @@ c
 END OF COMMENTS, START OF CONFIGURATION FOR RUNING MC_GEN 
 *******************************************************************************
 ===============================  <--- Next lines are active input, not comments
-Simulation of gamma + p --> (p pbar) p
-2000	!Number of events to generate
-50000000	!"Good" events to generate;  (stops at whichever number it hits first)
-3.80 	!Mininum momentum of incident particle beam in GeV/c
-11.80	!Maximum momentum of incident particle beam in GeV/c
+Simulation of gamma + p --> (Lambda Lambdabar) p  MECHANISM i <==  i = 1,2,3,4
+TOTALSIZE	!Number of events to generate
+5000000	!"Good" events to generate;  (stops at whichever number it hits first)
+MOMENTUM_MIN 	!Mininum momentum of incident particle beam in GeV/c
+MOMENTUM_MAX	!Maximum momentum of incident particle beam in GeV/c
 3    	!"Rule" for generating photons; 3=read external GlueX photon flux file
-flux_40856_42559.ascii           !file containing the beam flux distribution (if used)
+FLUX_DIR !file containing the beam flux distribution (if used)
 1	!Number of generated events which will be printed to the terminal 
 0	!Enable various programming hacks for testing (see code)(1=yes, 0=no)
 1	!Enable GlueX (ASCII input to HDDM) output data written (1=yes, 0=no)
 0	!Flag to select whether to call local event analyzer (1=yes, 0=no) 
-./  !/raid4/haoli/2019_MC/ppbar8_SP18_ver2/gen2/   !output name prefix !must end with /
-2000000  !Number of events in each output file
+GEN_DIR    !/raid4/haoli/2020_MC/double_regge_fit_test/gen/   !/raid1/schumach/gluexmc/ !output name prefix
+SAMPLESIZE  !Number of events in each output file
 .050	!instrumental delta_p/p spread in momentum of generated particles
 0.250	!Fermi momentum used in nuclear quasi-free calculations (GeV/c)
 2 	!{0,1,2} = {no,rectangular,cylindrical} target geometry
@@ -104,6 +104,8 @@ Index   NAME		MASS	WIDTH	Zpart	CTAU	LUND_ID N_decaymodes
 Second line (for each decay mode):
   Nbody(2-5)   "Dynamics"selection  Dyncode1 Dyncode2 
        		0=pure phase space (2 free parameters, specify decay dynamics)
+       		4=double regge model (1 par: Dyncode1=b)
+       		8=single regge model (2 par: Dyncode1=b_top Dyncode2=b_bottom)
 
 Third line (for each decay mode) LUND ID's for each of the decay products:
       ID1  	ID2 ...    	      Branching_fraction
@@ -111,26 +113,47 @@ Third line (for each decay mode) LUND ID's for each of the decay products:
 1	'PHOTON'	0.0	0.0	0	1.e32	1	0
 2	'PROTON'	0.93828	0.0	1	1.E32	41	0
 3	'dummy'		0.0	0.0	0	0.0	0.0	1
-! Proton-anti-proton pseudo-particle intermediate state
-!       proton  baryonium
-	2	8 	0.425	0.93827		!use relativistic BW line shape
-	41	91		        1.00  	!proton - {baryonium}  "meson exchange"
+!Regge model (Mechanism 1), specify b-slope and threshold (W = 2m_Lambda)
+!backward proton & forward {anti-Lambda Lambda} "non-strange meson exchange"
+!	2	8	DYNCODE0	0.93827
+!	41	93			1.00
 
-!	2	17 	0.20	0.93827	                              !
-!	92	-41		        1.00  	!{diproton} antiproton "baryon exchange"
+!Regge model (Mechanism 2), specify b-slope and threshold (W = m_Lambda+m_p)
+!backward Lambda & forward {anti-Lambda  p} "strange meson exchange"
+!	2	8   	0.20 	0.93827
+!	57	96		        1.00
 
-!	2	17 	0.20	0.93827	        !
-!	91	41		        1.00 	!{baryonium} - proton  "baryon exchange"
+!Regge model (Mechanism 3), specify b-slope and threshold (W = m_Lambda)
+!backward {anti-Lambda p} & forward Lambda "u-channel hyperon exchange"
+!	2	8   	0.35 	0.93827
+!	96	57		        1.00
 
-! Pure 3-body phase space
-!       proton  proton  anti-proton
-!	3	0	0.0	0.0		!3-body phase space
-!	41	41	-41		1.0
+!Regge model (Mechanism 4), specify b-slope and threshold (W = m_proton)
+!backward {anti-Lambda Lambda} & forward proton "u-channel proton exchange"
+!	2	8   	0.35 	0.938272
+!	94	41		        1.00
 
-! 3-body phase space followed by Regge-slope selection
-!       proton  proton  anti-proton
-!	3	 3      0.42	0.93827         !Slope parameter and recoil mass
-!	41	41	-41		1.00  	
+! double-Regge model (Mechanism 5) specify b-slope for top vertex and allow
+! the bottom vertex to decay also by a low-t mechanism
+!       3-body  doubleRegge  b_top  b_bottom
+!       proton  Lambda  anti-Lambda
+	3	 4      DYNCODE1  DYNCODE2                 !initial values were 0.2	1.5
+	57	41	-57		1.00	
+
+!3-body phase space
+!       proton  Lambda  anti-Lambda
+!	3	 0      0.0	0.0
+!	41	57	-57		1.00  	
+
+!5-body phase space
+!       proton  pi-     proton  pi+      anti-proton
+!	5	 0      0.0	0.0
+!	41	-17	41	+17	-41	1.00
+
+!3-body phase space followed by Regge-slope selection
+!       proton  Lambda  anti-Lambda
+!	3	 3      0.42	0.93827
+!	41	57	-57		1.00  	
 
 4	'PHOTON'	0.0	0.0	0	1.e32	1	0
 5	'NEUTRINO'	0.0	0.0	0	1.e32	2	0
@@ -319,7 +342,7 @@ Third line (for each decay mode) LUND ID's for each of the decay products:
 	2	0	0.0	0.0
 	41	-41              0.50	!proton anti-proton
 
-40	'Baryonium'	2.087	-440.0	0	0	91	1
+40	'Baryonium'	2.05	200.0	0	0	91	1
 	2	0	0.0	0.0
 	41	-41		1.0  ! proton anti-proton
 
