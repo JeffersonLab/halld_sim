@@ -42,7 +42,7 @@ ifeq ($(OStype),OSF1)
 endif
 
 OBJS =  getcell.o getcolumn.o getlayer.o getmodule.o getring.o \
-	getplane.o getrow.o getsector.o hitutil.o
+	getplane.o getrow.o getsector.o getpaired_row hitutil.o
 
 libhitutil.a:	$(OBJS)
 	$(AR) rv $@ $(OBJS)
