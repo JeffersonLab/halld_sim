@@ -42,23 +42,23 @@ SAMPLESIZE=5000
 MOMENTUM_MIN=6.4
 MOMENTUM_MAX=11.4
 
-#FLUX_DIR=`printf '/home/haoli/build/test/MC_GEN_sdobbs/halld_sim/src/programs/Simulation/MC_GEN/run/flux_%d_%d.ascii' "${RUN_NUMBER}" "${RUN_NUMBER}"`
-#FLUX_DIR=/home/haoli/build/test/MC_GEN_sdobbs/halld_sim/src/programs/Simulation/MC_GEN/run/flux_30274_31057.ascii
-FLUX_DIR=./flux_30274_31057.ascii
-GEN_DIR=/home/haoli/build/test/MC_GEN_sdobbs/halld_sim/src/programs/Simulation/MC_GEN/run/build/test/MC_GEN_sdobbs/halld_sim/src/programs/Simulation/MC_GEN/run/test/MC_GEN_sdobbs/halld_sim/src/programs/Simulation/MC_GEN/run/test/MC_GEN_sdobbs/halld_sim/src/programs/Simulation/MC_GEN/run/test/MC_GEN_sdobbs/halld_sim/src/programs/Simulation/MC_GEN/run
+FLUX_DIR=`printf './flux_%d_%d.ascii' "${RUN_NUMBER}" "${RUN_NUMBER}"`
+GEN_DIR=./gen/
 
 echo $FLUX_DIR
 echo $GEN_DIR
+mkdir -p $GEN_DIR
+
 
 # Get tagged flux hist from ccdb
 python $HD_UTILITIES_HOME/psflux/plot_flux_ccdb.py -b ${RUN_NUMBER} -e ${RUN_NUMBER}
 
 # Translate the hist into ASCII format
-ROOTSCRIPT=`printf 'Flux_to_Ascii.C("flux_%s_%s.root")' "$RUN_NUMBER" "$RUN_NUMBER" `
+ROOTSCRIPT=`printf '$HALLD_SIM_HOME/src/programs/Simulation/MC_GEN/run/Flux_to_Ascii.C("flux_%s_%s.root")' "$RUN_NUMBER" "$RUN_NUMBER" `
 root -l -b -q $ROOTSCRIPT
 
 # Edit the generator's definition file
-cp template/gen_template.def gen.def
+cp $HALLD_SIM_HOME/src/programs/Simulation/MC_GEN/run/template/gen_template.def gen.def
 EDITLIST=DYNCODE0,DYNCODE1,DYNCODE2,TOTALSIZE,SAMPLESIZE,MOMENTUM_MIN,MOMENTUM_MAX,FLUX_DIR,GEN_DIR
 for KEYWORD in ${EDITLIST//,/ }
 	do

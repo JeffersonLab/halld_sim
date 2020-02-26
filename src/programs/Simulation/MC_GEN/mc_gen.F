@@ -154,7 +154,7 @@ c
 	character*8 names(maxnumpar)
 	character   dummy*50,letter*1
 	character*80  title 
-        character*100 fluxfilename
+        character*200 fluxfilename
 	integer lundid(maxnumpar),numdecays(maxnumpar)
 	real rm(maxnumpar),width(maxnumpar),ct(maxnumpar)
 	real zpart(maxnumpar)
