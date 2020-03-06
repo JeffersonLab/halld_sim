@@ -6,10 +6,13 @@
 #include "Riostream.h"
 #include "TH1.h"
 #include "TH2.h" 
+#include "TGraph.h" 
 #include "TRandom3.h"
 #include "qDevilLib.h"
 #include "devilTreePT.h"
 #include "HddmOut.h"
+#include "UTILITIES/BeamProperties.h"
+#include "UTILITIES/MyReadConfig.h"
 
 //STRUCTURE TO KEEP THE CONFIGURATION SETTINGS
 struct genSettings_t {
@@ -25,7 +28,9 @@ struct genSettings_t {
   int tOut;             //type of output file (1->ROOT; 2->HDDM)
   int reaction;         //reaction (2->pair; 3->triplet)
   char outFile[80];     //name of output file
-  char inFileBrem[80];  //name of input root file that contains spectra histogram cobrem_vs_E
+  //char inFileBrem[80];  //name of input root file that contains spectra histogram cobrem_vs_E
+  string  beamconfigfile = "beam.cfg"; 
+  TString genconfigfile = "gen.cfg";
 };
 
 //FUNCTION PROTOTYPES
@@ -34,7 +39,7 @@ double ampSqPT(int type, int polDir, TLorentzVector target, TLorentzVector beam,
 void printUsage(genSettings_t genSettings, int goYes);
 
 int main(int argc, char **argv){
-
+    
   char *argptr;
   //SET THE DEFAULT CONFIGURATION SETTINGS
   genSettings_t genSettings;
@@ -50,8 +55,8 @@ int main(int argc, char **argv){
   genSettings.prescale     = 1000;
   genSettings.rSeed        = 103;
   sprintf(genSettings.outFile,"genOut.root");
-  sprintf(genSettings.inFileBrem,"cobrems.root");
-
+  //sprintf(genSettings.inFileBrem,"cobrems.root");
+    
   char rootFile[80];
   sprintf(rootFile,"genOut.root");
 
@@ -65,6 +70,14 @@ int main(int argc, char **argv){
     if (*argptr == '-') {
       argptr++;
       switch (*argptr) {
+      case 'c':
+        //strcpy(genSettings.beamconfigfile,++argptr);
+	genSettings.beamconfigfile = ++argptr;
+        break;
+      case 'd':
+        //strcpy(genSettings.genconfigfile,++argptr);
+	genSettings.genconfigfile = ++argptr;
+        break;
       case 'r':
         genSettings.rSeed = atoi(++argptr);
         break;
@@ -99,9 +112,9 @@ int main(int argc, char **argv){
 	outFileSet = 1;
         strcpy(genSettings.outFile,++argptr);
         break;
-      case 's':
-        strcpy(genSettings.inFileBrem,++argptr);
-        break;
+	//case 's':
+        //strcpy(genSettings.inFileBrem,++argptr);
+        //break;
 	case 'h':
 	// Do nothing right now
         break;
@@ -135,26 +148,52 @@ int main(int argc, char **argv){
       }
     }
   }
-
+  
+  // Get beam properties from configuration file
+  TH1D * cobrem_vs_E = 0;
+  if (genSettings.beamconfigfile != "") {
+    BeamProperties beamProp( genSettings.beamconfigfile );
+    cobrem_vs_E = (TH1D*)beamProp.GetFlux();
+  }
+  
+  TGraph * grXS_pair = new TGraph();
+  TGraph * grXS_trip = new TGraph();
+  double Z = 0, A = 0, rho = 0, Ltarget = 0;
+  // Get generator config file
+  if (genSettings.genconfigfile != "") {
+    MyReadConfig * ReadFile = new MyReadConfig();
+    ReadFile->ReadConfigFile( genSettings.genconfigfile );
+    Double_t * m_target = ReadFile->GetConfig4Par("target");  
+    TString m_XS_pair = ReadFile->GetConfigName("XS_pair"); 
+    TString m_XS_trip = ReadFile->GetConfigName("XS_trip"); 
+    Z = m_target[0];
+    A = m_target[1];
+    rho = m_target[2];
+    Ltarget = m_target[3];
+    grXS_pair = new TGraph(m_XS_pair);
+    grXS_trip = new TGraph(m_XS_trip);
+  }
+  
   double eGamma = genSettings.eGammaInit;
 
   //GET THE HISTOGRAM FOR COHERENT BREMSTRAHLUNG SPECTRUM
   TH1D* hGvsE;
-  TFile *inCoBrem=new TFile(genSettings.inFileBrem); //Using spectrum from Richard
-  hGvsE=(TH1D*)inCoBrem->Get("cobrem_vs_E");
+  //TFile *inCoBrem=new TFile(genSettings.inFileBrem); //Using spectrum from Richard
+  //hGvsE=(TH1D*)inCoBrem->Get("cobrem_vs_E");
+  hGvsE=(TH1D*)cobrem_vs_E;
   TH1D* hGvsEout = (TH1D*)hGvsE->Clone("hGvsEout");
   hGvsEout->Reset();
-  hGvsEout->Rebin(30);
+  hGvsEout->Rebin(20);
   int eBinLow = hGvsE->GetXaxis()->FindBin(genSettings.eLower);
   int eBinHigh = hGvsE->GetXaxis()->FindBin(genSettings.eUpper);
   hGvsE->GetXaxis()->SetRange(eBinLow,eBinHigh);
   double gMax = hGvsE->GetMaximum();
 
   //GET THE TRIPLET TO PAIR FRACTION HISTOGRAM NEEDED FOR RADIATIVE CORRECTIONS
-  TH1D* hcsFraction;
-  TFile *inCSfrac=new TFile("csFraction.root"); 
-  hcsFraction=(TH1D*)inCSfrac->Get("hcsFraction");
-
+  //TH1D* hcsFraction;
+  //TFile *inCSfrac=new TFile("csFraction.root"); 
+  //hcsFraction=(TH1D*)inCSfrac->Get("hcsFraction");
+  
   //DEFINE OUTPUT FILE
 
   HddmOut hddmGo(hddmFile);
@@ -332,8 +371,14 @@ int main(int argc, char **argv){
     //THE RADIATIVE CORRECTION FOR TRIPLETS IS THE SAME MAG AS FOR PAIRS 
     //THIS MEANS WE HAVE TO GET THE FRACTION OF TRIPLETS TO PAIRS AND
     //SCALE THE radFactorDelta USING THE TRIPLET TO PAIR FRACTION
-    int    eFracBin = hcsFraction->GetXaxis()->FindBin(beam.E());
-    double csFrac = hcsFraction->GetBinContent(eFracBin);
+    //int    eFracBin = hcsFraction->GetXaxis()->FindBin(beam.E());
+    double xs_p = grXS_pair->Eval(beam.E() * 1e3);
+    double xs_t = grXS_trip->Eval(beam.E() * 1e3);
+    if (beam.E() > 100.0) {
+      xs_p = grXS_pair->Eval(100.0 * 1e3);
+      xs_t = grXS_trip->Eval(100.0 * 1e3);
+    }
+    double csFrac = xs_t / xs_p;//hcsFraction->GetBinContent(eFracBin);
     double radFactorTrip = 1.0 + radFactorDelta/csFrac;
     
     //GET THE CROSS SECTION
@@ -353,6 +398,8 @@ int main(int argc, char **argv){
     if (genSettings.corrYes == 1) {
       crossSection *= sHfactor;
       crossSection *= radFactor;  
+      if (genSettings.reaction == 2) crossSection *= pow(Z, 2);
+      if (genSettings.reaction == 3) crossSection *= Z;
     }
 
     //GET INITIAL fullWeight
@@ -421,6 +468,8 @@ void printUsage(genSettings_t genSettings, int goYes){
   if (goYes == 0){
     fprintf(stderr,"\nSWITCHES:\n");
     fprintf(stderr,"-h\tPrint this message\n");
+    fprintf(stderr,"-c<arg>\tbeam configuration file\n");
+    fprintf(stderr,"-d<arg>\tgenerator configuration file\n");
     fprintf(stderr,"-R<arg>\tReaction:\n");
     fprintf(stderr,"\t\t-R2 = Pair production off of proton\n");
     fprintf(stderr,"\t\t-R3 = Triplet production\n");
@@ -452,6 +501,8 @@ void printUsage(genSettings_t genSettings, int goYes){
     if (genSettings.beamType == 1){
       cout<<"The current operation is equivalent to the command:"<<endl;
       cout<<"genDevilPT"
+	  <<" -c"<<genSettings.beamconfigfile
+	  <<" -d"<<genSettings.genconfigfile
 	  <<" -n"<<genSettings.nToGen
 	  <<" -R"<<genSettings.reaction
 #ifdef WITHHDDM
@@ -470,6 +521,8 @@ void printUsage(genSettings_t genSettings, int goYes){
     } else {
       cout<<"The current operation is equivalent to the command:"<<endl;
       cout<<"genDevilPT"
+	  <<" -c"<<genSettings.beamconfigfile
+	  <<" -d"<<genSettings.genconfigfile
 	  <<" -n"<<genSettings.nToGen
 	  <<" -R"<<genSettings.reaction
 	  <<" -t"<<genSettings.tOut
@@ -481,7 +534,7 @@ void printUsage(genSettings_t genSettings, int goYes){
 	  <<" -l"<<genSettings.eLower
 	  <<" -u"<<genSettings.eUpper
 	  <<" -o"<<genSettings.outFile
-	  <<" -s"<<genSettings.inFileBrem
+	//<<" -s"<<genSettings.inFileBrem
 	  <<"\n"<<endl;
     }
     cout<<""<<endl;
@@ -510,7 +563,7 @@ void printUsage(genSettings_t genSettings, int goYes){
     }
     if(genSettings.beamType == 2){
       cout<<"Beam type: Bremstrahlung spectrum from histogram "<<"cobrem_vs_E"<<endl;
-      cout<<"           within file "<<genSettings.inFileBrem<<endl;
+      cout<<"           within file "<<genSettings.beamconfigfile<<endl;
       cout<<"           Using energy range from "
 	  <<genSettings.eLower<<" GeV to "<<genSettings.eUpper<<" GeV"<<endl;
     }
