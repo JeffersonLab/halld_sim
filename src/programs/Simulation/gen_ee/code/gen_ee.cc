@@ -17,6 +17,7 @@
 //STRUCTURE TO KEEP THE CONFIGURATION SETTINGS
 struct genSettings_t {
   int beamType;         //Type of beam (1 -> single energy; 2-> bremstrahlung spectrum)
+  int runNum;           //run number
   int polDir;           //beam polarization direction (0-> unpolarized; 1-> pol in x; 2->pol in y)
   double eGammaInit;    //incident photon energy
   double eLower;        //incident photon energy min (only used for beamType = 1)
@@ -29,8 +30,8 @@ struct genSettings_t {
   int reaction;         //reaction (2->pair; 3->triplet)
   char outFile[80];     //name of output file
   //char inFileBrem[80];  //name of input root file that contains spectra histogram cobrem_vs_E
-  string  beamconfigfile = "beam.cfg"; 
-  TString genconfigfile = "gen.cfg";
+  string  beamconfigfile = "beam.cfg"; //beam cfg file 
+  TString genconfigfile = "gen.cfg"; //generator cfg file
 };
 
 //FUNCTION PROTOTYPES
@@ -44,6 +45,7 @@ int main(int argc, char **argv){
   //SET THE DEFAULT CONFIGURATION SETTINGS
   genSettings_t genSettings;
   genSettings.reaction     = 2;
+  genSettings.runNum       = 9001;
   genSettings.tOut         = 1;
   genSettings.polDir       = 2;
   genSettings.beamType     = 1;
@@ -80,6 +82,9 @@ int main(int argc, char **argv){
         break;
       case 'r':
         genSettings.rSeed = atoi(++argptr);
+        break;
+      case 'z':
+        genSettings.runNum = atoi(++argptr);
         break;
       case 'R':
         genSettings.reaction = atoi(++argptr);
@@ -182,8 +187,8 @@ int main(int argc, char **argv){
   //hGvsE=(TH1D*)inCoBrem->Get("cobrem_vs_E");
   hGvsE=(TH1D*)cobrem_vs_E;
   TH1D* hGvsEout = (TH1D*)hGvsE->Clone("hGvsEout");
-  hGvsEout->Reset();
-  hGvsEout->Rebin(20);
+  //hGvsEout->Reset();
+  //hGvsEout->Rebin(20);
   int eBinLow = hGvsE->GetXaxis()->FindBin(genSettings.eLower);
   int eBinHigh = hGvsE->GetXaxis()->FindBin(genSettings.eUpper);
   hGvsE->GetXaxis()->SetRange(eBinLow,eBinHigh);
@@ -451,7 +456,7 @@ int main(int argc, char **argv){
     tmpEvt.rxn = genSettings.reaction;
     tmpEvt.weight = fullWeight;
     evtNumber++;
-    if (genSettings.tOut == 2) hddmGo.write(tmpEvt,evtNumber);
+    if (genSettings.tOut == 2) hddmGo.write(tmpEvt,genSettings.runNum,evtNumber);
   }
   //WRITE THE TREE AND HISTOGRAMS TO FILE
   if (genSettings.tOut == 1){
@@ -468,6 +473,7 @@ void printUsage(genSettings_t genSettings, int goYes){
   if (goYes == 0){
     fprintf(stderr,"\nSWITCHES:\n");
     fprintf(stderr,"-h\tPrint this message\n");
+    fprintf(stderr,"-z<arg>\trun number\n");
     fprintf(stderr,"-c<arg>\tbeam configuration file\n");
     fprintf(stderr,"-d<arg>\tgenerator configuration file\n");
     fprintf(stderr,"-R<arg>\tReaction:\n");
@@ -501,6 +507,7 @@ void printUsage(genSettings_t genSettings, int goYes){
     if (genSettings.beamType == 1){
       cout<<"The current operation is equivalent to the command:"<<endl;
       cout<<"genDevilPT"
+	  <<" -z"<<genSettings.runNum
 	  <<" -c"<<genSettings.beamconfigfile
 	  <<" -d"<<genSettings.genconfigfile
 	  <<" -n"<<genSettings.nToGen
@@ -521,6 +528,7 @@ void printUsage(genSettings_t genSettings, int goYes){
     } else {
       cout<<"The current operation is equivalent to the command:"<<endl;
       cout<<"genDevilPT"
+	  <<" -z"<<genSettings.runNum
 	  <<" -c"<<genSettings.beamconfigfile
 	  <<" -d"<<genSettings.genconfigfile
 	  <<" -n"<<genSettings.nToGen
