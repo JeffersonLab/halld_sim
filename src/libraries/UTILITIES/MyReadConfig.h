@@ -8,8 +8,12 @@
 * This software is provided "as is" without any warranty.                 *
 **************************************************************************/
 
-#ifndef _MYREADCONFIG_H_
-#define _MYREADCONFIG_H_
+
+#if !defined(MYREADCONFIG)
+#define MYREADCONFIG
+
+//#ifndef _MYREADCONFIG_H_
+//#define _MYREADCONFIG_H_
 
 
 #include <vector>

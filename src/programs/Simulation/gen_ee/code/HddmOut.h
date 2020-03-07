@@ -84,8 +84,9 @@ class HddmOut {
 
   }
   
-  void write(tmpEvt_t evt, int eventNum) {
-    init(10000);
+  void write(tmpEvt_t evt, int runNum, int eventNum) {
+    init(runNum);
+    //init(10000);
     phyEvt->in[0].eventNo = eventNum;
     reaction->vertices = vertices = make_s_Vertices(1);
     vertices->mult = 1;
