@@ -130,17 +130,6 @@ int main(int argc, char **argv){
       }
     }
   }
-
-
-  if (genSettings.tOut == 1){
-    if (outFileSet == 1) sprintf(rootFile,genSettings.outFile);
-    sprintf(hddmFile,"/dev/null");
-  }
-  if (genSettings.tOut == 2){
-    if (outFileSet == 1) sprintf(hddmFile,genSettings.outFile);
-    sprintf(rootFile,"/dev/null");
-  }
-
     
   for (int i=1; i<argc; i++) {
     argptr = argv[i];
@@ -152,6 +141,16 @@ int main(int argc, char **argv){
         break;
       }
     }
+  }
+
+  if (genSettings.beamconfigfile == "") {
+    cout << "No beam configuration file: run gen_ee -h for help " << endl;
+    exit(1);
+  }
+  
+  if (genSettings.genconfigfile == "") {
+    cout << "No generator configuration file: run gen_ee -h for help " << endl;
+    exit(1);
   }
   
   // Get beam properties from configuration file
@@ -169,6 +168,11 @@ int main(int argc, char **argv){
     MyReadConfig * ReadFile = new MyReadConfig();
     ReadFile->ReadConfigFile( genSettings.genconfigfile );
     Double_t * m_target = ReadFile->GetConfig4Par("target");  
+    Double_t * m_polDir = ReadFile->GetConfig1Par("polDir");  
+    Double_t * m_corrYes = ReadFile->GetConfig1Par("corrYes");  
+    Double_t * m_reaction = ReadFile->GetConfig1Par("reaction");
+    Double_t * m_beamType = ReadFile->GetConfig1Par("beamType");
+    Double_t * m_tOut = ReadFile->GetConfig1Par("tOut");
     TString m_XS_pair = ReadFile->GetConfigName("XS_pair"); 
     TString m_XS_trip = ReadFile->GetConfigName("XS_trip"); 
     Z = m_target[0];
@@ -177,8 +181,22 @@ int main(int argc, char **argv){
     Ltarget = m_target[3];
     grXS_pair = new TGraph(m_XS_pair);
     grXS_trip = new TGraph(m_XS_trip);
+    genSettings.polDir = (int) m_polDir[0];
+    genSettings.corrYes = (int) m_corrYes[0];
+    genSettings.reaction = (int) m_reaction[0];
+    genSettings.beamType = (int) m_beamType[0];
+    genSettings.tOut = (int) m_tOut[0];
   }
-  
+
+  if (genSettings.tOut == 1){
+    if (outFileSet == 1) sprintf(rootFile,genSettings.outFile);
+    sprintf(hddmFile,"/dev/null");
+  }
+  if (genSettings.tOut == 2){
+    if (outFileSet == 1) sprintf(hddmFile,genSettings.outFile);
+    sprintf(rootFile,"/dev/null");
+  }
+
   double eGamma = genSettings.eGammaInit;
 
   //GET THE HISTOGRAM FOR COHERENT BREMSTRAHLUNG SPECTRUM
@@ -497,7 +515,7 @@ void printUsage(genSettings_t genSettings, int goYes){
     fprintf(stderr,"-e<arg>\tPhoton energy in GeV.                  ONLY USED IF -b1\n");
     fprintf(stderr,"-l<arg>\tMinimum incident photon energy in GeV. ONLY USED IF -b2\n");
     fprintf(stderr,"-u<arg>\tMaximum incident photon energy in GeV. ONLY USED IF -b2\n");
-    fprintf(stderr,"-s<arg>\tfile with histogram cobrem_vs_E.       ONLY USED IF -b2\n");
+    //fprintf(stderr,"-s<arg>\tfile with histogram cobrem_vs_E.       ONLY USED IF -b2\n");
     fprintf(stderr,"-o<arg>\tOutFile name\n");
 
     cout<<""<<endl;
@@ -548,7 +566,7 @@ void printUsage(genSettings_t genSettings, int goYes){
     cout<<""<<endl;
     cout<<"NOTE 1-> If providing custom photon spectrum histogram:"<<endl; 
     cout<<"         * The file containing the histogram is provided"<<endl; 
-    cout<<"           as an argument to the -s switch"<<endl;
+    //cout<<"           as an argument to the -s switch"<<endl;
     cout<<"         * The histogram MUST be of type TH1D"<<endl;
     cout<<"         * The histogram MUST have energy units of GeV for x-axis"<<endl;
     cout<<"         * The histogram MUST be named cobrem_vs_E"<<endl;
