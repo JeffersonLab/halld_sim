@@ -113,47 +113,13 @@ Third line (for each decay mode) LUND ID's for each of the decay products:
 1	'PHOTON'	0.0	0.0	0	1.e32	1	0
 2	'PROTON'	0.93828	0.0	1	1.E32	41	0
 3	'dummy'		0.0	0.0	0	0.0	0.0	1
-!Regge model (Mechanism 1), specify b-slope and threshold (W = 2m_Lambda)
-!backward proton & forward {anti-Lambda Lambda} "non-strange meson exchange"
-!	2	8	DYNCODE0	0.93827
-!	41	93			1.00
 
-!Regge model (Mechanism 2), specify b-slope and threshold (W = m_Lambda+m_p)
-!backward Lambda & forward {anti-Lambda  p} "strange meson exchange"
-!	2	8   	0.20 	0.93827
-!	57	96		        1.00
-
-!Regge model (Mechanism 3), specify b-slope and threshold (W = m_Lambda)
-!backward {anti-Lambda p} & forward Lambda "u-channel hyperon exchange"
-!	2	8   	0.35 	0.93827
-!	96	57		        1.00
-
-!Regge model (Mechanism 4), specify b-slope and threshold (W = m_proton)
-!backward {anti-Lambda Lambda} & forward proton "u-channel proton exchange"
-!	2	8   	0.35 	0.938272
-!	94	41		        1.00
-
-! double-Regge model (Mechanism 5) specify b-slope for top vertex and allow
+! Double-Regge model (Mechanism 5) specify b-slope for top vertex and allow
 ! the bottom vertex to decay also by a low-t mechanism
 !       3-body  doubleRegge  b_top  b_bottom
-!       proton  Lambda  anti-Lambda
-	3	 4      DYNCODE1  DYNCODE2                 !initial values were 0.2	1.5
-	57	41	-57		1.00	
-
-!3-body phase space
-!       proton  Lambda  anti-Lambda
-!	3	 0      0.0	0.0
-!	41	57	-57		1.00  	
-
-!5-body phase space
-!       proton  pi-     proton  pi+      anti-proton
-!	5	 0      0.0	0.0
-!	41	-17	41	+17	-41	1.00
-
-!3-body phase space followed by Regge-slope selection
-!       proton  Lambda  anti-Lambda
-!	3	 3      0.42	0.93827
-!	41	57	-57		1.00  	
+!       proton  proton  anti-proton
+	3	 4      DYNCODE1 DYNCODE2             !3-body phase space, Mechanism 5, b1 slope, b2 slope
+	41	41	-41		1.00
 
 4	'PHOTON'	0.0	0.0	0	1.e32	1	0
 5	'NEUTRINO'	0.0	0.0	0	1.e32	2	0

@@ -1,83 +1,87 @@
+ #!/bin/sh 
  #########################################################
- #  Usage: ./run.sh 
+ #  Usage: ./run.sh /path/to/config
  ########################################################
- #                      # grab beam config files        
- #  flux.cc             # invoke beamProperties class        
- #                      # translate the beam energy distribution into ASCII file
+ #  grab generator parameters from config file        
+ #  invoke plot_flux_ccdb.py to get tagged_flux.root 
+ #  translate flux into ASCII file as mc_gen's beam profile
+ #  create new mc_gen definition file from given parameters
+ #  run mc_gen with ASCII output
+ #  translate ASCII into HDDM
  ########################################################
- # 
- # created by:  Hao Li
- #              Carnegie Mellon University
+ #              Hao Li
+ #  created by: Carnegie Mellon University
  #              15-Feb-2020
  ######################################################## 
 
-# Run number
-RUN_NUMBER=31057
 
-# Reaction Mechanisms --> pointing to the specific generator's
-#                         definition template and the correspo
-#						  -nding translator
-# MECH CODE:
-#            PPBAR_MECH_0 -- ppbar 3body phase space
-#            PPBAR_MECH_1 -- ppbar t-channel (single Regge)
-#            PPBAR_MECH_2 -- ppbar u-channel (single Regge)
-#            PPBAR_MECH_3 -- ppbar (double Regge)
-#            LAMLAMBAR_MECH_0 -- lamlambar 3body phase space
-#            LAMLAMBAR_MECH_1 -- lamlambar mechanism 1
-#            LAMLAMBAR_MECH_2 -- lamlambar mechanism 2
-#            LAMLAMBAR_MECH_3 -- lamlambar mechanism 3
-#            LAMLAMBAR_MECH_4 -- lamlambar mechanism 4
-#            LAMLAMBAR_MECH_5 -- lamlambar (double Regge)
-REACTION_CHANNEL=lamlambar
-MECH_CODE=LAMLAMBAR_MECH_5 
 
-# Model-related Parameters
-DYNCODE0=0.53
-DYNCODE1=0.24
-DYNCODE2=0.7
+CONFIGFILE=$@
+echo "CONFIGFILE = " $CONFIGFILE
+eval $(sed '/:/!d;/^ *#/d;s/:/ /;' < "$CONFIGFILE" | while read -r key val
+do
+    #verify here
+    #...
+    str="$key='$val'"
+    echo "$str"
+done)
 
-# Simulation Parameters
-TOTALSIZE=10000
-SAMPLESIZE=5000
-MOMENTUM_MIN=6.4
-MOMENTUM_MAX=11.4
 
-FLUX_DIR=`printf './flux_%d_%d.ascii' "${RUN_NUMBER}" "${RUN_NUMBER}"`
-GEN_DIR=./gen/
-
-echo $FLUX_DIR
-echo $GEN_DIR
-mkdir -p $GEN_DIR
+# Prepare
+echo "Print list of control parameters:"
+echo "RUN_NUMBER = " $RUN_NUMBER
+echo "REACTION_CHANNEL = " $REACTION_CHANNEL
+echo "MECH = " $MECH
+echo "DYNCODE0 = " $DYNCODE0
+echo "DYNCODE1 = " $DYNCODE1
+echo "DYNCODE2 = " $DYNCODE2
+echo "TOTALSIZE = " $TOTALSIZE
+echo "SAMPLESIZE = " $SAMPLESIZE
+echo "MOMENTUM_MIN = " $MOMENTUM_MIN
+echo "MOMENTUM_MAX = " $MOMENTUM_MAX
+echo "GEN_DIR = " ${GEN_DIR}
+mkdir -p ${GEN_DIR}
+echo $FILE
 
 
 # Get tagged flux hist from ccdb
 python $HD_UTILITIES_HOME/psflux/plot_flux_ccdb.py -b ${RUN_NUMBER} -e ${RUN_NUMBER}
+FLUX_DIR=`printf './flux_%d_%d.ascii' "${RUN_NUMBER}" "${RUN_NUMBER}"`
+echo "FLUX_DIR = " $FLUX_DIR 
 
 # Translate the hist into ASCII format
 ROOTSCRIPT=`printf '$HALLD_SIM_HOME/src/programs/Simulation/MC_GEN/run/Flux_to_Ascii.C("flux_%s_%s.root")' "$RUN_NUMBER" "$RUN_NUMBER" `
 root -l -b -q $ROOTSCRIPT
 
 # Edit the generator's definition file
-cp $HALLD_SIM_HOME/src/programs/Simulation/MC_GEN/run/template/gen_template.def gen.def
+cp $HALLD_SIM_HOME/src/programs/Simulation/MC_GEN/run/template/gen_${MECH}.def $GEN_DIR/gen.def
 EDITLIST=DYNCODE0,DYNCODE1,DYNCODE2,TOTALSIZE,SAMPLESIZE,MOMENTUM_MIN,MOMENTUM_MAX,FLUX_DIR,GEN_DIR
 for KEYWORD in ${EDITLIST//,/ }
 	do
 		REGEXSTRING=`printf 's=%s=%s=g' "${KEYWORD}" "${!KEYWORD}"`
-		echo ${REGEXSTRING}
-		sed -i ${REGEXSTRING} gen.def
+		#echo ${REGEXSTRING}
+		sed -i ${REGEXSTRING} $GEN_DIR/gen.def
 	done
 
 
 # Initiate the generator with its definition file
 #         Note: out put will be an ASCII file
-mc_gen gen.def
+mc_gen $GEN_DIR/gen.def
 
 # Translate the output into HDDM format
 END=$(($TOTALSIZE/SAMPLESIZE))
 for i in $(seq 1 $END)
 do
 	FILENAME=`printf '%sgen_%04d.ascii' "${GEN_DIR}" "$i"`
-	GEN2HDDM_lamlambar -r${RUN_NUMBER} $FILENAME
+	if [ "$REACTION_CHANNEL" == "lamlambar" ]; then
+		GEN2HDDM_lamlambar -r${RUN_NUMBER} $FILENAME
+	fi
+
+	if [ "$REACTION_CHANNEL" == "ppbar" ]; then
+		GEN2HDDM_ppbar -r${RUN_NUMBER} $FILENAME
+	fi
+
+
 done
 
 

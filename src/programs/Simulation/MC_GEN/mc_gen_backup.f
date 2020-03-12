@@ -1,4 +1,4 @@
-      PROGRAM MC_GEN
+        PROGRAM MC_GEN
 c*********************************************************************************
 c	MC_GEN
 c	Monte Carlo generation of events with sequential N-body decays.
@@ -145,9 +145,8 @@ c                7-19-19 - Introduce a decay mode with 3-body decay followd by R
 c                8-26-19 - Small bug fix in writing out ASCII data for Mechanism G2 - order of particles
 c               10-29-19 - Tiny bug fix in Reggepick to trap rare machine precision issue    
 c               11-19-19 - Code to allow simulation of the "double Regge" process vi a "Mechanism 5"
-c               02-26-20 - Small code upgrades to handle "double-Regge" better    
 c     
-        parameter (version=11.53) !Version of the program... keep this updated
+        parameter (version=11.51) !Version of the program... keep this updated
 c      
 	external ran  !forces the use of "my" version of random number generator (see RNDNOR.F)
 	parameter (maxnumpar=65) !Maximum number of particles in the table
@@ -580,15 +579,9 @@ c
 	do j = 1,lfl
 	   if(filenm(j:j).eq.'.') goto 80
 	end do
- 80     do k = j,1,-1
-	   if(filenm(k:k).eq.'/') goto 81
-        enddo
- 81     k = k + 1
-        n = j - k + 1
-        histnm(1:n) = filenm(k:j)
-	histnm = histnm(1:n)//'hbk'
-        lfl = n + 3
-        write(6,*)'Histogram file name will be:',histnm(1:lfl),j,k,lfl
+ 80     histnm(1:j) = filenm(1:j)
+	histnm = histnm(1:j)//'hbk'
+	lfl    = j + 3
 c
 c       Initialize the random number generator:
 c       As of Jan 2010, reuse the external functions 
@@ -2006,13 +1999,9 @@ c
 		endif
 c		fname = '/raid5/schumach/'//histnm(1:lfl-4)//'_'//nam//'.ascii'
 		fname = prefix(1:lprefix)//histnm(1:lfl-4)//'_'//nam//'.ascii'
-c                write(6,*)'New output file: ',prefix(1:lprefix),lprefix
-c                write(6,*)'New output file: ',histnm(1:lfl-4),fl-4
-c                write(6,*)'New output file: ',nam
 		write(6,*)'New Monte Carlo output ',fname
 		open(unit=2,file=fname,status='UNKNOWN')
-c                call exit()
-             end if
+	end if
 	ieventout = ieventout+1
 	if(ieventout.gt.maxbosoutput)then  !open new file after <maxbosoutput> events
 	   close(2)
@@ -3745,9 +3734,8 @@ c     The bin-center correction used below assumes 10 MeV-wide bins
 c     
       if(ifirst.eq.1)then  !Do this only the first time, when setting up the calculation
          ifirst = 0
-         write(6,*)'Reading photon energy distribution from (',
-     1    lfluxfilename,')'
-         write(6,*)fluxfilename(1:lfluxfilename)
+         write(6,*)'Reading photon energy distribution from ',
+     1          fluxfilename(1:lfluxfilename)
          open(unit = 1, file=fluxfilename(1:lfluxfilename),status="old")
          fvaluemax = 0
          nmin = 0
