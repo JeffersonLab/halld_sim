@@ -441,20 +441,16 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
     std::map<hddm_s::istream*,hddm_s::streamposition>::iterator iter;
     for (iter = start2merge.begin(); iter != start2merge.end(); ++iter) {
         hddm_s::HDDM record2;
-        for (int i=0; i < skip2merge[iter->first]; ++i) {
-            if (!(*iter->first >> record2)) {
-                //pthread_mutex_lock(&input_file_mutex);
-                //input_file_mutex_last_owner = pthread_self();
-                iter->first->setPosition(start2merge.at(iter->first));
-                if (!(*iter->first >> record2)) {
-                    //pthread_mutex_unlock(&input_file_mutex);
-                    std::cerr << "Trying to merge from empty input file, "
-                              << "cannot continue!" << std::endl;
-                    exit(-1);
-                }
-                //pthread_mutex_unlock(&input_file_mutex);
-            }
-        }
+
+        iter->first->setPosition(start2merge.at(iter->first));
+        iter->first->skip(skip2merge[iter->first]);
+          
+		if (!(*iter->first >> record2)) {
+			std::cerr << "Trying to merge from empty input file, "
+					  << "cannot continue!" << std::endl;
+			exit(-1);
+		}
+
         skip2merge[iter->first] = 0;
     }
 
@@ -515,6 +511,7 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
             }
             //pthread_mutex_unlock(&input_file_mutex);
          }
+         
          hddm_s_merger::set_t_shift_ns(0);
          hddm_s::RFsubsystemList RFtimes = record2.getRFsubsystems();
          hddm_s::RFsubsystemList::iterator RFiter;
