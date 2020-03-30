@@ -68,20 +68,40 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
     Ptot.Print();*/
   }
   
-  /*GDouble Wpipi  = Ptot.M();
+  GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
-  GDouble mass2 = P2.M();*/
+  GDouble mass2 = P2.M();
+  GDouble Ppipi = Ptot.E() > Wpipi? sqrt(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
+
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
   GDouble Et = Precoil.E();
   GDouble Mt = Precoil.M();
-  GDouble t = -2*Precoil.M()*(Et - Mt);      
+  GDouble t = -2*Precoil.M()*(Et - Mt);  
+  GDouble Eg = Ptot.E();
+  GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
 
-    complex<GDouble> Arel(sqrt(exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
+  GDouble Thpipi = -t > tpar? (180/PI)*sqrt( (-t-tpar)/(Eg*Ppipi) ): 0;
+
+  // complex<GDouble> Arel(sqrt(exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
+  //  complex<GDouble> Arel(sqrt(-t*exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(-t*exp^Bt)   Add -t factor for pions 
   
+  // Estimate of k2 sinthe / (-t) * F_strong(-t)  . PRC 80 055201 (2009) Eq. 4 and Fig 6.
 
-    // cout << " TwoPitdist" << " Bslope=" << Bslope << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel) << endl; 
+  // complex<GDouble> Arel( (Eg*Eg/(-t)) * Thpipi * sqrt(exp(-Thpipi*Thpipi/(2*0.45*0.45))) /exp(Bgen*t),0. );   // 1/-t for photon exchange.
+
+  complex<GDouble> Arel;
+
+
+  if (Bslope > 0) {
+    Arel = ( Thpipi * sqrt(exp(-Thpipi*Thpipi/(2*0.45*0.45))) /exp(Bgen*t),0.);   // Change phase of sigma relative to Primakoff
+  }
+  else {
+    Arel = ( 1. /exp(Bgen*t),0.);   // Use for flat distribution
+  }
+
+  // cout << "TwoPitdist" << " Bslope=" << Bslope << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel)  << " Eg=" << Eg << " tpar=" << tpar << " Wpipi=" << Wpipi << " Ppipi=" << Ppipi << " Thpipi=" << Thpipi << endl; 
   return( Arel );
 }
 

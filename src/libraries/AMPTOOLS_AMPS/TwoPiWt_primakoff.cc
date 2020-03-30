@@ -6,6 +6,7 @@
 #include <cstdlib>
 
 #include "TLorentzVector.h"
+#include "particleType.h"
 
 #include "barrierFactor.h"
 #include "breakupMomentum.h"
@@ -28,7 +29,7 @@ Double_t sigma_ggpi0pi0_func (Double_t *x, Double_t *par){
     // parin[x] = mu;                // parameter 2: mean of Fermi Function. simplify to 2 parameters
     // parin[1] = kT              // parameter 3: transition parameter
     
-    Double_t MPI =0.139570;
+  Double_t MPI = ParticleMass(Pi0);
     // Double_t PI=3.14159;
     
     Double_t A  = par[0];
@@ -57,8 +58,8 @@ Double_t sigma_ggpipi_func (Double_t *x, Double_t *par){
     
     // constants
     // Double_t const PI = 3.14159;
-  // Double_t MPI =0.134977;     // pi0
-    Double_t MPI =0.139570;  // pi+
+  // Double_t MPI = ParticleMass(Pi0);     // pi0
+  Double_t MPI = ParticleMass(PiPlus);  // pi+
     Double_t W0 = 0.3;
     
     Double_t expon = par[0];
@@ -255,8 +256,10 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
   }
   
   GDouble Wpipi  = Ptot.M();
-  // GDouble mass1 = P1.M();
+  GDouble mass1 = P1.M();
   // GDouble mass2 = P2.M();
+  GDouble Ppipi = Ptot.E() > Wpipi? sqrt(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
+  // GDouble Thetapipi = Ptot.Theta()*180./PI;
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
@@ -300,14 +303,18 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
     parin[3] = 0.546;  
     xin[0] = -t;             // input positive value of t
     
-    GDouble sigmat = sigmat_func (xin,parin);
+    GDouble xnorm = 0.001;
+    GDouble sigmat = sigmat_func (xin,parin) * xnorm;    // normlize amplitude to about unity
+
+  GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
+  GDouble Thpipi = -t > tpar? (180/PI)*sqrt( (-t-tpar)/(Eg*Ppipi) ): 0;
   
     complex<GDouble> Csig( sqrt(sigmat*sig_ggpipi/Wpipi/exp(Bgen*t)), 0.0 );    // Return complex double, sqrt (cross section). Divide out g
 
     // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " m_par1=" << m_par1 << " m_par2=" 
-    //       << m_par2 << " sig_ggpipi=" << sig_ggpipi << " sigmat=" << sigmat << " Csig=" << Csig << endl;
+    //	 << m_par2 << " sig_ggpipi=" << sig_ggpipi << " sigmat=" << sigmat << " Thpipi=" << Thpipi << " Thetapipi=" << Thetapipi << " Csig=" << Csig << endl;
 
-    double epsilon=1-5;
+    double epsilon=1e-5;
     return( Csig  + epsilon);   // return non-zero value to protect from likelihood calculation
 }
 
