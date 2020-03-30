@@ -145,9 +145,12 @@ c                7-19-19 - Introduce a decay mode with 3-body decay followd by R
 c                8-26-19 - Small bug fix in writing out ASCII data for Mechanism G2 - order of particles
 c               10-29-19 - Tiny bug fix in Reggepick to trap rare machine precision issue    
 c               11-19-19 - Code to allow simulation of the "double Regge" process vi a "Mechanism 5"
-c               02-26-20 - Small code upgrades to handle "double-Regge" better    
+c               02-26-20 - Small code upgrades to handle "double-Regge" better
+c               03-23-20 - create a 3-body mechanism with and overall b1 t-slope to the produced pair(GeV^-2) and
+c                          and an invariant P23 mass cluster pairing slope b2 (GeV^-1)
+c                          We are calling this "Mechanism 6".     
 c     
-        parameter (version=11.53) !Version of the program... keep this updated
+        parameter (version=11.60) !Version of the program... keep this updated
 c      
 	external ran  !forces the use of "my" version of random number generator (see RNDNOR.F)
 	parameter (maxnumpar=65) !Maximum number of particles in the table
@@ -662,7 +665,7 @@ c	write(6,*)'> Generating event',ievent,ikeep,iattempt
  102	   format(1x,'Number of events generated so far:',2i10,3i12)
 	end if
  105	if(ievent.gt.nevent)goto 500
-	if(ikeep.gt.ngevent)goto 500    ! Comment this out when using the "writeit" scheme
+	if(ikeep.gt.ngevent)goto 500
 c
 c	Initialize the particle list for this event
 c
@@ -1506,7 +1509,7 @@ c
 c             End of options for letting two-body final states decay
 c ********************************************************************
               
-	   else if(nbody.eq.3)then		! three-body decay modes
+	   else if(nbody.eq.3)then ! three-body decay modes
 	      if(ndynamics .eq. 0)then !decay via pure phase space
 c                 write(6,*)' '
 c	 	  write(6,*)'>Calling  3-body decay code',pv(4),p1(4),p2(4),p3(4)
@@ -1536,9 +1539,11 @@ c             Arrange that this particle P23 satisfies the specified t-slope req
 c             Thus, we do not have to pre-select a mass of the intermediate state particle.
 c             NDYNAMICS = 3  - rotate the 3-body phase-space state so the P23 combo has given t-slope
 c             NDYNAMICS = 4  - rotate the 3-body phase-space state so the P23 combo has given t-slope and
-c             also enforce the t-slope at the bottom vertex:  "double - Regge" mechanism
+c                              also enforce the t-slope at the bottom vertex:  "double - Regge" mechanism
+c             NDYNAMICS = 5  - rotate the 3-body phase-space state so the P23 combo has given t-slope and
+c                              keep event where the invariant mass of P23 follows a desired slope
 c
-              else if(ndynamics.eq.3 .or. ndynamics.eq.4)then !combine 3-body phase space & Regge picture
+              else if(ndynamics.ge.3 .and. ndynamics.le.5)then !combine 3-body production & Regge picture
                  idcount   = 0
  240             pvtemp(1) = 0
                  pvtemp(2) = 0
@@ -1570,13 +1575,37 @@ c                 write(6,*)'P23>>',p23
                  rm23 = p23(4)
                  bslope1     = dyncode1 ! was set in definition file
                  bslope2     = dyncode2 ! was set in definition file
-                 if(ndynamics.eq.3)then
+                 if(ndynamics.eq.3)then ! Mechanism 4, single Regge with momentum transfer to produced pair
                     rmproduce  = rm23 ! the "produced" thing is the forward-going object at the photon vertex
                     rmrecoil   = rm1  ! the recoiling thing is listed first in the definition file (e.g. target proton)
-                 elseif(ndymanics.eq.4)then
+                 elseif(ndymanics.eq.4)then ! Mechanism 5, double Regge 
                     rmproduce  = rm1  ! the "produced" thing is the forward-going object at the photon vertex
                     rmrecoil   = rm23 ! the recoiling thing here the pair of other particles taken together
+                 elseif(ndymanics.eq.5)then  ! Mechanism 6,  single Regge with P23 invariant mass tuning
+                    rmproduce  = rm23  ! the "produced" thing is the forward-going object at the photon vertex
+                    rmrecoil   = rm1   ! the recoiling thing is listed first in the definition file (e.g. target proton)
                  endif
+c                
+c                Now test if the P23 pair has an invriant mass in line with the selected
+c                slope.  This is our way of modeling possible clustering of the particle pair.
+c                "Mechanism 6" 
+c                 
+                 if(ndynamics.eq.5)then
+c                    write(6,*)'Trimming invariant mass'
+c                    write(6,*)p2
+c                    write(6,*)p3
+c                    write(6,*)p23
+c                    write(6,*)rm23
+                    rmassmin = p2(4) + p3(4) !least value the invariant mass can have
+                    call sculptmass(rm23,rmassmin,rmassmax,bslope2,iyesno)
+                    if(iyesno.eq.0)then
+c                       write(6,*)'Mass rejected',rm23
+                       goto 240 !re-throw the 3-body phase space particles
+                    else
+c                       write(6,*)'Mass accepted',rm23
+                    endif
+                 endif
+c
                  rmtarget   = rmproton
                  wdummy     = xdummy !(actually not used at this time)
                  sminf      = 0.001 !parameter controling the "flatness" at back angles
@@ -1596,6 +1625,8 @@ c                    write(6,*)'Rotating P23 to the desired t'
                  elseif(ndynamics.eq.4)then
 c                    write(6,*)'Rotating P1 to the desired t'
                     cosinethetacm = -cosinethetacm   !kinematic trick to save coding steps
+                 elseif(ndynamics.eq.5)then
+c                    write(6,*)'Rotating P23 to the desired t'
                  else
                     write(6,*)'Inconsistent dynamics specified'
                     call exit()
@@ -1617,7 +1648,9 @@ c                    write(6,*)'P23 ', p23
                     goto 105
                  endif            
 c
-c                Now test whether the momentum transfer at the bottom vertex is small.
+c                "Mechanism 5"
+c                Now test whether the momentum transfer at the bottom vertex is small
+c                if we are doing the Double Regge mechanism (ndynammics = 4)
 c                Remember we are in the lab now.  The momentum transfer is between the 
 c                target proton (must construct it first) and the recoiling target particle.
 c
@@ -1627,33 +1660,35 @@ c
 c                Warning: we must hard-code the target/recoil particle to be number 2 in the decay list. 
 c                Be sure the input definition file has the proton in the second slot.
 c                 
-                 ptarget(1) = 0.0
-                 ptarget(2) = 0.0
-                 ptarget(3) = 0.0
-                 ptarget(4) = rmproton
-                 ptarget(5) = rmproton
-                 call gett(ptarget,p2,tt,ttmin,ttprime)
+                 if(ndynamics.eq.4)then
+                    ptarget(1) = 0.0
+                    ptarget(2) = 0.0
+                    ptarget(3) = 0.0
+                    ptarget(4) = rmproton
+                    ptarget(5) = rmproton
+                    call gett(ptarget,p2,tt,ttmin,ttprime)
 c                 write(6,*)'t at bottom vertex',tt,ttmin,ttprime
-                 call doublereggepick(ppbeam,rmtarget,tt,bslope2,iyesno,ierr)
-                 if(iyesno.eq.0)then
-                    idcount = idcount + 1
-c                    write(6,*)'Lower vertex t is too shallow; try again'
-                    if(idcount.ge.idcountmax)then
-                       idcountmax = idcount
-                       if(mod(idcountmax,1000).eq.0)then
-                          write(6,*)'Slow bottom vertex selection',idcount
+                    call doublereggepick(ppbeam,rmtarget,tt,bslope2,iyesno,ierr)
+                    if(iyesno.eq.0)then
+                       idcount = idcount + 1
+c                       write(6,*)'Lower vertex t is too shallow; try again'
+                       if(idcount.ge.idcountmax)then
+                          idcountmax = idcount
+                          if(mod(idcountmax,1000).eq.0)then
+                             write(6,*)'Slow bottom vertex selection',idcount
+                          endif
                        endif
+                       goto 240 ! re-throw the 3-body phase space particles
                     endif
-                    goto 240 ! re-throw the 3-body phase space particles
                  endif
-c 
 	      else
 		 write(6,*)'Unspecified 3-body dynamics ',ndynamics
 		 call exit()
 	      end if
 c              call polarize(pv,p1,pv2,id1,id2,pol1,pol2,cthcm)
 c              call polarize(pv,p1,pv3,id1,id3,pol1,pol3,cthcm) !this code not checked
-	   else if (nbody.eq.4 .or. nbody.eq.5)then		! four/five-body decay modes
+c              
+	   else if (nbody.eq.4 .or. nbody.eq.5)then ! four/five-body decay modes
 	      if(ndynamics .eq. 0)then !decay via pure phase space
 c                 write(6,*)'>Calling 4- or 5-body decay code'
 		 call kin45body(nbody,pv,p1,p2,p3,p4,p5,ierr)
@@ -3745,9 +3780,8 @@ c     The bin-center correction used below assumes 10 MeV-wide bins
 c     
       if(ifirst.eq.1)then  !Do this only the first time, when setting up the calculation
          ifirst = 0
-         write(6,*)'Reading photon energy distribution from (',
-     1    lfluxfilename,')'
-         write(6,*)fluxfilename(1:lfluxfilename)
+c         write(6,*)'Reading photon energy distribution from: ',
+c     1    fluxfilename(1:lfluxfilename)
          open(unit = 1, file=fluxfilename(1:lfluxfilename),status="old")
          fvaluemax = 0
          nmin = 0
@@ -4054,5 +4088,31 @@ c	write(6,*)p0
 	return
 	end
 
-
+c********************************************************************************
+c     SCULPTMASS     
+c     Allow only those invariant masses that are consistent with a pre-selected
+c     shape distribution
+c     RM23     - input test value for an invariant mass we might accept
+c     RMASSMIN - input minimum value of RM23 - the sum of rest masses
+c     BSLOPE2  - input value for exponential slope
+c     IYESNO   - output verdict: 1 = keep the event;  0 = reject
+c     
+c     R.A.Sch. 3-23-20
+      
+      subroutine sculptmass(rm23,rmassmin,rmassmax,bslope2,iyesno)
+      common /monte/ iseed,xflat,xnormal,xbw
+c
+      iyesno = 0
+      xx = rm23 - rmassmin
+c      write(6,*) 'Sculptmass:',xx,rm23,rmassmin,rmassmax,bslope2
+      yy = exp(-xx/bslope2)
+      ytest = ran(iseed)
+      if(ytest .lt. yy)then
+         iyesno = 1
+      else
+         iyesno = 0
+      endif
+      return
+      end
+      
 c========================== End of MC_GEN code ==============================

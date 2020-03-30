@@ -54,25 +54,25 @@ ROOTSCRIPT=`printf '$HALLD_SIM_HOME/src/programs/Simulation/MC_GEN/run/Flux_to_A
 root -l -b -q $ROOTSCRIPT
 
 # Edit the generator's definition file
-cp $HALLD_SIM_HOME/src/programs/Simulation/MC_GEN/run/template/gen_${MECH}.def $GEN_DIR/gen.def
+cp $HALLD_SIM_HOME/src/programs/Simulation/MC_GEN/run/template/gen_${MECH}.def $GEN_DIR/standard_name.configuration
 EDITLIST=DYNCODE0,DYNCODE1,DYNCODE2,TOTALSIZE,SAMPLESIZE,MOMENTUM_MIN,MOMENTUM_MAX,FLUX_DIR,GEN_DIR
 for KEYWORD in ${EDITLIST//,/ }
 	do
 		REGEXSTRING=`printf 's=%s=%s=g' "${KEYWORD}" "${!KEYWORD}"`
 		#echo ${REGEXSTRING}
-		sed -i ${REGEXSTRING} $GEN_DIR/gen.def
+		sed -i ${REGEXSTRING} $GEN_DIR/standard_name.configuration
 	done
 
 
 # Initiate the generator with its definition file
 #         Note: out put will be an ASCII file
-mc_gen $GEN_DIR/gen.def
+mc_gen $GEN_DIR/standard_name.configuration
 
 # Translate the output into HDDM format
 END=$(($TOTALSIZE/SAMPLESIZE))
 for i in $(seq 1 $END)
 do
-	FILENAME=`printf '%sgen_%04d.ascii' "${GEN_DIR}" "$i"`
+	FILENAME=`printf '%sstandard_name_%04d.ascii' "${GEN_DIR}" "$i"`
 	if [ "$REACTION_CHANNEL" == "lamlambar" ]; then
 		GEN2HDDM_lamlambar -r${RUN_NUMBER} $FILENAME
 	fi
@@ -84,6 +84,11 @@ do
 
 done
 
+
+#clear files
+mv flux_*.ascii ${GEN_DIR}.
+rm flux_*.root
+rm randomseed.num
 
 
 
