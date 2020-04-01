@@ -52,7 +52,8 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
     	std::istringstream ss(detectors_to_load);
     	std::string token;
     	while(std::getline(ss, token, ',')) {
-			DetectorSystem_t the_detector = static_cast<DetectorSystem_t>(atoi(token.c_str()));
+	  DetectorSystem_t the_detector=NameToSystem(token.c_str());
+	  //cout << "Loading detector system "<< the_detector << ":" << token << " " << endl;
 			switch(the_detector) {
 				case SYS_BCAL:   smearers[the_detector] = static_cast<Smearer*>(new BCALSmearer(loop,config));  break;
 				case SYS_FCAL:   smearers[the_detector] = static_cast<Smearer*>(new FCALSmearer(loop,config));  break;
@@ -96,7 +97,7 @@ void Smear::SmearEvent(hddm_s::HDDM *record)
 	// Smear each detector system
 	for(map<DetectorSystem_t, Smearer *>::iterator smearer_it = smearers.begin();
 		smearer_it != smearers.end(); smearer_it++) {
-        //cerr << "smearing " << SystemName(smearer_it->first) << endl;
+	  //cerr << "smearing " << SystemName(smearer_it->first) << endl;
 		smearer_it->second->SmearEvent(record);
     }
 

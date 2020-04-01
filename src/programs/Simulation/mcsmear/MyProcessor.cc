@@ -198,7 +198,7 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 	// load configuration parameters for all the detectors
 	if(smearer != NULL)
 		delete smearer;
-	smearer = new Smear(config, loop);
+	smearer = new Smear(config, loop, config->DETECTORS_TO_LOAD);
 
 #ifdef HAVE_RCDB
 	// Pull configuration parameters from RCDB
@@ -486,7 +486,7 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
                    << std::endl;
       }
    }
-
+   
    // Smear values
    smearer->SmearEvent(record);
 
