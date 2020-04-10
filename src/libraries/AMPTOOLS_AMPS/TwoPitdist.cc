@@ -22,17 +22,19 @@ TwoPitdist::TwoPitdist( const vector< string >& args ) :
 UserAmplitude< TwoPitdist >( args )
 {
   
-  assert( args.size() == 4 );
-  Bslope = AmpParameter( args[0] );
-  Bgen = AmpParameter( args[1] );
-  m_daughters = pair< string, string >( args[2], args[3] );    // specify indices of pions in event
+  assert( args.size() == 5 );
+  ThetaSigma = AmpParameter( args[0] );
+  Phase = AmpParameter( args[1] );    // convert phase to radians
+  Bgen = AmpParameter( args[2] );
+  m_daughters = pair< string, string >( args[3], args[4] );    // specify indices of pions in event
   
   // need to register any free parameters so the framework knows about them
-  registerParameter( Bslope );
+  registerParameter( ThetaSigma );
+  registerParameter( Phase );
   registerParameter( Bgen );
   
   // make sure the input variables look reasonable
-  assert( ( Bgen >= 1 ) && ( Bslope >= Bgen ) );     // Make sure generated value is lower than actual.         
+  assert( ( ThetaSigma >= 0) &&( Bgen >= 2 ) && (Phase >=0 && Phase <=180) );     // Make sure generated value is lower than actual.         
 }
 
 complex< GDouble >
@@ -70,7 +72,7 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
   
   GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
-  GDouble mass2 = P2.M();
+  // GDouble mass2 = P2.M();
   GDouble Ppipi = Ptot.E() > Wpipi? sqrt(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
 
 
@@ -92,16 +94,16 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
   // complex<GDouble> Arel( (Eg*Eg/(-t)) * Thpipi * sqrt(exp(-Thpipi*Thpipi/(2*0.45*0.45))) /exp(Bgen*t),0. );   // 1/-t for photon exchange.
 
   complex<GDouble> Arel;
+  complex<GDouble> ImagOne(0,1);
 
 
-  if (Bslope > 0) {
-    Arel = ( Thpipi * sqrt(exp(-Thpipi*Thpipi/(2*0.45*0.45))) /exp(Bgen*t),0.);   // Change phase of sigma relative to Primakoff
-  }
-  else {
-    Arel = ( 1. /exp(Bgen*t),0.);   // Use for flat distribution
-  }
+    Double_t arg = Thpipi*Thpipi/(2*ThetaSigma*ThetaSigma)<100? Thpipi*Thpipi/(2*ThetaSigma*ThetaSigma) : 0;
+    Arel = arg > 0? Thpipi * sqrt(exp(-arg) /exp(Bgen*t)) :0;   // Can Change phase of sigma relative to Primakoff
+    // cout << " arg=" << arg << " num=" << Thpipi * sqrt(exp(-arg)) << " den=" << exp(Bgen*t) << " Re(ImagOne)=" << real(ImagOne) << " imag(ImagOne)=" << imag(ImagOne)  << endl;
+  // Adjust phase for this amplitude relative to other amplitudes
+    Arel = Arel * (cos(Phase*PI/180.) + ImagOne*sin(Phase*PI/180.));
 
-  // cout << "TwoPitdist" << " Bslope=" << Bslope << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel)  << " Eg=" << Eg << " tpar=" << tpar << " Wpipi=" << Wpipi << " Ppipi=" << Ppipi << " Thpipi=" << Thpipi << endl; 
+    // cout << "TwoPitdist" << " ThetaSigma=" << ThetaSigma << " Phase=" << Phase << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel)  << " Eg=" << Eg << " tpar=" << tpar << " Wpipi=" << Wpipi << " Ppipi=" << Ppipi << " Thpipi=" << Thpipi << endl; 
   return( Arel );
 }
 

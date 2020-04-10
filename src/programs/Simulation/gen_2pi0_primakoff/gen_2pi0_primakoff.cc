@@ -1,3 +1,7 @@
+
+
+
+
 // Modification of gen_2pi_primakoff for pi0pi0 production. Goal is to add generality to this generator so that 
 //     various reactions can be run using the same high level files.
 #include <iostream>
@@ -179,7 +183,7 @@ int main( int argc, char* argv[] ){
 	
 	// generate over a range of mass -- the daughters are two charged pions
 	// float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
-	float Bslope= 2;   // exponential slope, make it smaller than any slope in the generator.
+	float Bslope= 230;   // exponential slope, make it smaller than any slope in the generator.
 	// GammaZToXYZ resProd( lowMass, highMass, 0.140, 0.140, type, beamConfigFile , Bslope);
 	// Double_t kMPion = ParticleMass(PiPlus);
         Double_t kMPi0 = ParticleMass(Pi0);

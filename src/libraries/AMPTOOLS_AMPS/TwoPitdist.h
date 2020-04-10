@@ -42,7 +42,8 @@ public:
   
 private:
 	
-  AmpParameter Bslope;    // for the moment assume W cross section has 4 parameters
+  AmpParameter ThetaSigma;    // for the moment assume W cross section has 5 parameters
+  AmpParameter Phase;
   AmpParameter Bgen;
   
   pair< string, string > m_daughters;  

@@ -172,6 +172,7 @@ TwoPiWt_sigma::calcAmplitude( GDouble** pKin ) const
     Double_t Bgen=6.0;
 
     Aw = Aw * exp(Bslope*t)/exp(6.0*t);         // Divide out generated exponential. Move to separate amplitude.*/ 
+    Aw = isfinite(real(Aw))  && isfinite(imag(Aw))? Aw : 0;   // protect against infitinites
 
     if (Wpipi < mass1+mass2) Aw = 0;
     
