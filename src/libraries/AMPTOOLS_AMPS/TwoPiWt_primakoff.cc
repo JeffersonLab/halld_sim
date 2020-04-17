@@ -259,7 +259,7 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
   GDouble mass1 = P1.M();
   // GDouble mass2 = P2.M();
   GDouble Ppipi = Ptot.E() > Wpipi? sqrt(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
-  // GDouble Thetapipi = Ptot.Theta()*180./PI;
+  GDouble Thetapipi = Ptot.Theta()*180./PI;
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
@@ -309,13 +309,20 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
   GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
   GDouble Thpipi = -t > tpar? (180/PI)*sqrt( (-t-tpar)/(Eg*Ppipi) ): 0;
   
-    complex<GDouble> Csig( sqrt(sigmat*sig_ggpipi/Wpipi/exp(Bgen*t)), 0.0 );    // Return complex double, sqrt (cross section). Divide out g
+  double epsilon = 1e-5;
+  complex<GDouble> RealOne(1,0);
+  complex<GDouble> ImagOne(0,1);
+  complex<GDouble> Csig;
 
-    // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " m_par1=" << m_par1 << " m_par2=" 
-    //	 << m_par2 << " sig_ggpipi=" << sig_ggpipi << " sigmat=" << sigmat << " Thpipi=" << Thpipi << " Thetapipi=" << Thetapipi << " Csig=" << Csig << endl;
+  double arg = Bgen*t > -100? Bgen*t : -100;   // limit exponential
+  Csig = isfinite(sigmat*sig_ggpipi/Wpipi/exp(arg))? sqrt(sigmat*sig_ggpipi/Wpipi/exp(arg)) * RealOne : 0;    // Return complex double, sqrt (cross section). Divide out exponential
+  if (-t > 0.05) Csig = 0;      // eliminate events at high t with large weights
 
-    double epsilon=1e-5;
-    return( Csig  + epsilon);   // return non-zero value to protect from likelihood calculation
+
+  // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " BGen=" << Bgen << " exp(Bgen*t)=" << exp(Bgen*t) << " m_par1=" << m_par1 << " m_par2=" 
+  //<< m_par2 << " sig_ggpipi=" << sig_ggpipi << " sigmat=" << sigmat << " Thpipi=" << Thpipi << " Thetapipi=" << Thetapipi << " Csig=" << Csig << endl;
+
+    return( Csig + epsilon);   // return non-zero value to protect from likelihood calculation
 }
 
 void

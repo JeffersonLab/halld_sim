@@ -140,6 +140,7 @@ ProductionMechanism::produceResonanceZ ( const TLorentzVector& beam){
 	double t, tMaxkin, tMax, resMass, resMomCM;
 	// generate the t-distribution. t is positive here (i.e. should be -t)
 
+
   do {
     resMass = generateMass();
     resMomCM  = cmMomentum( cmEnergy, resMass, m_recMass );

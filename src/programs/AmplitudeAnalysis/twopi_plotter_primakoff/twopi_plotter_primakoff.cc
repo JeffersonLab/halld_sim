@@ -160,7 +160,7 @@ int main( int argc, char* argv[] ){
   plotGen.enableReaction( reactionName );
   vector<string> sums = plotGen.uniqueSums();
 
-  // for (auto isum : sums) cout << " isum=" << isum << endl;
+  //for (auto isum : sums) cout << " isum=" << isum << endl;
 
   // Enable both Aplus and Aminus sum
   plotGen.enableSum(0);
@@ -264,6 +264,7 @@ int main( int argc, char* argv[] ){
       }
     }
   }
+
 
   plotfile->Close();
 
