@@ -22,19 +22,17 @@ TwoPitdist::TwoPitdist( const vector< string >& args ) :
 UserAmplitude< TwoPitdist >( args )
 {
   
-  assert( args.size() == 5 );
-  ThetaSigma = AmpParameter( args[0] );
-  Phase = AmpParameter( args[1] );    // convert phase to radians
-  Bgen = AmpParameter( args[2] );
-  m_daughters = pair< string, string >( args[3], args[4] );    // specify indices of pions in event
+  assert( args.size() == 4 );
+  Bslope = AmpParameter( args[0] );
+  Bgen = AmpParameter( args[1] );
+  m_daughters = pair< string, string >( args[2], args[3] );    // specify indices of pions in event
   
   // need to register any free parameters so the framework knows about them
-  registerParameter( ThetaSigma );
-  registerParameter( Phase );
+  registerParameter( Bslope );
   registerParameter( Bgen );
   
   // make sure the input variables look reasonable
-  assert( ( ThetaSigma >= 0) &&( Bgen >= 2 ) && (Phase >=0 && Phase <=180) );     // Make sure generated value is lower than actual.         
+  assert( ( Bgen >= 1 ) && ( Bslope >= Bgen ) );     // Make sure generated value is lower than actual.         
 }
 
 complex< GDouble >
@@ -70,40 +68,20 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
     Ptot.Print();*/
   }
   
-  GDouble Wpipi  = Ptot.M();
+  /*GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
-  // GDouble mass2 = P2.M();
-  GDouble Ppipi = Ptot.E() > Wpipi? sqrt(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
-
+  GDouble mass2 = P2.M();*/
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
   GDouble Et = Precoil.E();
   GDouble Mt = Precoil.M();
-  GDouble t = -2*Precoil.M()*(Et - Mt);  
-  GDouble Eg = Ptot.E();
-  GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
+  GDouble t = -2*Precoil.M()*(Et - Mt);      
 
-  GDouble Thpipi = -t > tpar? (180/PI)*sqrt( (-t-tpar)/(Eg*Ppipi) ): 0;
-
-  // complex<GDouble> Arel(sqrt(exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
-  //  complex<GDouble> Arel(sqrt(-t*exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(-t*exp^Bt)   Add -t factor for pions 
+    complex<GDouble> Arel(sqrt(exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
   
-  // Estimate of k2 sinthe / (-t) * F_strong(-t)  . PRC 80 055201 (2009) Eq. 4 and Fig 6.
 
-  // complex<GDouble> Arel( (Eg*Eg/(-t)) * Thpipi * sqrt(exp(-Thpipi*Thpipi/(2*0.45*0.45))) /exp(Bgen*t),0. );   // 1/-t for photon exchange.
-
-  complex<GDouble> Arel;
-  complex<GDouble> ImagOne(0,1);
-
-
-    Double_t arg = Thpipi*Thpipi/(2*ThetaSigma*ThetaSigma)<100? Thpipi*Thpipi/(2*ThetaSigma*ThetaSigma) : 0;
-    Arel = arg > 0? Thpipi * sqrt(exp(-arg) /exp(Bgen*t)) :0;   // Can Change phase of sigma relative to Primakoff
-    // cout << " arg=" << arg << " num=" << Thpipi * sqrt(exp(-arg)) << " den=" << exp(Bgen*t) << " Re(ImagOne)=" << real(ImagOne) << " imag(ImagOne)=" << imag(ImagOne)  << endl;
-  // Adjust phase for this amplitude relative to other amplitudes
-    Arel = Arel * (cos(Phase*PI/180.) + ImagOne*sin(Phase*PI/180.));
-
-    // cout << "TwoPitdist" << " ThetaSigma=" << ThetaSigma << " Phase=" << Phase << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel)  << " Eg=" << Eg << " tpar=" << tpar << " Wpipi=" << Wpipi << " Ppipi=" << Ppipi << " Thpipi=" << Thpipi << endl; 
+    // cout << " TwoPitdist" << " Bslope=" << Bslope << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel) << endl; 
   return( Arel );
 }
 
