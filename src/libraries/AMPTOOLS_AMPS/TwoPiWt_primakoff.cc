@@ -208,18 +208,23 @@ TwoPiWt_primakoff::TwoPiWt_primakoff( const vector< string >& args ) :
 UserAmplitude< TwoPiWt_primakoff >( args )
 {
   
-  assert( args.size() == 5);
+  assert( args.size() == 6);
 	m_par1 = AmpParameter( args[0] );
 	m_par2 = AmpParameter( args[1] );
 	Bgen = AmpParameter( args[2] );
-	m_daughters = pair< string, string >( args[3], args[4] );
+        mtmax = AmpParameter( args[3] );
+	m_daughters = pair< string, string >( args[4], args[5] );
   
   // need to register any free parameters so the framework knows about them
   registerParameter( m_par1 );
   registerParameter( m_par2 );
+  registerParameter( Bgen );
+  registerParameter( mtmax );
   
   // make sure the input variables look reasonable
-  // assert( ( m_orbitL >= 0 ) && ( m_orbitL <= 4 ) );
+  // assert( ( m_orbitL >= 0 ) && ( m_orbitL <= 4 ) );  
+  assert( Bgen >= 1);   
+  assert( mtmax > 0);         
 }
 
 complex< GDouble >
@@ -309,14 +314,14 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
   GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
   GDouble Thpipi = -t > tpar? (180/PI)*sqrt( (-t-tpar)/(Eg*Ppipi) ): 0;
   
-  double epsilon = 1e-5;
+  double epsilon = 1e-7;
   complex<GDouble> RealOne(1,0);
   complex<GDouble> ImagOne(0,1);
   complex<GDouble> Csig;
 
   double arg = Bgen*t > -100? Bgen*t : -100;   // limit exponential
   Csig = isfinite(sigmat*sig_ggpipi/Wpipi/exp(arg))? sqrt(sigmat*sig_ggpipi/Wpipi/exp(arg)) * RealOne : 0;    // Return complex double, sqrt (cross section). Divide out exponential
-  if (-t > 0.05) Csig = 0;      // eliminate events at high t with large weights
+  if (-t > mtmax) Csig = 0;      // eliminate events at high t with large weights
 
 
   // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " BGen=" << Bgen << " exp(Bgen*t)=" << exp(Bgen*t) << " m_par1=" << m_par1 << " m_par2=" 

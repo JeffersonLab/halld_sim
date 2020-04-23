@@ -30,6 +30,7 @@
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
 #include "AMPTOOLS_AMPS/TwoPitdist.h"
+#include "AMPTOOLS_AMPS/TwoPiNC_tdist.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 
@@ -63,6 +64,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
   AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
   AmpToolsInterface::registerAmplitude( TwoPitdist() );
+  AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
 }
@@ -147,7 +149,7 @@ int main( int argc, char* argv[] ){
     // cout << " sum segment=" << parsum << endl;
     vector<string> parbreak = stringSplit (parsum, "::");
 
-    if (parbreak[1] == "Aplus") { 
+    if (parbreak[1] == "Aplus"  || parbreak[1] == "IAplus"  ) { 
       amplist.push_back(parbreak[2]);
       cout << " amp =" << parbreak[2] << endl;
        }
@@ -289,7 +291,7 @@ int main( int argc, char* argv[] ){
   parlist = results.ampList("Primakoff");
   for(unsigned int j=0; j<parlist.size(); j++) {
     cout << " j=" << j << " parlist[j]=" << parlist[j] << " " << results.realProdParName(parlist[j]) << " " << results.imagProdParName(parlist[j]) << endl;
-    if (parlist[j].find("Aplus") != string::npos) {
+    if ((parlist[j].find("Aplus") != string::npos) ) {
       pars.push_back(results.realProdParName(parlist[j]));
       pars.push_back(results.imagProdParName(parlist[j]));
     }
@@ -298,7 +300,7 @@ int main( int argc, char* argv[] ){
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
   outfile.open( "twopi_fitPars.txt" );
-  cout << "Openend Output File twopi_fitPars.txt" << " pars.size=" << pars.size() << endl;
+  cout << "Opened Output File twopi_fitPars.txt" << " pars.size=" << pars.size() << endl;
 
   for(unsigned int i = 0; i<pars.size(); i++) {
     double parValue = results.parValue( pars[i] );

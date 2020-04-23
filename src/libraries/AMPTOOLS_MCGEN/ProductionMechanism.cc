@@ -146,7 +146,7 @@ ProductionMechanism::produceResonanceZ ( const TLorentzVector& beam){
     resMomCM  = cmMomentum( cmEnergy, resMass, m_recMass );
   
     tMaxkin = 4. * beamMomCM * resMomCM;
-    tMax = 0.2;   // restrict max to make more efficient for Primakoff generation (about 2.5 deg at 0.05 GeV-2)
+    tMax = 0.2;   // restrict max to make more efficient for Primakoff generation (about 2. deg at 0.05 GeV-2)
     // tMax = 1.;   // restrict max to make more efficient for Primakoff generation
     t = random( 0, tMax ); 
   } 
