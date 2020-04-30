@@ -161,6 +161,8 @@ int main( int argc, char* argv[] ){
 	ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
 	assert( cfgInfo->reactionList().size() == 1 );
 	ReactionInfo* reaction = cfgInfo->reactionList()[0];
+
+	//
 	
 	// use particletype.h to convert reaction particle names
 	vector<Particle_t> Particles;
@@ -280,12 +282,23 @@ int main( int argc, char* argv[] ){
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
 	GammaPToNPartP resProd;
-	resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, recoil, type, slope, lowT, highT, seed, beamConfigFile );
+	double minMass = (threshold < lowMass ? lowMass : threshold);
+	resProd = GammaPToNPartP( minMass, highMass, childMasses, recoil, type, slope, lowT, highT, seed, beamConfigFile );
 	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
 	  return 1;
 	}
+
+	double recMass = ParticleMass(Particles[1]);
+	double cmEnergy = sqrt(recMass*(recMass + 2*beamLowE));
+	if ( cmEnergy < minMass + recMass ){
+	  cout << "ConfigFileParser ERROR:  Minimum photon energy not high enough to create resonance!" << endl;
+	  return 1;
+	}
+	else if ( cmEnergy < highMass + recMass )
+	  cout << "ConfigFileParser WARNING:  Minimum photon energy not high enough to guarantee flat mass distribution!" << endl;
+
 		
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
@@ -326,6 +339,9 @@ int main( int argc, char* argv[] ){
 	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, lowMass, highMass, 1000, 0, 10 );
 	
 	TH1F* t = new TH1F( "t", "-t Distribution", 200, 0, 2 );
+
+	TH1F* E = new TH1F( "E", "Beam Energy", 120, 0, 12 );
+	TH2F* EvsM = new TH2F( "EvsM", "Beam Energy vs Mass", 120, 0, 12, 180, lowMass, highMass );
 
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
 
@@ -403,6 +419,9 @@ int main( int argc, char* argv[] ){
 					else
 						t->Fill(-1*(evt->particle(1)-target).M2());
 
+					E->Fill(beam.E());
+					EvsM->Fill(beam.E(),resonance.M());
+
 					TLorentzRotation resonanceBoost( -resonance.BoostVector() );
 					
 					TLorentzVector beam_res = resonanceBoost * beam;
@@ -468,6 +487,8 @@ int main( int argc, char* argv[] ){
 	intenWVsM->Write();
 	M_isobar->Write();
 	t->Write();
+	E->Write();
+	EvsM->Write();
 	CosTheta_psi->Write();
 	M_CosTheta->Write();
 	M_Phi->Write();
