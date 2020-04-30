@@ -1970,11 +1970,11 @@ hddm_s::DircPmtHitList &operator+=(hddm_s::DircPmtHitList &dst,
 
       if (iord > 0 && t - dst(iord - 1).getT() < dt && ch == dst(iord - 1).getCh()) {
 	 // simulated hit came first, ignore noise hit
-	 cout<<"DIRC simulated hit first on ch="<<ch<<endl;
+	 //cout<<"DIRC simulated hit first on ch="<<ch<<endl;
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt && ch == dst(iord).getCh()) {
 	 // noise hit came first, set this as hit time
-	 cout<<"DIRC noise hit first on ch="<<ch<<endl;
+	 //cout<<"DIRC noise hit first on ch="<<ch<<endl;
 	 dst(iord).setT(t);
       }
       else if (iord == dst.size() || dst(iord).getCh() != ch) { 
