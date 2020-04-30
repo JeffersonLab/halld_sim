@@ -154,7 +154,7 @@ void BeamProperties::generateCobrems(){
 	string parameterNames[nParameters] = {"ElectronBeamEnergy", "CoherentPeakEnergy", "PhotonBeamLowEnergy", "PhotonBeamHighEnergy",  "Emittance", "RadiatorThickness", "CollimatorDiameter", "CollimatorDistance"};
 	for(int i=0; i<nParameters; i++) {
 		if(mBeamParametersMap.find(parameterNames[i].data()) == mBeamParametersMap.end()) {
-			cout << "BeamProperties WANRNING:  generateCombrems parameter " << parameterNames[i] << " missing: using default = " << defaultParameters.at(parameterNames[i].data()) << endl;
+			cout << "BeamProperties WARNING:  generateCombrems parameter " << parameterNames[i] << " missing: using default = " << defaultParameters.at(parameterNames[i].data()) << endl;
 			mBeamParametersMap.insert( std::pair<std::string,double>( parameterNames[i].data(), defaultParameters.at(parameterNames[i].data())) );
 		}
 	}
