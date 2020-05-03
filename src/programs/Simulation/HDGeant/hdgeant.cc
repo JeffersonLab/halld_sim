@@ -143,7 +143,7 @@ void Usage(void)
 	cout<<"    -h or --help          Print this usage statement"<<endl;
 	cout<<"    -xml[=main_HDDS.xml]  Dynamically generate geometry from files"<<endl;
 	cout<<"    -xml=ccdb://GEOMETRY/main_HDDS.xml,run=<run_number>"<<endl;
-    cout<<"                          Dynamically generate geometry from ccdb"<<endl;
+	cout<<"                          Dynamically generate geometry from ccdb"<<endl;
 	cout<<"    -checksum             Print the MD5 checksum of the "<<endl;
 	cout<<"                          geometry and exit"<<endl;
 	cout<<endl;
