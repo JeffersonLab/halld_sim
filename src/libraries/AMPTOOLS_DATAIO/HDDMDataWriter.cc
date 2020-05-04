@@ -11,7 +11,7 @@ HDDMDataWriter::HDDMDataWriter(const string& outFile, int runNumber, int seed)
   m_OutputStream = new hddm_s::ostream(*m_OutputFile);
   m_runNumber = runNumber;
   
-  m_eventCounter = 0;
+  m_eventCounter = 1;
 
   // initialize root's pseudo-random generator
   gRandom->SetSeed(seed);
