@@ -44,6 +44,44 @@ c     is taken to be zero. Normally this is not considered valid, and a
 c     warning message is printed at startup.
 RUNG 51500
 
+c Normally the position of the primary event vertex is read from the input
+c file that is produced by an external Monte Carlo generator. In the special
+c case that the primary vertex is set to (0,0,0) by the generator, a random
+c offset is added by the simulation, generated uniformely along a cylinder to
+c represent the beam-target overlap volume. This 3d offset is added to the
+c primary vertex position and all of the secondary vertices as well, so that
+c the complete event is shifted to originate at the random assigned point.
+c The vertex times are likewise shifted according to the shift in z, so
+c that the time of the primary vertex coincides with the instant that one
+c of the beam bunches is passing through the z-plane of the shifted vertex.
+c By default, this cylinder is centered on the z axis extending from z=50.25
+c to 79.75 cm, with a uniform transverse density and a diameter of 0.5 cm.
+c The VERTEX card allows this default behavior to be superseded by a
+c Gaussian transverse beam spot specified in one of the following ways.
+c     'beam_spot(x,y,z,var_xx,var_xy,var_yy,dxdz,dydz) * length'
+c or
+c     'beam_spot(ccdb) * length'
+c where the symbols x,y,z,var_xx,var_xy,var_yy,dxdz,dydz and length are
+c numerical values that specify the vertex distribution, as follows.
+c         x,y,z  = center of random cylinder that defines the
+c                  distribution of generated vertex points;
+c         var_xx, var_xy, var_yy = parameters of an ellipse in the xy
+c                  plane that defines the transverse Gaussian distribution;
+c         dxdz   = slope of the cylinder axis in the zx plane;
+c         dydz   = slope of the cylinder axis in the zy plane;
+c         length = length of the target along z, assumed uniform.
+c All spatial dimensions are given in cm, and variances in cm^2. The second
+c form with beam_spot(ccdb) supports lookup of x,y,z,var_xx,var_xy,var_yy,
+c dxdz,dydz in ccdb, according to the run number being simulated. The
+c length parameter still needs to be specified independently because it is
+c not included in the beam_spot table in ccdb.  The beam_spot parameter
+c list (x,y...) may be truncated at any point, in which case the remaining
+c unstated values will be assigned to zero. Whatever values you assign,
+c the entire string MUST BE ENCLOSED IN SINGLE QUOTES ''.
+cVERTEX 'beam_spot(0.20,-0.02,65.,0.06,0.,0.06,-0.0007,0.0004) * 29.5'
+cVERTEX 'beam_spot(1.5,-0.5,65.,4,-0.999,0.99999) * 29.5'
+VERTEX 'beam_spot(ccdb) * 29.5'
+
 c The BEAM card configures the built-in coherent bremsstralung photon
 c beam generator in HDGeant.  If the INFILE card is not present and BEAM
 c is specified, the internal coherent bremsstralung generator is the primary
