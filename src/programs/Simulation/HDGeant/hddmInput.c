@@ -28,6 +28,12 @@
  *
  * Revision history:
  *
+ * > May 14, 2020 - Richard Jones
+ *       Added support for a gaussian beam spot, with parameters either
+ *       specified in the VERTEX card or looked up by run number in ccdb.
+ *       This overrides the default behavior based on hard-coded values
+ *       in TARGET_LENGTH, TARGET_CENTER, and BEAM_DIAMETER.
+ *
  * > Aug 17, 2007 - David Lawrence
  * Fill in id, parentid, pdgtype, and mech fields of reactions objects in HDDM.
  * Mostly zeros, but it makes it clear the fields are invalid and allows
@@ -62,6 +68,7 @@
 
 #include <HDDM/hddm_s.h>
 #include <geant3.h>
+#include <calibDB.h>
 
 #include "gid_map.h"
 
@@ -88,6 +95,23 @@ int extractRunNumber(int *runNo) {
    return *runNo = thisInputEvent->physicsEvents->in[0].runNo;
 }
 
+struct beam_spot_t {
+   double x;
+   double y;
+   double z;
+   double var_xx;
+   double var_xy;
+   double var_yy;
+   double dxdz;
+   double dydz;
+   double length;
+   double sigma[2];
+   double alpha;
+   int initialized;
+   char spec[80];
+} *beam_spot = 0;
+
+void gaussian_beam_spot_(const char *spec);
 
 
 /*-------------------------
@@ -188,22 +212,52 @@ int loadInput (int override_run_number, int myInputRunNo)
       v0[3] = vert->origin->t;
       if ((v0[0] == 0) && (v0[1] == 0) && (v0[2] == 0))
       {
-         v0[0] = 1;
-         v0[1] = 1;
-         v0[2] = TARGET_CENTER;
-         while (v0[0]*v0[0] + v0[1]*v0[1] > 0.25)
-         {
+         if (beam_spot) {
+            if (!beam_spot->initialized)
+               gaussian_beam_spot_(beam_spot->spec);
+ 
+         // generate a random beam spot according to a gaussian model
+ 
             int len = 3;
-            grndm_(v0,&len);
-            v0[0] -= 0.5;
-            v0[1] -= 0.5;
-            v0[2] -= 0.5;
+            float u[3];
+            grndm_(u, &len);
+            double r = sqrt(-2 * log(u[0]));
+            double phi = u[1] * 2*M_PI;
+            u[0] = r * cos(phi);
+            u[1] = r * sin(phi);
+            // convert to cm
+            u[0] *= beam_spot->sigma[0];
+            u[1] *= beam_spot->sigma[1];
+            u[2] = (u[2] - 0.5) * beam_spot->length;
+            // rotate to lab frame
+            v0[0] = u[0] * cos(beam_spot->alpha) + u[1] * sin(beam_spot->alpha);
+            v0[1] =-u[0] * sin(beam_spot->alpha) + u[1] * cos(beam_spot->alpha);
+            v0[0] += beam_spot->x + beam_spot->dxdz * u[2];
+            v0[1] += beam_spot->y + beam_spot->dydz * u[2];
+            v0[2] = beam_spot->z + u[2];
+            v0[3] = (v0[3] == 0)? settofg_(v0,&zero) * 1e9 : 0;
          }
-         v0[0] *= BEAM_DIAMETER;
-         v0[1] *= BEAM_DIAMETER;
-         v0[2] *= TARGET_LENGTH;
-         v0[2] += TARGET_CENTER;
-         v0[3] = (v0[3] == 0)? settofg_(v0,&zero) * 1e9 : 0;
+         else { 
+
+         // fall back on the old hard-coded cylindrical beam spot
+  
+            v0[0] = 1;
+            v0[1] = 1;
+            v0[2] = TARGET_CENTER;
+            while (v0[0]*v0[0] + v0[1]*v0[1] > 0.25)
+            {
+               int len = 3;
+               grndm_(v0,&len);
+               v0[0] -= 0.5;
+               v0[1] -= 0.5;
+               v0[2] -= 0.5;
+            }
+            v0[0] *= BEAM_DIAMETER;
+            v0[1] *= BEAM_DIAMETER;
+            v0[2] *= TARGET_LENGTH;
+            v0[2] += TARGET_CENTER;
+            v0[3] = (v0[3] == 0)? settofg_(v0,&zero) * 1e9 : 0;
+         }
       }
       else
       {
@@ -587,4 +641,80 @@ int closeinput_ ()
 
 int extractrunnumber_(int *runNo){
   return extractRunNumber(runNo);
+}
+
+void gaussian_beam_spot_(const char *spec)
+{
+   if (beam_spot == 0) {
+      beam_spot = calloc(1, sizeof(struct beam_spot_t));
+      strncpy(beam_spot->spec, spec, 80);
+      // Come back later and do a beam_spot parameter
+      // assignment after ccdb has been connected.
+      return;
+   }
+   if (sscanf(spec, "beam_spot(ccdb) * %lf", &beam_spot->length)) {
+      char dbname[] = "/PHOTON_BEAM/beam_spot";
+      int ndata = 11;
+      mystr_t names[ndata];
+      float values[ndata];
+      if (GetArrayConstants(dbname, &ndata, values, names) || ndata != 11) {
+         fprintf(stderr, "Error in gaussian_beam_spot - failed to read "
+                 "beam_spot table from ccdb, cannot continue.\n");
+         exit (2);
+      }
+      int i;
+      for (i=0; i < ndata; ++i) {
+         if (strcmp(names[i].str, "x") == 0)
+            beam_spot->x = values[i];
+         else if (strcmp(names[i].str, "y") == 0)
+            beam_spot->y = values[i];
+         else if (strcmp(names[i].str, "z") == 0)
+            beam_spot->z = values[i];
+         else if (strcmp(names[i].str, "var_xx") == 0)
+            beam_spot->var_xx = values[i];
+         else if (strcmp(names[i].str, "var_xy") == 0)
+            beam_spot->var_xy = values[i];
+         else if (strcmp(names[i].str, "var_yy") == 0)
+            beam_spot->var_yy = values[i];
+         else if (strcmp(names[i].str, "dxdz") == 0)
+            beam_spot->dxdz = values[i];
+         else if (strcmp(names[i].str, "dydz") == 0)
+            beam_spot->dydz = values[i];
+      }
+   }
+   else if (sscanf(spec, "beam_spot(%*[-+0-9.,]) * %lf", &beam_spot->length)) {
+      sscanf(spec, "beam_spot(%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf)",
+                   &beam_spot->x, &beam_spot->y, &beam_spot->z,
+                   &beam_spot->var_xx, &beam_spot->var_xy, &beam_spot->var_yy,
+                   &beam_spot->dxdz, &beam_spot->dydz);
+   }
+   else {
+      fprintf(stderr, "Error in gaussian_beam_spot - unrecognized VERTEX "
+             "specification on control.in line\n %s\n", spec);
+      exit(1);
+   }
+   double D = beam_spot->var_xx * beam_spot->var_yy -
+              beam_spot->var_xy * beam_spot->var_xy;
+   double A = (beam_spot->var_xx + beam_spot->var_yy)/2;
+   double B = (beam_spot->var_xx - beam_spot->var_yy)/2;
+   double C = beam_spot->var_xy;
+   double evalue1 = (A + sqrt(B*B + C*C) + 1e-20) / (D + 1e-40);
+   double evalue2 = (A - sqrt(B*B + C*C) + 1e-20) / (D + 1e-40);
+   if (evalue1 < 0 || evalue2 < 0) {
+      fprintf(stderr, "Error in gaussian_beam_spot - unphysical values given "
+             "for the beam spot ellipse: Vxx=%lf, Vyy=%lf, Cxy=%lf\n",
+             beam_spot->var_xx, beam_spot->var_yy, beam_spot->var_xy);
+      exit(1);
+   }
+   double alpha = 0;
+   if (C == 0)
+      alpha = (B < 0)? 0 : M_PI/2;
+   else if (B == 0)
+      alpha = (C < 0)? -M_PI/4 : M_PI/4;
+   else
+      alpha = atan2(C,B) / 2;
+   beam_spot->sigma[0] = sqrt(1 / evalue1);
+   beam_spot->sigma[1] = sqrt(1 / evalue2);
+   beam_spot->alpha = alpha;
+   beam_spot->initialized = 1;
 }
