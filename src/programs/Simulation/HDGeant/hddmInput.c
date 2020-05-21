@@ -720,6 +720,9 @@ void gaussian_beam_spot_(const char *spec)
 
 #ifndef QUIET_CONFIGURE_BEAM_VERTEX
    printf("Configured beam vertex parameters: (units of cm)\n");
+   printf("   center x=%lf",beam_spot->x);
+   printf("   y=%lf",beam_spot->y);
+   printf("   z=%lf\n",beam_spot->z);
    printf("   sigma_x=%lf",sqrt(beam_spot->var_xx));
    printf("   sigma_y=%lf",sqrt(beam_spot->var_yy));
    printf("   sigma_xy=%f\n",beam_spot->var_xy);
