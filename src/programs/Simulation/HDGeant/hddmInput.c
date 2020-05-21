@@ -717,4 +717,14 @@ void gaussian_beam_spot_(const char *spec)
    beam_spot->sigma[1] = sqrt(1 / evalue2);
    beam_spot->alpha = alpha;
    beam_spot->initialized = 1;
+
+#ifndef QUIET_CONFIGURE_BEAM_VERTEX
+   printf("Configured beam vertex parameters: (units of cm)\n");
+   printf("   sigma_x=%lf",sqrt(beam_spot->var_xx));
+   printf("   sigma_y=%lf",sqrt(beam_spot->var_yy));
+   printf("   sigma_xy=%f\n",beam_spot->var_xy);
+   printf("   dxdz=%lf",beam_spot->dxdz);
+   printf("   dydz=%lf",beam_spot->dydz);
+   printf("   dz=%lf\n",beam_spot->length);
+#endif
 }
