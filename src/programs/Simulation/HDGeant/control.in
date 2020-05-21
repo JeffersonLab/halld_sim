@@ -79,7 +79,6 @@ c list (x,y...) may be truncated at any point, in which case the remaining
 c unstated values will be assigned to zero. Whatever values you assign,
 c the entire string MUST BE ENCLOSED IN SINGLE QUOTES ''.
 cVERTEX 'beam_spot(0.20,-0.02,65.,0.06,0.,0.06,-0.0007,0.0004) * 29.5'
-cVERTEX 'beam_spot(1.5,-0.5,65.,4,-0.999,0.99999) * 29.5'
 VERTEX 'beam_spot(ccdb) * 29.5'
 
 c The BEAM card configures the built-in coherent bremsstralung photon
@@ -396,11 +395,14 @@ c This card is only supported by hdgeant3.
 ABAN 0
 
 c The following card sets up the simulation to perform debugging on
-c a subset of the simulated events.
+c a subset of the simulated events. Debugging produces extra output
+c of information from the simulation, with specific content controlled
+c by the SWIT card (see above). 
 c DEBUG first last step
 c  - first (int) = event number of first event to debug
 c  - last (int) = event number of last event to debug
-c  - step (int) = only debug one event every step events
+c  - step (int) = after event last, minimal printout every step events
+c This card is only supported by hdgeant3.
 DEBU 1 10 1000
 
 c The following card can be used to turn off generation of secondary
