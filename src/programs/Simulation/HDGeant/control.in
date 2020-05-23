@@ -125,8 +125,21 @@ c                 the system of collimators and then pair-converted in
 c                 the TPOL coverter using a custom polarization-sensitive
 c                 pair/triplet production generator. They are saved as
 c                 a single vertex within the PTAR target.
+c    'BHgen' -    beam photons are followed from the source to the target
+c                 where they are forced to undergo e+e- conversion through
+c                 the Bethe-Heitler process. These pairs are saved in the
+c                 output file for possible simulation later. If the first
+c                 argument 'BHgen' is followed by a floating point value
+c                 then it is taken as the minimum mass of the generated
+c                 pair in GeV/c^2 (default zero). The event weight saved as
+c                 an attribute of the <reaction> tag in the output event
+c                 allows the user to run the generated events through an
+c                 accept-reject filter before they are simulated. The
+c                 weight is in microbarns, such that the average value
+c                 is the total cross section for Bethe-Heitler pairs
+c                 above the stated pair threshold.
 c The first two modes are supported by both HDGeant and HDGeant4, while
-c postconv is only supported at present by HDGeant4.
+c postconv and BHgen are only supported by HDGeant4.
 cGENBEAM 'postconv'
 
 c Commenting out the following line will disable simulated hits output.
