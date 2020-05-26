@@ -53,6 +53,7 @@ int main( int argc, char* argv[] ){
 	string  outname("");
 	string  hddmname("");
 	
+	bool centeredVertex = false;
 	bool diag = false;
 	bool genFlat = false;
 	
@@ -127,6 +128,8 @@ int main( int argc, char* argv[] ){
                         else  highT = atof( argv[++i] ); }
 		if (arg == "-d"){
 			diag = true; }
+		if (arg == "-v"){
+			centeredVertex = true; }
 		if (arg == "-f"){
 			genFlat = true; }
 		if (arg == "-h"){
@@ -146,6 +149,7 @@ int main( int argc, char* argv[] ){
 			cout << "\t -t    <value>\t Momentum transfer slope [optional]" << endl;
 			cout << "\t -tmin <value>\t Minimum momentum transfer [optional]" << endl;
 			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
+			cout << "\t -v \t\t Set vertex to (0,0,0), i.e. let geant generate vertex distribution [optional]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
 			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl;
 			exit(1);
@@ -459,7 +463,7 @@ int main( int argc, char* argv[] ){
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
 					
-					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
+					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes, centeredVertex );
 					rootOut.writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
