@@ -29,7 +29,8 @@ void HDDMDataWriter::
 writeEvent( const Kinematics& kin, const vector<int>& ptype, bool centeredVertex)
 {
   if (centeredVertex)
-    writeEvent(kin,ptype,0,0,65/*cm*/);
+    // this will trigger hdgeant(4) to generate the vertex distribution
+    writeEvent(kin,ptype,0,0,0/*cm*/);
   else
     writeEvent(kin,ptype,0,0,50/*cm*/,80/*cm*/);
 }
