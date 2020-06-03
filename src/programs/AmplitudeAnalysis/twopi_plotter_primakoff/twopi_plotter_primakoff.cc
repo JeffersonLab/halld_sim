@@ -29,6 +29,7 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
+#include "AMPTOOLS_AMPS/TwoPiW_brokenetas.h"
 #include "AMPTOOLS_AMPS/TwoPitdist.h"
 #include "AMPTOOLS_AMPS/TwoPiNC_tdist.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
@@ -63,6 +64,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
   AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
   AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+  AmpToolsInterface::registerAmplitude( TwoPiW_brokenetas() );
   AmpToolsInterface::registerAmplitude( TwoPitdist() );
   AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
@@ -149,7 +151,7 @@ int main( int argc, char* argv[] ){
     // cout << " sum segment=" << parsum << endl;
     vector<string> parbreak = stringSplit (parsum, "::");
 
-    if (parbreak[1] == "Aplus"  || parbreak[1] == "IAplus"  ) { 
+    if (parbreak[1] == "Aplus"  || parbreak[1] == "IAplus"  || parbreak[1] == "EAplus" ) { 
       amplist.push_back(parbreak[2]);
       cout << " amp =" << parbreak[2] << endl;
        }
