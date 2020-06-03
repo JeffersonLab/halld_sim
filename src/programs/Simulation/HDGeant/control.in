@@ -44,6 +44,43 @@ c     is taken to be zero. Normally this is not considered valid, and a
 c     warning message is printed at startup.
 RUNG 51500
 
+c Normally the position of the primary event vertex is read from the input
+c file that is produced by an external Monte Carlo generator. In the special
+c case that the primary vertex is set to (0,0,0) by the generator, a random
+c offset is added by the simulation, generated uniformely along a cylinder to
+c represent the beam-target overlap volume. This 3d offset is added to the
+c primary vertex position and all of the secondary vertices as well, so that
+c the complete event is shifted to originate at the random assigned point.
+c The vertex times are likewise shifted according to the shift in z, so
+c that the time of the primary vertex coincides with the instant that one
+c of the beam bunches is passing through the z-plane of the shifted vertex.
+c By default, this cylinder is centered on the z axis extending from z=50.25
+c to 79.75 cm, with a uniform transverse density and a diameter of 0.5 cm.
+c The VERTEX card allows this default behavior to be superseded by a
+c Gaussian transverse beam spot specified in one of the following ways.
+c     'beam_spot(x,y,z,var_xx,var_xy,var_yy,dxdz,dydz) * length'
+c or
+c     'beam_spot(ccdb) * length'
+c where the symbols x,y,z,var_xx,var_xy,var_yy,dxdz,dydz and length are
+c numerical values that specify the vertex distribution, as follows.
+c         x,y,z  = center of random cylinder that defines the
+c                  distribution of generated vertex points;
+c         var_xx, var_xy, var_yy = parameters of an ellipse in the xy
+c                  plane that defines the transverse Gaussian distribution;
+c         dxdz   = slope of the cylinder axis in the zx plane;
+c         dydz   = slope of the cylinder axis in the zy plane;
+c         length = length of the target along z, assumed uniform.
+c All spatial dimensions are given in cm, and variances in cm^2. The second
+c form with beam_spot(ccdb) supports lookup of x,y,z,var_xx,var_xy,var_yy,
+c dxdz,dydz in ccdb, according to the run number being simulated. The
+c length parameter still needs to be specified independently because it is
+c not included in the beam_spot table in ccdb.  The beam_spot parameter
+c list (x,y...) may be truncated at any point, in which case the remaining
+c unstated values will be assigned to zero. Whatever values you assign,
+c the entire string MUST BE ENCLOSED IN SINGLE QUOTES ''.
+cVERTEX 'beam_spot(0.20,-0.02,65.,0.06,0.,0.06,-0.0007,0.0004) * 29.5'
+VERTEX 'beam_spot(ccdb) * 29.5'
+
 c The BEAM card configures the built-in coherent bremsstralung photon
 c beam generator in HDGeant.  If the INFILE card is not present and BEAM
 c is specified, the internal coherent bremsstralung generator is the primary
@@ -88,8 +125,21 @@ c                 the system of collimators and then pair-converted in
 c                 the TPOL coverter using a custom polarization-sensitive
 c                 pair/triplet production generator. They are saved as
 c                 a single vertex within the PTAR target.
+c    'BHgen' -    beam photons are followed from the source to the target
+c                 where they are forced to undergo e+e- conversion through
+c                 the Bethe-Heitler process. These pairs are saved in the
+c                 output file for possible simulation later. If the first
+c                 argument 'BHgen' is followed by a floating point value
+c                 then it is taken as the minimum mass of the generated
+c                 pair in GeV/c^2 (default zero). The event weight saved as
+c                 an attribute of the <reaction> tag in the output event
+c                 allows the user to run the generated events through an
+c                 accept-reject filter before they are simulated. The
+c                 weight is in microbarns, such that the average value
+c                 is the total cross section for Bethe-Heitler pairs
+c                 above the stated pair threshold.
 c The first two modes are supported by both HDGeant and HDGeant4, while
-c postconv is only supported at present by HDGeant4.
+c postconv and BHgen are only supported by HDGeant4.
 cGENBEAM 'postconv'
 
 c Commenting out the following line will disable simulated hits output.
@@ -358,11 +408,14 @@ c This card is only supported by hdgeant3.
 ABAN 0
 
 c The following card sets up the simulation to perform debugging on
-c a subset of the simulated events.
+c a subset of the simulated events. Debugging produces extra output
+c of information from the simulation, with specific content controlled
+c by the SWIT card (see above). 
 c DEBUG first last step
 c  - first (int) = event number of first event to debug
 c  - last (int) = event number of last event to debug
-c  - step (int) = only debug one event every step events
+c  - step (int) = after event last, minimal printout every step events
+c This card is only supported by hdgeant3.
 DEBU 1 10 1000
 
 c The following card can be used to turn off generation of secondary

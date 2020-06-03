@@ -43,7 +43,7 @@
 #include "TSystem.h"
 
 #include "HddmOut.h"
-#include "MyReadConfig.h"
+#include "UTILITIES/MyReadConfig.h"
 
 using std::complex;
 using namespace std;

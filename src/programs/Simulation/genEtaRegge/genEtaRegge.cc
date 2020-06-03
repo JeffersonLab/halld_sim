@@ -84,7 +84,6 @@ double g_omega_eta_gamma=0.29;
 double g_eta_gamma_gamma=0.0429;
 double g_phi_eta_gamma=0.38;
 
-double zmin=50.0,zmax=80.0; // cm, target extent
 int Nevents=10000;
 int runNo=10000;
 bool debug=false;
@@ -872,9 +871,6 @@ int main(int narg, char *argv[])
 
     //proton4.Print();
     thrown_theta_vs_p->Fill(proton4.P(),180./M_PI*proton4.Theta());
-
-    // Randomly generate z position in target
-    vert[2]=zmin+myrand->Uniform(zmax-zmin);
 
     // Other diagnostic histograms
     thrown_t->Fill(-t);
