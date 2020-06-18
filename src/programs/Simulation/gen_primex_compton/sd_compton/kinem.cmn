@@ -1,0 +1,48 @@
+C
+	real*8 E0min
+	real*8 E0max
+	real*8 Egamma
+	real*8 Eprime
+	real*8 costheta
+	real*8 Egrad
+	real*8 cthgrad
+	real*8 Eelec
+	real*8 Telec
+	real*8 phirel
+	real*8 cthrel
+	real*8 phi
+	real*8 phir
+	real*8 phie
+	real*8 costhe
+	real*8 xgamma
+	real*8 ygamma
+	real*8 xelec
+	real*8 yelec
+	real*8 xgrad
+	real*8 ygrad
+	real*8 dx
+	real*8 dy
+	real*8 rmin
+	real*8 hardcorr
+	real*8 vsoftcorr
+	real*8 Pxtot
+	real*8 Pytot
+	real*8 Pztot
+	real*8 Pg1
+	real*8 Pg2
+	real*8 Pe1
+	real*8 corr
+	integer*4 ievent
+	integer*4 e1cut
+	integer*4 e2cut
+	integer*4 p1cut
+	integer*4 cutg
+	integer*4 cutr
+	integer*4 cute
+	integer*4 iEbin
+C
+	COMMON /KINEM/ E0min, E0max, Egamma,Eprime,costheta,Egrad,cthgrad,
+	1    Eelec,phirel,cthrel,phi,phir,phie,costhe,xgamma,ygamma,xelec,yelec,
+	2    xgrad,ygrad,dx,dy,rmin,hardcorr,vsoftcorr,Pxtot,Pytot,Pztot,
+	3    Pg1(4),Pg2(4),Pe1(4),corr,ievent,e1cut,e2cut,p1cut,cutg,cutr,cute,iEbin
+

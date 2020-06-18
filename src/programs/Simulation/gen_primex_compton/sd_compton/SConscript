@@ -1,0 +1,31 @@
+
+import os
+import sbms
+
+# get env object and clone it
+Import('*')
+
+# Verify CERN environment variable is set
+if os.getenv('CERN', 'nada')=='nada':
+	if env.Dir('.').srcnode().abspath.startswith(env.GetLaunchDir()):
+		print '============================================================='
+		print 'CERN environment variable not set. Skipping build of comptrc0'
+		print '============================================================='
+
+else:
+
+	env = env.Clone()
+	
+	# Turn off warnings for bggen since Pythia has too many
+	env['FORTRANFLAGS'].remove('-Wall')
+
+	sbms.AddCERNLIB(env)
+	env.Append(LIBS=File('lib/libkernlib.a'))		
+        env.Append(LIBS=File('lib/libpawlib.a'))		
+	env.Append(LIBS=File('lib/libgraflib.a'))
+	env.Append(LIBS=File('lib/libgrafX11.a'))		
+	env.Append(LIBS=File('lib/libmathlib.a'))		
+	env.Append(LIBS=File('lib/libpacklib.a'))		
+	env.Append(LIBS=File('lib/libbases.a'))	
+
+	sbms.executable(env, 'sd_compton')
