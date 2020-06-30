@@ -53,7 +53,7 @@ EvtGen *myGenerator = nullptr;
 
 bool PROCESS_ALL_EVENTS = true;
 int NUM_EVENTS_TO_PROCESS = -1;
-
+bool GEN_SCHANNEL = false;
 
 void InitEvtGen();
 void ParseCommandLineArguments(int narg,char *argv[]);
@@ -176,7 +176,7 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 		
 		if(part.decayed)
 			continue;
-		if(part.type == 0) {
+		if(!GEN_SCHANNEL && part.type == 0) {
 			cout << "Particle of type 0 detected, skipping!" << endl;
 			continue;
 		}
@@ -375,6 +375,9 @@ void ParseCommandLineArguments(int narg,char *argv[])
               break;
             case 'u':
               USER_DECAY = &ptr[1];
+              break;
+            case 'S':
+              GEN_SCHANNEL = true;
               break;
             default:
               cerr << "Unknown option \"" << argv[i] << "\"" << endl;
