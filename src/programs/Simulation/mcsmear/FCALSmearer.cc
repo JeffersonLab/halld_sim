@@ -144,7 +144,8 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
                 	    "row=%d, col=%d", row, col);
             	throw JException(str);
         	}
-		if (row<100 && col<100)
+		if (row<DFCALGeometry::kBlocksTall 
+		    && col<DFCALGeometry::kBlocksWide)
 		  block_efficiencies[row][col] = raw_table[channel];
     	}
     }

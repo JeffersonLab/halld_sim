@@ -42,10 +42,14 @@ class fcal_config_t
 class FCALSmearer : public Smearer
 {
   public:
-	FCALSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		fcalGeom = new DFCALGeometry();
-		fcal_config = new fcal_config_t(loop, fcalGeom);
-        fcal_config->FCAL_ADD_LIGHTGUIDE_HITS = in_config->FCAL_ADD_LIGHTGUIDE_HITS;
+	FCALSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) { 
+    // Get pointer to DGeometry object
+    DApplication* dapp=dynamic_cast<DApplication*>(loop->GetJApplication());
+    const  DGeometry *dgeom  = dapp->GetDGeometry(loop->GetJEvent().GetRunNumber());
+
+    fcalGeom = new DFCALGeometry(dgeom);
+    fcal_config = new fcal_config_t(loop, fcalGeom);
+    fcal_config->FCAL_ADD_LIGHTGUIDE_HITS = in_config->FCAL_ADD_LIGHTGUIDE_HITS;
 	}
 	~FCALSmearer() {
 		delete fcal_config;
