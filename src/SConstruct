@@ -80,7 +80,7 @@ env.Replace( CXX = os.getenv('CXX', 'c++'),
 
 # Get compiler name
 compiler = 'unknown'
-compiler_string = subprocess.Popen([env['CC'],"-v"], stderr=subprocess.PIPE).communicate()[1]
+compiler_string = str(subprocess.Popen([env['CC'],"-v"], stderr=subprocess.PIPE).communicate()[1])
 if 'clang' in compiler_string:
 	compiler = 'clang'
 if 'gcc' in compiler_string and 'clang' not in compiler_string:
@@ -132,7 +132,7 @@ SConscript(dirs=program_subdirs, variant_dir=".%s/plugins" % (osname), exports='
 env.Alias('install', installdir)
 
 # Create setenv if user explicitly specified "install" target
-build_targets = map(str,BUILD_TARGETS)
+build_targets = list(map(str,BUILD_TARGETS))
 if len(build_targets)>0 and not env.GetOption('clean'):
 	if 'install' in build_targets:
 		import sbms_setenv

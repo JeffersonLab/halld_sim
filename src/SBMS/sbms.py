@@ -456,6 +456,7 @@ def ApplyPlatformSpecificSettings(env, platform):
 	# "."s. The Python module loader doesn't like these and we have to
 	# replace them with "-"s to appease it.
 
+	platform = str(platform)
 	platform = re.sub('\.', '-', platform)
 
 	modname = "sbms_%s" % platform
@@ -553,8 +554,8 @@ def AddJANA(env):
 
 	# Only run jana-config the first time through
 	if "JANA_CFLAGS" not in AddJANA.__dict__:
-		AddJANA.JANA_CFLAGS = subprocess.Popen(["%s/bin/jana-config" % jana_home,"--jana-only","--cflags"], stdout=subprocess.PIPE).communicate()[0]
-		AddJANA.JANA_LINKFLAGS = subprocess.Popen(["%s/bin/jana-config" % jana_home,"--jana-only","--libs"], stdout=subprocess.PIPE).communicate()[0]
+		AddJANA.JANA_CFLAGS = str(subprocess.Popen(["%s/bin/jana-config" % jana_home,"--jana-only","--cflags"], stdout=subprocess.PIPE).communicate()[0])
+		AddJANA.JANA_LINKFLAGS = str(subprocess.Popen(["%s/bin/jana-config" % jana_home,"--jana-only","--libs"], stdout=subprocess.PIPE).communicate()[0])
 
 	AddCompileFlags(env, AddJANA.JANA_CFLAGS)
 	AddLinkFlags(env, AddJANA.JANA_LINKFLAGS)
@@ -584,8 +585,8 @@ def AddMySQL(env):
 
 	# Only run mysql_config the first time through
 	if "MYSQL_CFLAGS" not in AddMySQL.__dict__:
-		AddMySQL.MYSQL_CFLAGS = subprocess.Popen(["mysql_config","--cflags"], stdout=subprocess.PIPE).communicate()[0]
-		AddMySQL.MYSQL_LINKFLAGS = subprocess.Popen(["mysql_config","--libs"], stdout=subprocess.PIPE).communicate()[0]
+		AddMySQL.MYSQL_CFLAGS = str(subprocess.Popen(["mysql_config","--cflags"], stdout=subprocess.PIPE).communicate()[0])
+		AddMySQL.MYSQL_LINKFLAGS = str(subprocess.Popen(["mysql_config","--libs"], stdout=subprocess.PIPE).communicate()[0])
 	AddCompileFlags(env, AddMySQL.MYSQL_CFLAGS)
 	AddLinkFlags(env, AddMySQL.MYSQL_LINKFLAGS)
 
@@ -624,7 +625,7 @@ def AddDANA(env):
 	DANA_LIBS += " DAQ JANA EVENTSTORE TRD"
 	DANA_LIBS += " expat"
 	env.PrependUnique(LIBS = DANA_LIBS.split())
-        env.Append(LIBS = 'DANA')
+	env.Append(LIBS = 'DANA')
 	env.PrependUnique(OPTIONAL_PLUGIN_LIBS = DANA_LIBS.split())
 
 ##################################
@@ -823,9 +824,9 @@ def AddROOT(env):
 
 	# Only root-config the first time through
 	if "ROOT_CFLAGS" not in AddROOT.__dict__:
-		AddROOT.ROOT_CFLAGS    = subprocess.Popen(["%s/bin/root-config" % rootsys, "--cflags"], stdout=subprocess.PIPE).communicate()[0]
-		AddROOT.ROOT_LINKFLAGS = subprocess.Popen(["%s/bin/root-config" % rootsys, "--glibs" ], stdout=subprocess.PIPE).communicate()[0]
-		has_tmva = subprocess.Popen(["%s/bin/root-config" % rootsys, "--has-tmva" ], stdout=subprocess.PIPE).communicate()[0]
+		AddROOT.ROOT_CFLAGS    = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--cflags"], stdout=subprocess.PIPE).communicate()[0])
+		AddROOT.ROOT_LINKFLAGS = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--glibs" ], stdout=subprocess.PIPE).communicate()[0])
+		has_tmva = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--has-tmva" ], stdout=subprocess.PIPE).communicate()[0])
 		if 'yes' in has_tmva:
 			AddROOT.ROOT_CFLAGS    += ' -DHAVE_TMVA=1'
 			AddROOT.ROOT_LINKFLAGS += ' -lTMVA'
@@ -1066,7 +1067,7 @@ def AddAmpTools(env):
 			AMPTOOLS_LIBS = 'AmpTools_GPU'
 			print('Using GPU enabled AMPTOOLS library')
 
-                env.AppendUnique(CXXFLAGS = ['-DHAVE_AMPTOOLS_MCGEN'])
+		env.AppendUnique(CXXFLAGS = ['-DHAVE_AMPTOOLS_MCGEN'])
 		env.AppendUnique(CPPPATH = AMPTOOLS_CPPPATH)
 		env.AppendUnique(LIBPATH = AMPTOOLS_LIBPATH)
 		env.AppendUnique(LIBS    = AMPTOOLS_LIBS)
@@ -1094,7 +1095,7 @@ def AddHepMC(env):
 		print('')
 		print('HepMC is being requested but the HEPMCDIR environment variable is not set!')
 		print('')
-        else:
+	else:
                 HEPMC_CPPPATH = "%s/include" % (HEPMC_HOME)
                 HEPMC_LIBPATH = "%s/lib" % (HEPMC_HOME)
                 HEPMC_LIBS = "HepMC"
@@ -1112,7 +1113,7 @@ def AddPhotos(env):
 		print('')
 		print('Photos is being requested but the PHOTOSDIR environment variable is not set!')
 		print('')
-        else:
+	else:
                 PHOTOS_CPPPATH = "%s/include" % (PHOTOS_HOME)
                 PHOTOS_LIBPATH = "%s/lib" % (PHOTOS_HOME)
                 PHOTOS_LIBS = [ "Photospp", "PhotosppHepMC" ]
@@ -1131,7 +1132,7 @@ def AddEvtGen(env):
 		print('')
 		print('EvtGen is being requested but the EVTGENDIR environment variable is not set!')
 		print('')
-        else:
+	else:
                 AddHepMC(env)
                 AddPhotos(env)
                 EVTGEN_CPPPATH = "%s/" % (EVTGEN_HOME)
@@ -1149,7 +1150,7 @@ def AddEvtGen(env):
 ##################################
 def AddUtilities(env):
 	AddCCDB(env)
-     	pyincludes = subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0]
+	pyincludes = subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0]
 	env.AppendUnique(CCFLAGS = pyincludes.rstrip().split())
 	# BOOST is required by cobrems and if it is not installed in /usr or /usr/local then we must get it from the environment
 	boost_root = os.getenv('BOOST_ROOT')
