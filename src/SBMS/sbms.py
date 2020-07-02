@@ -554,8 +554,8 @@ def AddJANA(env):
 
 	# Only run jana-config the first time through
 	if "JANA_CFLAGS" not in AddJANA.__dict__:
-		AddJANA.JANA_CFLAGS = str(subprocess.Popen(["%s/bin/jana-config" % jana_home,"--jana-only","--cflags"], stdout=subprocess.PIPE).communicate()[0])
-		AddJANA.JANA_LINKFLAGS = str(subprocess.Popen(["%s/bin/jana-config" % jana_home,"--jana-only","--libs"], stdout=subprocess.PIPE).communicate()[0])
+		AddJANA.JANA_CFLAGS = str(subprocess.Popen(["%s/bin/jana-config" % jana_home,"--jana-only","--cflags"], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
+		AddJANA.JANA_LINKFLAGS = str(subprocess.Popen(["%s/bin/jana-config" % jana_home,"--jana-only","--libs"], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
 
 	AddCompileFlags(env, AddJANA.JANA_CFLAGS)
 	AddLinkFlags(env, AddJANA.JANA_LINKFLAGS)
@@ -585,8 +585,8 @@ def AddMySQL(env):
 
 	# Only run mysql_config the first time through
 	if "MYSQL_CFLAGS" not in AddMySQL.__dict__:
-		AddMySQL.MYSQL_CFLAGS = str(subprocess.Popen(["mysql_config","--cflags"], stdout=subprocess.PIPE).communicate()[0])
-		AddMySQL.MYSQL_LINKFLAGS = str(subprocess.Popen(["mysql_config","--libs"], stdout=subprocess.PIPE).communicate()[0])
+		AddMySQL.MYSQL_CFLAGS = str(subprocess.Popen(["mysql_config","--cflags"], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
+		AddMySQL.MYSQL_LINKFLAGS = str(subprocess.Popen(["mysql_config","--libs"], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
 	AddCompileFlags(env, AddMySQL.MYSQL_CFLAGS)
 	AddLinkFlags(env, AddMySQL.MYSQL_LINKFLAGS)
 
@@ -824,9 +824,9 @@ def AddROOT(env):
 
 	# Only root-config the first time through
 	if "ROOT_CFLAGS" not in AddROOT.__dict__:
-		AddROOT.ROOT_CFLAGS    = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--cflags"], stdout=subprocess.PIPE).communicate()[0])
-		AddROOT.ROOT_LINKFLAGS = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--glibs" ], stdout=subprocess.PIPE).communicate()[0])
-		has_tmva = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--has-tmva" ], stdout=subprocess.PIPE).communicate()[0])
+		AddROOT.ROOT_CFLAGS    = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--cflags"], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
+		AddROOT.ROOT_LINKFLAGS = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--glibs" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
+		has_tmva = str(subprocess.Popen(["%s/bin/root-config" % rootsys, "--has-tmva" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
 		if 'yes' in has_tmva:
 			AddROOT.ROOT_CFLAGS    += ' -DHAVE_TMVA=1'
 			AddROOT.ROOT_LINKFLAGS += ' -lTMVA'
@@ -1150,7 +1150,7 @@ def AddEvtGen(env):
 ##################################
 def AddUtilities(env):
 	AddCCDB(env)
-	pyincludes = subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0]
+	pyincludes = str(subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
 	env.AppendUnique(CCFLAGS = pyincludes.rstrip().split())
 	# BOOST is required by cobrems and if it is not installed in /usr or /usr/local then we must get it from the environment
 	boost_root = os.getenv('BOOST_ROOT')

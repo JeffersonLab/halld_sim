@@ -80,7 +80,7 @@ env.Replace( CXX = os.getenv('CXX', 'c++'),
 
 # Get compiler name
 compiler = 'unknown'
-compiler_string = str(subprocess.Popen([env['CC'],"-v"], stderr=subprocess.PIPE).communicate()[1])
+compiler_string = str(subprocess.Popen([env['CC'],"-v"], stderr=subprocess.PIPE).communicate()[1], 'utf-8')
 if 'clang' in compiler_string:
 	compiler = 'clang'
 if 'gcc' in compiler_string and 'clang' not in compiler_string:
