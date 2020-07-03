@@ -27,6 +27,7 @@
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
+#include "AMPTOOLS_AMPS/dblRegge.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -52,6 +53,7 @@ int main( int argc, char* argv[] ){
 	string  outname("");
 	string  hddmname("");
 	
+	bool centeredVertex = false;
 	bool diag = false;
 	bool genFlat = false;
 	
@@ -126,6 +128,8 @@ int main( int argc, char* argv[] ){
                         else  highT = atof( argv[++i] ); }
 		if (arg == "-d"){
 			diag = true; }
+		if (arg == "-v"){
+			centeredVertex = true; }
 		if (arg == "-f"){
 			genFlat = true; }
 		if (arg == "-h"){
@@ -145,6 +149,7 @@ int main( int argc, char* argv[] ){
 			cout << "\t -t    <value>\t Momentum transfer slope [optional]" << endl;
 			cout << "\t -tmin <value>\t Minimum momentum transfer [optional]" << endl;
 			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
+			cout << "\t -v \t\t Set vertex to (0,0,0), i.e. let geant generate vertex distribution [optional]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
 			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl;
 			exit(1);
@@ -161,6 +166,8 @@ int main( int argc, char* argv[] ){
 	ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
 	assert( cfgInfo->reactionList().size() == 1 );
 	ReactionInfo* reaction = cfgInfo->reactionList()[0];
+
+	//
 	
 	// use particletype.h to convert reaction particle names
 	vector<Particle_t> Particles;
@@ -248,6 +255,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
+	AmpToolsInterface::registerAmplitude( dblRegge() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
@@ -280,12 +288,23 @@ int main( int argc, char* argv[] ){
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
 	GammaPToNPartP resProd;
-	resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, recoil, type, slope, lowT, highT, seed, beamConfigFile );
+	double minMass = (threshold < lowMass ? lowMass : threshold);
+	resProd = GammaPToNPartP( minMass, highMass, childMasses, recoil, type, slope, lowT, highT, seed, beamConfigFile );
 	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
 	  return 1;
 	}
+
+	double recMass = ParticleMass(Particles[1]);
+	double cmEnergy = sqrt(recMass*(recMass + 2*beamLowE));
+	if ( cmEnergy < minMass + recMass ){
+	  cout << "ConfigFileParser ERROR:  Minimum photon energy not high enough to create resonance!" << endl;
+	  return 1;
+	}
+	else if ( cmEnergy < highMass + recMass )
+	  cout << "ConfigFileParser WARNING:  Minimum photon energy not high enough to guarantee flat mass distribution!" << endl;
+
 		
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
@@ -326,6 +345,9 @@ int main( int argc, char* argv[] ){
 	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, lowMass, highMass, 1000, 0, 10 );
 	
 	TH1F* t = new TH1F( "t", "-t Distribution", 200, 0, 2 );
+
+	TH1F* E = new TH1F( "E", "Beam Energy", 120, 0, 12 );
+	TH2F* EvsM = new TH2F( "EvsM", "Beam Energy vs Mass", 120, 0, 12, 180, lowMass, highMass );
 
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
 
@@ -403,6 +425,9 @@ int main( int argc, char* argv[] ){
 					else
 						t->Fill(-1*(evt->particle(1)-target).M2());
 
+					E->Fill(beam.E());
+					EvsM->Fill(beam.E(),resonance.M());
+
 					TLorentzRotation resonanceBoost( -resonance.BoostVector() );
 					
 					TLorentzVector beam_res = resonanceBoost * beam;
@@ -438,7 +463,7 @@ int main( int argc, char* argv[] ){
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
 					
-					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
+					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes, centeredVertex );
 					rootOut.writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
@@ -468,6 +493,8 @@ int main( int argc, char* argv[] ){
 	intenWVsM->Write();
 	M_isobar->Write();
 	t->Write();
+	E->Write();
+	EvsM->Write();
 	CosTheta_psi->Write();
 	M_CosTheta->Write();
 	M_Phi->Write();

@@ -38,6 +38,17 @@
 *   - all cheat tags have been modified to report all three coordinates
 *     (in the global reference system) instead of only two [rtj]
 *
+* Revision 1.12  2020/05/14 06:04:01  jonesrt
+* Add a new VERTEX card to support a gaussian transverse beam spot:
+*   VERTEX 'beam_spot(x,y,z,var_xx,var_xy,var_yy,dxdz,dydz) * length'
+* where x,y,z = center of the gaussian beam_spot envelope [cm]
+*       var_xx, var_xy, var_yy = elliptical beam spot parameters
+*       dxdz, dydz = slope of beam spot center along z in xz, yz planes
+*       length = length of the beam spot distribution along z.
+* A second form is also supported,
+*   VERTEX 'beam_spot(x,y,z,var_xx,var_xy,var_yy,dxdz,dydz) * length'
+* which looks up the beam_spot parameters in ccdb, by run number.
+*
 * Revision 1.12  2019/02/23 09:36:34  jonesrt
 * Add 3 new fields to the end of the BEAM card in control.in:
 *  (8)  spotRMS - virtual spot rms size at the collimator (m)
@@ -194,6 +205,10 @@
       data spotX/0/
       data spotY/0/
 
+      integer vertex_spec(20)
+      common /vertexSpec/ vertex_spec
+      data vertex_spec/20*0/
+
 c The following parameters are declared in hdtrackparams.inc above.
       data nosecondaries/0/
       data storetraj/0/
@@ -294,6 +309,7 @@ C..geant..
       call ffkey('postsmear',postsmear,1,'INTEGER')
       call ffkey('mcsmearopts',mcsmearopts,64,'MIXED')
       call ffkey('deleteunsmeared',deleteunsmeared,1,'INTEGER')
+      call ffkey('vertex',vertex_spec,20,'MIXED')
       call ffkey('beam',beamE0,10,'REAL')
       call ffkey('genbeam',genbeam_mode,20,'MIXED')
       call ffkey('bfieldmap', bfield_map,20,'MIXED')
@@ -393,8 +409,12 @@ c        endif
      +               ' cannot continue.'
             stop
          endif
-
-
+      endif
+*
+*             Assign the beam spot parameters
+*
+      if (vertex_spec(1).ne.0) then
+         call gaussian_beam_spot(vertex_spec)
       endif
 
       if(showersincol.ne.0) then

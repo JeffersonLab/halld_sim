@@ -141,12 +141,12 @@ int main( int argc, char* argv[] ){
   }
   
   if (outname.size() == 0 && hddmname == "") {
-    cout << "No output specificed:  run gen_compton_simple -h for help" << endl;
+    cout << "No output specificed:  run gen_whizard -h for help" << endl;
     exit(1);
   }
   
   if (genconfigfile == "") {
-    cout << "No generator configuration file: run gen_primex_eta_he4 -h for help " << endl;
+    cout << "No generator configuration file: run gen_whizard -h for help " << endl;
     exit(1);
   }
   // random number initialization (set to 0 by default)
