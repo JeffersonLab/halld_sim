@@ -788,7 +788,7 @@ def AddXERCES(env):
 ##################################
 def AddCERNLIB(env):
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore'])
-	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic'])
+	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic', '-fallow-argument-mismatch'])
 	#env.PrependUnique(FORTRANPATH = ['include'])
 	cern = os.getenv('CERN', '/usr/local/cern/PRO')
 	cern_level = os.getenv('CERN_LEVEL', '2006')
