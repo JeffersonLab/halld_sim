@@ -82,6 +82,7 @@ c                2-01-19        - adapt the code to treat Sigma0-anti-Sigma0, to
 c	         7-01-19        - morph to keep up with developing MC_GEN code
 c                7-02-19        - huge amounts of analysis code for old projects was removed       
 c               11-30-19        - add histograms for p-bar-p study
+c                4-25-20        - more studies of p-anti-p production
 c     
 c	Coding for the list of particles generated in the decay chain:
 c	All variables in this list are measured in the laboratory frame.
@@ -368,7 +369,7 @@ c--------------------------------------------------------------------------
 c
 	      call hbook1(28,'Beam Momentum (GeV/c)' , 100,  3.5, 12.0,0.)	      
 c	      call hbook1(2800,'Beam Momentum (GeV/c)' , 1000,  6000., 7000.,0.)	      
-	      call hbook1(2800,'Beam Momentum (GeV/c)' , 1000,  3500., 4500.,0.)	      
+	      call hbook1(2800,'Beam Momentum (GeV/c)' ,  250,  3500., 4500.,0.)	      
 c
 c------ Histograms for GlueX baryonium study (p pbar)--------------
 c
@@ -377,15 +378,15 @@ c
 	      call hbook1(133,'p&^-! Lab Momentum (GeV/c)'  ,100,0.,8.0,0.)
 	      call hbook2(134,'P2 vs. P1 LAB Momenta (GeV/c)',
      1	                            50,0.,8.0,50,0.,8.0,0.)
-	      call hbook1(135,'P1 Lab Angle (deg)'     ,90,0.,90.0,0.)
-	      call hbook1(136,'P2 Lab Angle (deg)'     ,90,0.,90.0,0.)
-	      call hbook1(137,'p&^-!  Lab Angle (deg)'     ,90,0.,90.0,0.)
+	      call hbook1(135,'p1 Lab Angle (deg)'       ,100,0.,50.0,0.)
+	      call hbook1(136,'p2 Lab Angle (deg)'       ,100,0.,50.0,0.)
+	      call hbook1(137,'p&^-!  Lab Angle (deg)'   ,100,0.,50.0,0.)
 
-	      call hbook1(138,'Beam (GeV) - 0 FCAL hits' , 300,  3.5, 6.5,0.)	      
-	      call hbook1(139,'Beam (GeV) - 1 FCAL hits' , 300,  3.5, 6.5,0.)	      
-	      call hbook1(140,'Beam (GeV) - 2 FCAL hits' , 300,  3.5, 6.5,0.)	      
-	      call hbook1(141,'Beam (GeV) - 3 FCAL hits' , 300,  3.5, 6.5,0.)	      
-	      call hbook1(142,'Beam (GeV)              ' , 300,  3.5, 6.5,0.)	      
+	      call hbook1(138,'Beam (GeV) - 0 FCAL hits' , 150,  3.5, 6.5,0.)	      
+	      call hbook1(139,'Beam (GeV) - 1 FCAL hits' , 150,  3.5, 6.5,0.)	      
+	      call hbook1(140,'Beam (GeV) - 2 FCAL hits' , 150,  3.5, 6.5,0.)	      
+	      call hbook1(141,'Beam (GeV) - 3 FCAL hits' , 150,  3.5, 6.5,0.)	      
+	      call hbook1(142,'Beam (GeV)              ' , 150,  3.5, 6.5,0.)	      
 c     
 	      call hbook1(148,'FCAL (GeV) - 0 FCAL hits' , 300,  0.01, 2.5,0.)	      
 	      call hbook1(149,'FCAL (GeV) - 1 FCAL hits' , 300,  0.01, 2.5,0.)	      
@@ -395,6 +396,9 @@ c
 	      call hbook1(153,'CM momentum (GeV/c)' , 200,  0.00, 0.8 ,0.)	      
 	      call hbook1(154,'CM pairwise momentum (GeV/c)',200,0.00, 0.75,0.)	      
 c     
+	      call hbook1(155,'p1 cos [Q]?LAB! '     ,50,0.5,1.0,0.)
+	      call hbook1(156,'p2 cos [Q]?Lab! '     ,50,0.5,1.0,0.)
+	      call hbook1(157,'p&^-! cos [Q]?LAB!'   ,50,0.5,1.0,0.)
 
 	      call hbook2(209,'PROTON  [Q] (deg) vs. p (GeV/c)'       
      1  					,100,0.,8.,100,0.,90.,0.)
@@ -457,14 +461,32 @@ c     1  						 ,440,1.8,2.0,0.)
 	      call hbook1(8865,'p1 cos [Q]?cm! ',200,-1.,1.0,0.)
 	      call hbook1(8866,'p2 cos [Q]?cm! ',200,-1.,1.0,0.)
 	      call hbook1(8867,'p&^-! cos [Q]?cm! ',200,-1.,1.0,0.)
-	      call hbook2(8868,'cos [Q]?cm! (p1 vs. p2)',
+
+
+              call hbook1( 865,'p1 cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1( 866,'p2 cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1( 867,'p&^-! cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1(1865,'p1 cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1(1866,'p2 cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1(1867,'p&^-! cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1(2865,'p1 cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1(2866,'p2 cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1(2867,'p&^-! cos [Q]?cm! ',200,-1.,1.0,0.)
+              call hbook1(3865,'p1 cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1(3866,'p2 cos [Q]?cm! ',200,-1.,1.0,0.)
+	      call hbook1(3867,'p&^-! cos [Q]?cm! ',200,-1.,1.0,0.)
+
+
+c
+
+              call hbook2(8868,'cos [Q]?cm! (p1 vs. p2)',
 	1    	                       50,-1.,1.0,50,-1.,1.0,0.)
 	      call hbook2(8869,'cos [Q]?cm! (pbar vs. p1)',
 	1    	                       50,-1.,1.0,50,-1.,1.0,0.)
 	      call hbook2(8870,'cos [Q]?cm! (pbar vs. p2)',
 	1    	                       50,-1.,1.0,50,-1.,1.0,0.)
-	      call hbook1(8875,'P1 [Q]?cm! ',90,0.,180.0,0.)
-	      call hbook1(8876,'P2 [Q]?cm! ',90,0.,180.0,0.)
+	      call hbook1(8875,'p1 [Q]?cm! ',90,0.,180.0,0.)
+	      call hbook1(8876,'p2 [Q]?cm! ',90,0.,180.0,0.)
 	      call hbook1(8877,'p&^-! [Q]?cm! ',90,0.,180.0,0.)
 	      call hbook2(8878,'[Q]?cm! (p1 vs. p2)',
 	1    	                       90,0.,180.0,90,0.,180.0,0.)
@@ -492,12 +514,13 @@ c     1  						 ,440,1.8,2.0,0.)
 	      call hbook2(8894,'cos[Q]?cm! (p2 vs. p1) BEFORE SWAPPING',
 	1	                           50,-1.0,1.0,50,-1.0,1.0,0.)
 	      call hbook1(8895, '-(t) (GeV^2!)  p&^-! p',
-	1	                         100,0.0,20.0,0.)
-	      call hbook1(8896, '-(t - tmin) (GeV^2!)  p&^-! p',
-	1	                         100,0.0,3.0,0.)
+	1	                         100,0.0,5.0,0.)
+	      call hbook1(8896, '-(t - t?min!) (GeV^2!)  p&^-! p',
+	1	                         100,0.0,5.0,0.)
 	      call hbook2(8897,'Beam Energy (GeV) vs. IM(p?2! p&^-!)',
 	1	   220,1.8,4.0,90,3.0,12.0,0.)
-	      call hbook2(8898,'-(t - tmin) (GeV^2!)  p&^-! p vs. IM(p?2! p&^-!)',
+              call hbook2(8898,
+     1            '-(t - t?min!) (GeV^2!) p&^-! p vs. IM(p?2! p&^-!)',
 	1	   110,1.8,4.0,50,0.0,3.0,0.)
 	      call hbook2(8899,'-t (GeV^2!)  p&^-! p vs. IM(p?2! p&^-!)',
 	1	   110,1.8,4.0,50,0.0,3.0,0.)
@@ -511,6 +534,8 @@ c     1  						 ,440,1.8,2.0,0.)
               call hbook1(8904,
      1             'IM (p2 p&^-!) (GeV/c^2!) (q and k weighted)',
 	1	                         100,1.8,4.0,0.)
+	      call hbook1(8905, '- t?min! (GeV^2!)  p&^-! p',
+	1	                         100,0.0,5.0,0.)
               
 c
 c------Histograms for GlueX baryonium study (Lambda anti-Lambda)--------------
@@ -1276,6 +1301,9 @@ c
 		 call hf1(135,thp1lab,weight) !proton 1
 		 call hf1(136,thp2lab,weight) !proton 2
 		 call hf1(137,thpalab,weight) !anti-proton
+		 call hf1(155,costhp1lab,weight) !proton 1
+		 call hf1(156,costhp2lab,weight) !proton 2
+		 call hf1(157,costhpalab,weight) !anti-proton
                  call hf2(209,pval1,thp1lab,weight)
                  call hf2(230,pvala,thpalab,weight)
 c
@@ -1288,12 +1316,17 @@ c
                  esum1 = 0
                  esum2 = 0
                  esum3 = 0
-                 
-                 if(thp1lab.le.10.0)numfcal = numfcal + 1
-                 if(thp2lab.le.10.0)numfcal = numfcal + 1
-                 if(thpalab.le.10.0)numfcal = numfcal + 1
+
+
+                 angval = 12.0 !degrees
+                 if(thp1lab.le.angval)numfcal = numfcal + 1
+                 if(thp2lab.le.angval)numfcal = numfcal + 1
+                 if(thpalab.le.angval)numfcal = numfcal + 1
                  if(numfcal.eq.0)then
                     call hf1(138,ppbeam,weight)
+                    call hf1( 865,costhp1cm,weight)
+                    call hf1( 866,costhp2cm,weight)
+                    call hf1( 867,costhpacm,weight)
                     if(ppbeam.le.plimit)then
                        if(thp1lab.lt.10.0)call hf2(232,pval1,beta1,weight)
                        if(thp2lab.lt.10.0)call hf2(232,pval2,beta2,weight)
@@ -1305,6 +1338,9 @@ c
                  endif
                  if(numfcal.eq.1)then
                     call hf1(139,ppbeam,weight)
+                    call hf1(1865,costhp1cm,weight)
+                    call hf1(1866,costhp2cm,weight)
+                    call hf1(1867,costhpacm,weight)
                     if(ppbeam.le.plimit)then
                        if(thp1lab.lt.10.0)call hf2(233,pval1,beta1,weight)
                        if(thp2lab.lt.10.0)call hf2(233,pval2,beta2,weight)
@@ -1316,6 +1352,9 @@ c
                  endif
                  if(numfcal.eq.2)then
                     call hf1(140,ppbeam,weight)
+                    call hf1(2865,costhp1cm,weight)
+                    call hf1(2866,costhp2cm,weight)
+                    call hf1(2867,costhpacm,weight)
                     if(ppbeam.le.plimit)then
                        if(thp1lab.lt.10.0)call hf2(234,pval1,beta1,weight)
                        if(thp2lab.lt.10.0)call hf2(234,pval2,beta2,weight)
@@ -1327,6 +1366,9 @@ c
                  endif
                  if(numfcal.eq.3)then
                     call hf1(141,ppbeam,weight)
+                    call hf1(3865,costhp1cm,weight)
+                    call hf1(3866,costhp2cm,weight)
+                    call hf1(3867,costhpacm,weight)
                     if(ppbeam.le.plimit)then
                        if(thp1lab.lt.10.0)call hf2(235,pval1,beta1,weight)
                        if(thp2lab.lt.10.0)call hf2(235,pval2,beta2,weight)
@@ -1420,12 +1462,13 @@ c
 		 call boost(pimp1ap,beta,pimp1apcm) !p1 anti-proton combination
 		 call boost(pimp2ap,beta,pimp2apcm) !p2 anti-proton combination
 		 call getangles
-     1 		    (pimp1apcm,pmomimp1ap,thimp1apcm,costhimp1apcm,phiimp1apcm)
+     1     	  (pimp1apcm,pmomimp1ap,thimp1apcm,costhimp1apcm,phiimp1apcm)
 		 call getangles
-     1		    (pimp2apcm,pmomimp2ap,thimp2apcm,costhimp2apcm,phiimp2apcm)
-		 call gett(pbeamcm,pimp2apcm,ttp2ap,ttprimep2ap) !Mandelstam t for beam and proton/anti-proton pair
-		 call hf1(8895,-ttp2ap,weight)
-		 call hf1(8896,       -ttprimep2ap,weight)
+     1            (pimp2apcm,pmomimp2ap,thimp2apcm,costhimp2apcm,phiimp2apcm)
+		 call gett(pbeamcm,pimp2apcm,ttp2ap,ttnotp2ap,ttprimep2ap) !Mandelstam t for beam and proton/anti-proton pair
+		 call hf1(8895,-ttp2ap     ,weight) ! t variation from photon to p2 and antiproton
+		 call hf1(8896,-ttprimep2ap,weight)
+		 call hf1(8905,-ttnotp2ap  ,weight) !
 		 call hf2(8898,rmp2ap,-ttprimep2ap,weight) !See how invariant mass range varies with t
 		 call hf2(8899,rmp2ap,-ttp2ap     ,weight) !See how invariant mass range varies with t
 		 call hf2(8900,costhpbarcm,-ttp2ap,weight) !See how anti-proton angle    varies with t
@@ -1828,7 +1871,7 @@ c		   write(6,*)'Five'
 		call gett(pbeamcm,plamcm,ttplamcm,ttmin,ttprimeplamcm)       !Mandelstam t for beam & Lambda
 		call gett(pbeamcm,plamcm,ttalamcm,ttmin,ttprimealamcm)       !Mandelstam t for beam & anti-Lambda
 		call gett(pbeamcm,alamcm,ttalamcm,ttmin,ttprimealamcm)       !Mandelstam t for beam & anti-Lambda	
-                call gett(pbeamcm,ppalam,ttp1alam,ttmin,ttprimep1alam) !Mandelstam t for beam & proton anti-Lambda pair
+                call gett(pbeamcm,ppalam,ttp1alam,ttmin,ttprimep1alam)       !Mandelstam t for beam & proton anti-Lambda pair
 		call gett(ptargetcm,p1cm,ttprecoil,ttmin,ttprimeprecoil)     !Mandelstam t for target and recoil proton
 		call gett(pbeamcm,plamalam,ttplamalam,ttmin,ttprimeplamalam) !Mandelstam t for beam & Lambda anti-Lambda pair
 c                if(iloop.eq.1)then
@@ -2576,7 +2619,10 @@ c
         pminvalproton  = .35   !minimum accepted momentum in GeV
         pminvalaproton = .35   !minimum accepted momentum in GeV
         pminvalneutral = 0.03  !GeV
-c
+        thetamin       = 2.0   !Minimum lab angle accepted for charged tracks (in degrees)
+c        thetamin       = 5.0   !Minimum lab angle accepted for charged tracks   !Suspect that protons and antiprotons at smaller angles are not reconstructed correctly in MC
+        thetamax       = 150.0 !Maximum lab angle accepted for charged tracks
+c     
 	if(icharge.ne.0)then  !charged particles
 	   if(abs(lund).eq.17)then !pions
 	      if(pmomgev.lt.pminvalpion)then
@@ -2597,7 +2643,7 @@ c
 	      iacc = .false.
 	      acceptweight = 0.0
 	   end if
-	   if(theta.gt.150. .or. theta.lt.2.0)then  !RASch 8-31-16; cut on lab polar angle of charged tracks
+	   if(theta.gt.thetamax .or. theta.lt.thetamin)then  !RASch 8-31-16; cut on lab polar angle of charged tracks
 	      iacc = .false.
 	      acceptweight = 0.0
 	   end if
@@ -2619,7 +2665,6 @@ c		 write(6,*)'Failed on energy...'
 	      continue
 	   endif
 	endif
-
 c
 	if(iacc.eqv..true.)then
 		iaccept_GlueX = .true.

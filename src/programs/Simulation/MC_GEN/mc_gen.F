@@ -146,11 +146,20 @@ c                8-26-19 - Small bug fix in writing out ASCII data for Mechanism
 c               10-29-19 - Tiny bug fix in Reggepick to trap rare machine precision issue    
 c               11-19-19 - Code to allow simulation of the "double Regge" process vi a "Mechanism 5"
 c               02-26-20 - Small code upgrades to handle "double-Regge" better
-c               03-23-20 - create a 3-body mechanism with and overall b1 t-slope to the produced pair(GeV^-2) and
-c                          and an invariant P23 mass cluster pairing slope b2 (GeV^-1)
+c               03-23-20 - create a 3-body mechanism with an overall b1 t-slope to the produced pair(GeV^-2) and
+c                          and an invariant P23 mass cluster pairing (inverse) exponential slope b2 (GeV)
 c                          We are calling this "Mechanism 6".     
+c               04-03-20 - create a 3-body mechanism with an overall b1 t-slope to the produced pair(GeV^-2) and
+c                          and an invariant P23 mass cluster pairing (inverse) linear slope b2 (GeV)
+c                          We are calling this "Mechanism 7".
+c               04-23-20 - create a 3-body mechanism with an overall b1 t-slope to the produced pair(GeV^-2) and
+c                          and an invariant P23 mass cluster pairing that mimics S-wave potential scattering
+c                          We are repurposing "Mechanism 7".
+c                          This involves a big coding change such that the definition file includes not just 2
+c                          but 3 constants for each production mechanism.   This is since we need 3 for Mechanism 7.
+c               05-08-20 - Change Mechanism 6 to allow a change in the generated t distribution below some cuttoff value.
 c     
-        parameter (version=11.60) !Version of the program... keep this updated
+        parameter (version=12.00) !Version of the program... keep this updated
 c      
 	external ran  !forces the use of "my" version of random number generator (see RNDNOR.F)
 	parameter (maxnumpar=65) !Maximum number of particles in the table
@@ -164,7 +173,7 @@ c
 	real rm(maxnumpar),width(maxnumpar),ct(maxnumpar)
 	real zpart(maxnumpar)
 	integer idecay(maxnumpar,maxdecays,7)
-	real branch(maxnumpar,maxdecays,3)
+	real branch(maxnumpar,maxdecays,4)
 	real plist(24,maxnumlis)
 	real pp(5,maxnumpar)
 	real ptot(5),pv(5),pvsmear(5),p1(5),p2(5),p3(5),p4(5),p5(5) !4-vectors in KINPACK
@@ -347,15 +356,14 @@ c		    7  code to specify how to treat decay dynamics:
 c						0= pure phase space
 c						1= hyperon decay 
 c						2= nuclear Fermi gas
-c						3= Lambda photoprod.
-c                                               4= Sigma0 photoprod.
 c                                               et cetera...
-c     BRANCH(A,B,C)
+c       BRANCH(A,B,C)
 c		A - position index in list of particles
 c		B - decay mode index
 c		C = 1  decay branching fraction for this decay mode
-c		    2  first  parameter specifying the decay dynamics (e.g. b-slope     in Regge model)
-c		    3  second parameter specifying the decay dynamics (e.g. W_threshold in Regge model)
+c		    2  first  parameter specifying the decay dynamics (e.g. top    b-slope in Regge model)
+c		    3  second parameter specifying the decay dynamics (e.g. bottom b-slope in double Regge model)
+c		    4  third  parameter specifying the decay dynamics (e.g. cluster value  in S-wave model model)
 c
 	i = 0		!Counts particles in the table, including Beam and Targ.
  23     continue
@@ -372,11 +380,12 @@ c       width(i) = width(i) / 2.354 /1000.	!Width sigma in GeV
 	if(i.le.2)goto 23			!beam and target can't decay
 	do 35 j=1,abs(numdecays(i)) 	!decay modes of particle (may be zero).
  26        continue
-           read(1,*,err=26)nbody, ndynamics, dyncode1, dyncode2
+           read(1,*,err=26)nbody, ndynamics, dyncode1, dyncode2, dyncode3
            idecay(i,j,1) = nbody !flags N=2 3, 4 or 5 body decay
            idecay(i,j,7) = ndynamics !specify decay type: phase space, etc.
            branch(i,j,2) = dyncode1
            branch(i,j,3) = dyncode2
+           branch(i,j,4) = dyncode3
            if(nbody.eq.2)then
  27           continue
               read(1,*,err=27)id1,id2,decayfrac
@@ -945,7 +954,8 @@ c              goto 500  !shut down analysis
  170	   nbody     = idecay(index,mode,1)
 	   ndynamics = idecay(index,mode,7)
            dyncode1  = branch(index,mode,2)  !usually the b-slope for Regee model
-           dyncode2  = branch(index,mode,3)  !usually the thresold W for the Regge model
+           dyncode2  = branch(index,mode,3)  !e.g. the bottom vertex slope in the double Regge model
+           dyncode3  = branch(index,mode,4)  !e.g. a parameter for S-wave scattering
 c	   write(6,*)'> Particle decay dynamics code:',ndynamics
 c	   write(6,*)'> Particle decay dynamics code:',ndynamics
 c
@@ -1468,13 +1478,14 @@ c                call getmasses(indexparent,rm1,rm2,1)  !works only for the firs
                  rm2 = p2(4)
 c                write(6,*)'Decay masses:', rm1,rm2
                  bslope1    = dyncode1 ! was set in definition file
+                 tcutoff    = dyncode3
                  rmproduce  = rm2 ! the "produced" thing is the forward-going object at the photon vertex
                  rmrecoil   = rm1 ! the recoiling thing is listed first in the definition file
                  rmtarget   = rmproton
                  wthreshold = dyncode2 !specified in the definition file
                  sminf      = 0.001 !parameter controling the "flatness" at back angles
-                 call reggepick(ppbeam,pbeammax,wthreshold,bslope1,sminf,
-     1                rmtarget,rmproduce,rmrecoil,cosinethetacm,iregge)
+                 call reggepick(ppbeam,pbeammax,wthreshold,bslope1,tcutoff,
+     1                sminf,rmtarget,rmproduce,rmrecoil,cosinethetacm,iregge)
 
 c                 cosinethetacm = .5      !Test hack
                  
@@ -1543,7 +1554,7 @@ c                              also enforce the t-slope at the bottom vertex:  "
 c             NDYNAMICS = 5  - rotate the 3-body phase-space state so the P23 combo has given t-slope and
 c                              keep event where the invariant mass of P23 follows a desired slope
 c
-              else if(ndynamics.ge.3 .and. ndynamics.le.5)then !combine 3-body production & Regge picture
+              else if(ndynamics.ge.3 .and. ndynamics.le.6)then !combine 3-body production & Regge picture
                  idcount   = 0
  240             pvtemp(1) = 0
                  pvtemp(2) = 0
@@ -1575,29 +1586,35 @@ c                 write(6,*)'P23>>',p23
                  rm23 = p23(4)
                  bslope1     = dyncode1 ! was set in definition file
                  bslope2     = dyncode2 ! was set in definition file
+                 bslope3     = dyncode3 ! was set in definition file
                  if(ndynamics.eq.3)then ! Mechanism 4, single Regge with momentum transfer to produced pair
                     rmproduce  = rm23 ! the "produced" thing is the forward-going object at the photon vertex
                     rmrecoil   = rm1  ! the recoiling thing is listed first in the definition file (e.g. target proton)
-                 elseif(ndymanics.eq.4)then ! Mechanism 5, double Regge 
+                 elseif(ndynamics.eq.4)then ! Mechanism 5, double Regge 
                     rmproduce  = rm1  ! the "produced" thing is the forward-going object at the photon vertex
                     rmrecoil   = rm23 ! the recoiling thing here the pair of other particles taken together
-                 elseif(ndymanics.eq.5)then  ! Mechanism 6,  single Regge with P23 invariant mass tuning
+                 elseif(ndynamics.eq.5)then ! Mechanism 6,  single Regge with P23 invariant mass tuning
                     rmproduce  = rm23  ! the "produced" thing is the forward-going object at the photon vertex
                     rmrecoil   = rm1   ! the recoiling thing is listed first in the definition file (e.g. target proton)
+                    ipick      = 1     ! select an exponential invariant mass cutoff for the produced pair
+                 elseif(ndynamics.eq.6)then ! Mechanism 7,  single Regge with P23 invariant mass tuning
+                    rmproduce  = rm23  ! the "produced" thing is the forward-going object at the photon vertex
+                    rmrecoil   = rm1   ! the recoiling thing is listed first in the definition file (e.g. target proton)
+                    ipick      = 2     ! select an linear invariant mass cutoff for the produced pair
                  endif
-c                
+c     
 c                Now test if the P23 pair has an invriant mass in line with the selected
 c                slope.  This is our way of modeling possible clustering of the particle pair.
 c                "Mechanism 6" 
 c                 
-                 if(ndynamics.eq.5)then
+                 if(ndynamics.eq.5.or.ndynamics.eq.6)then
 c                    write(6,*)'Trimming invariant mass'
 c                    write(6,*)p2
 c                    write(6,*)p3
 c                    write(6,*)p23
 c                    write(6,*)rm23
                     rmassmin = p2(4) + p3(4) !least value the invariant mass can have
-                    call sculptmass(rm23,rmassmin,rmassmax,bslope2,iyesno)
+                    call sculptmass(rm23,rmassmin,bslope2,bslope3,ipick,iyesno)
                     if(iyesno.eq.0)then
 c                       write(6,*)'Mass rejected',rm23
                        goto 240 !re-throw the 3-body phase space particles
@@ -1607,11 +1624,11 @@ c                       write(6,*)'Mass accepted',rm23
                  endif
 c
                  rmtarget   = rmproton
-                 wdummy     = xdummy !(actually not used at this time)
+                 wdummy     = 0.0   !(actually not used at this time)
                  sminf      = 0.001 !parameter controling the "flatness" at back angles
-                 call reggepick(ppbeam,pbeammax,wdummy,bslope1,sminf,
+                 call reggepick(ppbeam,pbeammax,wdummy,bslope1,bslope3,sminf,
      1                rmtarget,rmproduce,rmrecoil,cosinethetacm,iregge)
-c                 write(6,*)'RP> ',ppbeam,pbeammax,cosinethetacm,iregge,bslope1
+c                 write(6,*)'RP> ',ppbeam,pbeammax,cosinethetacm,iregge,bslope1,tcutoff
 c                 write(6,*)'    ',rmtarget,rmrecoil,rmproduce,wdummy
                  if(iregge.lt.0)then !abandon this event
                     write(6,*)'Reggepick error'
@@ -1626,6 +1643,8 @@ c                    write(6,*)'Rotating P23 to the desired t'
 c                    write(6,*)'Rotating P1 to the desired t'
                     cosinethetacm = -cosinethetacm   !kinematic trick to save coding steps
                  elseif(ndynamics.eq.5)then
+c                    write(6,*)'Rotating P23 to the desired t'
+                 elseif(ndynamics.eq.6)then
 c                    write(6,*)'Rotating P23 to the desired t'
                  else
                     write(6,*)'Inconsistent dynamics specified'
@@ -3214,10 +3233,11 @@ c       Input: ppbeam        = previously selected beam momentum
 c              ppbeammax     = maximum beam (photon) energy
 c              wscale        = W scaling factor (not used in this version of the code)
 c              bslope        = Regge slope parameter
+c              tcutoff       = value of tprime where the Regge behavior changes
 c              sminf         = minimum fraction of largest cross section to pick
+c              rmtarget      = mass of target
 c              rmproduce     = mass of the object produced in the final state 
 c              rmrecoil      = mass of system recoiling against the produced object, in GeV
-c              rmtarget      = mass of target
 c       Output:cosinethetacm = c.m. production angle selected with "t-channel" weighting
 c              iregge        = error flag
 c
@@ -3228,19 +3248,21 @@ c       This version allows two different values of the b-slope, which we may ne
 c       studying the anti-Lambda Lambda channel.
 c
 c       R.A.Sch. June 2017
-c       7-25-2017 - various reworkings to make it suitable for Lambda -anti-Lambda      
+c       7-25-2017 - various reworkings to make it suitable for Lambda -anti-Lambda
+c       5-07-2020 - add parameter tcutoff to mark where the t-slope changes
 c
-	subroutine reggepick(ppbeam,pbeammax,wscale,bslope,sminf,rmtarget,
+	subroutine reggepick(ppbeam,pbeammax,wscale,bslope,tcutoff,sminf,rmtarget,
      1                        rmproduce,rmrecoil,cosinethetacm,iregge)
 	data rmg/0.0/		!photon mass  (use this term so the equations look symmetric)
 	data ifirst/1/  
 	common /monte/ iseed,xflat,xnormal,xbw
-	common /reggelocal/ifirst,snot,dsigmadtnot,dsdtmax,dsdtmin,bslopelocal
+	common /reggelocal/ifirst,snot,dsigmadtnot,dsdtmax,
+     1                     dsdtmin,bslopelocal,tcutofflocal
 c
 c     The problem with s_not, the Regge scale parameter
 c     See Donnachie and Landshoff, hep-ph/9912312 (12 Dec 1999) = Phys. Lett B, 478, 146, (2000)
 c
-c        wscale = 3.17           !proton plus 2 Lambdas
+c        wscale = 3.17             !proton plus 2 Lambdas
 c        snot        = 1./bslope   !Their recipe in general, which leads to bad numerics for us
 c        snot        = 1./0.25     !For Pomeron trajectory 
         snot        = 1.           !We have no way to estimate this reasonably, so pick a default value
@@ -3257,30 +3279,22 @@ c
               ifirst = 0
               write(6,*)' ' 
               write(6,*)'Regge exchange parameters:' 
-              write(6,5)bslope,snot,wscale,dsdtmax,dsdtmin
+              write(6,5)bslope,tcutoff,snot,wscale,dsdtmax,dsdtmin
  5            format(1x,
      1         't-slope (b)                   = ',f8.3,' GeV^-2',/,1x,
+     1         't-slope cutoff                = ',f8.3,' GeV^2',/,1x,
      1         'Scale factor s_not            = ',f8.3,' GeV^2',/,1x,
      1         'W scale (if used)             = ',f8.3,' GeV',/,1x,
      1         'D(t=0)                        = ',f8.3,' microbarn/GeV^2',/,1x,
      1         't-independent minimum         = ',f8.3,' microbarn/GeV^2')
               write(6,*)' '
            endif
-           bslopelocal = bslope
-c          call exit()
+           bslopelocal  = bslope
+           tcutofflocal = tcutoff
 	end if
 c     
-	iregge    = 0
-	ww        = sqrt(2.*ppbeam*rmtarget + rmtarget**2.)
-c 
-c	if(bslope.ne.bslopelocal)then
-c	   write(6,*)'b-slope changed',bslope,bslopelocal
-c          write(6,*)
-c     1         'Cannot allow multiple decays with Regge-type behavior'
-c           write(6,*)ppbeam,rmtarget
-c	   iregge = -1
-c	   call exit()
-c	endif
+	iregge       = 0
+	ww           = sqrt(2.*ppbeam*rmtarget + rmtarget**2.)
 	eg           = ppbeam
 	egcm         = (ww*ww - (rmtarget**2. - rmg**2.    ))/(2.*ww)
 	eproducecm   = (ww*ww - (rmrecoil**2. - rmproduce**2.))/(2.*ww)
@@ -3318,10 +3332,13 @@ c
 	if(iregge.ge.2000)then
 	   iflag = 1
 	endif
-	tt = tmin + ran(iseed)*(tmax-tmin)
-c	dsdt = dsdtmax * exp(2.*bslope*log(ss/snot)*tt)  !key statement...
-	dsdt = dsigmadtnot * exp(2.*bslope*log(ss/snot)*tt)  !key statement...
-c        write(6,*)'>>>>',dsdt,dsdtmax,bslope,tt,ss,snot
+	tprime = ran(iseed)*(tmax-tmin) 
+	tt     = tmin + tprime
+        if(abs(tprime).gt.abs(tcutoff))then  !do the regular exponential t-dependence
+           dsdt = dsigmadtnot * exp(2.*bslope*log(ss/snot)*(tprime+tcutoff)) !key statement...
+        else  !carve out a phenomenological match to the t-dependence of the data at low tprime.
+           dsdt = dsigmadtnot * abs(tprime / tcutoff) !linear rise... an assumption we are making
+        endif
 	dsdt = max(dsdt,dsdtmin)
 	if(dsdt.gt.dsdtmax)then
 	   write(6,*)'Raising dsdtmax:',dsdt,dsdtmax,bslope,tt,ss,snot
@@ -3348,7 +3365,11 @@ c        cosinethetacm = 0.7071  !test value
         endif
         if(cosinethetacm.gt.1.0)then   !yes, this can happen
            write(6,*)'REGGEPICK selected cosine theta =',cosinethetacm
+           write(6,*)'>>>',tt, tmin,tmax,dsdt,iregge
+           write(6,*)'>> ',rmproduce,rmg,egcm,pgcm,eproducecm,pproducecm
+           write(6,*)'>  ',ppbeam,rmtarget,rmproduce,rmrecoil
            cosinethetacm = 1.0
+c           call exit()
         endif
         if(cosinethetacm.lt.-1.0)then
            write(6,*)'REGGEPICK selected cosine theta =',cosinethetacm
@@ -4090,28 +4111,50 @@ c	write(6,*)p0
 
 c********************************************************************************
 c     SCULPTMASS     
-c     Allow only those invariant masses that are consistent with a pre-selected
+c     Select only those invariant masses that are consistent with a pre-selected
 c     shape distribution
 c     RM23     - input test value for an invariant mass we might accept
 c     RMASSMIN - input minimum value of RM23 - the sum of rest masses
-c     BSLOPE2  - input value for exponential slope
+c     BSLOPE2  - input value for exponential slope for IPICK =1 ; scattering length for IPICK = 2
+c     BSLOPE3  - input value for effective range for IPICK = 2
+c     IPICK    - input value to select specific shaping algorithm
 c     IYESNO   - output verdict: 1 = keep the event;  0 = reject
 c     
 c     R.A.Sch. 3-23-20
       
-      subroutine sculptmass(rm23,rmassmin,rmassmax,bslope2,iyesno)
+      subroutine sculptmass(rm23,rmassmin,bslope2,bslope3,ipick,iyesno)
+      data hbarc/ 197./  !MeV.fm
       common /monte/ iseed,xflat,xnormal,xbw
 c
       iyesno = 0
       xx = rm23 - rmassmin
-c      write(6,*) 'Sculptmass:',xx,rm23,rmassmin,rmassmax,bslope2
-      yy = exp(-xx/bslope2)
-      ytest = ran(iseed)
+c      write(6,*) 'Sculptmass:',xx,rm23,rmassmin,bslope2,bslope3,ipick
+      if(ipick.eq.1)then !exponential shape
+         yy   = exp(-xx/bslope2)
+         ymax = 1.0
+      elseif(ipick.eq.2)then    !use scattering length and effective range
+         if(bslope2.eq.0)then
+            iyesno = 0
+            return
+         else
+            ymax = bslope2**2.
+         endif
+         qq = sqrt((0.5*rm23)**2 - (0.5*rmassmin)**2.) !CM pair momentum of one particle
+         wk = qq/hbarc * 1000.          !wavenumber of outgoing baryon, in Fermi
+         yy = ymax/(bslope2 * wk**2.+(1.-0.5*bslope2*bslope3* wk**2)**2)
+c         yy = max(yy,0.0)
+      else
+         write(6,*)'SCULPTMASS:  no such option',ipick
+         call exit()
+      endif
+      ytest = ran(iseed)*ymax
       if(ytest .lt. yy)then
          iyesno = 1
       else
          iyesno = 0
       endif
+c      write(6,*)'>>',xx,qq,wk,ymax,yy
+c      write(6,*)'> ',yy,ytest,iyesno
       return
       end
       
