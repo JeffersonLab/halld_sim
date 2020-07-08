@@ -98,5 +98,17 @@ dblRegge::calcAmplitude( GDouble** pKin ) const {
         }
 
         TotalAmp = coeff1*Amp1 + coeff2*Amp2;
+         
+        double m1 = p1.M();
+        double m2 = p2.M();
+        double mP = recoil.M();
+
+        double breakupP = TMath::Power( (s*s + TMath::Power(m1, 4) + TMath::Power(m2,4)- 2*(m1*m1*(s + m2*m2) + m2*m2*s )), 0.5) / (2*TMath::Power(s12, 0.5));
+
+        double numericCoeff = TMath::Power(0.125 *TMath::Power((1/(4*M_PI)), 4)* (breakupP /(s*s +mP*mP*mP*mP - 2*s*mP*mP)  ), 0.5);
+
+
+        TotalAmp = TotalAmp*numericCoeff;
+        
         return TotalAmp;
 }
