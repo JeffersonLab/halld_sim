@@ -39,7 +39,7 @@ c			   of the program; all data in the input file.
 c		  3-1-96 - added an energy loss calculation in the target 
 c		 3-13-96 - add distributed primary vertex
 c	 	 8-13-97 - add input parameter for CLAS spectrometer B field
-c                8-18-97 - UNIX version
+c                8-18-97 - UNIX style adopted
 c                9-29-97 - Include the Geant random number generator rather
 c                          than "ran".
 c                        - Pick up the input file name as the "first"
@@ -158,8 +158,11 @@ c                          We are repurposing "Mechanism 7".
 c                          This involves a big coding change such that the definition file includes not just 2
 c                          but 3 constants for each production mechanism.   This is since we need 3 for Mechanism 7.
 c               05-08-20 - Change Mechanism 6 to allow a change in the generated t distribution below some cuttoff value.
-c     
-        parameter (version=12.00) !Version of the program... keep this updated
+c               05-13-20 - Modify Mechanism 5 (Double Regge) to include a t-cutoff to the upper vertex.
+c               06-05-20 - slight change in the logic when the width of a decaying particle makes it lighter than products
+c               07-03-20 - make it possible to write out events to the output file that have K0's in them
+c      
+        parameter (version=12.30) !Version of the program... keep this updated
 c      
 	external ran  !forces the use of "my" version of random number generator (see RNDNOR.F)
 	parameter (maxnumpar=65) !Maximum number of particles in the table
@@ -372,11 +375,16 @@ c
 	read(1,*,err=25)idummy,
      1    names(i),rm(i),width(i),zpart(i),ct(i),rlundid,numdecays(i)
 	lundid(i) = rlundid    !a hack to avoid changing all the input files for Linux
-c	write(6,*)idummy,i,' ',names(i),int(rlundid),numdecays(i)
+c	write(6,*)'Input:',idummy,i,' ',names(i),int(rlundid),numdecays(i)
 	if(idummy.eq.-1)goto 40
 c       width(i) = width(i) / 2.354 /1000.	!Width sigma in GeV
 	width(i) = width(i) / 2.0   /1000.      !Gamma/2     in GeV
-	if(idummy.ne.i)write(6,*)'Definition table has messed up syntax',idummy,i
+	if(idummy.ne.i)then
+           write(6,*)'Definition table has messed up syntax:'
+           write(6,*)'  Reading information for particle        ',i
+           write(6,*)'  But reading index is already on particle',idummy
+           call exit()
+        endif
 	if(i.le.2)goto 23			!beam and target can't decay
 	do 35 j=1,abs(numdecays(i)) 	!decay modes of particle (may be zero).
  26        continue
@@ -400,7 +408,7 @@ c	      write(6,*)'>2-body decay mode',id1,id2,decayfrac
               idecay(i,j,3) = id2 !Lund ID of 2nd   decay particle
               idecay(i,j,4) = id3 !Lund ID of 3rd   decay particle
               branch(i,j,1) = decayfrac !sum over J's should be 1.0
-c             write(6,*)'>3-body decay mode',id1,id2,id3,decayfrac
+c              write(6,*)'>3-body decay mode',id1,id2,id3,decayfrac
            else if(nbody.eq.4)then
  29           continue
               read(1,*,err=29)id1,id2,id3,id4,decayfrac
@@ -446,17 +454,17 @@ c
 	write(6,*)'The target          particle is a ',names(2)
 	write(6,*)'The beam/target system has',numdecays(3),
      1                                              ' decay modes.'
-	do 60 idecaynum = 1,numdecays(3)
-	   write(6,*)'Decay mode',idecaynum,':'
-	   write(6,55)
-     1  	idecay(3,idecaynum,1),idecay(3,idecaynum,2),
-     1  	idecay(3,idecaynum,3),idecay(3,idecaynum,4),
-     1  	idecay(3,idecaynum,5),idecay(3,idecaynum,6),
-     1          idecay(3,idecaynum,7),
-     1  	branch(3,idecaynum,1)
- 55	   format(1x,'Number of bodies, Lund IDs, Branching_Fraction',/,
-     1            1x, 7i5, f6.3)
- 60	continue
+c	do 60 idecaynum = 1,numdecays(3)
+c	   write(6,*)'Decay mode',idecaynum,':'
+c	   write(6,55)
+c     1  	idecay(3,idecaynum,1),idecay(3,idecaynum,2),
+c     1  	idecay(3,idecaynum,3),idecay(3,idecaynum,4),
+c     1  	idecay(3,idecaynum,5),idecay(3,idecaynum,6),
+c     1          idecay(3,idecaynum,7),
+c     1  	branch(3,idecaynum,1)
+c 55	   format(1x,'Number of bodies, Lund IDs, Branching_Fraction',/,
+c     1            1x, 7i5, f6.3)
+c 60	continue
         if(irestart.eq.0)then
            write(6,*)
      1     'The random number generator is restarting from its original seed'
@@ -662,7 +670,7 @@ c	enddo
 c
 c       Run control
 c
-c	miterate = 0
+	miterate = 0
 	numwrite   = numwrite + 1
 	ievent     = ievent   + 1
 	iattempt   = iattempt + 1
@@ -1213,9 +1221,10 @@ c	   write(6,*)'>Mass check',pv(4),p1(4),p2(4),p3(4),p4(4),p5(4)
 	      miterate = miterate + 1
               iattempt = iattempt + 1
  	      if(miterate.eq.1)then
-                 write(6,*)'Decay masses too large; iterating masses'
-                 write(6,210)lund,id1,id2,id3,id4,id5,
-     1                    pv(4),p1(4),p2(4),p3(4),p4(4),p5(4)
+c                 write(6,*)'Decay masses too large; iterating masses'
+c                 write(6,210)lund,id1,id2,id3,id4,id5,
+c     1                    pv(4),p1(4),p2(4),p3(4),p4(4),p5(4)
+                 goto 204   !(added 6-4-2020)
               endif
 	      if(miterate.ge.10)then   !too many iterations... give up
                  write(6,*)'Give up on this event', miterate
@@ -1677,7 +1686,7 @@ c                Note: in the lab frame, tprime is always 0, by construction, be
 c                are the same.
 c
 c                Warning: we must hard-code the target/recoil particle to be number 2 in the decay list. 
-c                Be sure the input definition file has the proton in the second slot.
+c                Be sure the input definition file has the target proton in the second slot.
 c                 
                  if(ndynamics.eq.4)then
                     ptarget(1) = 0.0
@@ -2141,6 +2150,8 @@ c
 	   if(plist(6,i).eq. 56)igsimid(i) =  0  !Sigma+(1385)
 	   if(plist(6,i).eq. 48)igsimid(i) =  0  !Sigma0(1385)
 	   if(plist(6,i).eq. 60)igsimid(i) =  0  !Sigma-(1385)
+	   if(plist(6,i).eq. 19)igsimid(i) =  0  !K0
+	   if(plist(6,i).eq.-19)igsimid(i) =  0  !K0
 	   if(plist(6,i).eq. 20)igsimid(i) =  0  !K*0
 	   if(plist(6,i).eq. 21)igsimid(i) =  0  !K*+
 	   if(plist(6,i).eq. 61)igsimid(i) =  0  !Delta++
@@ -2160,6 +2171,7 @@ c
 	   if(plist(6,i).eq. 97)igsimid(i) =  0  !anti-Delta0 - Delta0
 	   if(plist(6,i).eq.101)igsimid(i) =  0  !anti-Sigma0 - Lambda
 	   if(plist(6,i).eq.-101)igsimid(i) =  0 !Sigma0 - anti-Lambda
+	   if(plist(6,i).eq. 98)igsimid(i) =  0  !Non-Such
 	   if(plist(6,i).eq. 99)igsimid(i) =  0  !Non-Such
 	   if(igsimid(i).eq.-1)then
 	      write(6,*)'Unknown Lund-->GSIM mapping for Lund ID:',plist(6,i)
