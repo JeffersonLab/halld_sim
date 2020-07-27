@@ -46,7 +46,7 @@
 #include "TChain.h"
 
 #include "HddmOut.h"
-#include "MyReadConfig.h"
+#include "UTILITIES/MyReadConfig.h"
 #include "HDDM/hddm_s.hpp"
 
 using std::complex;
@@ -140,13 +140,13 @@ int main( int argc, char* argv[] ){
     }
   }
   
-  if (outname.size() == 0 && hddmname == 0) {
-    cout << "No output specificed:  run gen_compton_simple -h for help" << endl;
+  if (outname.size() == 0 && hddmname == "") {
+    cout << "No output specificed:  run gen_whizard -h for help" << endl;
     exit(1);
   }
   
   if (genconfigfile == "") {
-    cout << "No generator configuration file: run gen_primex_eta_he4 -h for help " << endl;
+    cout << "No generator configuration file: run gen_whizard -h for help " << endl;
     exit(1);
   }
   // random number initialization (set to 0 by default)
@@ -359,15 +359,17 @@ int main( int argc, char* argv[] ){
       tmpEvt.beam = gamma_4Vec;
       tmpEvt.target = Target_4Vec;
       int j = 0;
+      int npart_thrown = 0;
       for (int i = 2; i < npart; i ++) {
-	if (i != nid_recoil) {
+	if (status[i] == 1 && pdg[i] != 2001) npart_thrown ++;
+	if (i != nid_recoil && status[i] == 1 && pdg[i] != 2001) {
 	  tmpEvt.q[j] = TLorentzVector(px[i], py[i], pz[i], e[i]);
 	  tmpEvt.pdg[j] = pdg[i];
 	  j ++;
 	}
       }
       tmpEvt.recoil = e_recoil_4Vec;
-      tmpEvt.nGen = npart - 2;
+      tmpEvt.nGen = npart_thrown;
       tmpEvt.rxn = m_process;
       tmpEvt.weight = xs;
       hddmWriter->write(tmpEvt, runNum, counter);

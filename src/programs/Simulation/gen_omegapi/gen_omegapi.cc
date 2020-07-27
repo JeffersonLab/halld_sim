@@ -14,9 +14,12 @@
 
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
 #include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/Uniform.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -45,12 +48,13 @@ int main( int argc, char* argv[] ){
 	string  configfile("");
 	string  outname("");
 	string  hddmname("");
+        string  asciiname("");
 	
 	bool diag = false;
 	bool genFlat = false;
 	
 	// default upper and lower bounds 
-	double lowMass = 0.2;
+	double lowMass = 1.0;//To take over threshold with a BW omega mass
 	double highMass = 2.0;
 
 	double beamMaxE   = 12.0;
@@ -73,7 +77,7 @@ int main( int argc, char* argv[] ){
 	//Exprected particle list: 
 	// pi0 omega(pi0 "rho"(pi+ pi-))
 	//  2         3         4   5
-	int par_types_list[]={1,14,7,7,9,8};
+	int par_types_list[]={1,14,7,7,8,9};
 	vector<int> part_types(par_types_list,par_types_list+6);
 
 	float part_masses_list1[]={Mpi0, Momega};
@@ -96,6 +100,9 @@ int main( int argc, char* argv[] ){
 		if (arg == "-hd"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  hddmname = argv[++i]; }
+                if (arg == "-oascii"){
+                        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+                        else  asciiname = argv[++i]; }
 		if (arg == "-l"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  lowMass = atof( argv[++i] ); }
@@ -182,7 +189,8 @@ int main( int argc, char* argv[] ){
 
 	vector<double> childMasses;
 	double threshold = 0;
-	childMasses.push_back(0.135); childMasses.push_back(0.782);
+	childMasses.push_back(0.135);
+	childMasses.push_back(0.782);
 	threshold = 0.135 + 0.782;
 
 	// loop to look for resonance in config file
@@ -216,6 +224,10 @@ int main( int argc, char* argv[] ){
 
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
+        AmpToolsInterface::registerAmplitude( BreitWigner() );
+        AmpToolsInterface::registerAmplitude( Uniform() );
+
+
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	double polAngle = -1;//amorphous
@@ -255,10 +267,6 @@ int main( int argc, char* argv[] ){
 	vector< BreitWignerGenerator > m_bwGen;
         m_bwGen.push_back( BreitWignerGenerator(0.782, 0.008) );
 	
-	if (childMasses.size() < 2){
-	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
-	  return 1;
-	}
 		
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
@@ -281,6 +289,9 @@ int main( int argc, char* argv[] ){
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
 	ROOTDataWriter rootOut( outname );
 	
+	ASCIIDataWriter* asciiOut = NULL;
+        if( asciiname.size() != 0 ) asciiOut = new ASCIIDataWriter( asciiname );
+
 	TFile* diagOut = new TFile( "gen_omegapi_diagnostic.root", "recreate" );
 	ostringstream locStream;
 	ostringstream locIsobarStream;
@@ -309,6 +320,8 @@ int main( int argc, char* argv[] ){
 	TH1F* M_p3 = new TH1F( "M_p3", "p3", 200, 0, 2 );
 	TH1F* M_p4 = new TH1F( "M_p4", "p4", 200, 0, 2 );
 
+        TH2F* M_dalitz = new TH2F( "M_dalitz", "dalitzxy", 200, -5, 5, 200, -5, 5);
+
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
 	TH2F* M_Phi = new TH2F( "M_Phi", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
@@ -330,6 +343,18 @@ int main( int argc, char* argv[] ){
 		ati.clearEvents();
 		for( int i = 0; i < batchSize; ++i ){
 			
+                        pair< double, double > bw = m_bwGen[0]();
+                        double omega_mass_bw = bw.first;
+                        if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.864) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
+
+			vector<double> childMasses;
+              		childMasses.push_back(0.135);
+        		childMasses.push_back(omega_mass_bw);
+                        //double threshold = 0.135 + omega_mass_bw;
+			
+			resProd.setChildMasses(childMasses);
+			resProd.getProductionMechanism().setMassRange( lowMass, highMass );
+
 			  Kinematics* step1 = resProd.generate();
 			  TLorentzVector beam = step1->particle( 0 );
 			  TLorentzVector proton = step1->particle( 1 );
@@ -337,15 +362,13 @@ int main( int argc, char* argv[] ){
 			  TLorentzVector omega = step1->particle( 3 );
 			  TLorentzVector b1 = bachelor_pi0 + omega;
 
-        		  pair< double, double > bw = m_bwGen[0]();
-        		  double omega_mass_bw = bw.first;
-        		  if ( omega_mass_bw < 0.45 ) omega_mass_bw = 0.782; //Avoids Tcm < 0 in NBodyPhaseSpaceFactory
+			  //cout << "omega mass =" << omega_mass_bw << endl;
         		  NBodyPhaseSpaceFactory omega_to_pions = NBodyPhaseSpaceFactory( omega_mass_bw, part_masses2);
 			  vector<TLorentzVector> omega_daughters = omega_to_pions.generateDecay();
 			  
 			  TLorentzVector piplus = omega_daughters[0];//second decay step
 			  TLorentzVector piminus = omega_daughters[1];//second decay step
-			  TLorentzVector omegas_pi0 = omega_daughters[2];//second decay step first particle
+			  TLorentzVector omegas_pi0 = omega_daughters[2];//second decay step
 			  //cout << "second step masses ="<< piplus.M() << ", "<< piminus.M() << ", " << omegas_pi0.M() << endl;
 
 			  omegas_pi0.Boost( omega.BoostVector() );
@@ -353,13 +376,15 @@ int main( int argc, char* argv[] ){
 			  piminus.Boost( omega.BoostVector() );
 		  
 			  vector< TLorentzVector > allPart;
-			  //same order as omegapiAngAmp
+			  //same order as config file, omegapi Amplitudes and ReactionFilter
 			  allPart.push_back( beam );
 			  allPart.push_back( proton );
+
 			  allPart.push_back( bachelor_pi0 );
 			  allPart.push_back( omegas_pi0 );
 			  allPart.push_back( piplus );
 			  allPart.push_back( piminus );
+
 			  Kinematics* kin = new Kinematics( allPart, 1.0 );
 			  ati.loadEvent( kin, i, batchSize );
 			  delete step1;
@@ -423,6 +448,17 @@ int main( int argc, char* argv[] ){
 					M_p2->Fill( p2.M() );
 					M_p3->Fill( p3.M() );
 					M_p4->Fill( p4.M() );
+
+					double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc, dalitzx, dalitzy;
+					dalitz_s = (p3+p2).M2();//s=M(pip pi0)
+					dalitz_t = (p4+p2).M2();//s=M(pim pi0)
+					dalitz_u = (p3+p4).M2();//s=M(pip pim)
+					dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*139.57018)+134.9766) );
+					dalitz_sc = (1/3)*( (p2+p3+p4).M2() - ((2*(139.57018*139.57018))+(134.9766*134.9766)) );
+					dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
+					dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
+
+					M_dalitz->Fill(dalitzx,dalitzy);
 					
 					t->Fill(-1*(evt->particle(1)-target).M2());
 
@@ -431,7 +467,7 @@ int main( int argc, char* argv[] ){
                                         double cosTheta = cos(loccosthetaphi[0]);
                                         double phi = loccosthetaphi[1];
 
-                                        vector <double> loccosthetaphih = getomegapiAngles( p4, isobar, resonance, Gammap, p3);
+                                        vector <double> loccosthetaphih = getomegapiAngles( p3, isobar, resonance, Gammap, p4);
                                         double cosThetaH = cos(loccosthetaphih[0]);
                                         double phiH = loccosthetaphih[1];
 
@@ -453,6 +489,7 @@ int main( int argc, char* argv[] ){
 					evt->setWeight( 1.0 );
 					
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
+                                        if( asciiOut ) asciiOut->writeEvent( *evt, pTypes );
 					rootOut.writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
@@ -486,6 +523,7 @@ int main( int argc, char* argv[] ){
         M_p2->Write();
         M_p3->Write();
         M_p4->Write();
+        M_dalitz->Write();
 	t->Write();
 	CosTheta_psi->Write();
 	M_CosTheta->Write();
@@ -500,4 +538,3 @@ int main( int argc, char* argv[] ){
 	
 	return 0;
 }
-

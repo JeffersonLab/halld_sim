@@ -81,11 +81,14 @@ ProductionMechanism::produceResonance( const TLorentzVector& beam ){
   double exptMax = 1;   // remove factor of t for rho production (no spin flip). set this value for exp(Bt)
   
   double t, tMin, tMax, resMass, resMomCM;
-  
+
+  // First generate flat mass distribution
+  do // the resonance mass cannot be larger than CM energy - recoil mass
+    resMass = generateMass();
+  while ( cmEnergy < resMass + m_recMass );
+
+  // Then generate t accordingly
   do {
-    do // the resonance mass cannot be larger than CM energy - recoil mass
-      resMass = generateMass();
-    while ( cmEnergy < resMass + m_recMass );
     resMomCM  = cmMomentum( cmEnergy, resMass, m_recMass );
     
     tMin = 0;
