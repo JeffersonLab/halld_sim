@@ -53,7 +53,7 @@ static float cdc_drift_distance[78];
 static float BSCALE_PAR1=0.;
 static float BSCALE_PAR2=0.;
 
-int itrack;
+int itrack_cdc;
 
 /* void GetDOCA(int ipart, float x[3], float p[5], float doca[3]);  disabled 6/24/2009 */
 
@@ -190,7 +190,7 @@ void AddCDCCluster(s_CdcStrawTruthHits_t* hits, int ipart, int track, int n_p,
       if (hits->in[nhit].t > total_time) {
          hits->in[nhit].t = total_time;
          hits->in[nhit].d = dradius;
-         hits->in[nhit].itrack = itrack;
+         hits->in[nhit].itrack = itrack_cdc;
          hits->in[nhit].ptype = ipart;
       }
 
@@ -203,7 +203,7 @@ void AddCDCCluster(s_CdcStrawTruthHits_t* hits, int ipart, int track, int n_p,
       hits->in[nhit].t = total_time;
       hits->in[nhit].q = q;
       hits->in[nhit].d = dradius;
-      hits->in[nhit].itrack = itrack;
+      hits->in[nhit].itrack = itrack_cdc;
       hits->in[nhit].ptype = ipart;
 
       hits->mult++;
@@ -433,7 +433,7 @@ void hitCentralDC (float xin[4], float xout[4],
 
    /* post the hit to the truth tree */
 
-   itrack = (stack == 0)? gidGetId(track) : -1;
+   itrack_cdc = (stack == 0)? gidGetId(track) : -1;
 
    if (history == 0)
    {
@@ -457,7 +457,7 @@ void hitCentralDC (float xin[4], float xout[4],
          points->in[0].dEdx = dEdx;
          points->in[0].ptype = ipart;
          points->in[0].trackID = make_s_TrackID();
-         points->in[0].trackID->itrack = itrack;
+         points->in[0].trackID->itrack = itrack_cdc;
          points->mult = 1;
          cdc->cdcTruthPoints = points;
          pointCount++;

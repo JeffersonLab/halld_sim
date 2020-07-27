@@ -32,7 +32,7 @@ typedef struct{
 
 extern controlparams_t controlparams_;
 
-int itrack;
+int itrack_fdc;
 
 const float wire_dead_zone_radius[4]={3.0,3.0,3.9,3.9};
 const float strip_dead_zone_radius[4]={1.3,1.3,1.3,1.3};
@@ -314,14 +314,14 @@ void AddFDCCathodeHits(int PackNo,float xwire,float avalanche_y,float tdrift,
         chits->in[nhit].q += q;
         if(chits->in[nhit].t>tdrift){
           chits->in[nhit].t = tdrift;
-          chits->in[nhit].itrack = itrack;
+          chits->in[nhit].itrack = itrack_fdc;
           chits->in[nhit].ptype = ipart;
         }
       }
     else if (nhit < MAX_HITS){        /* create new hit */
       chits->in[nhit].t = tdrift;
       chits->in[nhit].q = q;
-      chits->in[nhit].itrack = itrack;
+      chits->in[nhit].itrack = itrack_fdc;
       chits->in[nhit].ptype = ipart;
       chits->mult++;
     }
@@ -461,7 +461,7 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
         ahits->in[nhit].t_unsmeared=tdrift_unsmeared;
         ahits->in[nhit].d = sqrt(dx2+dz2);
 
-        ahits->in[nhit].itrack = itrack;
+        ahits->in[nhit].itrack = itrack_fdc;
         ahits->in[nhit].ptype = ipart;
       }
     
@@ -482,7 +482,7 @@ int AddFDCAnodeHit(s_FdcAnodeTruthHits_t* ahits,int layer,int ipart,int track,
       ahits->in[nhit].t_unsmeared=tdrift_unsmeared;
       ahits->in[nhit].dE = dE;
       ahits->in[nhit].d = sqrt(dx2+dz2);
-      ahits->in[nhit].itrack = itrack;
+      ahits->in[nhit].itrack = itrack_fdc;
       ahits->in[nhit].ptype = ipart;
       ahits->mult++;
     }
@@ -743,7 +743,7 @@ void hitForwardDC (float xin[4], float xout[4],
 
   /* post the hit to the truth tree */
 
-  itrack = (stack == 0)? gidGetId(track) : -1;
+  itrack_fdc = (stack == 0)? gidGetId(track) : -1;
  
   if (history == 0)
   {
@@ -775,7 +775,7 @@ void hitForwardDC (float xin[4], float xout[4],
       points->in[0].dEdx = dEdx;
       points->in[0].ptype = ipart;
       points->in[0].trackID = make_s_TrackID();
-      points->in[0].trackID->itrack = itrack;
+      points->in[0].trackID->itrack = itrack_fdc;
       chambers->mult = 1;
       chambers->in[0].module = module;
       chambers->in[0].layer = layer;
