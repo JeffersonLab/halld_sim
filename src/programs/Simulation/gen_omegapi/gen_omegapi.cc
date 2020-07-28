@@ -197,7 +197,8 @@ int main( int argc, char* argv[] ){
 
 	vector<double> childMasses;
 	double threshold = 0;
-	childMasses.push_back(0.135);
+	if(!delta) childMasses.push_back(0.135);
+	else childMasses.push_back(0.1396);
 	childMasses.push_back(0.782);
 	threshold = 0.135 + 0.782;
 
@@ -360,20 +361,19 @@ int main( int argc, char* argv[] ){
                         double omega_mass_bw = bw.first;
                         if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.864) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
-			vector<double> childMasses;
-              		childMasses.push_back(0.135);
-        		childMasses.push_back(omega_mass_bw);
-                        //double threshold = 0.135 + omega_mass_bw;
+			vector<double> childMasses_omega_bw;
+              		childMasses_omega_bw.push_back(childMasses[0]);
+        		childMasses_omega_bw.push_back(omega_mass_bw);
 			
 			// setup Delta++ decay
 			pair< double, double > bwDeltaPlusPlus = m_bwGenDeltaPlusPlus[0]();
 			double deltaPlusPlus_mass_bw = bwDeltaPlusPlus.first;
 
-			resProd.setChildMasses(childMasses);
+			resProd.setChildMasses(childMasses_omega_bw);
 			resProd.getProductionMechanism().setMassRange( lowMass, highMass );
 
 			if(delta) {
-				if ( deltaPlusPlus_mass_bw < 1.073 || deltaPlusPlus_mass_bw > 2.0) continue; //Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
+				if ( deltaPlusPlus_mass_bw < 1.08 || deltaPlusPlus_mass_bw > 2.0) continue; //Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 				resProd.getProductionMechanism().setRecoilMass( deltaPlusPlus_mass_bw );
 			}
 
