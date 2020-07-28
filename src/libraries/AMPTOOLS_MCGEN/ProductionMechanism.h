@@ -17,13 +17,14 @@ class ProductionMechanism
 public:
 	
 	enum Type { kResonant, kFlat };
-	enum Recoil { kProton, kNeutron, kZ, kPion, kKaon };
+	enum Recoil { kProton, kNeutron, kDeltaPlusPlus, kZ, kPion, kKaon };
 	
 	ProductionMechanism( Recoil recoil, Type type, double slope = 5.0, int seed = 0 );
 	
 	void setMassRange( double low, double high );
 	void setTRange( double low, double high );
         void setGeneratorType( Type type );
+	void setRecoilMass( double recMass );
 	
 	TLorentzVector produceResonance( const TLorentzVector& beam );
 	TLorentzVector produceResonanceZ( const TLorentzVector& beam);
@@ -37,7 +38,7 @@ public:
 private:
   
   static const double kPi;
-  double kMproton,kMneutron,kMZ, kMPion, kMKaon;
+  double kMproton,kMneutron,kMdeltaPlusPlus,kMZ, kMPion, kMKaon;
 
   double generateMass();
   

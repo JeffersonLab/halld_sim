@@ -52,6 +52,7 @@ int main( int argc, char* argv[] ){
 	
 	bool diag = false;
 	bool genFlat = false;
+	bool delta = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 1.0;//To take over threshold with a BW omega mass
@@ -85,6 +86,10 @@ int main( int argc, char* argv[] ){
 
 	float part_masses_list2[]={Mpip, Mpip, Mpi0};
 	vector<double> part_masses2(part_masses_list2,part_masses_list2+3);
+
+	vector<double> part_masses3; 
+	part_masses3.push_back(ParticleMass(Proton));
+	part_masses3.push_back(ParticleMass(PiPlus));
 
 	//parse command line:
 	for (int i = 1; i < argc; i++){
@@ -143,6 +148,8 @@ int main( int argc, char* argv[] ){
 			diag = true; }
 		if (arg == "-f"){
 			genFlat = true; }
+		if (arg == "-delta"){
+			delta = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
@@ -161,7 +168,8 @@ int main( int argc, char* argv[] ){
 			cout << "\t -tmin <value>\t Minimum momentum transfer [optional]" << endl;
 			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
-			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl;
+			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl;
+			cout << "\t -delta \t\t Generate Delta++ recoil [optional]"<< endl<<endl;
 			exit(1);
 		}
 	}
@@ -180,6 +188,8 @@ int main( int argc, char* argv[] ){
 	// use particletype.h to convert reaction particle names
 	vector<Particle_t> Particles;
 	for (unsigned int i = 0; i < reaction->particleList().size(); i++){
+	  if(i>5) break; // skip pi+ from Delta++ recoil
+
 	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
@@ -189,7 +199,8 @@ int main( int argc, char* argv[] ){
 
 	vector<double> childMasses;
 	double threshold = 0;
-	childMasses.push_back(0.135);
+	if(!delta) childMasses.push_back(0.135);
+	else childMasses.push_back(0.1396);
 	childMasses.push_back(0.782);
 	threshold = 0.135 + 0.782;
 
@@ -262,11 +273,14 @@ int main( int argc, char* argv[] ){
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
-	GammaPToNPartP resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
+	GammaPToNPartP resProd;
+	if(!delta) resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
+	else resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kDeltaPlusPlus, type, slope, lowT, highT, seed, beamConfigFile );
 
 	vector< BreitWignerGenerator > m_bwGen;
         m_bwGen.push_back( BreitWignerGenerator(0.782, 0.008) );
-	
+	vector< BreitWignerGenerator > m_bwGenDeltaPlusPlus;
+        m_bwGenDeltaPlusPlus.push_back( BreitWignerGenerator(1.232, 0.100) );
 		
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
@@ -339,29 +353,40 @@ int main( int argc, char* argv[] ){
 		}
 		
 		cout << "Generating four-vectors..." << endl;
-		
+
+		// decay omega (and Delta++, if generated)
 		ati.clearEvents();
 		for( int i = 0; i < batchSize; ++i ){
-			
+
+			// setup omega decay
                         pair< double, double > bw = m_bwGen[0]();
                         double omega_mass_bw = bw.first;
                         if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.864) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
-			vector<double> childMasses;
-              		childMasses.push_back(0.135);
-        		childMasses.push_back(omega_mass_bw);
-                        //double threshold = 0.135 + omega_mass_bw;
+			vector<double> childMasses_omega_bw;
+              		childMasses_omega_bw.push_back(childMasses[0]);
+        		childMasses_omega_bw.push_back(omega_mass_bw);
 			
-			resProd.setChildMasses(childMasses);
+			// setup Delta++ decay
+			pair< double, double > bwDeltaPlusPlus = m_bwGenDeltaPlusPlus[0]();
+			double deltaPlusPlus_mass_bw = bwDeltaPlusPlus.first;
+
+			resProd.setChildMasses(childMasses_omega_bw);
 			resProd.getProductionMechanism().setMassRange( lowMass, highMass );
+
+			if(delta) {
+				if ( deltaPlusPlus_mass_bw < 1.08 || deltaPlusPlus_mass_bw > 2.0) continue; //Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
+				resProd.getProductionMechanism().setRecoilMass( deltaPlusPlus_mass_bw );
+			}
 
 			  Kinematics* step1 = resProd.generate();
 			  TLorentzVector beam = step1->particle( 0 );
-			  TLorentzVector proton = step1->particle( 1 );
-			  TLorentzVector bachelor_pi0 = step1->particle( 2 );
+			  TLorentzVector recoil = step1->particle( 1 );
+			  TLorentzVector bachelor_pi = step1->particle( 2 );
 			  TLorentzVector omega = step1->particle( 3 );
-			  TLorentzVector b1 = bachelor_pi0 + omega;
+			  TLorentzVector b1 = bachelor_pi + omega;
 
+			  // decay step for omega
 			  //cout << "omega mass =" << omega_mass_bw << endl;
         		  NBodyPhaseSpaceFactory omega_to_pions = NBodyPhaseSpaceFactory( omega_mass_bw, part_masses2);
 			  vector<TLorentzVector> omega_daughters = omega_to_pions.generateDecay();
@@ -375,15 +400,31 @@ int main( int argc, char* argv[] ){
 			  piplus.Boost( omega.BoostVector() );			  
 			  piminus.Boost( omega.BoostVector() );
 		  
+			  // decay step for Delta++
+			  TLorentzVector proton, deltaPlusPlus_piplus;
+			  if(delta) {
+				  NBodyPhaseSpaceFactory deltaPlusPlus_decay = NBodyPhaseSpaceFactory( deltaPlusPlus_mass_bw, part_masses3);
+				  vector<TLorentzVector> deltaPlusPlus_daughters = deltaPlusPlus_decay.generateDecay();
+				  
+				  proton = deltaPlusPlus_daughters[0];//third decay step
+				  deltaPlusPlus_piplus = deltaPlusPlus_daughters[1];//third decay step
+				  proton.Boost( recoil.BoostVector() );
+				  deltaPlusPlus_piplus.Boost( recoil.BoostVector() );	
+			  }		  
+			  else 
+				  proton = recoil;
+
+			  // store particles in kinematic class
 			  vector< TLorentzVector > allPart;
 			  //same order as config file, omegapi Amplitudes and ReactionFilter
 			  allPart.push_back( beam );
 			  allPart.push_back( proton );
-
-			  allPart.push_back( bachelor_pi0 );
+			  allPart.push_back( bachelor_pi );
 			  allPart.push_back( omegas_pi0 );
 			  allPart.push_back( piplus );
 			  allPart.push_back( piminus );
+			  if(delta)
+				  allPart.push_back( deltaPlusPlus_piplus );
 
 			  Kinematics* kin = new Kinematics( allPart, 1.0 );
 			  ati.loadEvent( kin, i, batchSize );
