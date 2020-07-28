@@ -43,12 +43,13 @@
 #include "TSystem.h"
 
 #include "HddmOut.h"
-#include "MyReadConfig.h"
+#include "UTILITIES/MyReadConfig.h"
 
 using std::complex;
 using namespace std;
 
 #define eta_TYPE 17
+#define pi0_TYPE 7
 #define gamma_TYPE 1
 #define Helium_TYPE 47
 
@@ -66,6 +67,7 @@ int main( int argc, char* argv[] ){
   double beamHighE  = 12.0;
   const double M_He4 = 3.727379378;
   const double M_eta = 0.54730;
+  const double M_pi0 = 1.3957018e-01;
   const double M_gamma = 0.0;
   TLorentzVector Target_4Vec(0, 0, 0, M_He4);
   
@@ -170,11 +172,14 @@ int main( int argc, char* argv[] ){
   ReadFile->ReadConfigFile(genconfigfile);
   TString m_rfile = ReadFile->GetConfigName("rfile"); 
   TString m_histo = ReadFile->GetConfigName("histo"); 
-  
+  TString m_decay = ReadFile->GetConfigName("decay"); 
+  cout << "rfile " << m_rfile << endl;
+  cout << "histo " << m_histo << endl;
+  cout << "decay " << m_decay << endl;
   // Load eta-meson differential cross-section based on Ilya Larin's calculation, see the *.F program in this directory 
   TFile * ifile = new TFile(m_rfile);
   TH2F * h_dxs = (TH2F *) ifile->Get(m_histo);
-  
+
   // Create decayGen
   TGenPhaseSpace decayGen;
   
@@ -334,13 +339,37 @@ int main( int argc, char* argv[] ){
     //eta_COM_4Vec.Boost(-IS_4Vec.BoostVector());
         
     // Make the eta-meson decay into two photons
-    double masses[] = {M_gamma, M_gamma};
-    TLorentzVector photon_4Vec[2];
-    if (decayGen.SetDecay(eta_LAB_4Vec, 2, masses)) {
-      decayGen.Generate();
-      photon_4Vec[0] = * decayGen.GetDecay(0);
-      photon_4Vec[1] = * decayGen.GetDecay(1);
+    
+    TLorentzVector photon_4Vec[6];
+    TLorentzVector pi0_4Vec[3];
+    int ng_max = 0;
+    if (m_decay == "eta->2g") {
+      ng_max = 2;
+      double masses[] = {M_gamma, M_gamma};
+      if (decayGen.SetDecay(eta_LAB_4Vec, 2, masses)) {
+	decayGen.Generate();
+	photon_4Vec[0] = * decayGen.GetDecay(0);
+	photon_4Vec[1] = * decayGen.GetDecay(1);
+      }
+    } else if (m_decay == "eta->6g") {
+      ng_max = 6;
+      double masses[] = {M_pi0, M_pi0, M_pi0};
+      if (decayGen.SetDecay(eta_LAB_4Vec, 3, masses)) {
+	decayGen.Generate();
+	pi0_4Vec[0] = * decayGen.GetDecay(0);
+	pi0_4Vec[1] = * decayGen.GetDecay(1);
+	pi0_4Vec[2] = * decayGen.GetDecay(2);
+      }
+      for (int j = 0; j < 3; j ++) {
+	double mass[] = {M_gamma, M_gamma};
+	if (decayGen.SetDecay(pi0_4Vec[j], 2, mass)) {
+	  decayGen.Generate();
+	  photon_4Vec[0 + 2 * j] = * decayGen.GetDecay(0);
+	  photon_4Vec[1 + 2 * j] = * decayGen.GetDecay(1);
+	}
+      }
     }
+    
     
     // Deduce by energy and mass conservation the recoil nucleus 4Vec
     TLorentzVector He4_LAB_4Vec = IS_4Vec - eta_LAB_4Vec;
@@ -349,20 +378,35 @@ int main( int argc, char* argv[] ){
     h_theta_recoilA_vs_egam->Fill(ebeam, He4_LAB_4Vec.Theta() * TMath::RadToDeg());
     h_Tkin_eta_vs_egam->Fill(ebeam, eta_LAB_4Vec.E() - eta_LAB_4Vec.M());
     h_theta_eta_vs_egam->Fill(ebeam, eta_LAB_4Vec.Theta() * TMath::RadToDeg());
-    h_Tkin_photon_vs_egam->Fill(ebeam, photon_4Vec[0].E());
-    h_theta_photon_vs_egam->Fill(ebeam, photon_4Vec[0].Theta() * TMath::RadToDeg());
-    h_Tkin_photon_vs_egam->Fill(ebeam, photon_4Vec[1].E());
-    h_theta_photon_vs_egam->Fill(ebeam, photon_4Vec[1].Theta() * TMath::RadToDeg());
-    
+    for (int j = 0; j < ng_max; j ++) {
+      h_Tkin_photon_vs_egam->Fill(ebeam, photon_4Vec[j].E());
+      h_theta_photon_vs_egam->Fill(ebeam, photon_4Vec[j].Theta() * TMath::RadToDeg());
+    }
+        
     if (hddmWriter) {
       // ======= HDDM output =========
       tmpEvt_t tmpEvt;
       tmpEvt.beam = InGamma_4Vec;
       tmpEvt.target = Target_4Vec;
-      tmpEvt.q1 = photon_4Vec[0];
-      tmpEvt.q2 = photon_4Vec[1];
-      tmpEvt.q3 = He4_LAB_4Vec;
-      tmpEvt.nGen = 3;
+      if (m_decay == "eta->2g") {
+	tmpEvt.q1 = photon_4Vec[0];
+	tmpEvt.q2 = photon_4Vec[1];
+	tmpEvt.q3 = He4_LAB_4Vec;
+	tmpEvt.nGen = 3;
+      } else if (m_decay == "eta->6g") {
+	tmpEvt.q1 = photon_4Vec[0];
+	tmpEvt.q2 = photon_4Vec[1];
+	tmpEvt.q3 = photon_4Vec[2];
+	tmpEvt.q4 = photon_4Vec[3];
+	tmpEvt.q5 = photon_4Vec[4];
+	tmpEvt.q6 = photon_4Vec[5];
+	tmpEvt.q7 = He4_LAB_4Vec;
+	tmpEvt.nGen = 7;
+      } else if (ng_max == 0) {
+	tmpEvt.q1 = eta_LAB_4Vec;
+	tmpEvt.q2 = He4_LAB_4Vec;
+	tmpEvt.nGen = 2;
+      }
       tmpEvt.weight = 1.;
       hddmWriter->write(tmpEvt,runNum,i);
     }

@@ -84,7 +84,6 @@ double g_omega_eta_gamma=0.29;
 double g_eta_gamma_gamma=0.0429;
 double g_phi_eta_gamma=0.38;
 
-double zmin=50.0,zmax=80.0; // cm, target extent
 int Nevents=10000;
 int runNo=10000;
 bool debug=false;
@@ -524,6 +523,8 @@ int main(int narg, char *argv[])
   infile >> num_decay_particles;
   infile.ignore(); // ignore the '\n' at the end of this line
 
+  cout << "number of decay particles = " << num_decay_particles << endl;
+
   bool use_evtgen = false;
 #ifdef HAVE_EVTGEN
   // check to see if we should use EvtGen
@@ -533,9 +534,11 @@ int main(int narg, char *argv[])
   
   // if we don't explicitly define the decay particles in the config file, 
   // then use EvtGen to generate the decays
-  if(num_decay_particles == -1) { 
+  if(num_decay_particles <= 0) { 
   	num_decay_particles = 0;
   	use_evtgen = true;
+
+    cout << "Using EvtGen to decay particles ..." << endl;
 
 	// get the produced particle type
 	getline(infile,comment_line);
@@ -873,9 +876,6 @@ int main(int narg, char *argv[])
     //proton4.Print();
     thrown_theta_vs_p->Fill(proton4.P(),180./M_PI*proton4.Theta());
 
-    // Randomly generate z position in target
-    vert[2]=zmin+myrand->Uniform(zmax-zmin);
-
     // Other diagnostic histograms
     thrown_t->Fill(-t);
 
@@ -892,45 +892,53 @@ int main(int narg, char *argv[])
     vector<secondary_decay_t>secondary_vertices;
 #ifdef HAVE_EVTGEN
     if(use_evtgen) {
-		// Set up the parent particle
-		EvtVector4R pInit(eta4.E(), eta4.X(), eta4.Y(), eta4.Z());
-		parent = EvtParticleFactory::particleFactory(EtaId, pInit);
+        // Set up the parent particle
+        EvtVector4R pInit(eta4.E(), eta4.X(), eta4.Y(), eta4.Z());
+        parent = EvtParticleFactory::particleFactory(EtaId, pInit);
 
-		// Generate the event
-		myGenerator->generateDecay(parent);
-		
-		// Write out resulting particles
-		for(unsigned int i=0; i<parent->getNDaug(); i++) {
-			TLorentzVector vec4v( parent->getDaug(i)->getP4Lab().get(1),
-								  parent->getDaug(i)->getP4Lab().get(2),
-								  parent->getDaug(i)->getP4Lab().get(3),
-								  parent->getDaug(i)->getP4Lab().get(0)   );
-			output_particle_vectors.push_back(vec4v);
-			output_particle_types.push_back(PDGtoPType(parent->getDaug(i)->getPDGId()));
+        if(num_decay_particles == 0) {  
+            // just generate the eta and let the decay be done by an external program like decay_evtgen
+            // this plays better with MCWrapper, apparently...
+            TLorentzVector vec4v( eta4.X(), eta4.Y(), eta4.Z(), eta4.E());
+
+            output_particle_vectors.push_back(vec4v);
+            output_particle_types.push_back(PDGtoPType(parent->getPDGId()));
+        } else {            
+            // Generate the event
+            myGenerator->generateDecay(parent);
+            
+            // Write out resulting particles
+            for(unsigned int i=0; i<parent->getNDaug(); i++) {
+                TLorentzVector vec4v( parent->getDaug(i)->getP4Lab().get(1),
+                                      parent->getDaug(i)->getP4Lab().get(2),
+                                      parent->getDaug(i)->getP4Lab().get(3),
+                                      parent->getDaug(i)->getP4Lab().get(0)   );
+                output_particle_vectors.push_back(vec4v);
+                output_particle_types.push_back(PDGtoPType(parent->getDaug(i)->getPDGId()));
 						
-			// see if any of the particles decay and add info on them
-			// should be mostly pi0's, but we should go recursive...
-			if(parent->getDaug(i)->getNDaug()>0) {
-				output_particle_decays.push_back(true);
-
-				secondary_decay_t secondary_vertex;
-				secondary_vertex.parent_id = i;
-				for(unsigned int j=0; j<parent->getDaug(i)->getNDaug(); j++) {
-					TLorentzVector vec4v( parent->getDaug(i)->getDaug(j)->getP4Lab().get(1),
-										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(2),
-										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(3),
-										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(0)   );
-					secondary_vertex.p4vs.push_back(vec4v);
-					secondary_vertex.ids.push_back(PDGtoPType(parent->getDaug(i)->getDaug(j)->getPDGId()));
-				}
-				secondary_vertices.push_back(secondary_vertex);
-			} else {
-				output_particle_decays.push_back(false);
-			}
-		}
+                // see if any of the particles decay and add info on them
+                // should be mostly pi0's, but we should go recursive...
+                if(parent->getDaug(i)->getNDaug()>0) {
+                    output_particle_decays.push_back(true);
+                    
+                    secondary_decay_t secondary_vertex;
+                    secondary_vertex.parent_id = i;
+                    for(unsigned int j=0; j<parent->getDaug(i)->getNDaug(); j++) {
+                        TLorentzVector vec4v( parent->getDaug(i)->getDaug(j)->getP4Lab().get(1),
+                                              parent->getDaug(i)->getDaug(j)->getP4Lab().get(2),
+                                              parent->getDaug(i)->getDaug(j)->getP4Lab().get(3),
+                                              parent->getDaug(i)->getDaug(j)->getP4Lab().get(0)   );
+                        secondary_vertex.p4vs.push_back(vec4v);
+                        secondary_vertex.ids.push_back(PDGtoPType(parent->getDaug(i)->getDaug(j)->getPDGId()));
+                    }
+                    secondary_vertices.push_back(secondary_vertex);
+                } else {
+                    output_particle_decays.push_back(false);
+                }
+            }
 	
-		parent->deleteTree();
-   
+            parent->deleteTree();
+        }
     } else {   // no evtgen
 #endif //HAVE_EVTGEN
 		// Generate 3-body decay of eta according to phase space

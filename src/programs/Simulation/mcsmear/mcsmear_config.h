@@ -54,6 +54,9 @@ class mcsmear_config_t
 	double BCAL_NO_POISSON_STATISTICS;
 	double BCAL_NO_FADC_SATURATION;
 	double BCAL_NO_SIPM_SATURATION;
+
+	// list of detectors with hits to smear
+	string DETECTORS_TO_LOAD="all";
 	
 	
 #ifdef HAVE_RCDB

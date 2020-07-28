@@ -111,17 +111,20 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
         FCAL_TSIGMA = fcalmctimingsmear["FCAL_TSIGMA"];
     }
 
-	// initialize 2D matrix of efficiencies, indexed by (row,column)
-	vector< vector<double > > new_block_efficiencies(DFCALGeometry::kBlocksTall, 
-            vector<double>(DFCALGeometry::kBlocksWide));
-	block_efficiencies = new_block_efficiencies;
 
-	// load efficiencies from CCDB and fill 
-	vector<double> raw_table;
-	if(loop->GetCalib("FCAL/block_mc_efficiency", raw_table)) {
-    	jerr << "Problem loading FCAL/block_mc_efficiency from CCDB!" << endl;
+
+    // initialize 2D matrix of efficiencies, indexed by (row,column)
+    vector< vector<double > > new_block_efficiencies(DFCALGeometry::kBlocksTall, 
+						     vector<double>(DFCALGeometry::kBlocksWide));
+    block_efficiencies = new_block_efficiencies;
+    
+    // load efficiencies from CCDB and fill 
+    vector<double> raw_table;
+
+    if(loop->GetCalib("FCAL/block_mc_efficiency", raw_table)) {
+      jerr << "Problem loading FCAL/block_mc_efficiency from CCDB!" << endl;
     } else {
-		for (int channel=0; channel < static_cast<int>(raw_table.size()); channel++) {
+        for (int channel=0; channel < static_cast<int>(raw_table.size()); channel++) {
     
         	// make sure that we don't try to load info for channels that don't exist
         	if (channel == fcalGeom->numActiveBlocks())
@@ -140,9 +143,61 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
         	}
 
 	        block_efficiencies[row][col] = raw_table[channel];
+
     	}
     }
 
+
+    //   7/27/2020 A.S.  Exclude run-by-run determined bad channels listed in the /FCAL/block_quality table for PrimEx runs, 
+    //                     to make simulation consistent with reconstruction
+    //   Channels efficiency (FCAL/block_mc_efficiency) can be applied after excluding bad channels
+   
+
+    int primex_run = 0;
+
+    if (loop->GetCalib("/PHOTON_BEAM/pair_spectrometer/experiment", primex_run))
+      jerr << "Problem loading /PHOTON_BEAM/pair_spectrometer/experment/run from CCDB!" << endl;
+
+
+    if(primex_run == 1){
+      
+      vector< double > raw_block_qualities;    // we should change this to an int?
+      
+      int BAD_CH = 1;
+      
+      
+      if (loop->GetCalib("/FCAL/block_quality", raw_block_qualities))
+	jout << "/FCAL/block_quality not used for this run" << endl;
+      else {
+	
+	for (int channel=0; channel < static_cast<int>(raw_block_qualities.size()); channel++) {
+	  
+	  // make sure that we don't try to load info for channels that don't exist
+	  if (channel == fcalGeom->numActiveBlocks())
+	    break;
+	  
+	  int row = fcalGeom->row(channel);
+	  int col = fcalGeom->column(channel);
+	  
+	  // results from DFCALGeometry should be self consistent, but add in some
+	  // sanity checking just to be sure
+	  if (fcalGeom->isBlockActive(row,col) == false) {
+	    char str[200];
+	    sprintf(str, "Loading FCAL constant for inactive channel!  "
+		    "row=%d, col=%d", row, col);
+	    throw JException(str);
+	  }
+	  
+	  // Exclude bad channels
+	  if(raw_block_qualities[channel] == BAD_CH)
+	    block_efficiencies[row][col] = -1.;  
+	  
+	  
+	}
+	
+      }
+    } 
+                  
 }
 	
 //-----------
@@ -179,10 +234,12 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
             continue;
             
          // correct simulation efficiencies 
-		 if (config->APPLY_EFFICIENCY_CORRECTIONS
+
+	 if (config->APPLY_EFFICIENCY_CORRECTIONS
              && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(iter->getRow(), iter->getColumn()))) {
-             continue;
+	   continue;
          } 
+	 
 
          // Get gain constant per block
          int channelnum = fcalGeom->channel(iter->getRow(), iter->getColumn()); 

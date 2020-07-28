@@ -27,6 +27,8 @@ class tof_config_t
 	double TOF_SIGMA;
 	double TOF_PHOTONS_PERMEV;
 	double TOF_BAR_THRESHOLD;
+    double ATTENUATION_LENGTH;
+    double FULL_BAR_LENGTH;
 
   	vector<double> TOF_PADDLE_TIME_RESOLUTIONS;
 	

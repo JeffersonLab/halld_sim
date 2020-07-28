@@ -30,6 +30,7 @@
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
+#include "AMPTOOLS_AMPS/dblRegge.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -98,6 +99,7 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
   AmpToolsInterface::registerAmplitude( polCoef() );
   AmpToolsInterface::registerAmplitude( Uniform() );
+  AmpToolsInterface::registerAmplitude( dblRegge() );
   
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );

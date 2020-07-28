@@ -105,7 +105,11 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'm': config->APPLY_HITS_TRUNCATION=false;         break;
           case 'E': config->FCAL_ADD_LIGHTGUIDE_HITS=true;       break;
 	  case 'R': config->SKIP_READING_RCDB=true;              break;
-
+	 case 'l': {
+	   config->DETECTORS_TO_LOAD=&ptr[2];
+	   cout << "Detector list: " << config->DETECTORS_TO_LOAD << endl;  
+	   break;
+	 }
           // BCAL parameters
           case 'G': config->BCAL_NO_T_SMEAR = true;              break;
           case 'H': config->BCAL_NO_DARK_PULSES = true;          break;
