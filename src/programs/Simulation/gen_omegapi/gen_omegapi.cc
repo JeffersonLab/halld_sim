@@ -417,19 +417,12 @@ int main( int argc, char* argv[] ){
 			  //same order as config file, omegapi Amplitudes and ReactionFilter
 			  allPart.push_back( beam );
 			  allPart.push_back( proton );
-			  if(!delta) {
-				  allPart.push_back( bachelor_pi );
-				  allPart.push_back( omegas_pi0 );
-				  allPart.push_back( piplus );
-				  allPart.push_back( piminus );
-			  }
-			  else {
+			  allPart.push_back( bachelor_pi );
+			  allPart.push_back( omegas_pi0 );
+			  allPart.push_back( piplus );
+			  allPart.push_back( piminus );
+			  if(delta)
 				  allPart.push_back( deltaPlusPlus_piplus );
-				  allPart.push_back( piplus );
-				  allPart.push_back( bachelor_pi );
-				  allPart.push_back( piminus );
-				  allPart.push_back( omegas_pi0 );
-			  }
 
 			  Kinematics* kin = new Kinematics( allPart, 1.0 );
 			  ati.loadEvent( kin, i, batchSize );
