@@ -169,7 +169,7 @@ int main( int argc, char* argv[] ){
 			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
 			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl;
-			cout << "\t -delta \t\t Generate Delta++ recoil [optional]"<< endl;
+			cout << "\t -delta \t\t Generate Delta++ recoil [optional]"<< endl<<endl;
 			exit(1);
 		}
 	}
@@ -188,6 +188,8 @@ int main( int argc, char* argv[] ){
 	// use particletype.h to convert reaction particle names
 	vector<Particle_t> Particles;
 	for (unsigned int i = 0; i < reaction->particleList().size(); i++){
+	  if(i>5) break; // skip pi+ from Delta++ recoil
+
 	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
