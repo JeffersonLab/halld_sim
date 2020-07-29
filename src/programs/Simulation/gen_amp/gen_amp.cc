@@ -463,10 +463,6 @@ int main( int argc, char* argv[] ){
 					recoil += evt->particle( j );
 			}
 
-			TLorentzVector total = evt->particle( 0 ) + TLorentzVector(0,0,0,ParticleMass(Proton));
-			for (unsigned int j=1; j<evt->particleList().size(); j++) total -= evt->particle(j);
-			//total.Print();
-
 			double genWeight = evt->weight();
 			
 			// cannot ask for the intensity if we haven't called process events above
