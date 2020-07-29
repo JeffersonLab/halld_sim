@@ -7,8 +7,8 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-//#include "UTILITIES/CobremsGeneration.hh"
-//#include "UTILITIES/BeamProperties.h"
+#include "UTILITIES/CobremsGeneration.hh"
+#include "UTILITIES/BeamProperties.h"
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
@@ -37,7 +37,7 @@ omegapi_amplitude::omegapi_amplitude( const vector< string >& args ):
 		polFraction = AmpParameter( args[7+4+2] ); // polarization fraction
 		std::cout << "Fixed polarization fraction =" << polFraction << " and pol.angle= " << polAngle << " degrees." << std::endl;
 	}
-/*	else if (args.size() == (7+4+2)){//beam properties requires halld_sim
+	else if (args.size() == (7+4+2)){//beam properties requires halld_sim
 		// BeamProperties configuration file
 		TString beamConfigFile = args[7+4+1].c_str();
 		BeamProperties beamProp(beamConfigFile);
@@ -49,7 +49,7 @@ omegapi_amplitude::omegapi_amplitude( const vector< string >& args ):
 		for(Int_t i=0; i<polFrac_vs_E->GetXaxis()->GetNbins()+2; i++){
 			//cout << polFrac_vs_E->GetBinContent(i) << endl;
 		}
-	}*/
+	}
 	else
 	assert(0);
 
@@ -109,7 +109,7 @@ omegapi_amplitude::calcUserVars( GDouble** pKin, GDouble* userVars ) const
 	GDouble Pgamma=polFraction;//fixed beam polarization fraction
 	if(polAngle == -1)
 	Pgamma = 0.;//if beam is amorphous set polarization fraction to 0
-/*	else if(polFrac_vs_E!=NULL){
+	else if(polFrac_vs_E!=NULL){
 	//This part causes seg fault with 34 amplitudes or more with gen_amp and gen_omegapi.
 	//Not needed for fixed beam pol angle and frac.
 	int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
@@ -119,7 +119,7 @@ omegapi_amplitude::calcUserVars( GDouble** pKin, GDouble* userVars ) const
 	}
 	else
 	 Pgamma = polFrac_vs_E->GetBinContent(bin);
-	}*/
+	}
 
   //Calculate decay angles in helicity frame
   vector <double> locthetaphi = getomegapiAngles(polAngle, omega, X, beam, Gammap);
