@@ -52,7 +52,6 @@ int main( int argc, char* argv[] ){
 	
 	bool diag = false;
 	bool genFlat = false;
-	bool delta = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 1.0;//To take over threshold with a BW omega mass
@@ -86,10 +85,6 @@ int main( int argc, char* argv[] ){
 
 	float part_masses_list2[]={Mpip, Mpip, Mpi0};
 	vector<double> part_masses2(part_masses_list2,part_masses_list2+3);
-
-	vector<double> part_masses3; 
-	part_masses3.push_back(ParticleMass(Proton));
-	part_masses3.push_back(ParticleMass(PiPlus));
 
 	//parse command line:
 	for (int i = 1; i < argc; i++){
@@ -148,8 +143,6 @@ int main( int argc, char* argv[] ){
 			diag = true; }
 		if (arg == "-f"){
 			genFlat = true; }
-		if (arg == "-delta"){
-			delta = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
@@ -168,8 +161,7 @@ int main( int argc, char* argv[] ){
 			cout << "\t -tmin <value>\t Minimum momentum transfer [optional]" << endl;
 			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
-			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl;
-			cout << "\t -delta \t\t Generate Delta++ recoil [optional]"<< endl<<endl;
+			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl;
 			exit(1);
 		}
 	}
@@ -294,9 +286,7 @@ int main( int argc, char* argv[] ){
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
-	GammaPToNPartP resProd;
-	if(!delta) resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
-	else resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kDeltaPlusPlus, type, slope, lowT, highT, seed, beamConfigFile );
+	GammaPToNPartP resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
 
 	vector< BreitWignerGenerator > m_bwGen;
         m_bwGen.push_back( BreitWignerGenerator(0.782, 0.008) );
