@@ -184,12 +184,33 @@ int main( int argc, char* argv[] ){
 	ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
 	assert( cfgInfo->reactionList().size() == 1 );
 	ReactionInfo* reaction = cfgInfo->reactionList()[0];
-	
-	// use particletype.h to convert reaction particle names
-	vector<Particle_t> Particles;
-	for (unsigned int i = 0; i < reaction->particleList().size(); i++){
-	  if(i>5) break; // skip pi+ from Delta++ recoil
 
+	// check for unstable particle at lower vertex
+        vector<Particle_t> ParticlesLowerVertex;
+        vector<double> massesLowerVertex;
+        double thresholdLowerVertex = 0;
+        vector< BreitWignerGenerator > bwGenLowerVertex;
+        const vector<ConfigFileLine> configFileLinesLowerVertex = parser.getConfigFileLines();
+        for (vector<ConfigFileLine>::const_iterator it=configFileLinesLowerVertex.begin(); it!=configFileLinesLowerVertex.end(); it++) {
+          if ((*it).keyword() == "define"){
+            if( (*it).arguments()[0] != "lowerVertex") continue;
+            bwGenLowerVertex.push_back( BreitWignerGenerator( atof((*it).arguments()[1].c_str()), atof((*it).arguments()[2].c_str())) );
+            cout << "Unstable particle at lower vertex: mass = " << (*it).arguments()[1]  << "GeV , width = " << (*it).arguments()[2] << "GeV" << endl;
+            for(unsigned int i=3; i<(*it).arguments().size(); i++) {
+              ParticlesLowerVertex.push_back(ParticleEnum((*it).arguments()[i].c_str()));
+              massesLowerVertex.push_back(ParticleMass(ParticlesLowerVertex[i-3]));
+              thresholdLowerVertex += ParticleMass(ParticlesLowerVertex[i-3]);
+            }
+            break;
+	  }
+	}
+	
+	// use particletype.h to convert reaction particle names (for upper vertex)
+	vector<Particle_t> Particles;
+	// don't include non-nucleon lower vertex decay particles in meson decay
+	unsigned int maxUpperVertexChild = reaction->particleList().size();
+        if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
+        for (unsigned int i = 0; i < maxUpperVertexChild; i++){
 	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
@@ -199,8 +220,8 @@ int main( int argc, char* argv[] ){
 
 	vector<double> childMasses;
 	double threshold = 0;
-	if(!delta) childMasses.push_back(0.135);
-	else childMasses.push_back(0.1396);
+	if(bwGenLowerVertex.size() == 0) childMasses.push_back(0.135); // b1 -> omega pi0
+	else childMasses.push_back(0.1396); // b1 -> omega pi+/-
 	childMasses.push_back(0.782);
 	threshold = 0.135 + 0.782;
 
@@ -279,8 +300,6 @@ int main( int argc, char* argv[] ){
 
 	vector< BreitWignerGenerator > m_bwGen;
         m_bwGen.push_back( BreitWignerGenerator(0.782, 0.008) );
-	vector< BreitWignerGenerator > m_bwGenDeltaPlusPlus;
-        m_bwGenDeltaPlusPlus.push_back( BreitWignerGenerator(1.232, 0.100) );
 		
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
@@ -329,6 +348,7 @@ int main( int argc, char* argv[] ){
 
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
 	TH1F* M_isobar2 = new TH1F( "M_isobar2", locIsobar2Title.c_str(), 200, 0, 2 );
+	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 200, 0, 2 );
 	TH1F* M_p1 = new TH1F( "M_p1", "p1", 200, 0, 2 );
 	TH1F* M_p2 = new TH1F( "M_p2", "p2", 200, 0, 2 );
 	TH1F* M_p3 = new TH1F( "M_p3", "p3", 200, 0, 2 );
@@ -367,16 +387,17 @@ int main( int argc, char* argv[] ){
               		childMasses_omega_bw.push_back(childMasses[0]);
         		childMasses_omega_bw.push_back(omega_mass_bw);
 			
-			// setup Delta++ decay
-			pair< double, double > bwDeltaPlusPlus = m_bwGenDeltaPlusPlus[0]();
-			double deltaPlusPlus_mass_bw = bwDeltaPlusPlus.first;
-
 			resProd.setChildMasses(childMasses_omega_bw);
 			resProd.getProductionMechanism().setMassRange( lowMass, highMass );
 
-			if(delta) {
-				if ( deltaPlusPlus_mass_bw < 1.08 || deltaPlusPlus_mass_bw > 2.0) continue; //Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
-				resProd.getProductionMechanism().setRecoilMass( deltaPlusPlus_mass_bw );
+			// setup lower vertex decay
+			pair< double, double > bwLowerVertex;
+			double lowerVertex_mass_bw = 0.;
+			if(bwGenLowerVertex.size() == 1) {
+				bwLowerVertex = bwGenLowerVertex[0]();
+				lowerVertex_mass_bw = bwLowerVertex.first;
+				if ( lowerVertex_mass_bw < thresholdLowerVertex || lowerVertex_mass_bw > 2.0) continue;
+				resProd.getProductionMechanism().setRecoilMass( lowerVertex_mass_bw );
 			}
 
 			  Kinematics* step1 = resProd.generate();
@@ -401,30 +422,32 @@ int main( int argc, char* argv[] ){
 			  piminus.Boost( omega.BoostVector() );
 		  
 			  // decay step for Delta++
-			  TLorentzVector proton, deltaPlusPlus_piplus;
-			  if(delta) {
-				  NBodyPhaseSpaceFactory deltaPlusPlus_decay = NBodyPhaseSpaceFactory( deltaPlusPlus_mass_bw, part_masses3);
-				  vector<TLorentzVector> deltaPlusPlus_daughters = deltaPlusPlus_decay.generateDecay();
-				  
-				  proton = deltaPlusPlus_daughters[0];//third decay step
-				  deltaPlusPlus_piplus = deltaPlusPlus_daughters[1];//third decay step
-				  proton.Boost( recoil.BoostVector() );
-				  deltaPlusPlus_piplus.Boost( recoil.BoostVector() );	
+			  TLorentzVector nucleon;
+			  vector<TLorentzVector> lowerVertexChild;
+			  if(bwGenLowerVertex.size() == 1) {
+				  NBodyPhaseSpaceFactory lowerVertex_decay = NBodyPhaseSpaceFactory( lowerVertex_mass_bw, massesLowerVertex);
+				  lowerVertexChild = lowerVertex_decay.generateDecay();
+
+				  // boost to lab frame via recoil kinematics
+				  for(unsigned int j=0; j<lowerVertexChild.size(); j++)
+					  lowerVertexChild[j].Boost( recoil.BoostVector() );
+				  nucleon = lowerVertexChild[0];	
 			  }		  
 			  else 
-				  proton = recoil;
+				  nucleon = recoil;
 
 			  // store particles in kinematic class
 			  vector< TLorentzVector > allPart;
 			  //same order as config file, omegapi Amplitudes and ReactionFilter
 			  allPart.push_back( beam );
-			  allPart.push_back( proton );
+			  allPart.push_back( nucleon );
 			  allPart.push_back( bachelor_pi );
 			  allPart.push_back( omegas_pi0 );
 			  allPart.push_back( piplus );
 			  allPart.push_back( piminus );
-			  if(delta)
-				  allPart.push_back( deltaPlusPlus_piplus );
+			  if(bwGenLowerVertex.size() == 1)
+				  for(unsigned int j=1; j<lowerVertexChild.size(); j++)
+                                        allPart.push_back(lowerVertexChild[j]);
 
 			  Kinematics* kin = new Kinematics( allPart, 1.0 );
 			  ati.loadEvent( kin, i, batchSize );
@@ -454,6 +477,12 @@ int main( int argc, char* argv[] ){
 			for (unsigned int i=4; i<Particles.size(); i++)
 			  isobar2 += evt->particle( i );
 			
+			TLorentzVector recoil = evt->particle( 1 );
+                        if(bwGenLowerVertex.size()) {
+				for(unsigned int j=Particles.size(); j<evt->particleList().size(); j++)
+                                        recoil += evt->particle( j );
+                        }
+
 			double genWeight = evt->weight();
 			
 			// cannot ask for the intensity if we haven't called process events above
@@ -475,15 +504,15 @@ int main( int argc, char* argv[] ){
 
 					M_isobar->Fill( isobar.M() );
 					M_isobar2->Fill( isobar2.M() );
+					M_recoil->Fill( recoil.M() );
 					
 					// calculate angular variables
 					TLorentzVector beam = evt->particle ( 0 );
-					TLorentzVector recoil = evt->particle ( 1 );
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector p2 = evt->particle ( 3 );
 					TLorentzVector p3 = evt->particle ( 4 );
 					TLorentzVector p4 = evt->particle ( 5 );
-					TLorentzVector target(0,0,0,recoil[3]);
+					TLorentzVector target(0,0,0,ParticleMass(Proton));
 					
 					M_p1->Fill( p1.M() );
 					M_p2->Fill( p2.M() );
@@ -501,7 +530,7 @@ int main( int argc, char* argv[] ){
 
 					M_dalitz->Fill(dalitzx,dalitzy);
 					
-					t->Fill(-1*(evt->particle(1)-target).M2());
+					t->Fill(-1*(recoil-target).M2());
 
                                         TLorentzVector Gammap = beam + target;
                                         vector <double> loccosthetaphi = getomegapiAngles(polAngle, isobar, resonance, beam, Gammap);
@@ -543,7 +572,6 @@ int main( int argc, char* argv[] ){
 				
 				intenW->Fill( weightedInten );
 				intenWVsM->Fill( resonance.M(), weightedInten );
-				TLorentzVector recoil = evt->particle ( 1 );
 				
 				++eventCounter;
 			}
@@ -560,6 +588,7 @@ int main( int argc, char* argv[] ){
 	intenWVsM->Write();
 	M_isobar->Write();
 	M_isobar2->Write();
+	M_recoil->Write();
         M_p1->Write();
         M_p2->Write();
         M_p3->Write();
