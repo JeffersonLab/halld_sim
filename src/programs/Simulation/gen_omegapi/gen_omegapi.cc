@@ -16,6 +16,7 @@
 #include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
+#include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
@@ -223,6 +224,7 @@ int main( int argc, char* argv[] ){
 	cout << "TRandom3 Seed : " << seed << endl;
 
 	// setup AmpToolsInterface
+	AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
