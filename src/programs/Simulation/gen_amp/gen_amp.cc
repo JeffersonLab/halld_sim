@@ -169,24 +169,27 @@ int main( int argc, char* argv[] ){
 	assert( cfgInfo->reactionList().size() == 1 );
 	ReactionInfo* reaction = cfgInfo->reactionList()[0];
 	
+	
+
 	// check for unstable particle at lower vertex
 	vector<Particle_t> ParticlesLowerVertex;
 	vector<double> massesLowerVertex;
 	double thresholdLowerVertex = 0;
 	vector< BreitWignerGenerator > bwGenLowerVertex;
-	const vector<ConfigFileLine> configFileLinesLowerVertex = parser.getConfigFileLines();
-	for (vector<ConfigFileLine>::const_iterator it=configFileLinesLowerVertex.begin(); it!=configFileLinesLowerVertex.end(); it++) {
-	  if ((*it).keyword() == "define"){
-	    if( (*it).arguments()[0] != "lowerVertex") continue;
-	    bwGenLowerVertex.push_back( BreitWignerGenerator( atof((*it).arguments()[1].c_str()), atof((*it).arguments()[2].c_str())) );
-	    cout << "Unstable particle at lower vertex: mass = " << (*it).arguments()[1]  << "GeV , width = " << (*it).arguments()[2] << "GeV" << endl; 
-	    for(unsigned int i=3; i<(*it).arguments().size(); i++) {
-	      ParticlesLowerVertex.push_back(ParticleEnum((*it).arguments()[i].c_str()));
-	      massesLowerVertex.push_back(ParticleMass(ParticlesLowerVertex[i-3]));
-	      thresholdLowerVertex += ParticleMass(ParticlesLowerVertex[i-3]);
-	    }
-	    break;
+	vector< vector<string> > lowerVertexKeywords = cfgInfo->userKeywordArguments("lowerVertex");
+	if(lowerVertexKeywords.size() == 1) {
+	  vector<string> keywordArgs = lowerVertexKeywords[0];
+	  bwGenLowerVertex.push_back( BreitWignerGenerator( atof(keywordArgs[0].c_str()), atof(keywordArgs[1].c_str())) );
+	  cout << "Unstable particle at lower vertex: mass = " << keywordArgs[0] << "GeV , width = " << keywordArgs[1] << "GeV" << endl; 
+	  for(unsigned int j=2; j<keywordArgs.size(); j++) {
+	    ParticlesLowerVertex.push_back(ParticleEnum(keywordArgs[j].c_str()));
+	    massesLowerVertex.push_back(ParticleMass(ParticlesLowerVertex[j-2]));
+	    thresholdLowerVertex += ParticleMass(ParticlesLowerVertex[j-2]);
 	  }
+	}
+	else if(lowerVertexKeywords.size() > 1) {
+		cout<<"Multiple unstable particles at lower vertex provided"<<endl;
+		exit(1);
 	}
 
 	// use particletype.h to convert reaction particle names (for upper vertex)
