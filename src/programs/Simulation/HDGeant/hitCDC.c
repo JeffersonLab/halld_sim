@@ -53,7 +53,7 @@ static float cdc_drift_distance[78];
 static float BSCALE_PAR1=0.;
 static float BSCALE_PAR2=0.;
 
-int itrack;
+static int itrack;
 
 /* void GetDOCA(int ipart, float x[3], float p[5], float doca[3]);  disabled 6/24/2009 */
 
