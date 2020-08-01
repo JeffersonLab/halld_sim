@@ -6,9 +6,9 @@ Import('*')
 # Verify CERN environment variable is set
 if os.getenv('CERN', 'nada')=='nada':
     if env.Dir('.').srcnode().abspath.startswith(env.GetLaunchDir()):
-        print '============================================================'
-        print 'CERN environment variable not set. Skipping build of MC_GEN'
-        print '============================================================'
+        print('============================================================')
+        print('CERN environment variable not set. Skipping build of MC_GEN')
+        print('============================================================')
 else:
     # get env object and clone it
     env = env.Clone()
