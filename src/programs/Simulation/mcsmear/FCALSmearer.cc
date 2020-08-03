@@ -3,7 +3,7 @@
 //-----------
 // fcal_config_t  (constructor)
 //-----------
-fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom) 
+fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom) 
 {
 	// default values
 	FCAL_PHOT_STAT_COEF     = 0.0; // 0.05;
@@ -210,7 +210,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	 double sigEstat=fcal_config->FCAL_PHOT_STAT_COEF;
 
          int channelnum = fcalGeom->channel(row, column); 
-	 if (fcalGeom->inInsert(channelnum)==false){
+	 if (row<DFCALGeometry::kBlocksTall&&column<DFCALGeometry::kBlocksWide){
 	   // correct simulation efficiencies 
 	   if (config->APPLY_EFFICIENCY_CORRECTIONS
 	       && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(row, column))) {
