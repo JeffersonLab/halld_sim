@@ -196,7 +196,6 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	int row=iter->getRow();
 	int column=iter->getColumn();
 
-	cout << "r "<< row << " c " << column << " " <<fcalGeom->isBlockActive(row, column) << endl;
          // Simulation simulates a grid of blocks for simplicity. 
          // Do not bother smearing inactive blocks. They will be
          // discarded in DEventSourceHDDM.cc while being read in
