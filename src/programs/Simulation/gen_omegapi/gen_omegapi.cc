@@ -310,7 +310,9 @@ int main( int argc, char* argv[] ){
 	vector< int > pTypes;
 	for (unsigned int i=0; i<Particles.size(); i++)
 	  pTypes.push_back( Particles[i] );
-	
+	for (unsigned int i=1; i<ParticlesLowerVertex.size(); i++)
+          pTypes.push_back( ParticlesLowerVertex[i] );
+
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
 	ROOTDataWriter rootOut( outname );
