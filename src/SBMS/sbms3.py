@@ -787,8 +787,15 @@ def AddXERCES(env):
 # CERNLIB
 ##################################
 def AddCERNLIB(env):
+	proc=subprocess.Popen('gcc --version', shell=True, stdout=subprocess.PIPE, )
+	gcc_version_str=str(proc.communicate()[0], 'utf-8')
+	gcc0 = gcc_version_str.split(') ')
+	gcc1 = gcc0[1].split('.')
+	gcc_version = int(gcc1[0])
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore'])
-	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic', '-fallow-argument-mismatch'])
+	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic'])
+	if gcc_version >= 10:
+		env.PrependUnique(FORTRANFLAGS = ['-fallow-argument-mismatch'])
 	#env.PrependUnique(FORTRANPATH = ['include'])
 	cern = os.getenv('CERN', '/usr/local/cern/PRO')
 	cern_level = os.getenv('CERN_LEVEL', '2006')
