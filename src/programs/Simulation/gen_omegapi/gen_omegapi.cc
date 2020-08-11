@@ -376,7 +376,7 @@ int main( int argc, char* argv[] ){
 			// setup omega decay
                         pair< double, double > bw = m_bwGen[0]();
                         double omega_mass_bw = bw.first;
-                        if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.864) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
+                        if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.86) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
 			vector<double> childMasses_omega_bw;
               		childMasses_omega_bw.push_back(childMasses[0]);
