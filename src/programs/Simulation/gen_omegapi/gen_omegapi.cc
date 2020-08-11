@@ -463,6 +463,8 @@ int main( int argc, char* argv[] ){
 			TLorentzVector resonance;
 			for (unsigned int i=2; i<Particles.size(); i++)
 			  resonance += evt->particle( i );
+			// skip events where omega or lower vertex decay failed
+			if(resonance.M() == 0.0) continue;
 
 			TLorentzVector isobar;
 			for (unsigned int i=3; i<Particles.size(); i++)
