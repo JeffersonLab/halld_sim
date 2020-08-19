@@ -1,16 +1,19 @@
-c
+c******************************************************************************
 c     KIN45BODY.F
 c
 c     This is a wrapper for the CERNLIB program GENBOD.F 
-c     (GENBOD is included below, with partial small modifications to modernize it,
-c     but presently it is not linked into the code; uses CERNLIB directly, instead).
-c     It computes 4-body or 5-body phase space using GENBOD for the actual kinematic 
+c     It computes 4-body or 5-body phase space using GENBOD for the kinematic 
 c     calculations.
+c
+c     GENBOD is included below, with partial small modifications to modernize it.
+c     It can be linked in to the code or not, depending on whether you want
+c     to use CERNLIB directly.
 c     
 c     R. A. Schumacher, CMU 5-08
 c
 c     5-15-15 - make the 4-vectors have 5 elements, with E in element 5
 c     2-11-18 - fix a bug in the way the total energy was being transferred to local variables
+c     8-01-20 - use the CERNLIB GENBOD code that is included below.
 c
       subroutine kin45body(nbody,p0,p1,p2,p3,p4,p5,ierr)
       real p0(5),p1(5),p2(5),p3(5),p4(5),p5(5),beta(3)
@@ -44,17 +47,11 @@ c         write(6,*)'Bloody murder',rmtot,p0(4),p1(4),p2(4),p3(4),p4(4),p5(4)
          ierr = 1
          return
       endif
-      call genbod               !computes phase space decay in rest frame of p0
-C 10   call genbod               !computes phase space decay in rest frame of p0
-c      if(wt.gt.valmax)then
-c         write(6,*)'Max event weight changing to:',wt
-c         valmax = wt
-c      endif
-c      val = valmax*ran(iseed) !uniform random number between 0 and maximum event weight
-cc      write(6,*)wt,val
-c      if(wt.lt.val)then
-c         goto 10
-c      endif
+c
+      call genbod        !computes phase space decay in rest frame of p0
+c      write(6,*)'Phase space GENBOD calculation not linked into program'
+c      call exit()
+c
       do i=1,3
          p1tmp(i) = pcm(i,1)
          p2tmp(i) = pcm(i,2)
@@ -103,9 +100,9 @@ c      write(6,20)'Genbod weight',wt
 c 20   format(1x,a,f8.4)
       ierr = 0
       return
-      end
-      
+      end 
 
+c******************************************************************************      
 *
 * $Id: genbod.F,v 1.1.1.1 1996/03/22 16:42:49 mclareni Exp $
 *
@@ -114,8 +111,8 @@ c 20   format(1x,a,f8.4)
 * Phtools
 *
 *
-c      SUBROUTINE GENBOD
-      SUBROUTINE xGENBOD
+      SUBROUTINE GENBOD         ! use this code
+c     SUBROUTINE xGENBOD   ! use CERNLIB's version
 C   SUBROUTINE TO GENERATE N-BODY EVENT
 C   ACCORDING TO FERMI LORENTZ-INVARIANT PHASE SPACE
 C   ADAPTED FROM FOWL (CERN W505) SEPT. 1974 BY F. JAMES
@@ -180,7 +177,6 @@ C        CONSTANT CROSS SECTION AS FUNCTION OF TECM
          DO 350 I=2,NT
             EMMIN=EMMIN+EM(I-1)
             EMMAX=EMMAX+EM(I)
-c hack
             WTMAX=WTMAX* xPDK(EMMAX,EMMIN,EM(I))
  350     continue
          WTMAXQ=1.0/WTMAX
@@ -192,8 +188,10 @@ C        CALCULATION OF WT BASED ON EFFECTIVE MASSES EMM
 c
 C--   FILL RNO WITH 3*NT-4 RANDOM NUMBERS,
 C--   OF WHICH THE FIRST NT-2 ARE ORDERED.
+      iseed = 0
       DO I= 1, NTNM4
-         RNO(I)=RNDM(I)
+c         RNO(I)=RNDM(I)
+         RNO(I)=ran(iseed) 
       enddo
       if(ntm2.lt.0)return
       if(ntm2.gt.0)then
@@ -205,7 +203,6 @@ C--   OF WHICH THE FIRST NT-2 ARE ORDERED.
       WT=WTMAXQ
       IR=NTM2
       DO 530 I=1,NTM1
-c hack
       PD(I)= xPDK(EMM(I+1),EMM(I),EM(I+1))
   530 WT=WT*PD(I)
 C--       COMPLETE SPECIFICATION OF EVENT (RAUBOLD-LYNCH METHOD)
@@ -232,7 +229,6 @@ C--       COMPLETE SPECIFICATION OF EVENT (RAUBOLD-LYNCH METHOD)
       AA= PCM1(NDX+1)**2 + PCM1(NDX+2)**2 + PCM1(NDX+3)**2
       PCM1(NDX+5)=SQRT(AA)
       PCM1(NDX+4)=SQRT(AA+EMS(J))
-c hack
       CALL xROTES2(C,S,CB,SB,PCM,J)
       PSAVE=GAMA*(PCM(2,J)+BETA*PCM(4,J))
   568 PCM(2,J)=PSAVE
@@ -241,7 +237,6 @@ c hack
       AA=PCM(1,J)**2 + PCM(2,J)**2 + PCM(3,J)**2
       PCM(5,J)=SQRT(AA)
       PCM(4,J)=SQRT(AA+EMS(J))
-c hack
       CALL xROTES2(C,S,CB,SB,PCM,J)
  1568 CONTINUE
   570 CONTINUE
@@ -281,8 +276,7 @@ C     PDK = SQRT(A*A+(B*B-C*C)**2/(A*A) - 2.0*(B*B+C*C))/2.0
       A2 = A*A
       B2 = B*B
       C2 = C*C
-      PDK = 0.5*SQRT(A2 + (B2-C2)**2/A2 - 2.0*(B2+C2))
-      xpdk = 0
+      xPDK = 0.5*SQRT(A2 + (B2-C2)**2/A2 - 2.0*(B2+C2))
       RETURN
       END
 
@@ -312,3 +306,79 @@ C         THIS SUBROUTINE NOW DOES TWO ROTATIONS (XY AND XZ)
       PR(K2) = A*S2 + B*C2
       RETURN
       END
+
+
+* $Log: flpsor.F,v $
+* Revision 1.1.1.1  2002/06/16 15:18:46  hristov
+* Separate distribution  of Geant3
+*
+* Revision 1.1.1.1  1999/05/18 15:55:29  fca
+* AliRoot sources
+*
+* Revision 1.1.1.1  1996/02/15 17:49:44  mclareni
+* Kernlib
+*
+*
+c#include "kerngen/pilot.h"
+      SUBROUTINE FLPSOR(A,N)
+C
+C CERN PROGLIB# M103    FLPSOR          .VERSION KERNFOR  3.15  820113
+C ORIG. 29/04/78
+C
+C   SORT THE ONE-DIMENSIONAL FLOATING POINT ARRAY A(1),...,A(N) BY
+C   INCREASING VALUES
+C
+C-    PROGRAM  M103  TAKEN FROM CERN PROGRAM LIBRARY,  29-APR-78
+C
+      DIMENSION A(N)
+      COMMON /SLATE/ LT(20),RT(20)
+      INTEGER R,RT
+C
+      LEVEL=1
+      LT(1)=1
+      RT(1)=N
+   10 L=LT(LEVEL)
+      R=RT(LEVEL)
+      LEVEL=LEVEL-1
+   20 IF(R.GT.L) GO TO 200
+      IF(LEVEL) 50,50,10
+C
+C   SUBDIVIDE THE INTERVAL L,R
+C     L : LOWER LIMIT OF THE INTERVAL (INPUT)
+C     R : UPPER LIMIT OF THE INTERVAL (INPUT)
+C     J : UPPER LIMIT OF LOWER SUB-INTERVAL (OUTPUT)
+C     I : LOWER LIMIT OF UPPER SUB-INTERVAL (OUTPUT)
+C
+  200 I=L
+      J=R
+      M=(L+R)/2
+      X=A(M)
+  220 IF(A(I).GE.X) GO TO 230
+      I=I+1
+      GO TO 220
+  230 IF(A(J).LE.X) GO TO 231
+      J=J-1
+      GO TO 230
+C
+  231 IF(I.GT.J) GO TO 232
+      W=A(I)
+      A(I)=A(J)
+      A(J)=W
+      I=I+1
+      J=J-1
+      IF(I.LE.J) GO TO 220
+C
+  232 LEVEL=LEVEL+1
+      IF((R-I).GE.(J-L)) GO TO 30
+      LT(LEVEL)=L
+      RT(LEVEL)=J
+      L=I
+      GO TO 20
+   30 LT(LEVEL)=I
+      RT(LEVEL)=R
+      R=J
+      GO TO 20
+   50 RETURN
+      END
+
+c******************************************************************************
