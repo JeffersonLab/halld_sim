@@ -371,8 +371,8 @@ int main( int argc, char* argv[] ){
 
 		// decay omega (and Delta++, if generated)
 		ati.clearEvents();
-		for( int i = 0; i < batchSize; ++i ){
-
+		int i = 0;
+		while( i < batchSize ) {
 			// setup omega decay
                         pair< double, double > bw = m_bwGen[0]();
                         double omega_mass_bw = bw.first;
@@ -448,6 +448,7 @@ int main( int argc, char* argv[] ){
 			  ati.loadEvent( kin, i, batchSize );
 			  delete step1;
 			  delete kin;
+			  i++;
     		}
 		
 		cout << "Processing events..." << endl;
@@ -463,8 +464,6 @@ int main( int argc, char* argv[] ){
 			TLorentzVector resonance;
 			for (unsigned int i=2; i<Particles.size(); i++)
 			  resonance += evt->particle( i );
-			// skip events where omega or lower vertex decay failed
-			if(resonance.M() == 0.0) continue;
 
 			TLorentzVector isobar;
 			for (unsigned int i=3; i<Particles.size(); i++)
