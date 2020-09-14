@@ -16,3 +16,4 @@ src/SBMS/*.pyc
 *.swp
 *.mil
 halld_sim_prereqs_version.xml
+.python_adjustment
