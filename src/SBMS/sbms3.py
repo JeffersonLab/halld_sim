@@ -788,7 +788,10 @@ def AddXERCES(env):
 ##################################
 def AddCERNLIB(env):
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore'])
-	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic', '-fallow-argument-mismatch'])
+	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic'])
+	gccver = gcc_major_version()
+	if gccver >= 9:
+		env.PrependUnique(FORTRANFLAGS = ['-fallow-argument-mismatch'])
 	#env.PrependUnique(FORTRANPATH = ['include'])
 	cern = os.getenv('CERN', '/usr/local/cern/PRO')
 	cern_level = os.getenv('CERN_LEVEL', '2006')
@@ -1151,10 +1154,29 @@ def AddEvtGen(env):
 ##################################
 def AddUtilities(env):
 	AddCCDB(env)
-	pyincludes = str(subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
+	pyincludes = str(subprocess.Popen(["python3-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
 	env.AppendUnique(CCFLAGS = pyincludes.rstrip().split())
 	# BOOST is required by cobrems and if it is not installed in /usr or /usr/local then we must get it from the environment
 	boost_root = os.getenv('BOOST_ROOT')
 	if boost_root != None:
 		env.AppendUnique(CPPPATH = [boost_root + "/include"])
 
+##################################
+# miscellanous
+##################################
+def gcc_major_version():
+	print('got to here')
+	out = subprocess.run(['gcc', '--version'], stdout=subprocess.PIPE)
+	outstr = str(out.stdout, 'UTF-8')
+	print('outstr =',outstr)
+	tokens = outstr.split()
+	print(tokens)
+	version = tokens[2]
+	print(version)
+	vtokens = version.split('.')
+	print(vtokens)
+	version_major_str = vtokens[0]
+	print(version_major_str)
+	major_version = int(version_major_str)
+	print(major_version)
+	return major_version
