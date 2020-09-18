@@ -271,7 +271,7 @@ int main( int argc, char* argv[] ){
       
       m_tree->GetEntry(counter);
       
-      TLorentzVector gamma_4Vec(0, 0, 0, 0);
+      TLorentzVector gamma_4Vec(0, 0, Ebeam, Ebeam);
       TLorentzVector photon_4Vec[10];
       int npart_photon = 1;
       int npart_electron = 1;
