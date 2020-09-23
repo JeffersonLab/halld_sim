@@ -347,8 +347,10 @@ int main( int argc, char* argv[] ){
 			
                         pair< double, double > bw = m_bwGen[0]();
                         double omega_mass_bw = bw.first;
-                        if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.864) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
-
+                        if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.864) //Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
+			{i--;
+			 continue;
+			}
 			vector<double> childMasses;
               		childMasses.push_back(0.135);
         		childMasses.push_back(omega_mass_bw);
