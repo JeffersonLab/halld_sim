@@ -180,6 +180,12 @@ int main( int argc, char* argv[] ){
   TFile * ifile = new TFile(m_rfile);
   TH2F * h_dxs = (TH2F *) ifile->Get(m_histo);
 
+  double M_meson = 0;
+  if (m_decay.Contains("eta"))
+    M_meson = M_eta;
+  else if (m_decay.Contains("pi0"))
+    M_meson = M_pi0;
+  
   // Create decayGen
   TGenPhaseSpace decayGen;
   
@@ -312,7 +318,7 @@ int main( int argc, char* argv[] ){
     double E_LAB_eta = 0;
     double p0 = IS_4Vec.P();
     double E0 = IS_4Vec.E();
-    double m2 = M_eta;
+    double m2 = M_meson;
     double m3 = M_He4;
     double a = pow(2.0 * p0 * cos(ThetaLAB), 2) - pow(2.0 * E0, 2);
     double b = 4.0 * pow(E0, 3) - pow(2.0 * p0, 2) * E0 + pow(2.0 * m2, 2) * E0 - pow(2.0 * m3, 2) * E0;
@@ -343,7 +349,15 @@ int main( int argc, char* argv[] ){
     TLorentzVector photon_4Vec[6];
     TLorentzVector pi0_4Vec[3];
     int ng_max = 0;
-    if (m_decay == "eta->2g") {
+    if (m_decay == "pi0->2g") {
+      ng_max = 2;
+      double masses[] = {M_gamma, M_gamma};
+      if (decayGen.SetDecay(eta_LAB_4Vec, 2, masses)) {
+	decayGen.Generate();
+	photon_4Vec[0] = * decayGen.GetDecay(0);
+	photon_4Vec[1] = * decayGen.GetDecay(1);
+      } 
+    } else if (m_decay == "eta->2g") {
       ng_max = 2;
       double masses[] = {M_gamma, M_gamma};
       if (decayGen.SetDecay(eta_LAB_4Vec, 2, masses)) {
@@ -388,7 +402,12 @@ int main( int argc, char* argv[] ){
       tmpEvt_t tmpEvt;
       tmpEvt.beam = InGamma_4Vec;
       tmpEvt.target = Target_4Vec;
-      if (m_decay == "eta->2g") {
+      if (m_decay == "pi0->2g") {
+	tmpEvt.q1 = photon_4Vec[0];
+	tmpEvt.q2 = photon_4Vec[1];
+	tmpEvt.q3 = He4_LAB_4Vec;
+	tmpEvt.nGen = 3;
+      } else if (m_decay == "eta->2g") {
 	tmpEvt.q1 = photon_4Vec[0];
 	tmpEvt.q2 = photon_4Vec[1];
 	tmpEvt.q3 = He4_LAB_4Vec;
