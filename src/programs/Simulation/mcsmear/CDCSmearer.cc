@@ -261,6 +261,20 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 
         amplitude += smearcharge;   // add on pedestal noise, then convert from charge to amplitude
 
+        // convert charge back into adc units to implement saturation
+        double raw_integral = q/cdc_config->CDC_ASCALE;
+
+        // estimate integrated pedestal.  1600 should be IE*8; IE is fa125 integration end sample
+        double integrated_pedestal = 100*(1600.0 - t)/8.0;   // pedestal * nsamples in pulse
+        if (integrated_pedestal<0) integrated_pedestal = 0;  //should not happen
+
+        // max readout value is 362143, this would include the pedestal
+        double pulseintegral_saturation = 362143 - integrated_pedestal;
+
+        if (raw_integral > pulseintegral_saturation) raw_integral = pulseintegral_saturation;
+
+        q = raw_integral*cdc_config->CDC_ASCALE;
+
 
         // raw_amplitude mimics the signal in adc units 0-4095. This is used here for comparison with the threshold.
         // amplitude is in charge units. This is included in the hddm file and used for dE_amp/dx
