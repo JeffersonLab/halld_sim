@@ -349,7 +349,7 @@ int main( int argc, char* argv[] ){
 	TH1F* M_p3 = new TH1F( "M_p3", "p3", 200, 0, 2 );
 	TH1F* M_p4 = new TH1F( "M_p4", "p4", 200, 0, 2 );
 
-        TH2F* M_dalitz = new TH2F( "M_dalitz", "dalitzxy", 200, -5, 5, 200, -5, 5);
+        TH2F* M_dalitz = new TH2F( "M_dalitz", "dalitzxy", 200, -2, 2, 200, -2, 2);
 
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
@@ -516,14 +516,13 @@ int main( int argc, char* argv[] ){
 					M_p4->Fill( p4.M() );
 
 					double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc, dalitzx, dalitzy;
-					dalitz_s = (p3+p2).M2();//s=M(pip pi0)
-					dalitz_t = (p4+p2).M2();//s=M(pim pi0)
-					dalitz_u = (p3+p4).M2();//s=M(pip pim)
-					dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*139.57018)+134.9766) );
-					dalitz_sc = (1/3)*( (p2+p3+p4).M2() - ((2*(139.57018*139.57018))+(134.9766*134.9766)) );
-					dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
-					dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
-
+					dalitz_s = (p3+p4).M2();//s=M(pip pim)
+					dalitz_t = (p2+p3).M2();//s=M(pip pi0)
+					dalitz_u = (p2+p4).M2();//s=M(pim pi0)
+					dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*0.13957018)+0.1349766) );
+					dalitz_sc = (1/3.)*( (p2+p3+p4).M2() + ((2*(0.13957018*0.13957018))+(0.1349766*0.1349766)) );
+					dalitzx = sqrt(3.)*(dalitz_t - dalitz_u)/dalitz_d;
+					dalitzy = 3.*(dalitz_sc - dalitz_s)/dalitz_d;
 					M_dalitz->Fill(dalitzx,dalitzy);
 					
 					t->Fill(-1*(recoil-target).M2());

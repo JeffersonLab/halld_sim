@@ -140,9 +140,9 @@ omegapi_amplitude::calcUserVars( GDouble** pKin, GDouble* userVars ) const
   double dalitz_s = rho.M2();//s=M2(pip pim)
   double dalitz_t = (rhos_pip+omegas_pi).M2();//t=M2(pip pi0)
   double dalitz_u = (rhos_pim+omegas_pi).M2();//u=M2(pim pi0)
-  double m3pi = (2*139.57018)+134.9766;
+  double m3pi = (2*0.13957018)+0.1349766;
   double dalitz_d = 2*omega.M()*( omega.M() - m3pi);
-  double dalitz_sc = (1/3)*( omega.M2() - rhos_pip.M2() - rhos_pim.M2() - omegas_pi.M2());
+  double dalitz_sc = (1/3.)*( omega.M2() - rhos_pip.M2() - rhos_pim.M2() - omegas_pi.M2());
   double dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
   double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
   double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
@@ -171,8 +171,8 @@ omegapi_amplitude::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
    GDouble dalitz_z = userVars[uv_dalitz_z];
    GDouble dalitz_sin3theta = userVars[uv_dalitz_sin3theta];
 
-   GDouble G = sqrt(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2) * dalitz_sin3theta
-			 + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2) * dalitz_sin3theta );
+   GDouble G = sqrt(1 + 2 * dalitz_alpha*dalitz_alpha * dalitz_z + 2 * dalitz_beta*dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta
+			 + 2 * dalitz_gamma*dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta*dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta );
 
    GDouble hel_c[3] = { c_0, c_1, c_2};
    
