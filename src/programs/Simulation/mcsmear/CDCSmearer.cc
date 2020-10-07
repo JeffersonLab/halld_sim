@@ -268,8 +268,8 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
         double integrated_pedestal = 100*(1600.0 - t)/8.0;   // pedestal * nsamples in pulse
         if (integrated_pedestal<0) integrated_pedestal = 0;  //should not happen
 
-        // max readout value is 362143, this would include the pedestal
-        double pulseintegral_saturation = 362143 - integrated_pedestal;
+        // max readout value is 262143, this would include the pedestal
+        double pulseintegral_saturation = 262143 - integrated_pedestal;
 
         if (raw_integral > pulseintegral_saturation) raw_integral = pulseintegral_saturation;
 
