@@ -28,11 +28,10 @@
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/IsobarAngles.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/Uniform.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
-#include "AMPTOOLS_MCGEN/NBodyPhaseSpaceFactory.h"
 
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -55,13 +54,12 @@ int main( int argc, char* argv[] ){
 	string  outname("");
 	string  hddmname("");
 	
-	bool centeredVertex = false;
 	bool diag = false;
 	bool genFlat = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 0.2;
-	double highMass = 2.0;
+	double highMass = 5.0;
 
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 9.0;
@@ -130,8 +128,6 @@ int main( int argc, char* argv[] ){
                         else  highT = atof( argv[++i] ); }
 		if (arg == "-d"){
 			diag = true; }
-		if (arg == "-v"){
-			centeredVertex = true; }
 		if (arg == "-f"){
 			genFlat = true; }
 		if (arg == "-h"){
@@ -151,7 +147,6 @@ int main( int argc, char* argv[] ){
 			cout << "\t -t    <value>\t Momentum transfer slope [optional]" << endl;
 			cout << "\t -tmin <value>\t Minimum momentum transfer [optional]" << endl;
 			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
-			cout << "\t -v \t\t Set vertex to (0,0,0), i.e. let geant generate vertex distribution [optional]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
 			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl;
 			exit(1);
@@ -169,37 +164,11 @@ int main( int argc, char* argv[] ){
 	assert( cfgInfo->reactionList().size() == 1 );
 	ReactionInfo* reaction = cfgInfo->reactionList()[0];
 	
-	
-
-	// check for unstable particle at lower vertex
-	vector<Particle_t> ParticlesLowerVertex;
-	vector<double> massesLowerVertex;
-	double thresholdLowerVertex = 0;
-	vector< BreitWignerGenerator > bwGenLowerVertex;
-	vector< vector<string> > lowerVertexKeywords = cfgInfo->userKeywordArguments("lowerVertex");
-	if(lowerVertexKeywords.size() == 1) {
-	  vector<string> keywordArgs = lowerVertexKeywords[0];
-	  bwGenLowerVertex.push_back( BreitWignerGenerator( atof(keywordArgs[0].c_str()), atof(keywordArgs[1].c_str())) );
-	  cout << "Unstable particle at lower vertex: mass = " << keywordArgs[0] << "GeV , width = " << keywordArgs[1] << "GeV" << endl; 
-	  for(unsigned int j=2; j<keywordArgs.size(); j++) {
-	    ParticlesLowerVertex.push_back(ParticleEnum(keywordArgs[j].c_str()));
-	    massesLowerVertex.push_back(ParticleMass(ParticlesLowerVertex[j-2]));
-	    thresholdLowerVertex += ParticleMass(ParticlesLowerVertex[j-2]);
-	  }
-	}
-	else if(lowerVertexKeywords.size() > 1) {
-		cout<<"Multiple unstable particles at lower vertex provided"<<endl;
-		exit(1);
-	}
-
-	// use particletype.h to convert reaction particle names (for upper vertex)
+	// use particletype.h to convert reaction particle names
 	vector<Particle_t> Particles;
 	vector<double> childMasses;
 	double threshold = 0;
-	unsigned int maxUpperVertexChild = reaction->particleList().size();
-	// don't include non-nucleon lower vertex decay particles in meson decay
-	if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
-	for (unsigned int i = 0; i < maxUpperVertexChild; i++){
+	for (unsigned int i = 0; i < reaction->particleList().size(); i++){
 	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
@@ -208,36 +177,8 @@ int main( int argc, char* argv[] ){
 	  if (i>1){
 	    childMasses.push_back(ParticleMass(Particles[i]));
 	    threshold += ParticleMass(Particles[i]);
+	    //cout << "Particle " << i << " Mass " << Particles[i]; 
 	  }
-	}
-
-	//switch recoil particle
-	ProductionMechanism::Recoil recoil;
-	bool isBaryonResonance = false;
-	switch(Particles[1]){
-	case Proton:
-	  recoil = ProductionMechanism::kProton; 
-	  break;
-	case Neutron:
-	  recoil = ProductionMechanism::kNeutron; 
-	  break;
-	case Pb208:
-	  recoil = ProductionMechanism::kZ;
-	  break;
-	case PiPlus:
-	case PiMinus: // works like an OR statement
-	  recoil = ProductionMechanism::kPion;
-	  isBaryonResonance = true;
-	  break;
-	case KPlus:
-	case KMinus:
-	  recoil = ProductionMechanism::kKaon;
-	  isBaryonResonance = true;
-	  break;
-	default: 
-	  cout << "ConfigFileParser WARNING: not supported recoil particle type \"" << reaction->particleList()[1].c_str()
-	       << "\", defaulted to Proton" << endl;
-	  recoil = ProductionMechanism::kProton; 
 	}
 
 	// loop to look for resonance in config file
@@ -245,14 +186,18 @@ int main( int argc, char* argv[] ){
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
 	double resonance[]={1.0, 1.0};
 	bool foundResonance = false;
+	bool isKaonRecoil = false;
+	bool isPionRecoil = false;
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
-	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520" || (*it).arguments()[0] == "X"){
+	    if ((*it).arguments()[0] == "X" || (*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
 	      if ( (*it).arguments().size() != 3 )
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
 	      resonance[1]=atof((*it).arguments()[2].c_str());
 	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
+	      if((*it).arguments()[0] == "Lambda1520")
+		 isKaonRecoil = true;
 	      foundResonance = true;
 	      break;
 	    }
@@ -282,7 +227,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
 	AmpToolsInterface::registerAmplitude( IsobarAngles() );
-	AmpToolsInterface::registerAmplitude( dblRegge() );
+	AmpToolsInterface::registerAmplitude( Uniform() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
@@ -315,22 +260,17 @@ int main( int argc, char* argv[] ){
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
 	GammaPToNPartP resProd;
-	double minMass = (threshold < lowMass ? lowMass : threshold);
-	resProd = GammaPToNPartP( minMass, highMass, childMasses, recoil, type, slope, lowT, highT, seed, beamConfigFile );
+	if(isKaonRecoil)
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kKaon, type, slope, lowT, highT, seed, beamConfigFile );
+	else if(isPionRecoil)
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kPion, type, slope, lowT, highT, seed, beamConfigFile );
+	else
+		resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
 	
 	if (childMasses.size() < 2){
 	  cout << "ConfigFileParser ERROR:  single particle production is not yet implemented" << endl; 
 	  return 1;
 	}
-
-	double recMass = ParticleMass(Particles[1]);
-	double cmEnergy = sqrt(recMass*(recMass + 2*beamLowE));
-	if ( cmEnergy < minMass + recMass ){
-	  cout << "ConfigFileParser ERROR:  Minimum photon energy not high enough to create resonance!" << endl;
-	  return 1;
-	}
-	else if ( cmEnergy < highMass + recMass )
-	  cout << "ConfigFileParser WARNING:  Minimum photon energy not high enough to guarantee flat mass distribution!" << endl;	
 		
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
@@ -358,31 +298,70 @@ int main( int argc, char* argv[] ){
 	ostringstream locIsobarStream;
 	for (unsigned int i=2; i<Particles.size(); i++){
 	  locStream << ParticleName_ROOT(Particles[i]);
-	  if ( i> 2 )
+	  if ( i> 3 )
 	    locIsobarStream << ParticleName_ROOT(Particles[i]);
 	}
 	string locHistTitle = string("Resonance Mass ;") + locStream.str() + string(" Invariant Mass (GeV/c^{2});");
 	string locIsobarTitle = string("Isobar Mass ;") + locIsobarStream.str() + string(" Invariant Mass (GeV/c^{2});");
 
-	TH1F* mass = new TH1F( "M", locHistTitle.c_str(), 180, lowMass, highMass );
-	TH1F* massW = new TH1F( "M_W", ("Weighted "+locHistTitle).c_str(), 180, lowMass, highMass );
+	TH1F* mass = new TH1F( "M", locHistTitle.c_str(), 400, 0.0, highMass );
+	TH1F* massW = new TH1F( "M_W", ("Weighted "+locHistTitle).c_str(), 180, 0.0, highMass );
 	massW->Sumw2();
 	TH1F* intenW = new TH1F( "intenW", "True PDF / Gen. PDF", 1000, 0, 100 );
-	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, lowMass, highMass, 1000, 0, 10 );
+	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, 0.0, highMass, 1000, 0, 10 );
 	
 	TH1F* t = new TH1F( "t", "-t Distribution", 200, 0, 2 );
 
-	TH1F* E = new TH1F( "E", "Beam Energy", 120, 0, 12 );
-	TH2F* EvsM = new TH2F( "EvsM", "Beam Energy vs Mass", 120, 0, 12, 180, lowMass, highMass );
-
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
-	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 200, 0, 2 );
 
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
-	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
-	TH2F* M_Phi = new TH2F( "M_Phi", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
-	TH2F* M_Phi_lab = new TH2F( "M_Phi_lab", "M vs. #varphi", 180, lowMass, highMass, 200, -3.14, 3.14);
-	
+	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 400, 0.0, highMass, 200, -1, 1);
+	TH2F* M_Phi = new TH2F( "M_Phi", "M vs. #varphi", 400, 0.0, highMass, 200, -3.14, 3.14);
+	TH2F* M_Phi_lab = new TH2F( "M_Phi_lab", "M vs. #varphi", 400, 0.0, highMass, 200, -3.14, 3.14);
+
+	TH2F* M_CosTheta_Iso[4];
+	TH2F* M_Phi_Iso[4];
+	TH2F* M_CosTheta_Iso1sq[4][3];
+        TH2F* M_Phi_Iso1sq[4][3];
+	TH2F* M_CosTheta_Iso2sq[4][3][2];
+        TH2F* M_Phi_Iso2sq[4][3][2];
+	for(int i=0; i<4; i++) {
+		M_CosTheta_Iso[i] = new TH2F( Form("M_CosTheta_Iso_%d", i), "M vs. cos#vartheta", 400, 0.0, highMass, 200, -1, 1);
+		M_Phi_Iso[i] = new TH2F( Form("M_Phi_Iso_%d", i), "M vs. #varphi", 400, 0.0, highMass, 200, -3.14, 3.14);
+
+        	for(int j=0; j<3; j++) {
+                	M_CosTheta_Iso1sq[i][j] = new TH2F( Form("M_CosTheta_Iso1_%d_%d", i, j), "M vs. cos#vartheta", 400, 0.0, highMass, 200, -1, 1);
+                	M_Phi_Iso1sq[i][j] = new TH2F( Form("M_Phi_Iso1_%d_%d", i, j), "M vs. #varphi", 400, 0.0, highMass, 200, -3.14, 3.14);
+
+			for(int k=0; k<2; k++) {
+                        	M_CosTheta_Iso2sq[i][j][k] = new TH2F( Form("M_CosTheta_Iso2_%d_%d_%d", i, j, k), "M vs. cos#vartheta", 400, 0.0, highMass, 200, -1, 1);
+                        	M_Phi_Iso2sq[i][j][k] = new TH2F( Form("M_Phi_Iso2_%d_%d_%d", i, j, k), "M vs. #varphi", 400, 0.0, highMass, 200, -3.14, 3.14);
+			}
+                }
+	}
+
+	//TH2F* CosTheta_psi_Iso1 = new TH2F( "CosTheta_psi_Iso1", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
+	TH2F* M_CosTheta_Iso1 = new TH2F( "M_CosTheta_Iso1", "M vs. cos#vartheta _1", 400, 0.0, highMass, 200, -1, 1);
+	TH2F* M_Phi_Iso1 = new TH2F( "M_Phi_Iso1", "M vs. #varphi _1", 400, 0.0, highMass, 200, -3.14, 3.14);
+	TH2F* M_Phi_lab_Iso1 = new TH2F( "M_Phi_lab_Iso1", "M vs. #varphi _1lab", 400, 0.0, highMass, 200, -3.14, 3.14);
+	TH2F* BeamE_CosTheta_Iso1 = new  TH2F( "BeamE_CosTheta_Iso1", "BeamE vs. cos#vartheta _1", 400, beamLowE, beamHighE, 200, -1, 1);
+	TH2F* M_CosTheta_Diff_Iso1 = new TH2F( "M_CosTheta_Diff_Iso1", "M vs. cos#vartheta - cos#vartheta _1", 400, 0.0, highMass, 200, -2, 2);
+	TH2F* M_Phi_Diff_Iso1 = new TH2F( "M_Phi_Diff_Iso1", "M vs. #varphi - #varphi _1", 400, 0.0, highMass, 200, -3.14 * 2, 3.14 * 2);
+
+	TH2F* M_CosTheta_Iso2 = new TH2F( "M_CosTheta_Iso2", "M vs. cos#vartheta _2", 400, 0.0, highMass, 200, -1, 1);
+	TH2F* M_Phi_Iso2 = new TH2F( "M_Phi_Iso2", "M vs. #varphi _2", 400, 0.0, highMass, 200, -3.14, 3.14);
+	TH2F* M_Phi_lab_Iso2 = new TH2F( "M_Phi_lab_Iso2", "M vs. #varphi _2lab", 400, 0.0, highMass, 200, -3.14, 3.14);
+	TH2F* M_CosTheta_Diff_Iso2 = new TH2F( "M_CosTheta_Diff_Iso2", "M vs. cos#vartheta - cos#vartheta _2", 400, 0.0, highMass, 200, -2, 2);
+	TH2F* M_Phi_Diff_Iso2 = new TH2F( "M_Phi_Diff_Iso2", "M vs. #varphi - #varphi _2", 400, 0.0, highMass, 200, -3.14 * 2, 3.14 * 2);
+
+	TH2F* ThetaCorr_Iso1 = new TH2F("ThetaCorr_Iso1", "; #theta 1; #theta 1INV", 400, -3.14, 3.14, 400, -3.14, 3.14);
+	TH2F* PhiCorr_Iso1 = new TH2F("PhiCorr_Iso1", "; #phi 1; #phi 1INV", 400, -3.14*2, 3.14*2, 400, -3.14*2, 3.14*2);
+	TH2F* ThetaCorr_Iso2 = new TH2F("ThetaCorr_Iso2", "; #theta 2; #theta 2INV", 400, -3.14, 3.14, 400, -3.14, 3.14);
+	TH2F* PhiCorr_Iso2 = new TH2F("PhiCorr_Iso2", "; #phi 2; #phi 2INV", 400, -3.14*2, 3.14*2, 400, -3.14*2, 3.14*2);
+	TH2F* PVsTheta[6];
+	for(int ipart=1; ipart<6; ipart++) 
+		PVsTheta[ipart] = new TH2F(Form("PVsTheta_%d",ipart),Form("Particle %d; #theta; p",ipart),100,0,3.14,120,0,12);
+
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
 		
@@ -396,50 +375,8 @@ int main( int argc, char* argv[] ){
 		
 		ati.clearEvents();
 		for( int i = 0; i < batchSize; ++i ){
-
-			Kinematics* kin;
-			if(bwGenLowerVertex.size() == 0) 
-				kin = resProd.generate(); // stable particle at lower vertex
-			else { 
-				// unstable particle at lower vertex
-				pair< double, double > bwLowerVertex = bwGenLowerVertex[0]();
-				double lowerVertex_mass_bw = bwLowerVertex.first;
-				if ( lowerVertex_mass_bw < thresholdLowerVertex || lowerVertex_mass_bw > 2.0) continue;
-				resProd.getProductionMechanism().setRecoilMass( lowerVertex_mass_bw );
-				
-				Kinematics* step1 = resProd.generate();
-				TLorentzVector beam = step1->particle( 0 );
-				TLorentzVector recoil = step1->particle( 1 );
-				
-				// loop over meson decay
-				vector<TLorentzVector> mesonChild;
-				for(unsigned int i=0; i<childMasses.size(); i++) 
-					mesonChild.push_back(step1->particle( 2+i ));
-				
-				// decay step for lower vertex
-				TLorentzVector nucleon; // proton or neutron
-				NBodyPhaseSpaceFactory lowerVertex_decay = NBodyPhaseSpaceFactory( lowerVertex_mass_bw, massesLowerVertex);
-				vector<TLorentzVector> lowerVertexChild = lowerVertex_decay.generateDecay();
-				// boost to lab frame via recoil kinematics
-				for(unsigned int j=0; j<lowerVertexChild.size(); j++) 
-				  lowerVertexChild[j].Boost( recoil.BoostVector() );
-				nucleon = lowerVertexChild[0];
-
-				// store particles in kinematic class
-				vector< TLorentzVector > allPart;
-				allPart.push_back( beam );
-				allPart.push_back( nucleon );
-				// loop over meson decay particles
-				for(unsigned int j=0; j<mesonChild.size(); j++) 
-					allPart.push_back(mesonChild[j]);
-				// loop over lower vertex decay particles
-				for(unsigned int j=1; j<lowerVertexChild.size(); j++) 
-					allPart.push_back(lowerVertexChild[j]);
-				
-				kin = new Kinematics( allPart, 1.0 );
-				delete step1;				
-			}
 			
+			Kinematics* kin = resProd.generate();
 			ati.loadEvent( kin, i, batchSize );
 			delete kin;
 		}
@@ -448,25 +385,224 @@ int main( int argc, char* argv[] ){
 		
 		// include factor of 1.5 to be safe in case we miss peak -- avoid
 		// intensity calculation of we are generating flat data
+		//cout << "Particles.size() = " << Particles.size << endl; 
 		double maxInten = ( genFlat ? 1 : 1.5 * ati.processEvents( reaction->reactionName() ) );
-		
 		
 		for( int i = 0; i < batchSize; ++i ){
 			
 			Kinematics* evt = ati.kinematics( i );
 			TLorentzVector resonance;
-			for (unsigned int j=2; j<Particles.size(); j++)
-			  resonance += evt->particle( j );
+			for (unsigned int i=2; i<Particles.size(); i++) 
+			  resonance += evt->particle( i );
 
 			TLorentzVector isobar;
-			for (unsigned int j=3; j<Particles.size(); j++)
-			  isobar += evt->particle( j );
+			//for (unsigned int i=4; i<Particles.size(); i++)
+			for (unsigned int i=2; i<4; i++)
+			  isobar += evt->particle( i );
+			//isobar += evt->particle(2);
+			//isobar += evt->particle(4);
 
-			TLorentzVector recoil = evt->particle( 1 );
-			if(bwGenLowerVertex.size()) {
-				for(unsigned int j=Particles.size(); j<evt->particleList().size(); j++)
-					recoil += evt->particle( j );
+			/////////////////////////////////////////////////////////////////////
+			// Do user calculation here for decay angles to match IsobarAngles //
+			/////////////////////////////////////////////////////////////////////
+			TLorentzVector beam = evt->particle(0);
+			TLorentzVector recoil = evt->particle(1);
+			TLorentzVector PX = resonance;
+			TLorentzVector IsoBar2 = isobar;	
+			TLorentzVector IsoBar1 = PX - IsoBar2;
+			TLorentzVector IsoBar234 = IsoBar1 + evt->particle(3);
+			TLorentzVector PBachX = PX - IsoBar2;
+			
+			// calculate decay angles in resonance X rest frame			
+			TVector3 XRestBoost = PX.BoostVector();
+
+			TLorentzVector beamX   = beam;
+			TLorentzVector recoilX = recoil;
+			TLorentzVector isobarX = IsoBar1;
+			TLorentzVector isoX[4], bachX[4];;
+			beamX.Boost(-1.0*XRestBoost);
+			recoilX.Boost(-1.0*XRestBoost);
+			isobarX.Boost(-1.0*XRestBoost);
+			for(int i=0; i<4; i++) {
+				bachX[i] = evt->particle(i+2);
+				bachX[i].Boost(-1.0*XRestBoost);
+				isoX[i] = PX - evt->particle(i+2);
+				isoX[i].Boost(-1.0*XRestBoost);
 			}
+
+			// keep vectors for isobars in X rest frame for later angle definitions
+			TLorentzVector temp, temp2, IsoBar1X, IsoBar2X, Pi0X, etaX, KpX, KmX;
+			temp = IsoBar1; temp.Boost(-1.0*XRestBoost); IsoBar1X = temp;
+			temp2 = IsoBar2; temp2.Boost(-1.0*XRestBoost); IsoBar2X = temp2;
+			temp = evt->particle(2); temp.Boost(-1.0*XRestBoost); Pi0X = temp;
+			temp = evt->particle(3); temp.Boost(-1.0*XRestBoost); etaX = temp;
+			temp = evt->particle(4); temp.Boost(-1.0*XRestBoost); KpX = temp;
+			temp = evt->particle(5); temp.Boost(-1.0*XRestBoost); KmX = temp;
+			//---------------------------------------------------------------------
+
+			// For GJ frame: choose beam as z-axis for reference 
+			TVector3 z = beamX.Vect().Unit();
+			TVector3 y = (beamX.Vect().Unit()).Cross((-recoilX.Vect().Unit())).Unit();
+			TVector3 x = y.Cross(z);
+	
+			TVector3 anglesX( (isobarX.Vect()).Dot(x),
+					  (isobarX.Vect()).Dot(y),
+					  (isobarX.Vect()).Dot(z) );
+		
+			GDouble cosThetaBachX = anglesX.CosTheta();
+			GDouble phiBachX = anglesX.Phi();
+
+			GDouble cosThetaBachX_Iso[4];
+			GDouble phiBachX_Iso[4];
+			GDouble cosThetaBachIso1_Iso[4][3];
+                        GDouble phiBachIso1_Iso[4][3];
+			GDouble cosThetaBachIso2_Iso[4][3][2];
+                        GDouble phiBachIso2_Iso[4][3][2];
+			for(int i=0; i<4; i++) {
+				TVector3 anglesX_Iso( (bachX[i].Vect()).Dot(x),
+						      (bachX[i].Vect()).Dot(y),
+						      (bachX[i].Vect()).Dot(z) );
+				
+				cosThetaBachX_Iso[i] = anglesX_Iso.CosTheta();
+				phiBachX_Iso[i] = anglesX_Iso.Phi();
+
+				// calculate decay angles in Isobar1 rest frame
+				TVector3 Iso1RestBoost = isoX[i].BoostVector();	
+
+				TLorentzVector isoIso1[3], bachIso1[3];
+				int iso1count = 0;
+                        	for(int j=0; j<4; j++) {
+					if(i == j) continue; // skip bachelor from X decay
+                                	bachIso1[iso1count] = evt->particle(j+2);
+					bachIso1[iso1count].Boost(-1.0*XRestBoost);
+					isoIso1[iso1count] = isoX[i] - bachIso1[iso1count];
+
+					bachIso1[iso1count].Boost(-1.0*Iso1RestBoost);
+                                        isoIso1[iso1count].Boost(-1.0*Iso1RestBoost);
+
+					TVector3 zIso1 = isoX[i].Vect().Unit();
+        		                TVector3 yIso1 = (z.Cross(zIso1)).Unit();
+	                	        TVector3 xIso1 = yIso1.Cross(zIso1);
+
+					TVector3 anglesIso1( (bachIso1[iso1count].Vect()).Dot(xIso1),
+                                                             (bachIso1[iso1count].Vect()).Dot(yIso1),
+                                                      	     (bachIso1[iso1count].Vect()).Dot(zIso1) );
+
+	                                cosThetaBachIso1_Iso[i][iso1count] = anglesIso1.CosTheta();
+        	                        phiBachIso1_Iso[i][iso1count] = anglesIso1.Phi();	
+				
+
+					// calculate decay angles in Isobar1 rest frame
+	                                TVector3 Iso2RestBoost = isoIso1[iso1count].BoostVector();
+
+        	                        TLorentzVector bachIso2[2];
+					int iso2count = 0;
+	                                for(int k=0; k<4; k++) {
+                                        	if(i == k || j == k) continue; // skip bachelor from X and Iso1 decays
+	                                        bachIso2[iso2count] = evt->particle(k+2);
+        	                                bachIso2[iso2count].Boost(-1.0*XRestBoost);
+                	                        bachIso2[iso2count].Boost(-1.0*Iso1RestBoost);
+						bachIso2[iso2count].Boost(-1.0*Iso2RestBoost);
+	
+        	                                TVector3 zIso2 = isoIso1[iso1count].Vect().Unit();
+                	                        TVector3 yIso2 = (zIso1.Cross(zIso2)).Unit();
+                        	                TVector3 xIso2 = yIso2.Cross(zIso2);
+	
+        	                                TVector3 anglesIso2( (bachIso2[iso2count].Vect()).Dot(xIso2),
+                	                                             (bachIso2[iso2count].Vect()).Dot(yIso2),
+                        	                                     (bachIso2[iso2count].Vect()).Dot(zIso2) );
+	
+        	                                cosThetaBachIso2_Iso[i][iso1count][iso2count] = anglesIso2.CosTheta();
+                	                        phiBachIso2_Iso[i][iso1count][iso2count] = anglesIso2.Phi();
+						
+						iso2count++;
+					}
+
+					iso1count++;
+				}
+			}
+
+			//////////////////////////////////////
+			// Test of successive 2-body decays //
+			//////////////////////////////////////
+			
+/*
+			TVector3 isoRestBoost1 = IsoBar1X.BoostVector();
+			TLorentzVector PBachIso1 = KpX;
+			TLorentzVector PBachIso1INV = KmX;
+			PBachIso1.Boost(-1.0*isoRestBoost1);
+			PBachIso1INV.Boost(-1.0*isoRestBoost1);
+			
+			TVector3 zIso1 = IsoBar1X.Vect().Unit();
+			TVector3 yIso1 = (z.Cross(zIso1)).Unit();
+			TVector3 xIso1 = yIso1.Cross(zIso1);
+
+			TVector3 anglesIso1( (PBachIso1.Vect()).Dot(xIso1),
+       					     (PBachIso1.Vect()).Dot(yIso1), 
+					     (PBachIso1.Vect()).Dot(zIso1) );
+
+			TVector3 anglesIso1INV( (PBachIso1INV.Vect()).Dot(xIso1),
+						(PBachIso1INV.Vect()).Dot(yIso1), 
+						(PBachIso1INV.Vect()).Dot(zIso1) );
+
+			GDouble cosThetaBachIso1 = anglesIso1.CosTheta();
+			GDouble phiBachIso1 = anglesIso1.Phi();
+*/
+
+			////////////////////////////////////////////////////////////
+			// calculate decay angles in isobar rest (helicity) frame //
+			////////////////////////////////////////////////////////////
+
+			// KpKm restframe and decay
+			TVector3 isoRestBoost1 = IsoBar1X.BoostVector();
+			TLorentzVector PBachIso1 = KpX;
+			TLorentzVector PBachIso1INV = KmX;
+			PBachIso1.Boost(-1.0*isoRestBoost1);
+			PBachIso1INV.Boost(-1.0*isoRestBoost1);
+			
+			TVector3 zIso1 = IsoBar1X.Vect().Unit();
+			TVector3 yIso1 = (z.Cross(zIso1)).Unit();
+			TVector3 xIso1 = yIso1.Cross(zIso1);
+
+			TVector3 anglesIso1( (PBachIso1.Vect()).Dot(xIso1),
+       					     (PBachIso1.Vect()).Dot(yIso1), 
+					     (PBachIso1.Vect()).Dot(zIso1) );
+
+			TVector3 anglesIso1INV( (PBachIso1INV.Vect()).Dot(xIso1),
+						(PBachIso1INV.Vect()).Dot(yIso1), 
+						(PBachIso1INV.Vect()).Dot(zIso1) );
+
+			GDouble cosThetaBachIso1 = anglesIso1.CosTheta();
+			GDouble phiBachIso1 = anglesIso1.Phi();
+			
+			GDouble cosThetaDiffIso1 = anglesIso1.Theta() - anglesIso1INV.Theta();
+			GDouble phiDiffIso1 = anglesIso1.Phi() - anglesIso1INV.Phi();
+
+
+			// Pi0eta restframe and decay
+			TVector3 isoRestBoost2 = IsoBar2X.BoostVector();
+			TLorentzVector PBachIso2 = Pi0X;
+			TLorentzVector PBachIso2INV = etaX;
+			PBachIso2.Boost(-1.0*isoRestBoost2);
+			PBachIso2INV.Boost(-1.0*isoRestBoost2);
+			
+			TVector3 zIso2 = IsoBar2X.Vect().Unit();
+			TVector3 yIso2 = (z.Cross(zIso2)).Unit();
+			TVector3 xIso2 = yIso2.Cross(zIso2);
+
+			TVector3 anglesIso2( (PBachIso2.Vect()).Dot(xIso2),
+       					     (PBachIso2.Vect()).Dot(yIso2), 
+					     (PBachIso2.Vect()).Dot(zIso2) );
+
+			TVector3 anglesIso2INV( (PBachIso2INV.Vect()).Dot(xIso2),
+						(PBachIso2INV.Vect()).Dot(yIso2), 
+						(PBachIso2INV.Vect()).Dot(zIso2) );
+
+			GDouble cosThetaBachIso2 = anglesIso2.CosTheta();
+			GDouble phiBachIso2 = anglesIso2.Phi();
+			
+			GDouble cosThetaDiffIso2 = anglesIso2.Theta() - anglesIso2INV.Theta();
+			GDouble phiDiffIso2 = anglesIso2.Phi() - anglesIso2INV.Phi();
 
 			double genWeight = evt->weight();
 			
@@ -488,57 +624,50 @@ int main( int argc, char* argv[] ){
 					intenWVsM->Fill( resonance.M(), weightedInten );
 
 					M_isobar->Fill( isobar.M() );
-					M_recoil->Fill( recoil.M() );
-					
-					// calculate angular variables
-					TLorentzVector beam = evt->particle ( 0 );
-					TLorentzVector p1 = evt->particle ( 2 );
-					TLorentzVector target(0,0,0,ParticleMass(Proton));
-					
-					if(isBaryonResonance) // assume t-channel
-						t->Fill(-1*(beam-evt->particle(1)).M2());
-					else
-						t->Fill(-1*(recoil-target).M2());
 
-					E->Fill(beam.E());
-					EvsM->Fill(beam.E(),resonance.M());
-
-					TLorentzRotation resonanceBoost( -resonance.BoostVector() );
-					
-					TLorentzVector beam_res = resonanceBoost * beam;
-					TLorentzVector recoil_res = resonanceBoost * recoil;
-					TLorentzVector p1_res = resonanceBoost * p1;
-					
-					// normal to the production plane
-                                        TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();
-
-                                        // choose helicity frame: z-axis opposite recoil proton in rho rest frame
-                                        TVector3 z = -1. * recoil_res.Vect().Unit();
-                                        TVector3 x = y.Cross(z).Unit();
-                                        TVector3 angles( (p1_res.Vect()).Dot(x),
-                                                         (p1_res.Vect()).Dot(y),
-                                                         (p1_res.Vect()).Dot(z) );
-
-                                        double cosTheta = angles.CosTheta();
-                                        double phi = angles.Phi();
-
-					M_CosTheta->Fill( resonance.M(), cosTheta);
-					M_Phi->Fill( resonance.M(), phi);
+					M_CosTheta->Fill( resonance.M(), cosThetaBachX);
+					M_Phi->Fill( resonance.M(), phiBachX);
 					M_Phi_lab->Fill( resonance.M(), recoil.Phi());
-					
-					TVector3 eps(1.0, 0.0, 0.0); // beam polarization vector
-                                        double Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 
-                                        GDouble psi = phi - Phi;
-                                        if(psi < -1*PI) psi += 2*PI;
-                                        if(psi > PI) psi -= 2*PI;
-					
-					CosTheta_psi->Fill( psi, cosTheta);
+					for(int i=0; i<4; i++) {
+						M_CosTheta_Iso[i]->Fill( resonance.M(), cosThetaBachX_Iso[i]);
+						M_Phi_Iso[i]->Fill( resonance.M(), phiBachX_Iso[i]);
+
+						for(int j=0; j<3; j++) {
+	                                                M_CosTheta_Iso1sq[i][j]->Fill( resonance.M(), cosThetaBachIso1_Iso[i][j]);
+        	                                        M_Phi_Iso1sq[i][j]->Fill( resonance.M(), phiBachIso1_Iso[i][j]);
+
+							for(int k=0; k<2; k++) {
+                                                        	M_CosTheta_Iso2sq[i][j][k]->Fill( resonance.M(), cosThetaBachIso2_Iso[i][j][k]);
+                                                        	M_Phi_Iso2sq[i][j][k]->Fill( resonance.M(), phiBachIso2_Iso[i][j][k]);
+							}
+						}
+					}
+
+					M_CosTheta_Iso1->Fill( IsoBar1.M(), cosThetaBachIso1);
+					M_Phi_Iso1->Fill( IsoBar1.M(), phiBachIso1);
+					M_Phi_lab_Iso1->Fill( IsoBar1.M(), IsoBar1.Phi());
+					BeamE_CosTheta_Iso1->Fill(beam(3),cosThetaBachIso1);
+					M_CosTheta_Diff_Iso1->Fill( IsoBar1.M(), cosThetaDiffIso1);
+					M_Phi_Diff_Iso1->Fill( IsoBar1.M(), phiDiffIso1);
+					ThetaCorr_Iso1->Fill(anglesIso1.Theta(), anglesIso1INV.Theta());
+					PhiCorr_Iso1->Fill(anglesIso1.Phi(), anglesIso1INV.Phi());
+
+					M_CosTheta_Iso2->Fill( IsoBar2.M(), cosThetaBachIso2);
+					M_Phi_Iso2->Fill( IsoBar2.M(), phiBachIso2);
+					M_Phi_lab_Iso2->Fill( IsoBar2.M(), IsoBar2.Phi());
+					M_CosTheta_Diff_Iso2->Fill( IsoBar2.M(), cosThetaDiffIso2);
+					M_Phi_Diff_Iso2->Fill( IsoBar2.M(), phiDiffIso2);
+					ThetaCorr_Iso2->Fill(anglesIso2.Theta(), anglesIso2INV.Theta());
+					PhiCorr_Iso2->Fill(anglesIso2.Phi(), anglesIso2INV.Phi());
+
+					for(int ipart=1; ipart<6; ipart++) 
+						PVsTheta[ipart]->Fill(evt->particle(ipart).Theta(), evt->particle(ipart).Vect().Mag());
 					
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
 					
-					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes, centeredVertex );
+					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
 					rootOut.writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
@@ -567,14 +696,46 @@ int main( int argc, char* argv[] ){
 	intenW->Write();
 	intenWVsM->Write();
 	M_isobar->Write();
-	M_recoil->Write();
 	t->Write();
-	E->Write();
-	EvsM->Write();
 	CosTheta_psi->Write();
 	M_CosTheta->Write();
 	M_Phi->Write();
 	M_Phi_lab->Write();
+
+	for(int i=0; i<4; i++) {
+		M_CosTheta_Iso[i]->Write();
+		M_Phi_Iso[i]->Write();
+		
+		for(int j=0; j<3; j++) {
+         	       M_CosTheta_Iso1sq[i][j]->Write();
+                       M_Phi_Iso1sq[i][j]->Write();
+			
+		       for(int k=0; k<2; k++) {
+                      	     M_CosTheta_Iso2sq[i][j][k]->Write();
+                       	     M_Phi_Iso2sq[i][j][k]->Write();
+		       }
+	        }
+	}
+
+	M_CosTheta_Iso1->Write();
+	M_Phi_Iso1->Write();
+	M_Phi_lab_Iso1->Write();
+	M_CosTheta_Diff_Iso1->Write();
+	M_Phi_Diff_Iso1->Write();
+	M_CosTheta_Iso2->Write();
+	M_Phi_Iso2->Write();
+	M_Phi_lab_Iso2->Write();
+	BeamE_CosTheta_Iso1->Write();
+	M_CosTheta_Diff_Iso2->Write();
+	M_Phi_Diff_Iso2->Write();
+
+	ThetaCorr_Iso1->Write();
+	PhiCorr_Iso1->Write();
+	ThetaCorr_Iso2->Write();
+	PhiCorr_Iso2->Write();
+
+	for(int ipart=1; ipart<6; ipart++) 
+		PVsTheta[ipart]->Write();
 
 	diagOut->Close();
 	
