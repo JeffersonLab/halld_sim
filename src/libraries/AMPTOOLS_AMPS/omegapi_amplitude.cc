@@ -40,6 +40,7 @@ omegapi_amplitude::omegapi_amplitude( const vector< string >& args ):
 	else if (args.size() == (7+4+2)){//beam properties requires halld_sim
 		// BeamProperties configuration file
 		TString beamConfigFile = args[7+4+1].c_str();
+		cout<<beamConfigFile.Data()<<endl;
 		BeamProperties beamProp(beamConfigFile);
 		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
 		polAngle = beamProp.GetPolAngle();
@@ -50,8 +51,7 @@ omegapi_amplitude::omegapi_amplitude( const vector< string >& args ):
 			//cout << polFrac_vs_E->GetBinContent(i) << endl;
 		}
 	}
-	else
-	assert(0);
+	else assert(0);
 
     sign = atoi(args[0].c_str() );
     lambda_gamma = atoi(args[1].c_str() );
@@ -109,7 +109,7 @@ omegapi_amplitude::calcUserVars( GDouble** pKin, GDouble* userVars ) const
 	GDouble Pgamma=polFraction;//fixed beam polarization fraction
 	if(polAngle == -1)
 	Pgamma = 0.;//if beam is amorphous set polarization fraction to 0
-	else if(polFrac_vs_E!=NULL){
+	else if(0) { //polFrac_vs_E!=NULL){
 	//This part causes seg fault with 34 amplitudes or more with gen_amp and gen_omegapi.
 	//Not needed for fixed beam pol angle and frac.
 	int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
@@ -140,9 +140,9 @@ omegapi_amplitude::calcUserVars( GDouble** pKin, GDouble* userVars ) const
   double dalitz_s = rho.M2();//s=M2(pip pim)
   double dalitz_t = (rhos_pip+omegas_pi).M2();//t=M2(pip pi0)
   double dalitz_u = (rhos_pim+omegas_pi).M2();//u=M2(pim pi0)
-  double m3pi = (2*139.57018)+134.9766;
+  double m3pi = (2*0.13957018)+0.1349766;
   double dalitz_d = 2*omega.M()*( omega.M() - m3pi);
-  double dalitz_sc = (1/3)*( omega.M2() - rhos_pip.M2() - rhos_pim.M2() - omegas_pi.M2());
+  double dalitz_sc = (1/3.)*( omega.M2() - rhos_pip.M2() - rhos_pim.M2() - omegas_pi.M2());
   double dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
   double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
   double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
@@ -171,8 +171,8 @@ omegapi_amplitude::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
    GDouble dalitz_z = userVars[uv_dalitz_z];
    GDouble dalitz_sin3theta = userVars[uv_dalitz_sin3theta];
 
-   GDouble G = sqrt(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2) * dalitz_sin3theta
-			 + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2) * dalitz_sin3theta );
+   GDouble G = sqrt(1 + 2 * dalitz_alpha*dalitz_alpha * dalitz_z + 2 * dalitz_beta*dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta
+			 + 2 * dalitz_gamma*dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta*dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta );
 
    GDouble hel_c[3] = { c_0, c_1, c_2};
    
