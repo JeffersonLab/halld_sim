@@ -1,6 +1,16 @@
 #Run Compton PRIMEX true/false
 run: BOOL
 
+#Electron energy
+#11.6061 GeV (Be)
+#11.1671 GeV (He)
+Ee: 11.6061
+
+#Tagger file
+#primex_tagm.txt
+#primex_tagh.txt
+tagger_file: 
+
 #What is your shell
 #bash/tcsh
 shell: bash
