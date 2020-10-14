@@ -20,8 +20,12 @@ C
 	include 'kinem.cmn'
 C
         real*8 E0,Br(500),dEg
-	integer*8 i,imax,ipoint
+	integer*8 i,j,imax,ipoint
 	logical brem_init,cobrems
+C
+	integer ic
+	real tmin,tmax
+	real etag(400)
 C
 	integer      iargc
 C
@@ -36,7 +40,9 @@ C
 	character*20 str_ilast
 	character*20 str_eg
 	character*20 str_evtnb
+	character*20 str_chnb
 	character*80 infile
+	character*80 tagfile
 	character*80 outfile
 	character*80 binfile
 	character*80 hbkfile
@@ -45,25 +51,45 @@ C
 	real*8 csec1
 	real*8 csec2
 C
+	real*8 egam
+C
 	integer pos
 	save pos
 	data pos /1/
 C
-        if (iargc().NE.4) then
-	   print*, '===> USAGE: comprc inputfile outfile egam [GeV] evtnb <==='
+        if (iargc().NE.6) then
+	   print*, '===> USAGE: comprc inputfile outfile egam [GeV] evtnb tagfile chnb<==='
 	   stop
 	endif
 	call getarg(1,infile)
 	call getarg(2,outfile)
 	call getarg(3,str_eg)
 	call getarg(4,str_evtnb)
+	call getarg(5,tagfile)
+	call getarg(6,str_chnb)
 	read(str_Eg,*) eg
 	read(str_evtnb,*) evtnb
+	read(str_chnb,*) chnb
  1000	format(I3)
 C
 	call hlimit(iPawSize)
 	call init_parms(infile)
 C
+	if (chnb>0) then
+	print*,'tagfile ',tagfile,' ch nb ',chnb
+	   open(20, file=tagfile,form='formatted', status='old')
+	   do i = 1, chnb
+	      read(20,'(1(i6,1x),5(x,F15.6))')ic,tmin,tmax
+*       
+	      etag(i) = eg*(tmin+tmax)/2
+	      print*,'ic ', ic,' tmin ',tmin,' tmax ',tmax,' eg ',etag(i)
+	   enddo
+	   close(20)
+	endif
+	if (chnb==0) then
+	   etag(1) = eg 
+	endif
+C       
 	ipos = index(outfile,'.')
 	if (ipos.EQ.0) then
 	   fileroot = outfile(1:lenocc(outfile))
@@ -101,7 +127,9 @@ C
 	   write(*,*)'Filling in file: ',hbkfile(1:lenocc(hbkfile))
 	endif
 C
-	   print*, eg
+	do j = 1, chnb
+	   egam=etag(j)
+	   print*, egam
 C
 	   call bsinit
 C       
@@ -113,8 +141,8 @@ C       Cosine theta of the scattered photon
 	   xu(2) =  1.0d0
 C       
 C       Energy of the initial photon
-	   xl(1) = eg
-	   xu(1) = eg + dE
+	   xl(1) = egam
+	   xu(1) = egam + dE
 C
 	   call init_parms(infile)
 	   acc1 = acc(1)
@@ -127,7 +155,7 @@ C
 	   print*,' Value of integral = ',vint*0.389379, ' mb'
 	   print*,' Standard deviation = ',sigma*0.389379, ' mb'
 C
-	   write(ichtxt, *) xl(1), xu(1), vint*0.389379*(eg+0.5*dE)/dE, sigma, ievent-1
+	   write(ichtxt, *) xl(1), xu(1), vint*0.389379*(egam+0.5*dE)/dE, sigma, ievent-1
 C
 	   call spinfo(6)
 C
@@ -143,8 +171,8 @@ C
 C       Energy of the initial photon
 c	   xl(1) = Elow(iEbin)
 c	   xu(1) = Elow(iEbin) + dE
-	   xl(1) = eg
-	   xu(1) = eg + dE
+	   xl(1) = egam
+	   xu(1) = egam + dE
 C
 	   call init_parms(infile)
 	   acc1 = acc(1)
@@ -260,6 +288,8 @@ C
 	   call spinfo(6)
 
 	   endif
+C
+	enddo
 C       
 	close(ichtxt)
 	close(ichbin)

@@ -71,6 +71,7 @@ C
 	REAL*8 acc2
 	INTEGER*4 mxevnt
         REAL*8 eg
+	INTEGER*8 chnb
         REAL*8 evtnb
 C
 	REAL*8 xl
