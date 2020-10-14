@@ -228,19 +228,19 @@ int main( int argc, char* argv[] ){
       int nbofevt =  h_egam1->GetBinContent(i + 1);
       if (nbofevt > 0) {
 	if (m_workflow != "" && m_shell == "bash")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s test 1", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s test 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum, m_workflow.Data()));
 	else if (m_workflow != "" && m_shell == "tcsh")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s test 1", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s test 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum, m_workflow.Data()));
 	else if (m_workflow == "" && m_shell == "bash")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 1", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum));
 	else if (m_workflow == "" && m_shell == "tcsh")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 1", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum));
       }

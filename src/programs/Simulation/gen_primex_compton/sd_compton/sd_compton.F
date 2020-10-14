@@ -58,7 +58,7 @@ C
 	data pos /1/
 C
         if (iargc().NE.6) then
-	   print*, '===> USAGE: comprc inputfile outfile egam [GeV] evtnb tagfile <==='
+	   print*, '===> USAGE: comprc inputfile outfile egam [GeV] evtnb tagfile chnb<==='
 	   stop
 	endif
 	call getarg(1,infile)
@@ -75,11 +75,11 @@ C
 	call hlimit(iPawSize)
 	call init_parms(infile)
 C
-	print*,'tagfile ',tagfile,' ch nb ',chnb
 	if (chnb>0) then
+	print*,'tagfile ',tagfile,' ch nb ',chnb
 	   open(20, file=tagfile,form='formatted', status='old')
 	   do i = 1, chnb
-	      read(20,'(1(i6,1x),6(x,F8.6))')ic,tmin,tmax
+	      read(20,'(1(i6,1x),5(x,F15.6))')ic,tmin,tmax
 *       
 	      etag(i) = eg*(tmin+tmax)/2
 	      print*,'ic ', ic,' tmin ',tmin,' tmax ',tmax,' eg ',etag(i)
