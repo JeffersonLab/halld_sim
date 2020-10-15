@@ -1,6 +1,12 @@
 #Run Compton PRIMEX true/false
 run: BOOL
 
+#Options
+#0 use egam
+#1 use one tagger counter energy
+#Not 0 or 1, use all tagger counter energies
+option: 0
+
 #Electron energy
 #11.6061 GeV (Be)
 #11.1671 GeV (He)

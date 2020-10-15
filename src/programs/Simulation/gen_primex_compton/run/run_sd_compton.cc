@@ -70,6 +70,9 @@ int main(int argc, char * argv[]) {
   Double_t * beamLowE = ReadFile->GetConfig1Par("PhotonBeamLowEnergy");
   Double_t * beamHighE = ReadFile->GetConfig1Par("PhotonBeamHighEnergy");
   cout << " beamLowE " << beamLowE[0] << " GeV beamHighE " << beamHighE[0] << endl;
+  //Double_t * m_Ee = ReadFile->GetConfig1Par("Ee");  
+  //TString m_tagger_file = ReadFile->GetConfigName("tagger_file");
+  //TString m_option = ReadFile->GetConfigName("option");
   
   if (m_histoname == "FLUXNAME") 
     m_rootfile = "";
@@ -111,19 +114,19 @@ int main(int argc, char * argv[]) {
     if (nbofevt > 0) {
       //egam *= 1e3;
       if (strcmp(shell,"tcsh") == 0 && iswf == 0)
-	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d", 
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0 0", 
 			       //out_dir, (int) egam, nbofevt, run_nb_min, run_nb_max));
 			       out_dir, egam, nbofevt, run_nb_min, run_nb_max));
       else if (strcmp(shell,"tcsh") == 0 && iswf == 1)
-	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s", 
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s test 0 0", 
 			       //out_dir, (int) egam, nbofevt, run_nb_min, run_nb_max, workflow));
 			       out_dir, egam, nbofevt, run_nb_min, run_nb_max, workflow));
       else if (strcmp(shell,"bash") == 0 && iswf == 0)
-	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d", 
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0 0", 
 			       //out_dir, (int) egam, nbofevt, run_nb_min, run_nb_max));
 			       out_dir, egam, nbofevt, run_nb_min, run_nb_max));
       else if (strcmp(shell,"bash") == 0 && iswf == 1)
-	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s", 
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s test 0 0", 
 			       //out_dir, (int) egam, nbofevt, run_nb_min, run_nb_max, workflow));
 			       out_dir, egam, nbofevt, run_nb_min, run_nb_max, workflow));
       npts ++;
