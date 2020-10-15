@@ -59,6 +59,8 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
    TLorentzVector rhos_pip = kin->particle( 4 );//pi-
    TLorentzVector rhos_pim = kin->particle( 5 );//pi+
 
+   for(uint i=6; i<kin->particleList().size(); i++) recoil += kin->particle(i);
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   TLorentzVector rho = rhos_pip + rhos_pim;
   TLorentzVector omega = rho + omegas_pi;

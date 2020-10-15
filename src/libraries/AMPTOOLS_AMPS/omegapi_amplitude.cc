@@ -176,14 +176,14 @@ omegapi_amplitude::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 
    GDouble hel_c[3] = { c_0, c_1, c_2};
    
- complex <GDouble> amplitude = CZero;
+   complex <GDouble> amplitude = CZero;
  
    for (int lambda = -1; lambda <= 1; lambda++)//omega helicity
 	      {
 		  GDouble hel_amp = 0.0;
 
 		  for(int l = 0; l <= 2; l++)//partial waves (l).
-		  {//if ( (parity == -1 && l% 2 == 0) || (parity == 1 && l%2 != 0) ) continue;
+		  {//if ( (parity == -1 && l% 2 == 0) || (parity == 1 && l%2 != 0) ) continue;  
 		  
 		  hel_amp += hel_c[l] * clebschGordan(l, 1, 0, lambda, spin, lambda);
 		  }//loop over l
@@ -191,16 +191,12 @@ omegapi_amplitude::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 		  amplitude += wignerD( spin, spin_proj, lambda, cosTheta, Phi ) * hel_amp * wignerD( 1, lambda, 0, cosThetaH, PhiH ) * G;
 		}//loop over lambda
 		
+   // multiply by square root of photon spin density matrix in helicity basis
+   complex <GDouble> prefactor ( cos( lambda_gamma * prod_angle ), sin( lambda_gamma * prod_angle ));
+   if (sign == -1 && lambda_gamma == -1){amplitude *= -1*sqrt( ( 1 + (sign * polfrac) )/2 ) * prefactor;}
+   else{amplitude *= sqrt( ( 1 + (sign * polfrac) )/2 ) * prefactor;}
 
- complex <GDouble> prefactor ( cos( lambda_gamma * prod_angle ), sin( lambda_gamma * prod_angle ));
- 
- if (sign == -1 && lambda_gamma == -1){amplitude *= -1*sqrt( ( 1 + (sign * polfrac) )/2 ) * prefactor;}
- else{amplitude *= sqrt( ( 1 + (sign * polfrac) )/2 ) * prefactor;}
-
-//Instead of the vertices "scale" in configuration file.
-// if( (parity == +1 && ((spin+spin_proj)%2 == 0) ) || (parity == -1 && ((spin+spin_proj)%2 != 0) ) ){amplitude *= -1;} 
-
-return amplitude;
+   return amplitude;
 }
 
 void omegapi_amplitude::updatePar( const AmpParameter& par ){
