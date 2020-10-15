@@ -29,6 +29,8 @@ C
 C
 	integer      iargc
 C
+	integer opt
+C
 	integer*4    lenocc
 	external     lenocc
 C
@@ -41,6 +43,7 @@ C
 	character*20 str_eg
 	character*20 str_evtnb
 	character*20 str_chnb
+	character*20 str_opt
 	character*80 infile
 	character*80 tagfile
 	character*80 outfile
@@ -57,8 +60,11 @@ C
 	save pos
 	data pos /1/
 C
-        if (iargc().NE.6) then
-	   print*, '===> USAGE: comprc inputfile outfile egam [GeV] evtnb tagfile chnb<==='
+        if (iargc().NE.7) then
+	   print*, '===> USAGE: comprc inputfile outfile egam [GeV] evtnb tagfile chnb opt<==='
+	   print*, '            if opt=0 use egam'
+	   print*, '            if opt=1 use etag(chnb)'
+	   print*, '            if opt not 0 or 1 use all etag(i)'
 	   stop
 	endif
 	call getarg(1,infile)
@@ -67,16 +73,24 @@ C
 	call getarg(4,str_evtnb)
 	call getarg(5,tagfile)
 	call getarg(6,str_chnb)
+	call getarg(7,str_opt)
 	read(str_Eg,*) eg
 	read(str_evtnb,*) evtnb
 	read(str_chnb,*) chnb
+	read(str_opt,*) opt
  1000	format(I3)
 C
 	call hlimit(iPawSize)
 	call init_parms(infile)
 C
+	print*,'infile ',infile
+	print*,'outfile ',outfile
+	print*,'str_eg ',eg
+	print*,'str_evtnb ',evtnb
+	print*,'str_chnb ',chnb
+C
 	if (chnb>0) then
-	print*,'tagfile ',tagfile,' ch nb ',chnb
+	   print*,'tagfile ',tagfile,' ch nb ',chnb
 	   open(20, file=tagfile,form='formatted', status='old')
 	   do i = 1, chnb
 	      read(20,'(1(i6,1x),5(x,F15.6))')ic,tmin,tmax
@@ -86,8 +100,15 @@ C
 	   enddo
 	   close(20)
 	endif
-	if (chnb==0) then
+	if (opt==0) then
+	   chnb = 1
 	   etag(1) = eg 
+	   print*,'no tagfile ',tagfile,' ch nb ',chnb, ' eg ',eg
+	endif
+	if (opt==1) then
+	   etag(1) = etag(chnb)
+	   chnb = 1
+	   print*,'no tagfile ',tagfile,' ch nb ',chnb, ' eg ',eg
 	endif
 C       
 	ipos = index(outfile,'.')

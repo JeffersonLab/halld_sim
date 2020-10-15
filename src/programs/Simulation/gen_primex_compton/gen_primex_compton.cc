@@ -175,6 +175,7 @@ int main( int argc, char* argv[] ){
   TString m_shell = ReadFile->GetConfigName("shell");
   Double_t * m_Ee = ReadFile->GetConfig1Par("Ee");  
   TString m_tagger_file = ReadFile->GetConfigName("tagger_file");
+  TString m_option = ReadFile->GetConfigName("option");
 
   TFile * diagOut = new TFile( TString::Format("gen_primex_compton_runnb_%d.root", runNum), "recreate" );
   TH1F * h_egam1 = new TH1F("egam1", ";E_{#gamma} [GeV];Count/MeV", 12000, 0.0, 12.0);
@@ -206,21 +207,21 @@ int main( int argc, char* argv[] ){
 	tagger_channel_nb = 274;
 
       if (m_workflow != "" && m_shell == "bash")
-	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s %s %d", 
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s %s %d %d", 
 			       //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
-			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_workflow.Data(), m_tagger_file.Data(), tagger_channel_nb));
+			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_workflow.Data(), m_tagger_file.Data(), tagger_channel_nb, m_option[0]));
       else if (m_workflow != "" && m_shell == "tcsh")
-	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s %s %d", 
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s %s %d %d", 
 			       //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
-			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_workflow.Data(), m_tagger_file.Data(), tagger_channel_nb));
+			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_workflow.Data(), m_tagger_file.Data(), tagger_channel_nb, m_option[0]));
       else if (m_workflow == "" && m_shell == "bash")
-	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d %s %d", 
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d %s %d %d", 
 			       //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
-			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_tagger_file.Data(), tagger_channel_nb));
+			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_tagger_file.Data(), tagger_channel_nb, m_option[0]));
       else if (m_workflow == "" && m_shell == "tcsh")
-	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d %s %d", 
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d %s %d %d", 
 			       //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
-			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_tagger_file.Data(), tagger_channel_nb));
+			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_tagger_file.Data(), tagger_channel_nb, m_option[0]));
     }
     
     for (int i = 0; i < h_egam1->GetNbinsX(); i ++) { //Generate LHE file
@@ -228,19 +229,19 @@ int main( int argc, char* argv[] ){
       int nbofevt =  h_egam1->GetBinContent(i + 1);
       if (nbofevt > 0) {
 	if (m_workflow != "" && m_shell == "bash")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s test 0", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s test 0 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum, m_workflow.Data()));
 	else if (m_workflow != "" && m_shell == "tcsh")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s test 0", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s test 0 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum, m_workflow.Data()));
 	else if (m_workflow == "" && m_shell == "bash")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum));
 	else if (m_workflow == "" && m_shell == "tcsh")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum));
       }
