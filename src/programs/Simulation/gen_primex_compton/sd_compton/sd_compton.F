@@ -233,7 +233,7 @@ C
  100	      continue
 	   endif
 C       
-	   write(ichtxt, *) xl(1), xu(1), vint*0.389379*(eg+0.5*dE)/dE, sigma, ievent-1
+	   write(ichtxt, *) xl(1), xu(1), vint*0.389379*(egam+0.5*dE)/dE, sigma, ievent-1
 C
 	   call spinfo(6)
 C
@@ -260,8 +260,8 @@ C       Phi angle between two photons
 	   xu(4) = 2 * pi
 C       
 C       Energy of the initial photon
-	   xl(5) = eg
-	   xu(5) = eg + dE
+	   xl(5) = egam
+	   xu(5) = egam + dE
 C
 	   call init_parms(infile)
 	   acc1 = acc(3)
@@ -304,7 +304,7 @@ C
  200	      continue
 	   endif
 C
-	   write(ichtxt, *) xl(5), xu(5), vint*0.389379*(eg+0.5*dE)/dE, sigma, ievent-1
+	   write(ichtxt, *) xl(5), xu(5), vint*0.389379*(egam+0.5*dE)/dE, sigma, ievent-1
 C
 	   call spinfo(6)
 
