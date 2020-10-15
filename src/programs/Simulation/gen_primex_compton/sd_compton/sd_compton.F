@@ -222,7 +222,7 @@ c	      DO 100 WHILE (ievent.LE.mxevnt)
 		 call comp_kin
 		 call accept
 C       
-		 write(ichbin, rec=pos) 180-iEbin, sngl(Egamma), 
+		 write(ichbin, rec=pos) 180-j, sngl(Egamma), 
 	1	      sngl(Pe1(1)),sngl(Pe1(2)),sngl(Pe1(3)),
 	2	      sngl(Pg1(1)),sngl(Pg1(2)),sngl(Pg1(3)),
 	3	      sngl(Pg2(1)),sngl(Pg2(2)),sngl(Pg2(3))
@@ -293,7 +293,7 @@ C
 		 call hard_kin
 		 call accept
 C       
-		 write(ichbin, rec=pos) 180-iEbin, sngl(Egamma), 
+		 write(ichbin, rec=pos) 180-j, sngl(Egamma), 
 	1	      sngl(Pe1(1)),sngl(Pe1(2)),sngl(Pe1(3)),
 	2	      sngl(Pg1(1)),sngl(Pg1(2)),sngl(Pg1(3)),
 	3	      sngl(Pg2(1)),sngl(Pg2(2)),sngl(Pg2(3))
