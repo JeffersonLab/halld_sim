@@ -171,8 +171,8 @@ omegapi_amplitude::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
    GDouble dalitz_z = userVars[uv_dalitz_z];
    GDouble dalitz_sin3theta = userVars[uv_dalitz_sin3theta];
 
-   GDouble G = sqrt(1 + 2 * dalitz_alpha*dalitz_alpha * dalitz_z + 2 * dalitz_beta*dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta
-			 + 2 * dalitz_gamma*dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta*dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta );
+   GDouble G = sqrt(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta
+			 + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta );
 
    GDouble hel_c[3] = { c_0, c_1, c_2};
    
