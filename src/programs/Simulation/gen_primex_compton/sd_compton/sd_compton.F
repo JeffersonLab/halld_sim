@@ -91,14 +91,14 @@ C
 C
 	if (chnb>0) then
 	   print*,'tagfile ',tagfile,' ch nb ',chnb
-	   open(20, file=tagfile,form='formatted', status='old')
+	   open(24, file=tagfile,form='formatted', status='old')
 	   do i = 1, chnb
-	      read(20,'(1(i6,1x),5(x,F15.6))')ic,tmin,tmax
+	      read(24,'(1(i6,1x),5(x,F15.6))')ic,tmin,tmax
 *       
 	      etag(i) = eg*(tmin+tmax)/2
 	      print*,'ic ', ic,' tmin ',tmin,' tmax ',tmax,' eg ',etag(i)
 	   enddo
-	   close(20)
+	   close(24)
 	endif
 	if (opt==0) then
 	   chnb = 1
@@ -148,8 +148,8 @@ C
 	   write(*,*)'Filling in file: ',hbkfile(1:lenocc(hbkfile))
 	endif
 C
-	do j = 1, chnb
-	   egam=etag(j)
+	do iEbin = chnb, 1, -1
+	   egam=etag(iEbin)
 	   print*, egam
 C
 	   call bsinit
@@ -222,7 +222,7 @@ c	      DO 100 WHILE (ievent.LE.mxevnt)
 		 call comp_kin
 		 call accept
 C       
-		 write(ichbin, rec=pos) 180-j, sngl(Egamma), 
+		 write(ichbin, rec=pos) chnb-iEbin, sngl(Egamma), 
 	1	      sngl(Pe1(1)),sngl(Pe1(2)),sngl(Pe1(3)),
 	2	      sngl(Pg1(1)),sngl(Pg1(2)),sngl(Pg1(3)),
 	3	      sngl(Pg2(1)),sngl(Pg2(2)),sngl(Pg2(3))
@@ -293,7 +293,7 @@ C
 		 call hard_kin
 		 call accept
 C       
-		 write(ichbin, rec=pos) 180-j, sngl(Egamma), 
+		 write(ichbin, rec=pos) chnb-iEbin, sngl(Egamma), 
 	1	      sngl(Pe1(1)),sngl(Pe1(2)),sngl(Pe1(3)),
 	2	      sngl(Pg1(1)),sngl(Pg1(2)),sngl(Pg1(3)),
 	3	      sngl(Pg2(1)),sngl(Pg2(2)),sngl(Pg2(3))
