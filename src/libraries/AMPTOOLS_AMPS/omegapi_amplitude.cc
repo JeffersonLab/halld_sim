@@ -193,8 +193,8 @@ omegapi_amplitude::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 		
    // multiply by square root of photon spin density matrix in helicity basis
    complex <GDouble> prefactor ( cos( lambda_gamma * prod_angle ), sin( lambda_gamma * prod_angle ));
-   if (sign == -1 && lambda_gamma == -1){amplitude *= -1*sqrt( ( 1 + (sign * polfrac) )/2 ) * prefactor;}
-   else{amplitude *= sqrt( ( 1 + (sign * polfrac) )/2 ) * prefactor;}
+   if (sign == -1 && lambda_gamma == -1){amplitude *= -1*sqrt( ( 1 - (sign * polfrac) )/2 ) * prefactor;}
+   else{amplitude *= sqrt( ( 1 - (sign * polfrac) )/2 ) * prefactor;}
 
    return amplitude;
 }
