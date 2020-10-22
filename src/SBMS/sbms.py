@@ -1164,7 +1164,8 @@ def AddEvtGen(env):
 ##################################
 def AddUtilities(env):
 	AddCCDB(env)
-	pyincludes = str(subprocess.Popen(["python-config", "--includes" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
+	pythonconfig = env['PYTHONCONFIG'] 
+	pyincludes = str(subprocess.Popen([pythonconfig, "--includes" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
 	env.AppendUnique(CCFLAGS = pyincludes.rstrip().split())
 	# BOOST is required by cobrems and if it is not installed in /usr or /usr/local then we must get it from the environment
 	boost_root = os.getenv('BOOST_ROOT')
@@ -1175,7 +1176,6 @@ def AddUtilities(env):
 # miscellanous
 ##################################
 def gcc_major_version():
-	print('got to here')
 	outstr = str(subprocess.Popen(["gcc", "--version" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
 	tokens = outstr.split()
 	version = tokens[2]
