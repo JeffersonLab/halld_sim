@@ -798,7 +798,10 @@ def AddXERCES(env):
 ##################################
 def AddCERNLIB(env):
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore'])
-	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic', '-fallow-argument-mismatch'])
+	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic'])
+	gccver = gcc_major_version()
+	if gccver >= 9:
+		env.PrependUnique(FORTRANFLAGS = ['-fallow-argument-mismatch'])
 	#env.PrependUnique(FORTRANPATH = ['include'])
 	cern = os.getenv('CERN', '/usr/local/cern/PRO')
 	cern_level = os.getenv('CERN_LEVEL', '2006')
@@ -1168,3 +1171,15 @@ def AddUtilities(env):
 	if boost_root != None:
 		env.AppendUnique(CPPPATH = [boost_root + "/include"])
 
+##################################
+# miscellanous
+##################################
+def gcc_major_version():
+	print('got to here')
+	outstr = str(subprocess.Popen(["gcc", "--version" ], stdout=subprocess.PIPE).communicate()[0], 'utf-8')
+	tokens = outstr.split()
+	version = tokens[2]
+	vtokens = version.split('.')
+	version_major_str = vtokens[0]
+	major_version = int(version_major_str)
+	return major_version
