@@ -800,7 +800,7 @@ def AddCERNLIB(env):
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore'])
 	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic'])
 	gccver = gcc_major_version()
-	if gccver >= 9:
+	if gccver >= 10:
 		env.PrependUnique(FORTRANFLAGS = ['-fallow-argument-mismatch'])
 	#env.PrependUnique(FORTRANPATH = ['include'])
 	cern = os.getenv('CERN', '/usr/local/cern/PRO')
