@@ -7,7 +7,6 @@
 #include "EvtEtaDalitz_GlueX.h"
 #include "EvtEtaDalitz_3Pi0_GlueX.h"
 #include "EvtEtaPiPiGamma.h"
-#include "EvtEtaPiPiGamma_GlueX.h"
 
 namespace GlueX_EvtGen 
 {
