@@ -99,9 +99,10 @@ positive.push_back(wave("G1+", 4, 1));
       ws[i].waves[j].setIndex(lastIdx);
     
 
-
-  size_t LMAX,MMAX;    //highest wave
-  Biggest_lm(ws, &LMAX, &MMAX);
+  //LMAX=2*l_max (l_max is highest wave)
+  //We consider M values form 0 to L, as H(LM)=H(L-M) due to parity invariance
+  size_t LMAX;    //highest wave
+  Biggest_lm(ws, &LMAX);
 
 
   double step = ( highMass - lowMass ) / kNumBins;
@@ -112,7 +113,7 @@ positive.push_back(wave("G1+", 4, 1));
 
     outfile <<"M"<<"\t"<<"t"; //First line contains names of variables, first two colomns correspond to M(invariant mass) and t
 
-    for (int L = 0; L<= pow(LMAX,1); L++) {// the rest of the colomn correspond to moments
+    for (int L = 0; L<= int(LMAX); L++) {// the rest of the colomn correspond to moments
       for (int M = 0; M<= L; M++) {
     
 	outfile<<"\t"<<"H0_"<<L<<M<<"\t"<<"H0_"<<L<<M<<"uncert.";

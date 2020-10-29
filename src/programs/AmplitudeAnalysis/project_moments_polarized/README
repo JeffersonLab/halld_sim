@@ -11,3 +11,12 @@ Note that one needs to set the waveset used in the fitting in the project_moment
 
 The function that calculated the moments is defined in moment.cpp and is called
 decomposeMoment(int alpha ,double L, double M, const waveset& ws, const vector<double>& x). First argument alpha takes values 0,1,2,3 depending on the moment one wants to obtain. L and M for the moment to be calculated, ws waveset and the vector of the real and imaginary components of the waves from fit corresponding to the waves in the waveset. 
+
+
+
+The properties of moments of angular distributions are
+
+1. If the maximum spin of the of the waves in the waveset is l_max, as intensity is ~l_max^2 , L_max=2*l_max
+2. H0 and H1 are purely real, H2,H3 are purely imaginary
+3. H3 are not accesible for linearly polarized photon beam
+4. Parity invariance tells us that H(LM)=H(L-M) so in calculations we consider only M >=0

@@ -26,20 +26,20 @@
 
 //using namespace std;
 
-void Biggest_lm(const waveset& ws, size_t* maxL, size_t* maxM)
+void Biggest_lm(const waveset& ws, size_t* maxL)
 {
-  // Find maximum L, M.
+  // Find maximum L.
   *maxL=0;
-  *maxM=0;
+ 
   for (size_t iWs = 0; iWs < ws.size(); iWs++)
     {
       const vector<wave>& w = ws[iWs].waves;
       for (size_t iW = 0; iW < w.size(); iW++)
 	{
 	  *maxL = std::max(size_t(w[iW].l), *maxL);
-	  *maxM = std::max(size_t(w[iW].m), *maxM);
 	}
     }
+  *maxL=2*(*maxL);
 }
 
 
