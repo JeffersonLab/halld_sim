@@ -1859,7 +1859,7 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
   double m_rho_sq=m_rho*m_rho;
  
   // Coupling constants 
-  double f=100.;  // scale factor to account for normalization of regge factor 
+  double f=1.;  // scale factor to account for normalization of regge factor 
   // to data?? 
   double gT_sq=f*(2./3.)*150.; // GeV^2
   if (two_particles==(7+17)){
@@ -2466,65 +2466,293 @@ void CreateHistograms(string beamConfigFile){
   cobrems_vs_E = (TH1D*)beamProp.GetFlux();
 }
 
+double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
+		       vector<Particle_t>&particle_types,
+		       vector<TLorentzVector>&particle_vectors,
+		       double phase[],int *generate
+		       ){
+  // Decay particles
+  double m1=ParticleMass(particle_types[0]);
+  double m2=ParticleMass(particle_types[1]);
+  bool got_pipi=(fabs(m1-m2)>0.01)?false:true;
+  double m1sq=m1*m1;
+  double m2sq=m2*m2;
+  double m1sq_plus_m2sq=m1sq+m2sq;
+
+  // Coupling constants for f0(500)
+  double gsq_rho_f500_gamma=0.22;
+  double gsq_omega_f500_gamma=(1./9)*gsq_rho_f500_gamma;
+  // Coupling constants: Donnachie and Kalashnikova (2008) scenario IV
+  double gsq_rho_S_gamma=0.02537;
+  double gsq_omega_S_gamma=0.2283;
+  double gsq_rho_f1370_gamma=0.094;
+  double gsq_omega_f1370_gamma=(1./9.)*gsq_rho_f1370_gamma;
+  double gsq_rho_a1450_gamma=0.0054;
+  double gsq_omega_a1450_gamma=9.*gsq_rho_a1450_gamma;
+  
+  //Resonance parameters 
+  double ReB=0.,ImB=0,gR=0.;
+  double gR_T=0., ImB_T=0., ReB_T=0.;
+  double gRf500=0.,ImBf500=0.,ReBf500=0.; 
+  double gRf1370=0.,ImBf1370=0.,ReBf1370=0.;  
+  double gRa1450=0.,ImBa1450=0.,ReBa1450=0.;
+  
+  // Intialize cross section
+  double xsec=0.;
+  
+  // f0(600)
+  if (got_pipi && generate[0]){
+    double m_Sigma=0.6;
+    double M_sq_R=m_Sigma*m_Sigma; 
+    width=1.0;
+    ReBf500=M_sq_R-M_sq;
+    double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
+    double temp=4.*m1sq*m2sq;
+    double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
+		   /(4.*M_sq_R));
+    double partial_width=width/3.;
+    gRf500=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
+    ImBf500=width*sqrt(M_sq);
+    
+    xsec+=CrossSection(m1,m2,M_sq,s,t,gRf500,ReBf500,ImBf500,
+		       gsq_rho_f500_gamma,gsq_omega_f500_gamma);
+    
+  }
+  // f0(1370)
+  if (got_pipi && generate[2]){
+    double m_f1370=1.3; // Bugg
+    double M_sq_R=m_f1370*m_f1370; 
+    width=0.23;  // from Bugg
+    ReBf1370=M_sq_R-M_sq;
+    double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
+    double temp=4.*m1sq*m2sq;
+    double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
+		   /(4.*M_sq_R));
+    // partial width from Bugg(2007):arxiv.org/pdf/0706.1341.pdf, table 2
+    double partial_width=0.325/3.;
+    gRf1370=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
+    ImBf1370=width*sqrt(M_sq);
+    
+    xsec+=CrossSection(m1,m2,M_sq,s,t,gRf1370,ReBf1370,ImBf1370,
+		       gsq_rho_f1370_gamma,gsq_omega_f1370_gamma);
+    
+  }  
+  // Interference between f0(500) and f0(1370)
+  if (got_pipi && generate[0] && generate[2]){
+    xsec+=CrossSection(m1,m2,M_sq,s,t,gRf1370,ReBf1370,ImBf1370,
+		       gsq_rho_f1370_gamma,
+		       gsq_omega_f1370_gamma,true,gRf500,ReBf500,ImBf500,
+		       gsq_rho_f500_gamma,gsq_omega_f500_gamma,
+		       phase[9]);
+  }	
+  
+  // a0(1450)
+  if (got_pipi==false && generate[2]){
+    double m_a1450=1.448;// Bugg:arXiv:0808.2706v2,Table 2
+    double M_sq_R=m_a1450*m_a1450; 
+    width=0.192; // Bugg:arXiv:0808.2706v2,Table 2
+    ReBa1450=M_sq_R-M_sq;
+    double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
+    double temp=4.*m1sq*m2sq;
+    double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
+		   /(4.*M_sq_R));	
+    double partial_width=0.0237;// Bugg:arXiv:0808.2706v2,Table 2
+    gRa1450=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
+    ImBa1450=width*sqrt(M_sq);
+    
+    xsec+=CrossSection(m1,m2,M_sq,s,t,gRa1450,ReBa1450,ImBa1450,
+		       gsq_rho_a1450_gamma,gsq_omega_a1450_gamma);
+    
+  }
+  // f0(980)/a0(980)
+  if (generate[1]){
+    double my_msq_R=0.9783*0.9783;
+    if (got_pipi){ // f0(980)	
+      double MRsq_minus_m1sq_m2sq=my_msq_R-m1sq_plus_m2sq;	
+      double temp=4.*m1sq*m2sq;
+      double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
+		     /(4.*my_msq_R));
+      double partial_width=0.05; //?? // guess from note in pdg
+      gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
+      gsq_rho_S_gamma=0.159; // GeV^-2
+      gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
+    }
+    else{ // a0(980)  
+      my_msq_R=0.9825*0.9825;	
+      double MRsq_minus_m1sq_m2sq=my_msq_R-m1sq_plus_m2sq;	
+      double temp=4.*m1sq*m2sq;
+      double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
+			 /(4.*my_msq_R));
+      double partial_width=0.06; //?? guess from note in pdg
+      gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
+      gsq_rho_S_gamma=0.02537;
+      gsq_omega_S_gamma=9.*gsq_rho_S_gamma;
+    } 
+    GetResonanceParameters(m1,m2,M_sq,my_msq_R,ReB,ImB);
+    xsec+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
+		       gsq_omega_S_gamma);
+    // Interference between f0(1370) and f0(980)
+    if (got_pipi && generate[2]){
+      xsec+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
+			 gsq_omega_S_gamma,true,gRf1370,ReBf1370,ImBf1370,
+			 gsq_rho_f1370_gamma,gsq_omega_f1370_gamma,
+			 phase[1]);
+    }	
+    // Interference between f0(500) and f0(980)
+    if (got_pipi && generate[0]){
+      xsec+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
+			 gsq_omega_S_gamma,true,gRf500,ReBf500,ImBf500,
+			 gsq_rho_f500_gamma,gsq_omega_f500_gamma,
+			 phase[0]);
+    }	
+    // Interference between a0(1450) and a0(980)
+    if (got_pipi==false && generate[2]){
+      xsec+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
+			 gsq_omega_S_gamma,true,gRa1450,ReBa1450,ImBa1450,
+			 gsq_rho_a1450_gamma,gsq_omega_a1450_gamma,
+			 phase[1]);
+    }
+  }
+  if (generate[4]){ // non-resonant background
+    xsec+=BackgroundCrossSection(beam,particle_types,particle_vectors);
+
+    if (generate[1]){ // interference with resonant signal
+      xsec+=InterferenceCrossSection(beam,particle_types,particle_vectors,
+				     gR,ReB,ImB,gsq_rho_S_gamma,
+				     gsq_omega_S_gamma,phase[3]);
+    }
+    if (got_pipi){
+      if (generate[0]){ // interference with f0(500)
+	xsec+=InterferenceCrossSection(beam,particle_types,particle_vectors,
+				       gRf500,ReBf500,ImBf500,
+				       gsq_rho_f500_gamma,
+				       gsq_omega_f500_gamma,phase[7]);
+      }  
+      if (generate[2]){ // interference with f0(1370)
+	xsec+=InterferenceCrossSection(beam,particle_types,particle_vectors,
+				       gRf1370,ReBf1370,ImBf1370,
+				       gsq_rho_f1370_gamma,
+				       gsq_omega_f1370_gamma,phase[8]);
+      }
+    }
+    else{ 
+      if (generate[2]){ // interference with a0(1450)
+	xsec+=InterferenceCrossSection(beam,particle_types,particle_vectors,
+				       gRa1450,ReBa1450,ImBa1450,
+				       gsq_rho_a1450_gamma,
+				       gsq_omega_a1450_gamma,0.);
+      }
+      
+    }
+  }
+  if (generate[3]){ // Tensor background
+    double m_T=1.275;	
+    double Gamma_T=0.185;
+    if (!got_pipi){
+      Gamma_T=0.107;
+      m_T=1.3183;
+    }
+    double M_sq_R_T=m_T*m_T; 
+    ReB_T=M_sq_R_T-M_sq;
+    double Msq_minus_m1sq_m2sq=M_sq-m1sq_plus_m2sq;
+    double MRsq_minus_m1sq_m2sq=M_sq_R_T-m1sq_plus_m2sq;
+    double temp=4.*m1sq*m2sq;
+    double M=sqrt(M_sq);
+    double q_over_qR
+      =m_T/M*sqrt((Msq_minus_m1sq_m2sq*Msq_minus_m1sq_m2sq-temp)
+		  /(MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp));
+    double q_over_qR_5=pow(q_over_qR,5);
+    if (got_pipi){ // f2(1270)  
+      double partial_width=0.85*(1./3.)*M_sq_R_T*q_over_qR_5/M_sq;
+      gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width*q_over_qR);
+      ImB_T=M*Gamma_T*(0.85*q_over_qR_5*M_sq_R_T/M_sq+0.15);
+    }
+    else { // a2(1320)
+      double partial_width=0.155*M_sq_R_T*q_over_qR_5/M_sq;
+      gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width*q_over_qR);
+      ImB_T=M*Gamma_T*(0.145*q_over_qR_5*M_sq_R_T/M_sq+0.855);
+    }
+    xsec+=TensorCrossSection(beam,particle_types,particle_vectors,
+			     gR_T,ReB_T,ImB_T);
+    if (generate[1]){ // interference with a0(980)/f0(980)
+      xsec+=TensorScalarInterference(beam,particle_types,particle_vectors,
+				     gR_T,ReB_T,ImB_T,gR,ReB,ImB,
+				     sqrt(gsq_omega_S_gamma),
+				     sqrt(gsq_rho_S_gamma),phase[2]);
+    }
+    // interference with f0(600)
+    if (got_pipi && generate[0]){
+      xsec+=TensorScalarInterference(beam,particle_types,particle_vectors,
+				     gR_T,ReB_T,ImB_T,gRf500,ReBf500,
+				     ImBf500,
+				     sqrt(gsq_omega_f500_gamma),
+				     sqrt(gsq_rho_f500_gamma),phase[5]);
+    }
+    // interference with f0(1370)
+    if (got_pipi && generate[2]){
+      xsec+=TensorScalarInterference(beam,particle_types,particle_vectors,
+				     gR_T,ReB_T,ImB_T,gRf1370,ReBf1370,
+				     ImBf1370,
+				     sqrt(gsq_omega_f1370_gamma),
+				     sqrt(gsq_rho_f1370_gamma),phase[6]);
+    }	
+    // interference with a0(1450)
+    if (got_pipi==false && generate[2]){
+      xsec+=TensorScalarInterference(beam,particle_types,particle_vectors,
+				     gR_T,ReB_T,ImB_T,gRa1450,ReBa1450,
+				     ImBa1450,
+				     sqrt(gsq_omega_a1450_gamma),
+				     sqrt(gsq_rho_a1450_gamma),phase[6]);
+    }
+    
+    if (generate[4]){ //interference with background wave
+      xsec+=TensorBackgroundInterference(beam,particle_types,
+					 particle_vectors,
+					 gR_T,ReB_T,ImB_T,phase[4]);
+    } 
+    
+  }
+
+  return xsec;
+}
+  
 
 // Create a graph of the cross section dsigma/dt as a function of -t
-void GraphCrossSection(double m1,double m2){
+void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
+		       int *generate){
   // beam energy in lab
   double Egamma=cobrems_vs_E->GetBinLowEdge(1); // get from CobremsGenerator histogram;
   TLorentzVector beam(0,0,Egamma,Egamma);
   TLorentzVector target(0,0,0,m_p);
+  vector<TLorentzVector>particle_vectors(3);
+
+   // Velocity of the cm frame with respect to the lab frame
+  TVector3 v_cm=(1./(Egamma+m_p))*beam.Vect();
 
   // CM energy
   double s=m_p*(m_p+2.*Egamma);
   double Ecm=sqrt(s);
- 
-  // Coupling constants
-  double gsq_rho_S_gamma=0.02537;
-  double gsq_omega_S_gamma=0.2283;
   
-  // Parameters for integration over line shape	  
+  // Parameters for integration over line shape
+  double m1=ParticleMass(particle_types[0]);
+  double m2=ParticleMass(particle_types[1]);
   double m1_plus_m2=m1+m2;
-  double m1sq=m1*m1;
-  double m2sq=m2*m2;
-  double m1sq_plus_m2sq=m1sq+m2sq;
+  double m1_minus_m2=m1-m2;
+  double m1_plus_m2_sq=m1_plus_m2*m1_plus_m2;
+  double m1_minus_m2_sq=m1_minus_m2*m1_minus_m2;
   double m_max=m_p*(sqrt(1.+2.*Egamma/m_p)-1.);
   double dmrange=m_max-m1_plus_m2;
   double dm=dmrange/1000.;
-  double gR=0.,ImB=0,ReB=0; // resonance parameters
-  bool got_pipi=(fabs(m1-m2)>0.01)?false:true;
-  double M_sq_R=0.;
-  if (got_pipi){ // f0(980)
-    M_sq_R=0.9783*0.9783;
-    double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;	
-    double temp=4.*m1sq*m2sq;
-    double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-		   /(4.*M_sq_R));
-    double partial_width=0.05; //?? // guess from note in pdg
-    gR=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
-
-    gsq_rho_S_gamma=0.159; // GeV^-2
-    gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
-  }
-  else{ // a0(980)
-    M_sq_R=0.9825*0.9825;
-    double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;	
-    double temp=4.*m1sq*m2sq;
-    double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-		   /(4.*M_sq_R));
-    double partial_width=0.06; //?? // guess from note in pdg
-    gR=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
-    gsq_rho_S_gamma=0.02537;
-    gsq_omega_S_gamma=9.*gsq_rho_S_gamma;
-  } 
 
   // Momenta of incoming photon and outgoing S and proton in cm frame
   double p_gamma=(s-m_p_sq)/(2.*Ecm);
-  double E_S=(s+M_sq_R-m_p_sq)/(2.*Ecm);
-  double p_S=sqrt(E_S*E_S-M_sq_R);
+  double M_sq=0.980*0.980; // f0(980)/a0(980)
+  double E_S=(s+M_sq-m_p_sq)/(2.*Ecm);
+  double p_S=sqrt(E_S*E_S-M_sq);
   
   // Momentum transfer t
   double p_diff=p_gamma-p_S;
-  double t0=M_sq_R*M_sq_R/(4.*s)-p_diff*p_diff;
+  double t0=M_sq*M_sq/(4.*s)-p_diff*p_diff;
   
   // differential cross section
   double sum=0.;
@@ -2535,18 +2763,39 @@ void GraphCrossSection(double m1,double m2){
     double theta_cm=M_PI*double(k)/1000.;
     double sin_theta_over_2=sin(0.5*theta_cm);
     double t=t0-4.*p_gamma*p_S*sin_theta_over_2*sin_theta_over_2;
-    double xsec=0.;
-    for (unsigned int j=0;j<1000;j++){
-      double mass=m1_plus_m2+dm*double(j);
-      double M_sq=mass*mass;
-      GetResonanceParameters(m1,m2,M_sq,M_sq_R,ReB,ImB);
-      xsec+=dm*CrossSection(m1,m2,M_sq_R,s,t,gR,ReB,ImB,gsq_rho_S_gamma,gsq_omega_S_gamma);
-    }
-    t_array[k]=-t;
-    xsec_array[k]=4.*M_PI*1000.*xsec;
 
-    sum-=4.*M_PI*1000.*xsec*(t-t_old);
-    t_old=t;
+    // Four-momentum of the S in the CM frame
+    double phi_cm=0.;
+    double pt=p_S*sin(theta_cm);
+    TLorentzVector S4(pt*cos(phi_cm),pt*sin(phi_cm),p_S*cos(theta_cm),
+		      sqrt(p_S*p_S+M_sq));
+    //S4.Print();
+    
+    //Boost the S 4-momentum into the lab
+    S4.Boost(v_cm);
+    
+    // Compute the 4-momentum for the recoil proton
+    particle_vectors[2]=beam+target-S4;
+    particle_vectors[2].Print();
+
+    // Decay particles
+    double p_rest=sqrt((M_sq-m1_plus_m2_sq)*(M_sq-m1_minus_m2_sq))/(2.*M_sq);
+    double theta_rest=0.;
+    double phi_rest=0.;
+    double pt_rest=p_rest*sin(theta_rest);
+    particle_vectors[0].SetXYZT(pt_rest*cos(phi_rest),pt*sin(phi_rest),
+				p_rest*cos(theta_rest),
+				sqrt(p_rest*p_rest+m1*m1));
+    particle_vectors[1].SetVect(-particle_vectors[0].Vect());
+    particle_vectors[1].SetT(sqrt(p_rest*p_rest+m2*m2));
+    TVector3 v_S=(1./S4.E())*S4.Vect();
+    particle_vectors[0].Boost(v_S);
+    particle_vectors[1].Boost(v_S);
+
+    double xsec=GetCrossSection(s,t,M_sq,beam,particle_types,particle_vectors,
+				phase,generate);
+    t_array[k]=-t;
+    xsec_array[k]=xsec;
   }  
   
   double m_array[1000];
@@ -2554,104 +2803,39 @@ void GraphCrossSection(double m1,double m2){
   for (unsigned int j=0;j<1000;j++){
     double mass=m1_plus_m2+dm*double(j);
     m_array[j]=mass;
-    double M_sq=mass*mass;
-    GetResonanceParameters(m1,m2,M_sq,M_sq_R,ReB,ImB);
+    M_sq=mass*mass;
+    E_S=(s+M_sq-m_p_sq)/(2.*Ecm);
+    p_S=sqrt(E_S*E_S-M_sq);
+
+    // Momentum transfer t
+    double p_diff=p_gamma-p_S;
+    double t0=M_sq*M_sq/(4.*s)-p_diff*p_diff;
     t_old=t0;
+    
     double xsec=0.;
     for (unsigned int k=0;k<1000;k++){
       double theta_cm=M_PI*double(k)/1000.;
       double sin_theta_over_2=sin(0.5*theta_cm);
       double t=t0-4.*p_gamma*p_S*sin_theta_over_2*sin_theta_over_2;
-      xsec+=(t_old-t)*CrossSection(m1,m2,M_sq_R,s,t,gR,ReB,ImB,gsq_rho_S_gamma,gsq_omega_S_gamma);
+
+      // Four-momentum of the S in the CM frame
+      double phi_cm=0.;
+      double pt=p_S*sin(theta_cm);
+      TLorentzVector S4(pt*cos(phi_cm),pt*sin(phi_cm),p_S*cos(theta_cm),
+			sqrt(p_S*p_S+M_sq));
+      // S4.Print();
+      
+      //Boost the S 4-momentum into the lab
+      S4.Boost(v_cm);
+
+       // Compute the 4-momentum for the recoil proton
+      particle_vectors[2]=beam+target-S4;
+
+      xsec+=(t_old-t)*GetCrossSection(s,t,M_sq,beam,particle_types,
+				      particle_vectors,phase,generate);
       t_old=t;
     }
-    xsec_array2[j]=4.*M_PI*1000.*xsec;
-  }
-  double xsec_array3[1000];
-  if (got_pipi==true){
-    gsq_rho_S_gamma=0.094;
-    gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
-  }
-  else{
-    gsq_rho_S_gamma=0.0054;
-    gsq_omega_S_gamma=9.*gsq_rho_S_gamma;
-  }
-  for (unsigned int j=0;j<1000;j++){
-    double mass=m1_plus_m2+dm*double(j);
-    m_array[j]=mass;
-    double M_sq=mass*mass;
-    if (got_pipi==false){ // a0(1450)
-      double m_a1450=1.474;
-      M_sq_R=m_a1450*m_a1450; 
-      width=0.265;
-      ReB=M_sq_R-M_sq;
-      double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
-      double temp=4.*m1sq*m2sq;
-      double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-		     /(4.*M_sq_R));
-      double partial_width=0.02*width;// estimate using pdg(2016)
-      gR=sqrt(8.*M_PI*M_sq_R*partial_width/qR);	
-      ImB=width*sqrt(M_sq);
-    }
-    else{ // f0(1370)
-      double m_f1370=1.25 ; //guess
-      M_sq_R=m_f1370*m_f1370; 
-      width=0.5; // estimate, top of PDG range
-      ReB=M_sq_R-M_sq;
-      double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
-      double temp=4.*m1sq*m2sq;
-      double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-		     /(4.*M_sq_R));
-      double partial_width=0.26/3.*width;// estimate using pdg(2016)
-      gR=sqrt(8.*M_PI*M_sq_R*partial_width/qR);	
-      ImB=width*sqrt(M_sq);
-    }
-    t_old=t0;
-    double xsec=0.;
-    for (unsigned int k=0;k<1000;k++){
-      double theta_cm=M_PI*double(k)/1000.;
-      double sin_theta_over_2=sin(0.5*theta_cm);
-      double t=t0-4.*p_gamma*p_S*sin_theta_over_2*sin_theta_over_2;
-      xsec+=(t_old-t)*CrossSection(m1,m2,M_sq_R,s,t,gR,ReB,ImB,gsq_rho_S_gamma,gsq_omega_S_gamma);
-      t_old=t;
-    }
-    xsec_array3[j]=4.*M_PI*1000.*xsec;
-  }
-  if (got_pipi){
-    // f0(500)
-    gsq_rho_S_gamma=0.1;
-    gsq_omega_S_gamma=(1./9)*gsq_rho_S_gamma;
-    double xsec_array4[1000];
-    for (unsigned int j=0;j<1000;j++){
-      double mass=m1_plus_m2+dm*double(j);
-      m_array[j]=mass;
-      double M_sq=mass*mass;
-      double mf500=0.6;
-      M_sq_R=mf500*mf500; 
-      width=1.;
-      ReB=M_sq_R-M_sq;
-      double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
-      double temp=4.*m1sq*m2sq;
-      double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-		     /(4.*M_sq_R));
-      double partial_width=width/3.;
-      gR=sqrt(8.*M_PI*M_sq_R*partial_width/qR);	
-      ImB=width*sqrt(M_sq);
-      t_old=t0;
-      double xsec=0.;
-      for (unsigned int k=0;k<1000;k++){
-	double theta_cm=M_PI*double(k)/1000.;
-	double sin_theta_over_2=sin(0.5*theta_cm);
-	double t=t0-4.*p_gamma*p_S*sin_theta_over_2*sin_theta_over_2;
-	xsec+=(t_old-t)*CrossSection(m1,m2,M_sq_R,s,t,gR,ReB,ImB,gsq_rho_S_gamma,gsq_omega_S_gamma);
-	t_old=t;
-      }
-      xsec_array4[j]=4.*M_PI*1000.*xsec;
-    }
-    TGraph *Gxsec4=new TGraph(1000,m_array,xsec_array4);
-    Gxsec4->GetXaxis()->SetTitle("M [GeV]");
-    Gxsec4->GetYaxis()->SetTitle("d#sigma/dM [nb/GeV]");
-    Gxsec4->Write("Cross section d#sigma/dM");
+    xsec_array2[j]=xsec;
   }
 
   TGraph *Gxsec=new TGraph(1000,t_array,xsec_array);
@@ -2662,12 +2846,8 @@ void GraphCrossSection(double m1,double m2){
   Gxsec2->GetXaxis()->SetTitle("M [GeV]");
   Gxsec2->GetYaxis()->SetTitle("d#sigma/dM [nb/GeV]");
   Gxsec2->Write("Cross section d#sigma/dM"); 
-  TGraph *Gxsec3=new TGraph(1000,m_array,xsec_array3);
-  Gxsec3->GetXaxis()->SetTitle("M [GeV]");
-  Gxsec3->GetYaxis()->SetTitle("d#sigma/dM [nb/GeV]");
-  Gxsec3->Write("Cross section d#sigma/dM");
  
-  cout << "Total a0(980) or f0(980) cross section at " << Egamma << " GeV = "<< sum 
+  cout << "Total cross section at " << Egamma << " GeV = "<< sum 
        << " nano-barns"<<endl;
 }
 
@@ -2772,7 +2952,7 @@ int main(int narg, char *argv[])
   CreateHistograms(beamConfigFile);
 
   // Make a TGraph of the cross section at a fixed beam energy
-  GraphCrossSection(decay_masses[0],decay_masses[1]);
+  GraphCrossSection(particle_types,phase,generate);
 
   // Set up some variables for cross section calculation
   // masses of decay particles
@@ -2807,22 +2987,6 @@ int main(int narg, char *argv[])
 
     // vertex position at target
     float vert[4]={0.,0.,0.,0.};
-
-    // masses of decay particles
-    double m1sq=m1*m1;
-    double m2sq=m2*m2;
-    double m1sq_plus_m2sq=m1sq+m2sq;
-
-    // Coupling constants for f0(500)
-    double gsq_rho_f500_gamma=0.22;
-    double gsq_omega_f500_gamma=(1./9)*gsq_rho_f500_gamma;
-    // Coupling constants: Donnachie and Kalashnikova (2008) scenario IV
-    double gsq_rho_S_gamma=0.02537;
-    double gsq_omega_S_gamma=0.2283;
-    double gsq_rho_f1370_gamma=0.094;
-    double gsq_omega_f1370_gamma=(1./9.)*gsq_rho_f1370_gamma;
-    double gsq_rho_a1450_gamma=0.0054;
-    double gsq_omega_a1450_gamma=9.*gsq_rho_a1450_gamma;
 
     // use the rejection method to produce S's based on the cross section
     do{
@@ -2877,8 +3041,7 @@ int main(int narg, char *argv[])
       //Boost the S 4-momentum into the lab
       S4.Boost(v_cm);
       // S4.Print();
-      
-      
+        
       // Compute the 4-momentum for the recoil proton
       TLorentzVector proton4=beam+target-S4;
       
@@ -2898,231 +3061,12 @@ int main(int narg, char *argv[])
 	particle_vectors[j]=*phase_space.GetDecay(j);
       }
 
-      //Resonance parameters 
-      double ReB=0.,ImB=0,gR=0.;
-      double gR_T=0., ImB_T=0., ReB_T=0.;
-      double gRf500=0.,ImBf500=0.,ReBf500=0.; 
-      double gRf1370=0.,ImBf1370=0.,ReBf1370=0.;  
-      double gRa1450=0.,ImBa1450=0.,ReBa1450=0.;
-
       // Cross section
-      xsec=0.;
+      xsec=GetCrossSection(s,t,M_sq,beam,particle_types,particle_vectors,
+			   phase,generate);
       
-      // f0(600)
-      if (got_pipi && generate[0]){
- 	double m_Sigma=0.6;
-	double M_sq_R=m_Sigma*m_Sigma; 
-	width=1.0;
-	ReBf500=M_sq_R-M_sq;
-	double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
-	double temp=4.*m1sq*m2sq;
-	double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-		       /(4.*M_sq_R));
-	double partial_width=width/3.;
-	gRf500=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
-	ImBf500=width*sqrt(M_sq);
-
-	xsec+=CrossSection(m1,m2,M_sq,s,t,gRf500,ReBf500,ImBf500,
-			   gsq_rho_f500_gamma,gsq_omega_f500_gamma);
-       
-      }
-      // f0(1370)
-      if (got_pipi && generate[2]){
- 	double m_f1370=1.25; // guess
-	double M_sq_R=m_f1370*m_f1370; 
-	width=0.5;  // estimate, top of PDG range
-	ReBf1370=M_sq_R-M_sq;
-	double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
-	double temp=4.*m1sq*m2sq;
-	double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-		       /(4.*M_sq_R));
-	// partial width from Bugg(2007):arxiv.org/pdf/0706.1341.pdf, table 2
-	double partial_width=0.325/3.;
-	gRf1370=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
-	ImBf1370=width*sqrt(M_sq);
-
-	xsec+=CrossSection(m1,m2,M_sq,s,t,gRf1370,ReBf1370,ImBf1370,
-			   gsq_rho_f1370_gamma,gsq_omega_f1370_gamma);
-       
-      }  
-      // Interference between f0(500) and f0(1370)
-      if (got_pipi && generate[0] && generate[2]){
-	xsec+=CrossSection(m1,m2,M_sq,s,t,gRf1370,ReBf1370,ImBf1370,
-			   gsq_rho_f1370_gamma,
-			   gsq_omega_f1370_gamma,true,gRf500,ReBf500,ImBf500,
-			   gsq_rho_f500_gamma,gsq_omega_f500_gamma,
-			   phase[9]);
-      }	
-
-      // a0(1450)
-      if (got_pipi==false && generate[2]){
- 	double m_a1450=1.448;// Bugg:arXiv:0808.2706v2,Table 2
-	double M_sq_R=m_a1450*m_a1450; 
-	width=0.192; // Bugg:arXiv:0808.2706v2,Table 2
-	ReBa1450=M_sq_R-M_sq;
-	double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
-	double temp=4.*m1sq*m2sq;
-	double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-		       /(4.*M_sq_R));	
-	double partial_width=0.0237;// Bugg:arXiv:0808.2706v2,Table 2
-	gRa1450=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
-	ImBa1450=width*sqrt(M_sq);
-
-	xsec+=CrossSection(m1,m2,M_sq,s,t,gRa1450,ReBa1450,ImBa1450,
-			   gsq_rho_a1450_gamma,gsq_omega_a1450_gamma);
-       
-      }
-      // f0(980)/a0(980)
-      if (generate[1]){
-	double my_msq_R=0.9783*0.9783;
-	if (got_pipi){ // f0(980)	
-	  double MRsq_minus_m1sq_m2sq=my_msq_R-m1sq_plus_m2sq;	
-	  double temp=4.*m1sq*m2sq;
-	  double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-			 /(4.*my_msq_R));
-	  double partial_width=0.05; //?? // guess from note in pdg
-	  gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
-	  gsq_rho_S_gamma=0.159; // GeV^-2
-	  gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
-	}
-	else{ // a0(980)  
-	  my_msq_R=0.9825*0.9825;	
-	  double MRsq_minus_m1sq_m2sq=my_msq_R-m1sq_plus_m2sq;	
-	  double temp=4.*m1sq*m2sq;
-	  double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
-			 /(4.*my_msq_R));
-	  double partial_width=0.06; //?? guess from note in pdg
-	  gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
-	  gsq_rho_S_gamma=0.02537;
-	  gsq_omega_S_gamma=9.*gsq_rho_S_gamma;
-	} 
-	GetResonanceParameters(m1,m2,M_sq,my_msq_R,ReB,ImB);
-	xsec+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
-			   gsq_omega_S_gamma);
-	// Interference between f0(1370) and f0(980)
-	if (got_pipi && generate[2]){
-	  xsec+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
-			     gsq_omega_S_gamma,true,gRf1370,ReBf1370,ImBf1370,
-			     gsq_rho_f1370_gamma,gsq_omega_f1370_gamma,
-			     phase[1]);
-	}	
-	// Interference between f0(500) and f0(980)
-	if (got_pipi && generate[0]){
-	  xsec+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
-			     gsq_omega_S_gamma,true,gRf500,ReBf500,ImBf500,
-			     gsq_rho_f500_gamma,gsq_omega_f500_gamma,
-			     phase[0]);
-	}	
-	// Interference between a0(1450) and a0(980)
-	if (got_pipi==false && generate[2]){
-	  xsec+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
-			     gsq_omega_S_gamma,true,gRa1450,ReBa1450,ImBa1450,
-			     gsq_rho_a1450_gamma,gsq_omega_a1450_gamma,
-			     phase[1]);
-	}
-      }
-      if (generate[4]){ // non-resonant background
-	xsec+=BackgroundCrossSection(beam,particle_types,particle_vectors);
-
-	if (generate[1]){ // interference with resonant signal
-	  xsec+=InterferenceCrossSection(beam,particle_types,particle_vectors,
-	  				 gR,ReB,ImB,gsq_rho_S_gamma,
-					 gsq_omega_S_gamma,phase[3]);
-	}
-	if (got_pipi){
-	  if (generate[0]){ // interference with f0(500)
-	    xsec+=InterferenceCrossSection(beam,particle_types,particle_vectors,
-					   gRf500,ReBf500,ImBf500,
-					   gsq_rho_f500_gamma,
-					   gsq_omega_f500_gamma,phase[7]);
-	  }  
-	  if (generate[2]){ // interference with f0(1370)
-	    xsec+=InterferenceCrossSection(beam,particle_types,particle_vectors,
-					   gRf1370,ReBf1370,ImBf1370,
-					   gsq_rho_f1370_gamma,
-					   gsq_omega_f1370_gamma,phase[8]);
-	  }
-	}
-	else{ 
-	  if (generate[2]){ // interference with a0(1450)
-	    xsec+=InterferenceCrossSection(beam,particle_types,particle_vectors,
-					   gRa1450,ReBa1450,ImBa1450,
-					   gsq_rho_a1450_gamma,
-					   gsq_omega_a1450_gamma,0.);
-	  }
-	  
-	}
-      }
-      if (generate[3]){ // Tensor background
-	double m_T=1.275;	
-	double Gamma_T=0.185;
-	if (!got_pipi){
-	  Gamma_T=0.107;
-	  m_T=1.3183;
-	}
-	double M_sq_R_T=m_T*m_T; 
-	ReB_T=M_sq_R_T-M_sq;
-	double Msq_minus_m1sq_m2sq=M_sq-m1sq_plus_m2sq;
-	double MRsq_minus_m1sq_m2sq=M_sq_R_T-m1sq_plus_m2sq;
-	double temp=4.*m1sq*m2sq;
-	double q_over_qR
-	  =m_T/M*sqrt((Msq_minus_m1sq_m2sq*Msq_minus_m1sq_m2sq-temp)
-		      /(MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp));
-	double q_over_qR_5=pow(q_over_qR,5);
-	if (got_pipi){ // f2(1270)  
-	  double partial_width=0.85*(1./3.)*M_sq_R_T*q_over_qR_5/M_sq;
-	  gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width*q_over_qR);
-	  ImB_T=M*Gamma_T*(0.85*q_over_qR_5*M_sq_R_T/M_sq+0.15);
-	}
-	else { // a2(1320)
-	  double partial_width=0.155*M_sq_R_T*q_over_qR_5/M_sq;
-	  gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width*q_over_qR);
-	  ImB_T=M*Gamma_T*(0.145*q_over_qR_5*M_sq_R_T/M_sq+0.855);
-	}
-	xsec+=TensorCrossSection(beam,particle_types,particle_vectors,
-				 gR_T,ReB_T,ImB_T);
-	if (generate[1]){ // interference with a0(980)/f0(980)
-	  xsec+=TensorScalarInterference(beam,particle_types,particle_vectors,
-					 gR_T,ReB_T,ImB_T,gR,ReB,ImB,
-					 sqrt(gsq_omega_S_gamma),
-					 sqrt(gsq_rho_S_gamma),phase[2]);
-	}
-	// interference with f0(600)
-	if (got_pipi && generate[0]){
-	  xsec+=TensorScalarInterference(beam,particle_types,particle_vectors,
-					 gR_T,ReB_T,ImB_T,gRf500,ReBf500,
-					 ImBf500,
-					 sqrt(gsq_omega_f500_gamma),
-					 sqrt(gsq_rho_f500_gamma),phase[5]);
-	}
-	// interference with f0(1370)
-	if (got_pipi && generate[2]){
-	  xsec+=TensorScalarInterference(beam,particle_types,particle_vectors,
-					 gR_T,ReB_T,ImB_T,gRf1370,ReBf1370,
-					 ImBf1370,
-					 sqrt(gsq_omega_f1370_gamma),
-					 sqrt(gsq_rho_f1370_gamma),phase[6]);
-	}	
-	// interference with a0(1450)
-	if (got_pipi==false && generate[2]){
-	  xsec+=TensorScalarInterference(beam,particle_types,particle_vectors,
-					 gR_T,ReB_T,ImB_T,gRa1450,ReBa1450,
-					 ImBa1450,
-					 sqrt(gsq_omega_a1450_gamma),
-					 sqrt(gsq_rho_a1450_gamma),phase[6]);
-	}
-	
-	if (generate[4]){ //interference with background wave
-	  xsec+=TensorBackgroundInterference(beam,particle_types,
-					     particle_vectors,
-					     gR_T,ReB_T,ImB_T,phase[4]);
-	}
-	
-      }
-     if (xsec>mymax ) mymax=xsec;
+      if (xsec>mymax ) mymax=xsec;
       
-
-
       // Generate a test value for the cross section
       xsec_test=myrand->Uniform(xsec_max);
     }
