@@ -2716,6 +2716,19 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   return xsec;
 }
   
+void GetDecayVectors(double m1, double m2, double p_rest, double theta_rest, 
+		     double phi_rest,
+		     const TVector3 &v_S,
+		     vector<TLorentzVector>&particle_vectors){
+    double pt_rest=p_rest*sin(theta_rest);
+    particle_vectors[0].SetXYZT(pt_rest*cos(phi_rest),pt_rest*sin(phi_rest),
+				p_rest*cos(theta_rest),
+				sqrt(p_rest*p_rest+m1*m1));
+    particle_vectors[1].SetVect(-particle_vectors[0].Vect());
+    particle_vectors[1].SetT(sqrt(p_rest*p_rest+m2*m2));
+    particle_vectors[0].Boost(v_S);
+    particle_vectors[1].Boost(v_S);
+}
 
 // Create a graph of the cross section dsigma/dt as a function of -t
 void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
@@ -2773,24 +2786,16 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
     
     //Boost the S 4-momentum into the lab
     S4.Boost(v_cm);
+    TVector3 v_S=(1./S4.E())*S4.Vect();
     
     // Compute the 4-momentum for the recoil proton
     particle_vectors[2]=beam+target-S4;
-    particle_vectors[2].Print();
-
+ 
     // Decay particles
     double p_rest=sqrt((M_sq-m1_plus_m2_sq)*(M_sq-m1_minus_m2_sq))/(2.*M_sq);
     double theta_rest=0.;
-    double phi_rest=0.;
-    double pt_rest=p_rest*sin(theta_rest);
-    particle_vectors[0].SetXYZT(pt_rest*cos(phi_rest),pt*sin(phi_rest),
-				p_rest*cos(theta_rest),
-				sqrt(p_rest*p_rest+m1*m1));
-    particle_vectors[1].SetVect(-particle_vectors[0].Vect());
-    particle_vectors[1].SetT(sqrt(p_rest*p_rest+m2*m2));
-    TVector3 v_S=(1./S4.E())*S4.Vect();
-    particle_vectors[0].Boost(v_S);
-    particle_vectors[1].Boost(v_S);
+    double phi_rest=0.; 
+    GetDecayVectors(m1,m2,p_rest,theta_rest,phi_rest,v_S,particle_vectors);
 
     double xsec=GetCrossSection(s,t,M_sq,beam,particle_types,particle_vectors,
 				phase,generate);
@@ -2827,10 +2832,17 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
       
       //Boost the S 4-momentum into the lab
       S4.Boost(v_cm);
+      TVector3 v_S=(1./S4.E())*S4.Vect();
 
-       // Compute the 4-momentum for the recoil proton
+      // Compute the 4-momentum for the recoil proton
       particle_vectors[2]=beam+target-S4;
 
+      // Decay particles
+      double p_rest=sqrt((M_sq-m1_plus_m2_sq)*(M_sq-m1_minus_m2_sq))/(2.*M_sq);
+      double theta_rest=0.;
+      double phi_rest=0.;
+      GetDecayVectors(m1,m2,p_rest,theta_rest,phi_rest,v_S,particle_vectors);
+      
       xsec+=(t_old-t)*GetCrossSection(s,t,M_sq,beam,particle_types,
 				      particle_vectors,phase,generate);
       t_old=t;
