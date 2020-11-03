@@ -1,4 +1,4 @@
-ta#if !defined(ROOTDATAREADERTEM)
+#if !defined(ROOTDATAREADERTEM)
 #define ROOTDATAREADERTEM
 
 #include "IUAmpTools/Kinematics.h"
