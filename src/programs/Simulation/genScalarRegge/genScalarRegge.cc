@@ -18,6 +18,9 @@ using namespace std;
 
 #include "UTILITIES/BeamProperties.h"
 
+// Photon beam energy for cross section plots
+double EgammaPlot=5.; 
+
 // Masses
 const double m_p=0.93827; // GeV
 const double m_p_sq=m_p*m_p;
@@ -1506,6 +1509,16 @@ double CrossSection(double m1,double m2, double ms_sq, double s, double t,
     + C_n_f2_C_n_P_cut*(regge_rho_f2_omega_P_cuts+regge_rho_P_omega_f2_cuts)
     + Csq_n_P_cut*regge_rho_P_omega_P_cuts
     + Csq_n_f2_cut*regge_rho_f2_omega_f2_cuts;
+  double regge_rho_sq_u_sum=Csq_u_P_cut*regge_rho_P_cut_sq
+    + Csq_u_f2_cut*regge_rho_f2_cut_sq
+    + 2.*C_u_f2_C_u_P_cut*regge_rho_f2_rho_P_cuts;
+  double regge_omega_sq_u_sum=Csq_u_P_cut*regge_omega_P_cut_sq
+    + Csq_u_f2_cut*regge_omega_f2_cut_sq
+    + 2.*C_u_f2_C_u_P_cut*regge_omega_f2_omega_P_cuts;
+  double regge_omega_rho_u_sum
+    = C_u_f2_C_u_P_cut*(regge_rho_f2_omega_P_cuts+regge_rho_P_omega_f2_cuts)
+    + Csq_u_P_cut*regge_rho_P_omega_P_cuts
+    + Csq_u_f2_cut*regge_rho_f2_omega_f2_cuts;
   
   // Compute the square of the amplitude, including interference
   double T=0.,aS_aS=0.,aS_bS=0.,bS_bS=0.,b1S_b1S=0.;
@@ -1521,21 +1534,11 @@ double CrossSection(double m1,double m2, double ms_sq, double s, double t,
 
     aS_bS=-2.*g_rho_S*g_rho_T*(2.*g_rho_S*g_rho_V_and_T*regge_rho_sq_sum
 			       +g_omega_S*g_omega_V*regge_omega_rho_sum);
-    /*
+    
     // Cut contribution from b1 exchange.  We ignore the pole term.
-    b1S_b1S=gsq_omega_S*gsq_omega_V*(Csq_u_P_cut*regge_omega_P_cut_sq
-				     + Csq_u_f2_cut*regge_omega_f2_cut_sq
-				     + 2.*C_u_f2_C_u_P_cut
-				     *regge_omega_f2_omega_P_cuts)
-      +gsq_rho_S*gsq_rho_V*(Csq_u_P_cut*regge_rho_P_cut_sq
-			      + Csq_u_f2_cut*regge_rho_f2_cut_sq
-			      + 2.*C_u_f2_C_u_P_cut*regge_rho_f2_rho_P_cuts)
-      +g_rho_V*g_omega_V*g_rho_S*g_omega_S
-      *(2.*Csq_u_P_cut*regge_rho_P_omega_P_cuts
-	+ 2.*Csq_u_f2_cut*regge_rho_f2_omega_f2_cuts 
-	+ 2.*C_u_f2_C_u_P_cut*(regge_rho_P_omega_f2_cuts
-			       +regge_rho_f2_omega_P_cuts));
-    */
+    b1S_b1S=gsq_rho_S*gsq_rho_V_and_T*regge_rho_sq_u_sum
+      + gsq_omega_S*gsq_omega_V*regge_omega_sq_u_sum
+      + g_rho_S*g_omega_S*g_omega_V*g_rho_V_and_T*regge_omega_rho_u_sum;
   }
   else{
     Pi_R_sq=gR/(ReB*ReB+ImB*ImB) * gR2/(ReB2*ReB2+ImB2*ImB2);
@@ -1576,27 +1579,43 @@ double CrossSection(double m1,double m2, double ms_sq, double s, double t,
       *2.*sin(M_PI_2*(a_rho_P-a_omega_P))
       + Csq_n_f2_cut*regge_rho_f2_cut*regge_rho_f2_cut
       *2.*sin(M_PI_2*(a_rho_f2-a_omega_f2));
-
+     double regge_omega_rho_u_diff
+      = C_n_f2_C_n_P_cut*(2.*regge_rho_f2_cut*regge_omega_P_cut
+			  *sin(M_PI_2*(a_rho_f2-a_omega_P))
+			  + 2.*regge_rho_P_cut*regge_omega_f2_cut
+			  *sin(M_PI_2*(a_rho_P-a_omega_f2)))
+       + Csq_n_P_cut*regge_rho_P_cut*regge_rho_P_cut
+       *2.*sin(M_PI_2*(a_rho_P-a_omega_P))
+       + Csq_n_f2_cut*regge_rho_f2_cut*regge_rho_f2_cut
+       *2.*sin(M_PI_2*(a_rho_f2-a_omega_f2));
+     
     double cosphi=cos(phase);
     double sinphi=sin(phase);
     double ReBWfac=(ReB*ReB2+ImB*ImB2)*cosphi-(ImB*ReB2-ImB2*ReB)*sinphi;
     double ImBWfac=(ReB*ReB2+ImB*ImB2)*sinphi+(ImB*ReB2-ImB2*ReB)*cosphi;
     
     aS_aS=ReBWfac*(2.*g1rho*g2rho*gsq_rho_V_and_T*regge_rho_sq_sum
-		  + 2.*g1omega*g2omega*gsq_omega_V*regge_omega_sq_sum
-		  + (g1rho*g2omega+g2rho*g1omega)
-		  *g_omega_V*g_rho_V_and_T*regge_omega_rho_sum)
+		   + 2.*g1omega*g2omega*gsq_omega_V*regge_omega_sq_sum
+		   + (g1rho*g2omega+g2rho*g1omega)
+		   *g_omega_V*g_rho_V_and_T*regge_omega_rho_sum)
       - ImBWfac*g_omega_V*g_rho_V_and_T*(g1rho*g2omega-g1omega*g2rho)
       *regge_omega_rho_diff;
-      
+    
     aS_bS=-2.*g_rho_T*(ReBWfac*(4.*g1rho*g2rho*g_rho_V_and_T*regge_rho_sq_sum
 				+(g1rho*g2omega+g2rho*g1omega)
 				*g_omega_V*regge_omega_rho_sum)
-		       - ImBWfac*(g1rho*g2omega+g2rho*g1omega)
+		       + ImBWfac*(g1rho*g2omega+g2rho*g1omega)
 		       *g_omega_V*regge_omega_rho_diff);
 
     bS_bS=8*g1rho*g2rho*g_rho_T*g_rho_T*ReBWfac*regge_rho_sq_sum;
-    
+
+
+    b1S_b1S=ReBWfac*(2.*g1rho*g2rho*gsq_rho_V_and_T*regge_rho_sq_u_sum
+		     + 2.*g1omega*g2omega*gsq_omega_V*regge_omega_sq_u_sum
+		     + (g1rho*g2omega+g2rho*g1omega)
+		     *g_omega_V*g_rho_V_and_T*regge_omega_rho_u_sum)
+      - ImBWfac*g_omega_V*g_rho_V_and_T*(g1rho*g2omega-g1omega*g2rho)
+      *regge_omega_rho_u_diff;
 
   }
   //  printf("kin %f %f %f \n",kin_aS_aS,kin_aS_bS,kin_bS_bS);
@@ -2322,7 +2341,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 		     /(4.*my_msq_R));
       double partial_width=0.05; //?? // guess from note in pdg
       gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
-      gsq_rho_S_gamma=0.1*0.159; // GeV^-2
+      gsq_rho_S_gamma=0.15; // GeV^-2
       gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
     }
     else{ // a0(980)  
@@ -2493,17 +2512,15 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
 		       int *generate){
   double xsec_max=0.;
   
-  // beam energy in lab
-  double Egamma=cobrems_vs_E->GetBinLowEdge(1); // get from CobremsGenerator histogram;
-  TLorentzVector beam(0,0,Egamma,Egamma);
+  TLorentzVector beam(0,0,EgammaPlot,EgammaPlot);
   TLorentzVector target(0,0,0,m_p);
   vector<TLorentzVector>particle_vectors(3);
 
    // Velocity of the cm frame with respect to the lab frame
-  TVector3 v_cm=(1./(Egamma+m_p))*beam.Vect();
+  TVector3 v_cm=(1./(EgammaPlot+m_p))*beam.Vect();
 
   // CM energy
-  double s=m_p*(m_p+2.*Egamma);
+  double s=m_p*(m_p+2.*EgammaPlot);
   double Ecm=sqrt(s);
   
   // Parameters for integration over line shape
@@ -2513,7 +2530,7 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
   double m1_minus_m2=m1-m2;
   double m1_plus_m2_sq=m1_plus_m2*m1_plus_m2;
   double m1_minus_m2_sq=m1_minus_m2*m1_minus_m2;
-  double m_max=m_p*(sqrt(1.+2.*Egamma/m_p)-1.);
+  double m_max=m_p*(sqrt(1.+2.*EgammaPlot/m_p)-1.);
   double dmrange=m_max-m1_plus_m2;
   double dm=dmrange/1000.;
 
@@ -2623,7 +2640,7 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
   Gxsec2->GetYaxis()->SetTitle("d#sigma/dM [nb/GeV]");
   Gxsec2->Write("Cross section d#sigma/dM"); 
  
-  cout << "Total cross section at " << Egamma << " GeV = "<< sum 
+  cout << "Total cross section at " << EgammaPlot << " GeV = "<< sum 
        << " nano-barns"<<endl;
 }
 
@@ -2640,16 +2657,12 @@ int main(int narg, char *argv[])
   TFile *rootfile=new TFile(rootfilename.c_str(),"RECREATE",
 			    "Produced by genScalarRegge");
 
-  // open HDDM file
-  s_iostream_t *file = init_s_HDDM(output_file_name);
- 
- 
   // Initialize random number generator
   TRandom3 *myrand=new TRandom3(0);// If seed is 0, the seed is automatically computed via a TUUID object, according to TRandom3 documentation
 
   // Fixed target
   TLorentzVector target(0.,0.,0.,m_p);
-
+ 
   //----------------------------------------------------------------------------
   // Get production (Egamma range) and decay parameters from input file
   //----------------------------------------------------------------------------
@@ -2723,160 +2736,166 @@ int main(int narg, char *argv[])
   infile.ignore(); // ignore the '\n' at the end of this line
   cout << endl;
   infile.close();
-  
-  // Create some diagonistic histograms
-  CreateHistograms(beamConfigFile);
-
+ 
   // Make a TGraph of the cross section at a fixed beam energy
   GraphCrossSection(particle_types,phase,generate);
 
-  // Set up some variables for cross section calculation
-  // masses of decay particles
-  double m1=decay_masses[0];
-  double m2=decay_masses[1];
-  bool got_pipi=(fabs(m1-m2)>0.01)?false:true;
+  if (Nevents>0){
+    // open HDDM file
+    s_iostream_t *file = init_s_HDDM(output_file_name);
 
-  double mymax=0.;
-  //----------------------------------------------------------------------------
-  // Event generation loop
-  //----------------------------------------------------------------------------
-  if (Nevents>0)
-  for (int i=1;i<=Nevents;i++){
-    // photon beam
-    double Egamma=0.;
-    TLorentzVector beam;
+    // Create some diagonistic histograms
+    CreateHistograms(beamConfigFile);
 
-    // Maximum value for cross section 
-    double xsec_max=(got_pipi)?10.0:3.5;
-    double xsec=0.,xsec_test=0.;
-
-    // Polar angle in center of mass frame
-    double theta_cm=0.;
-
-    // Scalar momentum in cm
-    double p_S=0.;
-
-    // Mass squared of resonance
-    double M_sq=0.;
-
-    // Transfer 4-momentum;
-    double t=0.;
-
-    // vertex position at target
-    float vert[4]={0.,0.,0.,0.};
-
-    // use the rejection method to produce S's based on the cross section
-    do{
-      // First generate a beam photon using bremsstrahlung spectrum
-      Egamma = cobrems_vs_E->GetRandom();
-
-      // CM energy
-      double s=m_p*(m_p+2.*Egamma);
-      double Ecm=sqrt(s);
-
-      // Momenta of incoming photon and outgoing S and proton in cm frame
-      double p_gamma=(s-m_p_sq)/(2.*Ecm);
-
-      // Mass of two-meson system     
-      double m1_plus_m2=m1+m2;
-      double m_max=m_p*(sqrt(1.+2.*Egamma/m_p)-1.);
-      double M=m1_plus_m2+myrand->Uniform(m_max-m1_plus_m2);
-      M_sq=M*M;
-
-      // Momentum and energy of two-meson system
-      double E_S=(s+M_sq-m_p_sq)/(2.*Ecm);
-      p_S=sqrt(E_S*E_S-M_sq);
+    // Set up some variables for cross section calculation
+    // masses of decay particles
+    double m1=decay_masses[0];
+    double m2=decay_masses[1];
+    bool got_pipi=(fabs(m1-m2)>0.01)?false:true;
     
-      // Momentum transfer t
-      double p_diff=p_gamma-p_S;
-      double t0=M_sq*M_sq/(4.*s)-p_diff*p_diff;
-      double sin_theta_over_2=0.;
-      t=t0;
-
-      // Generate cos(theta) with a uniform distribution and compute the cross 
-      // section at this value
-      double cos_theta_cm=-1.0+myrand->Uniform(2.);
-      theta_cm=acos(cos_theta_cm);
-      // compute t
-      sin_theta_over_2=sin(0.5*theta_cm);
-      t=t0-4.*p_gamma*p_S*sin_theta_over_2*sin_theta_over_2;
-
-      // Generate phi using uniform distribution
-      double phi_cm=myrand->Uniform(2.*M_PI);
-
-      // beam 4-vector (ignoring px and py, which are extremely small)
-      beam.SetXYZT(0.,0.,Egamma,Egamma);
-   
-      // Velocity of the cm frame with respect to the lab frame
-      TVector3 v_cm=(1./(Egamma+m_p))*beam.Vect();
-      // Four-momentum of the S in the CM frame
-      double pt=p_S*sin(theta_cm);
-      TLorentzVector S4(pt*cos(phi_cm),pt*sin(phi_cm),p_S*cos(theta_cm),
-			sqrt(p_S*p_S+M_sq));
-      // S4.Print();
+    double mymax=0.;
+    //--------------------------------------------------------------------------
+    // Event generation loop
+    //--------------------------------------------------------------------------
+    for (int i=1;i<=Nevents;i++){
+      // photon beam
+      double Egamma=0.;
+      TLorentzVector beam;
       
-      //Boost the S 4-momentum into the lab
-      S4.Boost(v_cm);
-      // S4.Print();
-        
-      // Compute the 4-momentum for the recoil proton
-      TLorentzVector proton4=beam+target-S4;
+      // Maximum value for cross section 
+      double xsec_max=(got_pipi)?10.0:3.5;
+      double xsec=0.,xsec_test=0.;
+
+      // Polar angle in center of mass frame
+      double theta_cm=0.;
       
-      // Generate decay of S according to phase space
-      TGenPhaseSpace phase_space;
-      phase_space.SetDecay(S4,num_decay_particles,decay_masses);
-      double weight=0.,rand_weight=1.;
+      // Scalar momentum in cm
+      double p_S=0.;
+      
+      // Mass squared of resonance
+      double M_sq=0.;
+      
+      // Transfer 4-momentum;
+      double t=0.;
+      
+      // vertex position at target
+      float vert[4]={0.,0.,0.,0.};
+      
+      // use the rejection method to produce S's based on the cross section
       do{
-	weight=phase_space.Generate();
-	rand_weight=myrand->Uniform(1.);
-      }
-      while (rand_weight>weight);
-      
-      // Gather the particles in the reaction and write out event in hddm format
-      particle_vectors[last_index]=proton4;
-      for (int j=0;j<num_decay_particles;j++){
-	particle_vectors[j]=*phase_space.GetDecay(j);
-      }
+	// First generate a beam photon using bremsstrahlung spectrum
+	Egamma = cobrems_vs_E->GetRandom();
+	
+	// CM energy
+	double s=m_p*(m_p+2.*Egamma);
+	double Ecm=sqrt(s);
 
-      // Cross section
-      xsec=GetCrossSection(s,t,M_sq,beam,particle_types,particle_vectors,
-			   phase,generate);
-      
-      if (xsec>mymax ) mymax=xsec;
-      
-      // Generate a test value for the cross section
-      xsec_test=myrand->Uniform(xsec_max);
-    }
-    while (xsec_test>xsec);
+	// Momenta of incoming photon and outgoing S and proton in cm frame
+	double p_gamma=(s-m_p_sq)/(2.*Ecm);
+	
+	// Mass of two-meson system     
+	double m1_plus_m2=m1+m2;
+	double m_max=m_p*(sqrt(1.+2.*Egamma/m_p)-1.);
+	double M=m1_plus_m2+myrand->Uniform(m_max-m1_plus_m2);
+	M_sq=M*M;
 
-    // Other diagnostic histograms
-    thrown_t->Fill(-t);
-    thrown_Egamma->Fill(Egamma);
-    thrown_theta_vs_p->Fill(particle_vectors[last_index].P(),
-			    180./M_PI*particle_vectors[last_index].Theta());
-    thrown_mass->Fill((particle_vectors[0]+particle_vectors[1]).M());  
-    thrown_mass_vs_E->Fill(Egamma,(particle_vectors[0]+particle_vectors[1]).M());
+	// Momentum and energy of two-meson system
+	double E_S=(s+M_sq-m_p_sq)/(2.*Ecm);
+	p_S=sqrt(E_S*E_S-M_sq);
+	
+	// Momentum transfer t
+	double p_diff=p_gamma-p_S;
+	double t0=M_sq*M_sq/(4.*s)-p_diff*p_diff;
+	double sin_theta_over_2=0.;
+	t=t0;
+
+	// Generate cos(theta) with a uniform distribution and compute the 
+	// cross section at this value
+	double cos_theta_cm=-1.0+myrand->Uniform(2.);
+	theta_cm=acos(cos_theta_cm);
+	// compute t
+	sin_theta_over_2=sin(0.5*theta_cm);
+	t=t0-4.*p_gamma*p_S*sin_theta_over_2*sin_theta_over_2;
+	
+	// Generate phi using uniform distribution
+	double phi_cm=myrand->Uniform(2.*M_PI);
+	
+	// beam 4-vector (ignoring px and py, which are extremely small)
+	beam.SetXYZT(0.,0.,Egamma,Egamma);
+	
+	// Velocity of the cm frame with respect to the lab frame
+	TVector3 v_cm=(1./(Egamma+m_p))*beam.Vect();
+	// Four-momentum of the S in the CM frame
+	double pt=p_S*sin(theta_cm);
+	TLorentzVector S4(pt*cos(phi_cm),pt*sin(phi_cm),p_S*cos(theta_cm),
+			  sqrt(p_S*p_S+M_sq));
+	// S4.Print();
+	
+	//Boost the S 4-momentum into the lab
+	S4.Boost(v_cm);
+	// S4.Print();
+        
+	// Compute the 4-momentum for the recoil proton
+	TLorentzVector proton4=beam+target-S4;
+      
+	// Generate decay of S according to phase space
+	TGenPhaseSpace phase_space;
+	phase_space.SetDecay(S4,num_decay_particles,decay_masses);
+	double weight=0.,rand_weight=1.;
+	do{
+	  weight=phase_space.Generate();
+	  rand_weight=myrand->Uniform(1.);
+	}
+	while (rand_weight>weight);
+	
+	// Gather the particles in the reaction and write out event in hddm 
+	// format
+	particle_vectors[last_index]=proton4;
+	for (int j=0;j<num_decay_particles;j++){
+	  particle_vectors[j]=*phase_space.GetDecay(j);
+	}
+	
+	// Cross section
+	xsec=GetCrossSection(s,t,M_sq,beam,particle_types,particle_vectors,
+			     phase,generate);
+	
+	if (xsec>mymax ) mymax=xsec;
+	
+	// Generate a test value for the cross section
+	xsec_test=myrand->Uniform(xsec_max);
+      }
+      while (xsec_test>xsec);
+
+      // Other diagnostic histograms
+      thrown_t->Fill(-t);
+      thrown_Egamma->Fill(Egamma);
+      thrown_theta_vs_p->Fill(particle_vectors[last_index].P(),
+			      180./M_PI*particle_vectors[last_index].Theta());
+      thrown_mass->Fill((particle_vectors[0]+particle_vectors[1]).M());  
+      thrown_mass_vs_E->Fill(Egamma,(particle_vectors[0]+particle_vectors[1]).M());
    
-     // Randomly generate z position in target
-    vert[2]=zmin+myrand->Uniform(zmax-zmin);
-
-    WriteEvent(i,beam,vert,particle_types,particle_vectors,file);
+      // Randomly generate z position in target
+      vert[2]=zmin+myrand->Uniform(zmax-zmin);
+      
+      WriteEvent(i,beam,vert,particle_types,particle_vectors,file);
     
-    if ((i%(Nevents/10))==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
-  }
-
-
-  // Write histograms and close root file
-  rootfile->Write();
-  rootfile->Close();
-
-  // Close HDDM file
-  close_s_HDDM(file);
-  cout<<endl<<"Closed HDDM file"<<endl;
-  cout<<" "<<Nevents<<" event written to "<<output_file_name<<endl;
-
+      if ((i%(Nevents/10))==0) 
+	cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
+    }
+   
+    // Close HDDM file
+    close_s_HDDM(file);
+    cout<<endl<<"Closed HDDM file"<<endl;
+    cout<<" "<<Nevents<<" event written to "<<output_file_name<<endl;
+    
     cout << mymax << endl;
-
+  }
+   
+    // Write histograms and close root file
+    rootfile->Write();
+    rootfile->Close();
+    
+    
   return 0;
 }
 
