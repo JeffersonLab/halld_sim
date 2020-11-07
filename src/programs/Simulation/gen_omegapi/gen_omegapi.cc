@@ -452,11 +452,11 @@ int main( int argc, char* argv[] ){
 					M_p4->Fill( p4.M() );
 
 					double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc, dalitzx, dalitzy;
-					dalitz_s = (p3+p2).M2();//s=M(pip pi0)
-					dalitz_t = (p4+p2).M2();//s=M(pim pi0)
-					dalitz_u = (p3+p4).M2();//s=M(pip pim)
-					dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*139.57018)+134.9766) );
-					dalitz_sc = (1/3)*( (p2+p3+p4).M2() - ((2*(139.57018*139.57018))+(134.9766*134.9766)) );
+					dalitz_s = (p3+p4).M2();//s=M(pip pim)
+					dalitz_t = (p2+p3).M2();//t=M(pip pi0)
+					dalitz_u = (p2+p4).M2();//u=M(pim pi0)
+					dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*0.13957018)+0.1349766) );
+					dalitz_sc = (1/3.)*( (p2+p3+p4).M2() - ((2*(0.13957018*0.13957018))+(0.1349766*0.1349766)) );
 					dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
 					dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
 
