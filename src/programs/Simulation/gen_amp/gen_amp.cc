@@ -28,6 +28,7 @@
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/Hist2D.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -184,7 +185,7 @@ int main( int argc, char* argv[] ){
 	    threshold += ParticleMass(Particles[i]);
 	  }
 	}
-	
+
 	//switch recoil particle
 	ProductionMechanism::Recoil recoil;
 	bool isBaryonResonance = false;
@@ -256,6 +257,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
 	AmpToolsInterface::registerAmplitude( dblRegge() );
+	AmpToolsInterface::registerAmplitude( Hist2D() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
