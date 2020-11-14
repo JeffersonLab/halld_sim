@@ -19,19 +19,25 @@ using namespace std;
 #include "UTILITIES/BeamProperties.h"
 
 // Photon beam energy for cross section plots
-double EgammaPlot=5.; 
+double EgammaPlot=8.5; 
 
 // Masses
 const double m_p=0.93827; // GeV
 const double m_p_sq=m_p*m_p;
 // Width
 double width=0.;
-// Coupling constant 
-double g0_sq=110.5; // GeV^-2
+// Coupling constants 
+const double g0_sq=110.5; // GeV^-2
+const double g_omega_V=15.;
+const double gsq_omega_V=g_omega_V*g_omega_V;
+const double g_rho_V=3.4;
+const double g_rho_T=11.0; // GeV^-1
+const double gsq_rho_T=g_rho_T*g_rho_T;
+const double g_rho_V_and_T=g_rho_V+2.*m_p*g_rho_T;
+const double gsq_rho_V_and_T=g_rho_V_and_T*g_rho_V_and_T;
 // Regge cut parameters
 double regge_cuts[5]; // dc c_P_omega c_f2_omega c_P_rho c_f2_rho 
 
-double zmin=50.0,zmax=80.0; // cm, target extent
 int Nevents=10000;
 int runNo=30300;
 bool debug=false;
@@ -93,6 +99,11 @@ void ParseCommandLineArguments(int narg, char* argv[])
       case 'S':
 	sscanf(&ptr[2],"%d",&seed);
 	break;
+      case 'E':
+	char stmp[80];
+	sscanf(&ptr[2],"%s",stmp);
+	EgammaPlot=atof(stmp);
+	break;
       case 'd':
 	debug=true;
 	break;
@@ -152,16 +163,16 @@ double BackgroundCrossSection(TLorentzVector &q /* beam */,
   double M2_M2=2.*p_dot_v2*p_dot_v2*q_dot_v2*q_dot_v2
     - 2.*v2sq*p_dot_v2*q_dot_v2*q_dot_p + v2sq*v2sq*q_dot_p*q_dot_p
     - psq*v2sq*q_dot_v2*q_dot_v2;
-
+  
   // Rho propagators for top exchange
   double m_rho=0.7685;
   double Gamma_rho=0.1462;
   double m_rhosq_minus_v1sq=m_rho*m_rho-v1sq;
-  double Pi_rho_1_sq=1./(m_rhosq_minus_v1sq*m_rhosq_minus_v1sq
-			 +m_rho*m_rho*Gamma_rho*Gamma_rho);
+  double m_Gamma_rho_sq=m_rho*m_rho*Gamma_rho*Gamma_rho;
+  double Pi_rho_1_sq=1./(m_rhosq_minus_v1sq*m_rhosq_minus_v1sq+m_Gamma_rho_sq);
   double m_rhosq_minus_v2sq=m_rho*m_rho-v2sq;
-  double Pi_rho_2_sq=1./(m_rhosq_minus_v2sq*m_rhosq_minus_v2sq	
-			 +m_rho*m_rho*Gamma_rho*Gamma_rho);
+  double Pi_rho_2_sq=1./(m_rhosq_minus_v2sq*m_rhosq_minus_v2sq+m_Gamma_rho_sq);
+  double Re_rho_1_rho_2=m_rhosq_minus_v1sq*m_rhosq_minus_v2sq + m_Gamma_rho_sq;
   
   double s0=1.;
   // Regge trajectory for rho
@@ -170,17 +181,21 @@ double BackgroundCrossSection(TLorentzVector &q /* beam */,
   double cos_rho=cos(M_PI*a_rho);
   double sin_rho=sin(M_PI*a_rho);
   double regge_rho=pow(s/s0,a_rho-1.)*M_PI*a_rho_prime/(sin_rho*TMath::Gamma(a_rho)); // excluding phase factor
+  // Assume rotating phase:  regge_rho=f_rho(s,t) exp(-i pi a_rho(t))
   double regge_rho_sq=regge_rho*regge_rho;
 
   // omega propagators for top exchange
   double m_omega=0.78265;
   double Gamma_omega=0.00849;
   double m_omegasq_minus_v1sq=m_omega*m_omega-v1sq;
+  double m_Gamma_omega_sq=m_omega*m_omega*Gamma_omega*Gamma_omega;
   double Pi_omega_1_sq=1./(m_omegasq_minus_v1sq*m_omegasq_minus_v1sq
-			   +m_omega*m_omega*Gamma_omega*Gamma_omega);
+			   + m_Gamma_omega_sq);
   double m_omegasq_minus_v2sq=m_omega*m_omega-v2sq;
   double Pi_omega_2_sq=1./(m_omegasq_minus_v2sq*m_omegasq_minus_v2sq
-			   +m_omega*m_omega*Gamma_omega*Gamma_omega);
+			   + m_Gamma_omega_sq);
+  double Re_omega_1_omega_2=m_omegasq_minus_v1sq*m_omegasq_minus_v2sq 
+    + m_Gamma_omega_sq;
 
   // Regge trajectory for omega
   double a_omega=0.44+0.9*t;
@@ -188,225 +203,144 @@ double BackgroundCrossSection(TLorentzVector &q /* beam */,
   double cos_omega=cos(M_PI*a_omega);
   double sin_omega=sin(M_PI*a_omega);
   double regge_omega=pow(s/s0,a_omega-1.)*M_PI*a_omega_prime/(sin_omega*TMath::Gamma(a_omega)); // excluding phase factor
+  // Assume rotating phase:  regge_omega=f_omega(s,t) exp(-i pi a_omega(t))
   double regge_omega_sq=regge_omega*regge_omega;
 
   // rho-omega interference 
-  double regge_rho_omega=regge_rho*regge_omega; 
-  double cos_rho_omega=cos(M_PI*(a_rho-a_omega));
-  double sin_rho_omega=sin(M_PI*(a_rho-a_omega));
+  double regge_rho_omega_sum
+    =2.*regge_rho*regge_omega*cos(M_PI*(a_rho-a_omega));
 
-  // Coupling constants  
-  double g_omega_V=15.;
-  double gsq_omega_V=g_omega_V*g_omega_V;
-  double g_rho_V=3.4;
-  double g_rho_T=11.0; // GeV^-1
-  double gsq_rho_T=g_rho_T*g_rho_T;
-  double g_rho_V_and_T=g_rho_V+2.*m_p*g_rho_T;
-  double gsq_rho_V_and_T=g_rho_V_and_T*g_rho_V_and_T;
+  // i (Domega Drho* - Domega* Drho)
+  double regge_rho_omega_diff  // check sign!
+    =2.*regge_rho*regge_omega*sin(M_PI*(a_omega-a_rho));
+  
+  double Re_rho_1_omega_1=m_rhosq_minus_v1sq*m_omegasq_minus_v1sq
+    + m_rho*m_omega*Gamma_rho*Gamma_omega;
+  double Im_rho_1_omega_1=m_omega*Gamma_omega*m_rhosq_minus_v1sq
+    - m_rho*Gamma_rho*m_omegasq_minus_v1sq;
+  double Re_rho_2_omega_2=m_rhosq_minus_v2sq*m_omegasq_minus_v2sq
+    + m_rho*m_omega*Gamma_rho*Gamma_omega;
+  double Im_rho_2_omega_2=m_omega*Gamma_omega*m_rhosq_minus_v2sq
+    - m_rho*Gamma_rho*m_omegasq_minus_v2sq;
+  double Re_rho_2_omega_1=m_rhosq_minus_v2sq*m_omegasq_minus_v1sq
+    + m_rho*m_omega*Gamma_rho*Gamma_omega;
+  double Im_rho_2_omega_1=m_omega*Gamma_omega*m_rhosq_minus_v2sq
+    - m_rho*Gamma_rho*m_omegasq_minus_v1sq;
+  double Re_rho_1_omega_2=m_rhosq_minus_v1sq*m_omegasq_minus_v2sq
+    + m_rho*m_omega*Gamma_rho*Gamma_omega;
+  double Im_rho_1_omega_2=m_omega*Gamma_omega*m_rhosq_minus_v1sq
+    - m_rho*Gamma_rho*m_omegasq_minus_v2sq;
 
+  double rho_1_omega_1_interference
+    = Pi_omega_1_sq*Pi_rho_1_sq*(Re_rho_1_omega_1*regge_rho_omega_sum 
+				 + Im_rho_1_omega_1*regge_rho_omega_diff);
+  double rho_2_omega_2_interference
+    = Pi_omega_2_sq*Pi_rho_2_sq*(Re_rho_2_omega_2*regge_rho_omega_sum 
+				 + Im_rho_2_omega_2*regge_rho_omega_diff);
+  double rho_12_omega_21_interference
+    =regge_rho_omega_sum*(Pi_rho_1_sq*Pi_omega_2_sq*Re_rho_1_omega_2
+			  + Pi_rho_2_sq*Pi_omega_1_sq*Re_rho_2_omega_1
+			  )
+    + regge_rho_omega_diff*(Pi_rho_1_sq*Pi_omega_2_sq*Im_rho_1_omega_2
+			    + Pi_rho_2_sq*Pi_omega_1_sq*Im_rho_2_omega_1
+			    );
+  double rho_2_omega_1_interference
+    =Pi_omega_1_sq*Pi_rho_2_sq*(Re_rho_2_omega_1*regge_rho_omega_sum
+				+ Im_rho_2_omega_1*regge_rho_omega_diff);
+  double rho_1_omega_2_interference
+    =Pi_omega_2_sq*Pi_rho_1_sq*(Re_rho_1_omega_2*regge_rho_omega_sum
+				+ Im_rho_1_omega_2*regge_rho_omega_diff);
+    
   // terms involving complex conjugates of Regge propagators and rho/omega propagtors
   double a1_a1=0.,b1_b1=0.;
   double a2_a2=0.,b2_b2=0.;
   double a1_a2=0.,b1_b2=0.;
-  double b1_a1=0,b2_a2=0.,b1_a2_b2_a1=0.;
+  double b1_a1=0,b2_a2=0.,b1_a2=0.,b2_a1=0.;
   double Csq=1.,zetasq=1./2.;
   // Compute square of amplitude    
   if (two_particles==(7+7)){ // pi0 pi0
-    double a1_a1_rho_V_and_T_sq=gsq_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq;
-    double a1_a1_omega_V_sq=gsq_omega_V*regge_omega_sq*Pi_rho_1_sq;
-    double a1_a1_omega_V_rho_V_and_T
-      =g_rho_V_and_T*g_omega_V*regge_rho_omega
-      *Pi_rho_1_sq*Pi_omega_1_sq*( cos_rho_omega
-				   *(m_rhosq_minus_v1sq*m_omegasq_minus_v1sq
-				     +m_rho*m_omega*Gamma_rho*Gamma_omega)
-				   + sin_rho_omega // check sign
-				   *(m_rho*Gamma_rho*m_omegasq_minus_v1sq
-				   -m_omega*Gamma_omega*m_rhosq_minus_v1sq));
-    double a2_a2_rho_V_and_T_sq=gsq_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq;
-    double a2_a2_omega_V_sq=gsq_omega_V*regge_omega_sq*Pi_rho_2_sq;
-    double a2_a2_omega_V_rho_V_and_T=g_rho_V_and_T*g_omega_V*regge_rho_omega
-      *Pi_rho_2_sq*Pi_omega_2_sq*( cos_rho_omega
-				   *(m_rhosq_minus_v2sq*m_omegasq_minus_v2sq
-				     +m_rho*m_omega*Gamma_rho*Gamma_omega)
-				   + sin_rho_omega // check sign
-				   *(m_rho*Gamma_rho*m_omegasq_minus_v2sq
-				   -m_omega*Gamma_omega*m_rhosq_minus_v2sq));
-    double a1_a2_rho_V_and_T_sq
-      =gsq_rho_V_and_T*regge_rho*regge_rho*Pi_omega_1_sq*Pi_omega_2_sq
-      *(1.-cos_rho)*(m_omegasq_minus_v1sq*m_omegasq_minus_v2sq 
-		     + m_omega*Gamma_omega*m_omega*Gamma_omega);
-    double a1_a2_omega_V_sq
-      =gsq_omega_V*regge_omega*regge_omega*Pi_rho_1_sq*Pi_rho_2_sq
-      *(1.-cos_omega)*(m_rhosq_minus_v1sq*m_rhosq_minus_v2sq
-		       +m_rho*m_rho*Gamma_rho*Gamma_rho);
-    double a1_a2_omega_V_rho_V_and_T_term1=g_rho_V_and_T*g_omega_V
-      *Pi_omega_1_sq*Pi_rho_2_sq*regge_rho*regge_omega
-      *(cos_rho_omega*(m_omegasq_minus_v1sq*m_rhosq_minus_v2sq
-			   +m_rho*Gamma_rho*m_omega*Gamma_omega)
-	+sin_rho_omega*(m_omega*Gamma_omega*m_rhosq_minus_v2sq
-	  -m_rho*Gamma_rho*m_omegasq_minus_v1sq));
-     double a1_a2_omega_V_rho_V_and_T_term2=g_rho_V_and_T*g_omega_V
-      *Pi_omega_1_sq*Pi_omega_2_sq*regge_rho*regge_omega
-      *(cos_rho_omega*(m_omegasq_minus_v1sq*m_omegasq_minus_v2sq
-			   +m_omega*Gamma_omega*m_omega*Gamma_omega)
-	-sin_rho_omega*m_omega*Gamma_omega*v1sq_minus_v2sq);
-     double b1_a1_rho_T_rho_V_and_T
-       =-4.*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq;
-     double b1_a1_omega_V_rho_V_and_T
-       =-g_rho_T*g_omega_V*Pi_rho_1_sq*Pi_omega_1_sq*regge_omega*regge_rho
-       *(cos_rho_omega*(m_rhosq_minus_v1sq*m_omegasq_minus_v1sq
-		      +m_rho*Gamma_rho*m_omega*Gamma_omega)
-	 +sin_rho_omega*(m_omega*Gamma_omega*m_rhosq_minus_v1sq
-			     -m_rho*Gamma_rho*m_omegasq_minus_v1sq));
-     double b2_a2_rho_T_rho_V_and_T
-       =-4.*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq;
-     double b2_a2_omega_V_rho_V_and_T
-      =-g_rho_T*g_omega_V*Pi_rho_2_sq*Pi_omega_2_sq*regge_rho*regge_omega
-      *(cos_rho_omega*(m_rhosq_minus_v2sq*m_omegasq_minus_v2sq
-			   +m_rho*Gamma_rho*m_omega*Gamma_omega)
-	+sin_rho_omega*(m_omega*Gamma_omega*m_rhosq_minus_v2sq
-			    -m_rho*Gamma_rho*m_omegasq_minus_v2sq));
-     double b1_a2_rho_T_rho_V_and_T
-       =-2.*regge_rho*regge_rho*g_rho_T*g_rho_V_and_T
-       *Pi_omega_1_sq*Pi_omega_2_sq
-       *(1.-cos_rho)*(m_omegasq_minus_v1sq*m_omegasq_minus_v2sq
-		      +m_omega*Gamma_omega*m_omega*Gamma_omega);
-     double b1_a2_omega_V_rho_T=-g_rho_T*g_omega_V*Pi_omega_1_sq*Pi_rho_2_sq
-       *regge_rho*regge_omega
-       *(cos_rho_omega*(m_omegasq_minus_v1sq*m_rhosq_minus_v2sq
-			    +m_rho*m_omega*Gamma_omega*Gamma_rho)
-	 +sin_rho_omega*(m_omega*Gamma_omega*m_rhosq_minus_v2sq
-			     -m_rho*Gamma_rho*m_omegasq_minus_v1sq));
-     double b2_a1_rho_T_rho_V_and_T=b1_a2_rho_T_rho_V_and_T; 
-     double b2_a1_omega_V_rho_T=-g_rho_T*g_omega_V*Pi_rho_1_sq*Pi_omega_2_sq
-       *regge_rho*regge_omega
-       *(cos_rho_omega*(m_rhosq_minus_v1sq*m_omegasq_minus_v2sq
-			    +m_rho*m_omega*Gamma_rho*Gamma_omega)
-	 +sin_rho_omega*(m_omega*Gamma_omega*m_rhosq_minus_v1sq
-			     -m_rho*Gamma_rho*m_omegasq_minus_v2sq));
-     
-     b1_b1=4.*gsq_rho_T*regge_rho_sq*Pi_omega_1_sq; 
-     b2_b2=4.*gsq_rho_T*regge_rho_sq*Pi_omega_2_sq;
-     b1_b2=4.*gsq_rho_T*regge_rho*regge_rho
-       *Pi_omega_1_sq*Pi_omega_2_sq
-       *(1.-cos_rho)*(m_omegasq_minus_v1sq*m_omegasq_minus_v2sq
-		      +m_omega*m_rho*Gamma_rho*Gamma_rho);
-     
-     a1_a1=a1_a1_rho_V_and_T_sq + (1./9.)*a1_a1_omega_V_sq
-      + (1./6.)*a1_a1_omega_V_rho_V_and_T; 
-     a2_a2=a2_a2_rho_V_and_T_sq + (1./9.)*a2_a2_omega_V_sq
-       + (1./6.)*a2_a2_omega_V_rho_V_and_T;  
-     a1_a2=a1_a2_rho_V_and_T_sq + (1./18.)*a1_a2_omega_V_sq	      
-       +(1./6.)*(a1_a2_omega_V_rho_V_and_T_term1
-		 +a1_a2_omega_V_rho_V_and_T_term2);
-
-     b1_a1=b1_a1_rho_T_rho_V_and_T+(1./3.)*b1_a1_omega_V_rho_V_and_T; 
-     b2_a2=b2_a2_rho_T_rho_V_and_T+(1./3.)*b2_a2_omega_V_rho_V_and_T;
-     b1_a2_b2_a1=b1_a2_rho_T_rho_V_and_T+b2_a1_rho_T_rho_V_and_T
-       +(1./3.)*(b1_a2_omega_V_rho_T+b2_a1_omega_V_rho_T);
-   
+    a1_a1=gsq_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq
+      + (1./3.)*g_omega_V*g_rho_V_and_T*rho_1_omega_1_interference
+      + (1./9.)*gsq_omega_V*regge_omega_sq*Pi_rho_1_sq;
+    a2_a2=gsq_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq
+      + (1./3.)*g_omega_V*g_rho_V_and_T*rho_2_omega_2_interference
+      + (1./9.)*gsq_omega_V*regge_omega_sq*Pi_rho_2_sq;
+    a1_a2=2.*gsq_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq*Pi_omega_2_sq
+      * Re_omega_1_omega_2
+      + (1./3.)*g_omega_V*g_rho_V_and_T*rho_12_omega_21_interference
+      + (2./9.)*gsq_omega_V*regge_omega_sq*Pi_rho_1_sq*Pi_rho_2_sq
+      *Re_rho_1_rho_2;
+    
+    b1_b1=4.*gsq_rho_T*regge_rho_sq*Pi_omega_1_sq; 
+    b2_b2=4.*gsq_rho_T*regge_rho_sq*Pi_omega_2_sq;
+    b1_b2=8.*gsq_rho_T*regge_rho_sq*Pi_omega_1_sq*Pi_omega_2_sq
+      *Re_omega_1_omega_2;
+    
+    b1_a1=-2.*g_rho_T*(2.*g_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq
+		       +(1./3.)*g_omega_V*rho_1_omega_1_interference);
+    b2_a2=-2.*g_rho_T*(2.*g_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq
+		       +(1./3.)*g_omega_V*rho_2_omega_2_interference);
+    b1_a2=-2.*g_rho_T*(2.*g_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq*Pi_omega_2_sq
+		       * Re_omega_1_omega_2
+		       + (1./3.)*g_omega_V*rho_2_omega_1_interference
+		       );
+    b2_a1=-2.*g_rho_T*(2.*g_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq*Pi_omega_2_sq
+		       * Re_omega_1_omega_2
+		       + (1./3.)*g_omega_V*rho_1_omega_2_interference
+		       );
   }
   else if (two_particles==(7+17)){ // pi0 eta
     Csq=2./3.;
     zetasq=1.;
-
-    double a1_a1_rho_V_and_T_sq=gsq_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq;
-    double a1_a1_omega_V_sq=gsq_omega_V*regge_omega_sq*Pi_omega_1_sq;
-    double a1_a1_omega_V_rho_V_and_T=g_rho_V_and_T*g_omega_V*regge_rho_omega
-      *Pi_rho_1_sq*Pi_omega_1_sq*( cos_rho_omega
-				   *(m_rhosq_minus_v1sq*m_omegasq_minus_v1sq
-				     +m_rho*m_omega*Gamma_rho*Gamma_omega)
-				   +sin_rho_omega
-				   *(m_rho*Gamma_rho*m_omegasq_minus_v1sq
-				   -m_omega*Gamma_omega*m_rhosq_minus_v1sq));
-    double a2_a2_rho_V_and_T_sq=gsq_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq;
-    double a2_a2_omega_V_sq=gsq_omega_V*regge_omega_sq*Pi_rho_2_sq;
-    double a2_a2_omega_V_rho_V_and_T=g_rho_V_and_T*g_omega_V*regge_rho_omega
-      *Pi_rho_2_sq*Pi_omega_2_sq*( cos_rho_omega
-				 *(m_rhosq_minus_v2sq*m_omegasq_minus_v2sq
-				   +m_rho*m_omega*Gamma_rho*Gamma_omega)
-				   + sin_rho_omega
-				   *(m_rho*Gamma_rho*m_omegasq_minus_v2sq
-				     -m_omega*Gamma_omega*m_rhosq_minus_v2sq));
-    double a1_a2_rho_V_and_T_sq
-      =2.*gsq_rho_V_and_T*regge_rho*regge_rho*Pi_rho_1_sq*Pi_omega_2_sq
-      *(1.-cos_rho)*(m_rhosq_minus_v1sq*m_omegasq_minus_v2sq 
-		     + m_rho*Gamma_rho*m_omega*Gamma_omega);
-    double a1_a2_omega_V_rho_V_and_T_term1=g_rho_V_and_T*g_omega_V
-      *Pi_rho_1_sq*Pi_rho_2_sq*regge_rho*regge_omega
-      *(cos_rho_omega
-	*(m_rhosq_minus_v1sq*m_rhosq_minus_v2sq+m_rho*Gamma_rho*m_rho*Gamma_rho)
-	+sin_rho_omega*m_rho*Gamma_rho*v1sq_minus_v2sq);  // check sign!
-    double a1_a2_omega_V_rho_V_and_T_term2=g_rho_V_and_T*g_omega_V
-      *Pi_omega_1_sq*Pi_omega_2_sq*regge_rho*regge_omega
-      *(cos_rho_omega*(m_omegasq_minus_v1sq*m_omegasq_minus_v2sq
-			   +m_omega*Gamma_omega*m_omega*Gamma_omega)
-	+sin_rho_omega*m_omega*Gamma_omega*v1sq_minus_v2sq);
-    double a1_a2_omega_V_sq
-      =gsq_omega_V*regge_omega*regge_omega*Pi_omega_1_sq*Pi_rho_2_sq
-      *2.*(1.-cos_omega)*(m_omegasq_minus_v1sq*m_rhosq_minus_v2sq
-			  +m_rho*m_omega*Gamma_rho*Gamma_omega);
-    double b1_a1_rho_T_rho_V_and_T
-      =-4.*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq;
-    double b1_a1_omega_V_rho_V_and_T
-      =-g_rho_T*g_omega_V*Pi_rho_1_sq*Pi_omega_1_sq*regge_omega*regge_rho
-      *(cos_rho_omega*(m_rhosq_minus_v1sq*m_omegasq_minus_v1sq
-			   +m_rho*Gamma_rho*m_omega*Gamma_omega)
-	+sin_rho_omega*(m_rho*Gamma_rho*m_omegasq_minus_v1sq
-			    -m_omega*Gamma_omega*m_rhosq_minus_v1sq));
-    double b2_a2_rho_T_rho_V_and_T
-      =-4.*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq;
-    double b2_a2_omega_V_rho_V_and_T
-      =-g_rho_T*g_omega_V*Pi_rho_2_sq*Pi_omega_2_sq*regge_rho*regge_omega
-      *(cos_rho_omega*(m_rhosq_minus_v2sq*m_omegasq_minus_v2sq
-			   +m_rho*Gamma_rho*m_omega*Gamma_omega)
-	+sin_rho_omega*(m_omega*Gamma_omega*m_rhosq_minus_v2sq
-			    -m_rho*Gamma_rho*m_omegasq_minus_v2sq));
-    double b1_a2_rho_T_rho_V_and_T
-      =-regge_rho*regge_rho*g_rho_T*g_rho_V_and_T
-      *Pi_rho_1_sq*Pi_omega_2_sq*2.*(1.-cos_rho)
-      *(m_rhosq_minus_v1sq*m_omegasq_minus_v2sq
-	+m_omega*Gamma_omega*m_rho*Gamma_rho);
-    double b1_a2_omega_V_rho_T=-g_rho_T*g_omega_V*Pi_rho_1_sq*Pi_rho_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega
-			      *(m_rhosq_minus_v1sq*m_rhosq_minus_v2sq
-				+m_rho*m_rho*Gamma_rho*Gamma_rho)
-			      -sin_rho_omega // check sign!
-			      *m_rho*Gamma_rho*(m_rhosq_minus_v2sq
-						-m_rhosq_minus_v1sq));
-    double b2_a1_rho_T_rho_V_and_T=b1_a2_rho_T_rho_V_and_T; 
-    double b2_a1_omega_V_rho_T=-g_rho_T*g_omega_V*Pi_omega_1_sq*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega
-				 *(m_omegasq_minus_v1sq*m_omegasq_minus_v2sq
-				   +m_omega*m_omega*Gamma_omega*Gamma_omega)
-				  -sin_rho_omega
-				  *m_omega*Gamma_omega*(m_omegasq_minus_v1sq
-							-m_omegasq_minus_v2sq));
     
+    a1_a1=(1./9.)*gsq_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq
+      + (1./3.)*g_omega_V*g_rho_V_and_T*rho_1_omega_1_interference
+      + gsq_omega_V*regge_omega_sq*Pi_omega_1_sq;
+    a2_a2=(1./9.)*gsq_rho_V_and_T*regge_rho_sq*Pi_rho_2_sq
+      + (1./3.)*g_omega_V*g_rho_V_and_T*rho_2_omega_2_interference
+      + gsq_omega_V*regge_omega_sq*Pi_omega_2_sq;
+    a1_a2=(2./9.)*gsq_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq*Pi_rho_2_sq
+      *Re_rho_1_rho_2
+      + (1./3.)*g_omega_V*g_rho_V_and_T*rho_12_omega_21_interference
+      + 2.*gsq_omega_V*Pi_omega_1_sq*Pi_omega_2_sq*regge_omega_sq
+      *Re_omega_1_omega_2;
+
     b1_b1=(4./9.)*gsq_rho_T*regge_rho_sq*Pi_rho_1_sq; 
-    b2_b2=(4./9.)*gsq_rho_T*regge_rho_sq*Pi_omega_2_sq;
-    b1_b2=(2./9.)*gsq_rho_T*regge_rho*regge_rho
-      *Pi_rho_1_sq*Pi_omega_2_sq*2.*(1.-cos_rho)
-      *(m_rhosq_minus_v1sq*m_rhosq_minus_v2sq
-	+m_rho*m_rho*Gamma_rho*Gamma_rho);
-   
-    a1_a1=(1./9.)*a1_a1_rho_V_and_T_sq + a1_a1_omega_V_sq 
-      + (1./6.)*a1_a1_omega_V_rho_V_and_T; 
-    a2_a2=(1./9.)*a2_a2_rho_V_and_T_sq + a2_a2_omega_V_sq 
-      + (1./6.)*a2_a2_omega_V_rho_V_and_T; 
-    a1_a2=(1./18.)*a1_a2_rho_V_and_T_sq + (1/2.)*a1_a2_omega_V_sq	      
-      +(1./6.)*(a1_a2_omega_V_rho_V_and_T_term1
-		+a1_a2_omega_V_rho_V_and_T_term2);
-          
-    b1_a1=(1./9.)*b1_a1_rho_T_rho_V_and_T+(1./3.)*b1_a1_omega_V_rho_V_and_T;
-    b2_a2=(1./9.)*b2_a2_rho_T_rho_V_and_T+(1./3.)*b2_a2_omega_V_rho_V_and_T;
-    b1_a2_b2_a1=(1./9.)*(b1_a2_rho_T_rho_V_and_T+b2_a1_rho_T_rho_V_and_T)
-      +(1./3.)*(b1_a2_omega_V_rho_T+b2_a1_omega_V_rho_T);
+    b2_b2=(4./9.)*gsq_rho_T*regge_rho_sq*Pi_rho_2_sq;
+    b1_b2=(8./9.)*gsq_rho_T*regge_rho_sq*Pi_rho_1_sq*Pi_rho_2_sq*Re_rho_1_rho_2;
+
+    b1_a1=-2.*g_rho_T*((2./9.)*g_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq
+		       +(1./3.)*g_omega_V*rho_1_omega_1_interference);
+    b2_a2=-2.*g_rho_T*((2./9.)*g_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq
+		       +(1./3.)*g_omega_V*rho_2_omega_2_interference);
+    b1_a2=-2.*g_rho_T*((2./9.)*g_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq
+		       *Pi_rho_2_sq*Re_rho_1_rho_2
+		       + (1./3.)*g_omega_V*rho_2_omega_1_interference
+		       );
+    b2_a1=-2.*g_rho_T*((2./9.)*g_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq
+		       *Pi_omega_2_sq* Re_omega_1_omega_2
+		       + (1./3.)*g_omega_V*rho_1_omega_2_interference
+		       );
   }
- 
+
+    /*
+    b1_b1=0.;
+    b2_b2=0.;
+    b1_b2=0.;
+    
+    b1_a1=0.;
+    b2_a2=0.;
+    b1_a2=0.;
+    b2_a1=0.;
+    /*
+    a2_a2=0.;
+    a1_a1=0.;
+    a1_a2=0.;
+    */  
+
   double T=Csq*((m_p_sq-p1_dot_p2)*(a1_a1*M1_M1 + a1_a2*M1_M2 + a2_a2*M2_M2)
 		+ 2.*(a1_a1*N1_N1 + a1_a2*N1_N2 + a2_a2*N2_N2)
-		+ 2.*m_p*(b1_a1*N1_N1 + b1_a2_b2_a1*N1_N2 + b2_a2*N2_N2)
+		+ 2.*m_p*(b1_a1*N1_N1 + (b1_a2+b2_a1)*N1_N2 + b2_a2*N2_N2)
 		+ (m_p_sq+p1_dot_p2)*(b1_b1*N1_N1 + b1_b2*N1_N2 + b2_b2*N2_N2));
     
   T*=zetasq*g0_sq;
@@ -454,19 +388,12 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   TLorentzVector N=(q_dot_p)*p1-q.Dot(p1)*p;
   double N_N1=N.Dot(N1);
   double N_N2=N.Dot(N2);
-  double M_M1=3*b1*q_dot_p+v1.Dot(c1)*q_dot_p+p_dot_v1*q.Dot(c1)
-    +p.Dot(d1)*q_dot_p-psq*q.Dot(d1);  
-  double M_M2=3*b2*q_dot_p+v2.Dot(c2)*q_dot_p+p_dot_v2*q.Dot(c2)
-    +p.Dot(d2)*q_dot_p-psq*q.Dot(d2);
+  double M_M1=3*b1*q_dot_p + v1.Dot(c1)*q_dot_p - p_dot_v1*q.Dot(c1)
+    + p.Dot(d1)*q_dot_p - psq*q.Dot(d1);  
+  double M_M2=3*b2*q_dot_p + v2.Dot(c2)*q_dot_p - p_dot_v2*q.Dot(c2)
+    + p.Dot(d2)*q_dot_p - psq*q.Dot(d2);
 
   // Coupling constants 
-  double g_omega_V=15.;
-  double gsq_omega_V=g_omega_V*g_omega_V;
-  double g_rho_V=3.4;
-  double g_rho_T=11.0; // GeV^-1
-  double gsq_rho_T=g_rho_T*g_rho_T;
-  double g_rho_V_and_T=g_rho_V+2.*m_p*g_rho_T;
-  double gsq_rho_V_and_T=g_rho_V_and_T*g_rho_V_and_T;
   double g_rho_S=sqrt(gsq_rho_S);
   double g_omega_S=sqrt(gsq_omega_S);
 
@@ -488,7 +415,6 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   double one_minus_cos_rho=1.-cos_rho;
   double sin_rho=sin(M_PI*a_rho);
   double regge_rho=pow(s/s0,a_rho-1.)*M_PI*a_rho_prime/(sin_rho*TMath::Gamma(a_rho)); // excluding phase factor 
-  double regge_rho_sq=regge_rho*regge_rho;
 
   // Regge cuts for rho
   double dc=regge_cuts[0];
@@ -496,8 +422,6 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   double a_rho_f2=0.222+0.404*t;
   double regge_rho_P_cut=exp(dc*t)*pow(s/s0,a_rho_P-1.);
   double regge_rho_f2_cut=exp(dc*t)*pow(s/s0,a_rho_f2-1.);
-  double C_rho_P_cut=regge_cuts[3];
-  double C_rho_f2_cut=regge_cuts[4];
 
   // omega propagator for top exchange
   double m_omega=0.78265;
@@ -516,51 +440,115 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   double one_minus_cos_omega=1.-cos_omega;
   double sin_omega=sin(M_PI*a_omega);
   double regge_omega=pow(s/s0,a_omega-1.)*M_PI*a_omega_prime/(sin_omega*TMath::Gamma(a_omega)); // excluding phase factor
-  double regge_omega_sq=regge_omega*regge_omega;
 
   // Regge cuts for omega
   double a_omega_P=0.52+0.196*t; // Pomeron
   double a_omega_f2=0.112+0.428*t; 
   double regge_omega_P_cut=exp(dc*t)*pow(s/s0,a_omega_P-1.);
   double regge_omega_f2_cut=exp(dc*t)*pow(s/s0,a_omega_f2-1.);
-  double C_omega_P_cut=regge_cuts[1];
-  double C_omega_f2_cut=regge_cuts[2];
   
-  // cut interference factors
-  double cos_rho_rho_P=cos(M_PI*(a_rho-0.5*a_rho_P)); 
-  double cos_rho_rho_f2=cos(M_PI*(a_rho-0.5*a_rho_f2));
-  double sin_rho_rho_P=sin(M_PI*(a_rho-0.5*a_rho_P));
-  double sin_rho_rho_f2=sin(M_PI*(a_rho-0.5*a_rho_f2));
-  double cos_omega_rho_P=cos(M_PI*(a_omega-0.5*a_rho_P)); 
-  double cos_omega_rho_f2=cos(M_PI*(a_omega-0.5*a_rho_f2));
-  double sin_omega_rho_P=sin(M_PI*(a_omega-0.5*a_rho_P));
-  double sin_omega_rho_f2=sin(M_PI*(a_omega-0.5*a_rho_f2)); 
-  double cos_rho_omega_P=cos(M_PI*(a_rho-0.5*a_omega_P)); 
-  double cos_rho_omega_f2=cos(M_PI*(a_rho-0.5*a_omega_f2));
-  double sin_rho_omega_P=sin(M_PI*(a_rho-0.5*a_omega_P));
-  double sin_rho_omega_f2=sin(M_PI*(a_rho-0.5*a_omega_f2));
-  double cos_omega_omega_P=cos(M_PI*(a_omega-0.5*a_omega_P)); 
-  double cos_omega_omega_f2=cos(M_PI*(a_omega-0.5*a_omega_f2));
-  double sin_omega_omega_P=sin(M_PI*(a_omega-0.5*a_omega_P));
-  double sin_omega_omega_f2=sin(M_PI*(a_omega-0.5*a_omega_f2));
+  // Donnachie and Kalashnikova (2015):  assume Regge cut parameters for rho 
+  // and omega are the same, but have different values for natural and unnatural
+  // parity exchanges.
+  // Natural parity:
+  double C_n_P_cut=regge_cuts[1];
+  double C_n_f2_cut=regge_cuts[2];
+  double Csq_n_P_cut=C_n_P_cut*C_n_P_cut;
+  double Csq_n_f2_cut=C_n_f2_cut*C_n_f2_cut;
+  double C_n_f2_C_n_P_cut=C_n_f2_cut*C_n_P_cut;
+  // Unnatural parity
+  double C_u_P_cut=regge_cuts[3];
+  double C_u_f2_cut=regge_cuts[4];
+  double Csq_u_P_cut=C_u_P_cut*C_u_P_cut;
+  double Csq_u_f2_cut=C_u_f2_cut*C_u_f2_cut;
+  double C_u_f2_C_u_P_cut=C_u_f2_cut*C_u_P_cut;
  
+  // cut interference terms 
+  double regge_omega_omega_P_cut=regge_omega*regge_omega_P_cut
+    *(cos(M_PI*(a_omega-0.5*a_omega_P))-cos(M_PI_2*a_omega_P)) ;
+  double regge_omega_omega_f2_cut=regge_omega*regge_omega_f2_cut
+    *(cos(M_PI*(a_omega-0.5*a_omega_f2))-cos(M_PI_2*a_omega_f2));
+  double regge_rho_omega_P_cut=regge_rho*regge_omega_P_cut
+    *(cos(M_PI*(a_rho-0.5*a_omega_P))-cos(M_PI_2*a_omega_P)); 
+  double regge_rho_omega_f2_cut=regge_rho*regge_omega_f2_cut
+    *(cos(M_PI*(a_rho-0.5*a_omega_f2))-cos(M_PI_2*a_omega_f2));
+  double regge_omega_f2_omega_P_cuts
+    =regge_omega_f2_cut*regge_omega_P_cut*cos(M_PI_2*(a_omega_f2-a_omega_P));
+  double regge_rho_rho_P_cut=regge_rho*regge_rho_P_cut
+    *(cos(M_PI*(a_rho-0.5*a_rho_P))-cos(M_PI_2*a_rho_P));
+  double regge_rho_rho_f2_cut=regge_rho*regge_rho_f2_cut
+    *(cos(M_PI*(a_rho-0.5*a_rho_f2))-cos(M_PI_2*a_rho_f2));
+  double regge_omega_rho_P_cut=regge_omega*regge_rho_P_cut
+    *(cos(M_PI*(a_omega-0.5*a_rho_P))-cos(M_PI_2*a_rho_P));
+  double regge_omega_rho_f2_cut=regge_omega*regge_rho_f2_cut
+    *(cos(M_PI*(a_omega-0.5*a_rho_f2))-cos(M_PI_2*a_rho_f2));
+
   // rho-omega interference
-  double cos_rho_omega_sum1=cos(M_PI*(a_rho-a_omega))-cos(M_PI*a_omega);
-  double cos_rho_omega_sum2=cos(M_PI*(a_omega-a_rho))-cos(M_PI*a_rho);
-  double sin_rho_omega_sum1=sin(M_PI*(a_rho-a_omega))+sin(M_PI*a_omega);
-  double sin_rho_omega_sum2=sin(M_PI*(a_omega-a_rho))+sin(M_PI*a_rho);
+  double cos_rho_omega_sum=0.5*(cos(M_PI*(a_rho-a_omega))-cos(M_PI*a_rho)
+				-cos(M_PI*a_omega)+1.); 
 
   // terms for interference between resonance shape and propagator in top
   // part of background diagrams
-  double Re_B_and_omega_1=m_omegasq_minus_v1sq*ReB+m_omega*Gamma_omega*ImB;
-  double Im_B_and_omega_1=m_omega*Gamma_omega*ReB-m_omegasq_minus_v1sq*ImB;
-  double Re_B_and_omega_2=m_omegasq_minus_v2sq*ReB+m_omega*Gamma_omega*ImB;
-  double Im_B_and_omega_2=m_omega*Gamma_omega*ReB-m_omegasq_minus_v2sq*ImB;
-  double Re_B_and_rho_1=m_rhosq_minus_v1sq*ReB+m_rho*Gamma_rho*ImB;
-  double Im_B_and_rho_1=m_rho*Gamma_rho*ReB-m_rhosq_minus_v1sq*ImB;
-  double Re_B_and_rho_2=m_rhosq_minus_v2sq*ReB+m_rho*Gamma_rho*ImB;
-  double Im_B_and_rho_2=m_rho*Gamma_rho*ReB-m_rhosq_minus_v2sq*ImB;
- 
+  double Sum_B_and_omega_1=m_omegasq_minus_v1sq*ReB+m_omega*Gamma_omega*ImB;
+  double Diff_B_and_omega_1=m_omega*Gamma_omega*ReB-m_omegasq_minus_v1sq*ImB;
+  double Sum_B_and_omega_2=m_omegasq_minus_v2sq*ReB+m_omega*Gamma_omega*ImB;
+  double Diff_B_and_omega_2=m_omega*Gamma_omega*ReB-m_omegasq_minus_v2sq*ImB;
+  double Sum_B_and_rho_1=m_rhosq_minus_v1sq*ReB+m_rho*Gamma_rho*ImB;
+  double Diff_B_and_rho_1=m_rho*Gamma_rho*ReB-m_rhosq_minus_v1sq*ImB;
+  double Sum_B_and_rho_2=m_rhosq_minus_v2sq*ReB+m_rho*Gamma_rho*ImB;
+  double Diff_B_and_rho_2=m_rho*Gamma_rho*ReB-m_rhosq_minus_v2sq*ImB;
+
+  // Squared Regge-ized propagators, including cut terms
+  double regge_rho_sq_sum=regge_rho*regge_rho*(1.-cos_rho)
+    + C_n_P_cut*regge_rho_rho_P_cut + C_n_f2_cut*regge_rho_rho_f2_cut;
+  double regge_omega_sq_sum=regge_omega*regge_omega*(1.-cos_omega)
+    + C_n_P_cut*regge_omega_omega_P_cut + C_n_f2_cut*regge_omega_omega_f2_cut;
+  double regge_omega_rho_sum1=regge_omega*regge_rho*cos_rho_omega_sum
+    + C_n_P_cut*regge_rho_omega_P_cut + C_n_f2_cut*regge_rho_omega_f2_cut;
+  double regge_omega_rho_sum2=regge_omega*regge_rho*cos_rho_omega_sum
+    + C_n_P_cut*regge_omega_rho_P_cut + C_n_f2_cut*regge_omega_rho_f2_cut;
+  double regge_rho_sq_diff=regge_rho*(C_n_P_cut*regge_rho_P_cut
+				      *(sin(M_PI*(a_rho-0.5*a_rho_P))
+					+sin(M_PI_2*a_rho_P))
+				      + C_n_f2_cut*regge_rho_f2_cut
+				      *(sin(M_PI*(a_rho-0.5*a_rho_f2))
+					+sin(M_PI_2*a_rho_f2)));
+  double regge_omega_sq_diff=regge_omega*(C_n_P_cut*regge_omega_P_cut
+					  *(sin(M_PI*(a_omega-0.5*a_omega_P))
+					    +sin(M_PI_2*a_omega_P))
+					  + C_n_f2_cut*regge_omega_f2_cut
+					  *(sin(M_PI*(a_omega-0.5*a_omega_f2))
+					    +sin(M_PI_2*a_omega_f2)));
+  double regge_omega_rho_diff=regge_omega*regge_rho*
+    0.5*(sin(M_PI*a_rho)-sin(M_PI*a_omega) + sin(M_PI*(a_omega-a_rho)));
+  // Drho' Domega* - Drho'* Domega
+  double regge_omega_rho_cuts_diff=regge_omega_rho_diff
+    + regge_omega*(C_n_P_cut*regge_rho_P_cut*(sin(M_PI*(a_omega-0.5*a_rho_P))
+					      + sin(M_PI_2*a_rho_P))
+		   + C_n_f2_cut*regge_rho_f2_cut
+		   *(sin(M_PI*(a_omega-0.5*a_rho_f2))+ sin(M_PI_2*a_rho_f2)));
+  // Domega' Drho* - Domega'* Drho
+  double regge_rho_omega_cuts_diff=-regge_omega_rho_diff
+    + regge_rho*(C_n_P_cut*regge_omega_P_cut*(sin(M_PI*(a_rho-0.5*a_omega_P))
+					      + sin(M_PI_2*a_omega_P))
+		 + C_n_f2_cut*regge_omega_f2_cut
+		 *(sin(M_PI*(a_rho-0.5*a_omega_f2))+ sin(M_PI_2*a_omega_f2)));
+				      
+  // Interference terms
+  double cosphi=cos(phase);
+  double sinphi=sin(phase);
+  double ReBWfac_omega_1=Sum_B_and_omega_1*cosphi+Diff_B_and_omega_1*sinphi;
+  double ImBWfac_omega_1=Sum_B_and_omega_1*sinphi-Diff_B_and_omega_1*cosphi;
+  double ReBWfac_omega_2=Sum_B_and_omega_2*cosphi+Diff_B_and_omega_2*sinphi;
+  double ImBWfac_omega_2=Sum_B_and_omega_2*sinphi-Diff_B_and_omega_2*cosphi;
+  double ReBWfac_rho_1=Sum_B_and_rho_1*cosphi+Diff_B_and_rho_1*sinphi;
+  double ImBWfac_rho_1=Sum_B_and_rho_1*sinphi-Diff_B_and_rho_1*cosphi;
+  double ReBWfac_rho_2=Sum_B_and_rho_2*cosphi+Diff_B_and_rho_2*sinphi;
+  double ImBWfac_rho_2=Sum_B_and_rho_2*sinphi-Diff_B_and_rho_2*cosphi;
+  
+  double a1_aS=0.,a2_aS=0.,b1_aS=0.,b2_aS=0.,a1_bS=0.,a2_bS=0.;
+  double b1_bS=0.,b2_bS=0.;
+
   // terms involving complex conjugates of Regge propagators and rho/omega propagtors
   double Re_a1_aS=0, Im_a1_aS=0, Re_a2_aS=0., Im_a2_aS=0.;
   double Re_b1_aS=0, Im_b1_aS=0, Re_b2_aS=0., Im_b2_aS=0.;
@@ -571,758 +559,100 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   double zeta=1., C=1;
   if (two_particles==(7+7)){ // pi0 pi0
     zeta=1./sqrt(2.);
-   
-    double Re_a1_aS_rho_V_and_T_sq
-      =gsq_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_1_sq
-      *(Re_B_and_omega_1*one_minus_cos_rho-Im_B_and_omega_1*sin_rho);
-    double Im_a1_aS_rho_V_and_T_sq
-      =gsq_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_1_sq
-      *(Re_B_and_omega_1*sin_rho+Im_B_and_omega_1*one_minus_cos_rho);
-    double Re_a1_aS_rho_V_and_T_rho_cuts
-      =2.*g_rho_S*g_rho_V_and_T*g_rho_V*regge_rho*Pi_omega_1_sq
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Re_B_and_omega_1
-	  +sin_rho_rho_P*Im_B_and_omega_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Re_B_and_omega_1
-	  +sin_rho_rho_f2*Im_B_and_omega_1)); 
-    double Im_a1_aS_rho_V_and_T_rho_cuts
-      =2.*g_rho_S*g_rho_V_and_T*g_rho_V*regge_rho*Pi_omega_1_sq
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Im_B_and_omega_1
-	  -sin_rho_rho_P*Re_B_and_omega_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Im_B_and_omega_1
-	  -sin_rho_rho_f2*Re_B_and_omega_1));
-    double Re_a1_aS_omega_V_rho_V_and_T
-      =g_omega_S*g_rho_V_and_T*g_omega_V*Pi_omega_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Re_B_and_omega_1
-			      -sin_rho_omega_sum2*Im_B_and_omega_1);  
-    double Im_a1_aS_omega_V_rho_V_and_T
-      =g_omega_S*g_rho_V_and_T*g_omega_V*Pi_omega_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Im_B_and_omega_1
-			      +sin_rho_omega_sum2*Re_B_and_omega_1);   
-    double Re_a1_aS_rho_V_and_T_omega_cuts
-      =2.*g_omega_S*g_rho_V_and_T*g_omega_V*regge_rho*Pi_omega_1_sq
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Re_B_and_omega_1
-	  +sin_rho_omega_P*Im_B_and_omega_1)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Re_B_and_omega_1
-	  +sin_rho_omega_f2*Im_B_and_omega_1)); 
-    double Im_a1_aS_rho_V_and_T_omega_cuts
-      =2.*g_omega_S*g_rho_V_and_T*g_omega_V*regge_rho*Pi_omega_1_sq
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Im_B_and_omega_1
-	  -sin_rho_omega_P*Re_B_and_omega_1)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Im_B_and_omega_1
-	  -sin_rho_omega_f2*Re_B_and_omega_1));
-    double Re_a1_aS_omega_V_rho_V_and_T_rho_propagator
-      =g_rho_S*g_rho_V_and_T*g_omega_V*Pi_rho_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum1*Re_B_and_rho_1
-			      -sin_rho_omega_sum1*Im_B_and_rho_1);  
-    double Im_a1_aS_omega_V_rho_V_and_T_rho_propagator
-      =g_rho_S*g_rho_V_and_T*g_omega_V*Pi_rho_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum1*Im_B_and_rho_1
-			      +sin_rho_omega_sum1*Re_B_and_rho_1);   
-    double Re_a1_aS_omega_V_rho_V_rho_cuts_rho_propagator
-      =2.*g_omega_V*g_rho_V*g_rho_S*Pi_rho_1_sq*regge_omega
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_omega_rho_P*Re_B_and_rho_1
-	  +sin_omega_rho_P*Im_B_and_rho_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_omega_rho_f2*Re_B_and_rho_1
-	  +sin_omega_rho_f2*Im_B_and_rho_1)); 
-    double Im_a1_aS_omega_V_rho_V_rho_cuts_rho_propagator
-      =2.*g_omega_V*g_rho_V*g_rho_S*Pi_rho_1_sq*regge_omega
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_omega_rho_P*Im_B_and_rho_1
-	  -sin_omega_rho_P*Re_B_and_rho_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_omega_rho_f2*Im_B_and_rho_1
-	  -sin_omega_rho_f2*Re_B_and_rho_1));
-    double Re_a1_aS_omega_V_sq
-      =g_omega_V*g_omega_V*g_omega_S*Pi_rho_1_sq*regge_omega_sq
-      *(Re_B_and_rho_1*one_minus_cos_omega-Im_B_and_rho_1*sin_omega);
-    double Im_a1_aS_omega_V_sq
-      =g_omega_V*g_omega_V*g_omega_S*Pi_rho_1_sq*regge_omega_sq
-      *(Re_B_and_rho_1*sin_omega+Im_B_and_rho_1*one_minus_cos_omega); 
-    double Re_a1_aS_omega_V_sq_omega_cuts
-      =2.*g_omega_V*g_omega_V*g_omega_S*Pi_rho_1_sq*regge_omega
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_omega_omega_P*Re_B_and_rho_1
-	  +sin_omega_omega_P*Im_B_and_rho_1)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_omega_omega_f2*Re_B_and_rho_1
-	  +sin_omega_omega_f2*Im_B_and_rho_1));
-    double Im_a1_aS_omega_V_sq_omega_cuts
-      =2.*g_omega_V*g_omega_V*g_omega_S*Pi_rho_1_sq*regge_omega
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_omega_omega_P*Im_B_and_rho_1
-	  -sin_omega_omega_P*Re_B_and_rho_1)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_omega_omega_f2*Im_B_and_rho_1
-	  -sin_omega_omega_f2*Re_B_and_rho_1));
- 
-    double Re_a2_aS_rho_V_and_T_sq
-      =gsq_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*one_minus_cos_rho-Im_B_and_omega_2*sin_rho);
-    double Im_a2_aS_rho_V_and_T_sq
-      =gsq_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*sin_rho+Im_B_and_omega_2*one_minus_cos_rho);
-    double Re_a2_aS_rho_V_and_T_rho_cuts
-      =2.*g_rho_S*g_rho_V_and_T*g_rho_V*regge_rho*Pi_omega_2_sq
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_rho_P*Re_B_and_omega_2
-	  +sin_rho_rho_P*Im_B_and_omega_2)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_rho_f2*Re_B_and_omega_2
-	  +sin_rho_rho_f2*Im_B_and_omega_2)); 
-    double Im_a2_aS_rho_V_and_T_rho_cuts
-      =2.*g_rho_S*g_rho_V_and_T*g_rho_V*regge_rho*Pi_omega_2_sq
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_rho_P*Im_B_and_omega_2
-	  -sin_rho_rho_P*Re_B_and_omega_2)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_rho_f2*Im_B_and_omega_2
-	  -sin_rho_rho_f2*Re_B_and_omega_2));
-    double Re_a2_aS_omega_V_rho_V_and_T
-      =g_omega_S*g_rho_V_and_T*g_omega_V*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Re_B_and_omega_2
-			      -sin_rho_omega_sum2*Im_B_and_omega_2);  
-    double Im_a2_aS_omega_V_rho_V_and_T
-      =g_omega_S*g_rho_V_and_T*g_omega_V*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Im_B_and_omega_2
-			      +sin_rho_omega_sum2*Re_B_and_omega_2);   
-    double Re_a2_aS_rho_V_and_T_omega_cuts
-      =2.*g_omega_S*g_rho_V_and_T*g_omega_V*regge_rho*Pi_omega_2_sq
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Re_B_and_omega_2
-	  +sin_rho_omega_P*Im_B_and_omega_2)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Re_B_and_omega_2
-	  +sin_rho_omega_f2*Im_B_and_omega_2)); 
-    double Im_a2_aS_rho_V_and_T_omega_cuts
-      =2.*g_omega_S*g_rho_V_and_T*g_omega_V*regge_rho*Pi_omega_2_sq
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Im_B_and_omega_2
-	  -sin_rho_omega_P*Re_B_and_omega_2)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Im_B_and_omega_2
-	  -sin_rho_omega_f2*Re_B_and_omega_2));
-    double Re_a2_aS_omega_V_rho_V_and_T_rho_propagator
-      =g_rho_S*g_rho_V_and_T*g_omega_V*Pi_rho_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum1*Re_B_and_rho_2
-			      -sin_rho_omega_sum1*Im_B_and_rho_2);  
-    double Im_a2_aS_omega_V_rho_V_and_T_rho_propagator
-      =g_rho_S*g_rho_V_and_T*g_omega_V*Pi_rho_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum1*Im_B_and_rho_2
-			      +sin_rho_omega_sum1*Re_B_and_rho_2); 
-    double Re_a2_aS_omega_V_rho_V_rho_cuts_rho_propagator
-      =2.*g_omega_V*g_rho_V*g_rho_S*Pi_rho_2_sq*regge_omega
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_omega_rho_P*Re_B_and_rho_2
-	  +sin_omega_rho_P*Im_B_and_rho_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_omega_rho_f2*Re_B_and_rho_2
-	  +sin_omega_rho_f2*Im_B_and_rho_2)); 
-    double Im_a2_aS_omega_V_rho_V_rho_cuts_rho_propagator
-      =2.*g_omega_V*g_rho_V*g_rho_S*Pi_rho_2_sq*regge_omega
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_omega_rho_P*Im_B_and_rho_2
-	  -sin_omega_rho_P*Re_B_and_rho_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_omega_rho_f2*Im_B_and_rho_2
-	  -sin_omega_rho_f2*Re_B_and_rho_2));
-    double Re_a2_aS_omega_V_sq
-      =gsq_omega_V*g_omega_S*Pi_rho_2_sq*regge_omega_sq
-      *(Re_B_and_rho_2*one_minus_cos_omega-Im_B_and_rho_2*sin_omega);
-    double Im_a2_aS_omega_V_sq
-      =gsq_omega_V*g_omega_S*Pi_rho_2_sq*regge_omega_sq
-      *(Re_B_and_rho_2*sin_omega+Im_B_and_rho_2*one_minus_cos_omega); 
-    double Re_a2_aS_omega_V_sq_omega_cuts
-      =2.*gsq_omega_V*g_omega_S*Pi_rho_2_sq*regge_omega
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_omega_omega_P*Re_B_and_rho_2
-	  +sin_omega_omega_P*Im_B_and_rho_2)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_omega_omega_f2*Re_B_and_rho_2
-	  +sin_omega_omega_f2*Im_B_and_rho_2));
-    double Im_a2_aS_omega_V_sq_omega_cuts
-      =2.*gsq_omega_V*g_omega_S*Pi_rho_2_sq*regge_omega
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_omega_omega_P*Im_B_and_rho_2
-	  -sin_omega_omega_P*Re_B_and_rho_2)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_omega_omega_f2*Im_B_and_rho_2
-	  -sin_omega_omega_f2*Re_B_and_rho_2));
-    
-    double Re_b1_aS_rho_V_and_T
-      =-2.*g_rho_S*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq
-      *(Re_B_and_omega_1*one_minus_cos_rho-Im_B_and_omega_1*sin_rho);   
-    double Im_b1_aS_rho_V_and_T
-      =-2.*g_rho_S*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq
-      *(Re_B_and_omega_1*sin_rho+Im_B_and_omega_1*one_minus_cos_rho); 
-    double Re_b1_aS_omega_V=-2.*g_omega_S*g_rho_V*g_rho_T*Pi_omega_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Re_B_and_omega_1
-			      -sin_rho_omega_sum2*Im_B_and_omega_1);
-    double Im_b1_aS_omega_V=-2.*g_omega_S*g_rho_V*g_rho_T*Pi_omega_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Im_B_and_omega_1
-			      +sin_rho_omega_sum2*Re_B_and_omega_1);
-    double Re_b1_aS_rho_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_1_sq*regge_rho   
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Re_B_and_omega_1
-	  +sin_rho_rho_P*Im_B_and_omega_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Re_B_and_omega_1
-	  +sin_rho_rho_f2*Im_B_and_omega_1));   
-    double Im_b1_aS_rho_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_1_sq*regge_rho   
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Im_B_and_omega_1
-	  -sin_rho_rho_P*Re_B_and_omega_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Im_B_and_omega_1
-	  -sin_rho_rho_f2*Re_B_and_omega_1));  
-    double Re_b1_aS_omega_cuts
-      =-4.*g_omega_V*g_omega_S*g_rho_T*Pi_omega_1_sq*regge_rho   
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Re_B_and_omega_1
-	  +sin_rho_omega_P*Im_B_and_omega_1)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Re_B_and_omega_1
-	  +sin_rho_omega_f2*Im_B_and_omega_1));   
-    double Im_b1_aS_omega_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_1_sq*regge_rho   
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Im_B_and_omega_1
-	  -sin_rho_omega_P*Re_B_and_omega_1)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Im_B_and_omega_1
-	  -sin_rho_omega_f2*Re_B_and_omega_1)); 
-    double Re_a1_bS_rho_V_and_T
-      =-2.*g_rho_T*g_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_1_sq
-      *(Re_B_and_omega_1*one_minus_cos_rho-Im_B_and_omega_1*sin_rho);
-    double Im_a1_bS_rho_V_and_T
-      =-2.*g_rho_T*g_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_1_sq
-      *(Re_B_and_omega_1*sin_rho+Im_B_and_omega_1*one_minus_cos_rho);
-    double Re_a1_bS_omega_V
-      =-2.*g_rho_S*g_rho_V*g_rho_T*regge_rho*regge_omega*Pi_rho_1_sq
-      *(cos_rho_omega_sum1*Re_B_and_rho_1-sin_rho_omega_sum1*Im_B_and_rho_1);  
-    double Im_a1_bS_omega_V
-      =-2.*g_rho_S*g_rho_V*g_rho_T*regge_rho*regge_omega*Pi_rho_1_sq
-      *(cos_rho_omega_sum1*Im_B_and_rho_1+sin_rho_omega_sum1*Re_B_and_rho_1);
-    
-    double Re_b2_aS_rho_V_and_T
-      =-2.*g_rho_S*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*one_minus_cos_rho-Im_B_and_omega_2*sin_rho);   
-    double Im_b2_aS_rho_V_and_T
-      =-2.*g_rho_S*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*sin_rho+Im_B_and_omega_2*one_minus_cos_rho); 
-    double Re_b2_aS_omega_V=-2.*g_omega_S*g_rho_V*g_rho_T*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Re_B_and_omega_2
-			      -sin_rho_omega_sum2*Im_B_and_omega_2);
-    double Im_b2_aS_omega_V=-2.*g_omega_S*g_rho_V*g_rho_T*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Im_B_and_omega_2
-			      +sin_rho_omega_sum2*Re_B_and_omega_2);  
-    double Re_b2_aS_rho_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_2_sq*regge_rho   
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Re_B_and_omega_2
-	  +sin_rho_rho_P*Im_B_and_omega_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Re_B_and_omega_2
-	  +sin_rho_rho_f2*Im_B_and_omega_2));   
-    double Im_b2_aS_rho_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_2_sq*regge_rho   
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Im_B_and_omega_2
-	  -sin_rho_rho_P*Re_B_and_omega_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Im_B_and_omega_2
-	  -sin_rho_rho_f2*Re_B_and_omega_2)); 
-    double Re_b2_aS_omega_cuts
-      =-4.*g_omega_V*g_omega_S*g_rho_T*Pi_omega_2_sq*regge_rho   
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Re_B_and_omega_2
-	  +sin_rho_omega_P*Im_B_and_omega_2)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Re_B_and_omega_2
-	  +sin_rho_omega_f2*Im_B_and_omega_2));   
-    double Im_b2_aS_omega_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_2_sq*regge_rho   
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Im_B_and_omega_2
-	  -sin_rho_omega_P*Re_B_and_omega_2)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Im_B_and_omega_2
-	  -sin_rho_omega_f2*Re_B_and_omega_2)); 
 
-    double Re_a2_bS_rho_V_and_T
-      =-2.*g_rho_T*g_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*one_minus_cos_rho-Im_B_and_omega_2*sin_rho);
-    double Im_a2_bS_rho_V_and_T
-      =-2.*g_rho_T*g_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*sin_rho+Im_B_and_omega_2*one_minus_cos_rho);
-    double Re_a2_bS_omega_V
-      =-2.*g_rho_S*g_rho_V*g_rho_T*regge_rho*regge_omega*Pi_rho_2_sq
-      *(cos_rho_omega_sum1*Re_B_and_rho_2-sin_rho_omega_sum1*Im_B_and_rho_2);  
-    double Im_a2_bS_omega_V
-      =-2.*g_rho_S*g_rho_V*g_rho_T*regge_rho*regge_omega*Pi_rho_2_sq
-      *(cos_rho_omega_sum1*Im_B_and_rho_2+sin_rho_omega_sum1*Re_B_and_rho_2);
- 
-    Re_b1_bS=4.*C*gR*gsq_rho_T*g_rho_S*regge_rho_sq*Pi_omega_1_sq
-      *(Re_B_and_omega_1*one_minus_cos_rho-Im_B_and_omega_1*sin_rho);
-    Im_b1_bS=8.*C*gR*gsq_rho_T*g_rho_S*regge_rho_sq*Pi_omega_1_sq
-      *(Re_B_and_omega_1*sin_rho+Im_B_and_omega_1*one_minus_cos_rho);   
-    Re_b2_bS=4.*C*gR*gsq_rho_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*one_minus_cos_rho-Im_B_and_omega_2*sin_rho);
-    Im_b2_bS=4.*C*gR*gsq_rho_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*sin_rho+Im_B_and_omega_2*one_minus_cos_rho);
-
-    Re_b2_aS=C*gR*(Re_b2_aS_rho_V_and_T + Re_b2_aS_rho_cuts
-		   + Re_b2_aS_omega_V + Re_b2_aS_omega_cuts
-		   );
-    Im_b2_aS=C*gR*(Im_b2_aS_rho_V_and_T + Im_b2_aS_rho_cuts
-		   + Im_b2_aS_omega_V + Im_b2_aS_omega_cuts
-		   );  
-    Re_b1_aS=C*gR*(Re_b1_aS_rho_V_and_T + Re_b1_aS_rho_cuts
-		   + Re_b1_aS_omega_V + Re_b1_aS_omega_cuts
-		   );
-    Im_b1_aS=C*gR*(Im_b1_aS_rho_V_and_T + Im_b1_aS_rho_cuts
-		   + Im_b1_aS_omega_V + Im_b1_aS_omega_cuts
-		   );
-
-    Re_a1_bS=C*gR*(Re_a1_bS_rho_V_and_T + (1./3.)*Re_a1_bS_omega_V);  
-    Im_a1_bS=C*gR*(Im_a1_bS_rho_V_and_T + (1./3.)*Im_a1_bS_omega_V);  
-    Re_a2_bS=C*gR*(Re_a2_bS_rho_V_and_T + (1./3.)*Re_a2_bS_omega_V);  
-    Im_a2_bS=C*gR*(Im_a2_bS_rho_V_and_T + (1./3.)*Im_a2_bS_omega_V);
-    
-    Re_a1_aS=C*gR*(Re_a1_aS_rho_V_and_T_sq
-		   + Re_a1_aS_rho_V_and_T_rho_cuts
-		   + Re_a1_aS_omega_V_rho_V_and_T
-		   + Re_a1_aS_rho_V_and_T_omega_cuts
-		   + (1./3.)*Re_a1_aS_omega_V_rho_V_and_T_rho_propagator
-		   + (1./3.)*Re_a1_aS_omega_V_rho_V_rho_cuts_rho_propagator
-		   + (1./3.)*Re_a1_aS_omega_V_sq
-		   + (1./3.)*Re_a1_aS_omega_V_sq_omega_cuts
-		   );
-    Im_a1_aS=C*gR*(Im_a1_aS_rho_V_and_T_sq
-		   + Im_a1_aS_rho_V_and_T_rho_cuts
-		   + Im_a1_aS_omega_V_rho_V_and_T
-		   + Im_a1_aS_rho_V_and_T_omega_cuts
-		   + (1./3.)*Im_a1_aS_omega_V_rho_V_and_T_rho_propagator
-		   + (1./3.)*Im_a1_aS_omega_V_rho_V_rho_cuts_rho_propagator
-		   + (1./3.)*Im_a1_aS_omega_V_sq
-		   + (1./3.)*Im_a1_aS_omega_V_sq_omega_cuts
-		   ); 
-
-    Re_a2_aS=C*gR*(Re_a2_aS_rho_V_and_T_sq
-		   + Re_a2_aS_rho_V_and_T_rho_cuts
-		   + Re_a2_aS_omega_V_rho_V_and_T
-		   + Re_a2_aS_rho_V_and_T_omega_cuts
-		   + (1./3.)*Re_a2_aS_omega_V_rho_V_and_T_rho_propagator
-		   + (1./3.)*Re_a2_aS_omega_V_rho_V_rho_cuts_rho_propagator
-		   + (1./3.)*Re_a2_aS_omega_V_sq
-		   + (1./3.)*Re_a2_aS_omega_V_sq_omega_cuts
-		   );
-    Im_a2_aS=C*gR*(Im_a2_aS_rho_V_and_T_sq
-		   + Im_a2_aS_rho_V_and_T_rho_cuts
-		   + Im_a2_aS_omega_V_rho_V_and_T
-		   + Im_a2_aS_rho_V_and_T_omega_cuts 
-		   + (1./3.)*Im_a2_aS_omega_V_rho_V_and_T_rho_propagator
-		   + (1./3.)*Im_a2_aS_omega_V_rho_V_rho_cuts_rho_propagator
-		   + (1./3.)*Im_a2_aS_omega_V_sq
-		   + (1./3.)*Im_a2_aS_omega_V_sq_omega_cuts
-		   );
+    a1_aS=Pi_omega_1_sq*(ReBWfac_omega_1*(g_rho_S*gsq_rho_V_and_T
+					  *regge_rho_sq_sum
+					  + g_omega_S*g_omega_V*g_rho_V_and_T
+					  *regge_omega_rho_sum1)
+			 + ImBWfac_omega_1*(- g_rho_S*gsq_rho_V_and_T
+					    *regge_rho_sq_diff
+					    - g_omega_S*g_omega_V*g_rho_V_and_T
+					    *regge_rho_omega_cuts_diff
+					    )
+			 )
+      + (1./3.)*Pi_rho_1_sq*(ReBWfac_rho_1*(g_omega_S*gsq_omega_V
+					    *regge_omega_sq_sum
+					    + g_rho_S*g_omega_V*g_rho_V_and_T
+					    *regge_omega_rho_sum2)
+			     + ImBWfac_rho_1*(- g_omega_S*gsq_omega_V
+					      *regge_omega_sq_diff
+					      - g_rho_S*g_omega_V*g_rho_V_and_T
+					      *regge_omega_rho_cuts_diff
+					      )
+			     );
+    a2_aS=Pi_omega_2_sq*(ReBWfac_omega_2*(g_rho_S*gsq_rho_V_and_T
+					  *regge_rho_sq_sum
+					  + g_omega_S*g_omega_V*g_rho_V_and_T
+					  *regge_omega_rho_sum1)
+			 + ImBWfac_omega_2*(- g_rho_S*gsq_rho_V_and_T
+					    *regge_rho_sq_diff
+					    - g_omega_S*g_omega_V*g_rho_V_and_T
+					    *regge_rho_omega_cuts_diff
+					    )
+			 )
+      + (1./3.)*Pi_rho_2_sq*(ReBWfac_rho_2*(g_omega_S*gsq_omega_V
+					    *regge_omega_sq_sum
+					    + g_rho_S*g_omega_V*g_rho_V_and_T
+					    *regge_omega_rho_sum2)
+			     + ImBWfac_rho_2*(- g_omega_S*gsq_omega_V
+					      *regge_omega_sq_diff
+					      - g_rho_S*g_omega_V*g_rho_V_and_T
+					      *regge_omega_rho_cuts_diff
+					      )
+			     );
+    b1_aS=-2.*g_rho_T*Pi_omega_1_sq*(ReBWfac_omega_1*(g_rho_S*g_rho_V_and_T
+						      *regge_rho_sq_sum
+						      +g_omega_S*g_omega_V
+						      *regge_omega_rho_sum1
+						      )
+				     + ImBWfac_omega_1*(- g_rho_S*g_rho_V_and_T
+							*regge_rho_sq_diff
+							- g_omega_S*g_omega_V
+							*regge_rho_omega_cuts_diff							
+							)
+				     );
+    b2_aS=-2.*g_rho_T*Pi_omega_2_sq*(ReBWfac_omega_2*(g_rho_S*g_rho_V_and_T
+						      *regge_rho_sq_sum
+						      +g_omega_S*g_omega_V
+						      *regge_omega_rho_sum1
+						      )
+				     + ImBWfac_omega_2*(- g_rho_S*g_rho_V_and_T
+							*regge_rho_sq_diff
+							- g_omega_S*g_omega_V
+							*regge_rho_omega_cuts_diff	
+							)
+				     );
+    a1_bS=-2.*g_rho_S*g_rho_T*(Pi_omega_1_sq*g_rho_V_and_T
+			       *(ReBWfac_omega_1*regge_rho_sq_sum
+				 - ImBWfac_omega_1*regge_rho_sq_diff)
+			       + (1./3.)*Pi_rho_1_sq*g_omega_V
+			       *(ReBWfac_rho_1*regge_omega_rho_sum2
+				 - ImBWfac_rho_1*regge_omega_rho_cuts_diff)
+			       );
+    a2_bS=-2.*g_rho_S*g_rho_T*(Pi_omega_2_sq*g_rho_V_and_T
+			       *(ReBWfac_omega_2*regge_rho_sq_sum
+				 - ImBWfac_omega_2*regge_rho_sq_diff)
+			       + (1./3.)*Pi_rho_2_sq*g_omega_V
+			       *(ReBWfac_rho_2*regge_omega_rho_sum2
+				 - ImBWfac_rho_2*regge_omega_rho_cuts_diff)
+			       );
+    b1_bS=4.*g_rho_S*gsq_rho_T*(ReBWfac_omega_1*regge_rho_sq_sum
+				- ImBWfac_omega_1*regge_rho_sq_diff);
+    b2_bS=4.*g_rho_S*gsq_rho_T*(ReBWfac_omega_2*regge_rho_sq_sum
+				- ImBWfac_omega_2*regge_rho_sq_diff);
+     
   }
   if (two_particles==(7+17)){ // pi0 eta
     C=sqrt(2./3.);
 
-    double Re_a1_aS_rho_V_and_T_sq
-      =gsq_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_rho_1_sq
-      *(Re_B_and_rho_1*one_minus_cos_rho-Im_B_and_rho_1*sin_rho);
-    double Im_a1_aS_rho_V_and_T_sq
-      =gsq_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_rho_1_sq
-      *(Re_B_and_rho_1*sin_rho+Im_B_and_rho_1*one_minus_cos_rho); 
-    double Re_a1_aS_rho_V_and_T_rho_cuts
-      =2.*g_rho_S*g_rho_V_and_T*g_rho_V*regge_rho*Pi_rho_1_sq
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Re_B_and_rho_1
-	  +sin_rho_rho_P*Im_B_and_rho_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Re_B_and_rho_1
-	  +sin_rho_rho_f2*Im_B_and_rho_1)); 
-    double Im_a1_aS_rho_V_and_T_rho_cuts
-      =2.*g_rho_S*g_rho_V_and_T*g_rho_V*regge_rho*Pi_rho_1_sq
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Im_B_and_rho_1
-	  -sin_rho_rho_P*Re_B_and_rho_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Im_B_and_rho_1
-	  -sin_rho_rho_f2*Re_B_and_rho_1));
-    double Re_a1_aS_omega_V_rho_V_and_T
-      =g_omega_S*g_rho_V_and_T*g_omega_V*Pi_rho_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Re_B_and_rho_1
-			      -sin_rho_omega_sum2*Im_B_and_rho_1);  
-    double Im_a1_aS_omega_V_rho_V_and_T
-      =g_omega_S*g_rho_V_and_T*g_omega_V*Pi_rho_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Im_B_and_rho_1
-			      +sin_rho_omega_sum2*Re_B_and_rho_1);   
-    double Re_a1_aS_rho_V_and_T_omega_cuts
-      =2.*g_omega_S*g_rho_V_and_T*g_omega_V*regge_rho*Pi_rho_1_sq
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Re_B_and_rho_1
-	  +sin_rho_omega_P*Im_B_and_rho_1)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Re_B_and_rho_1
-	  +sin_rho_omega_f2*Im_B_and_rho_1)); 
-    double Im_a1_aS_rho_V_and_T_omega_cuts
-      =2.*g_omega_S*g_rho_V_and_T*g_omega_V*regge_rho*Pi_rho_1_sq
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Im_B_and_rho_1
-	  -sin_rho_omega_P*Re_B_and_rho_1)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Im_B_and_rho_1
-	  -sin_rho_omega_f2*Re_B_and_rho_1));  
-    double Re_a1_aS_omega_V_rho_V_and_T_omega_propagator
-      =g_rho_S*g_rho_V_and_T*g_omega_V*Pi_omega_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum1*Re_B_and_omega_1
-			      -sin_rho_omega_sum1*Im_B_and_omega_1);  
-    double Im_a1_aS_omega_V_rho_V_and_T_omega_propagator
-      =g_rho_S*g_rho_V_and_T*g_omega_V*Pi_omega_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum1*Im_B_and_omega_1
-			      +sin_rho_omega_sum1*Re_B_and_omega_1);  
-    double Re_a1_aS_omega_V_rho_V_rho_cuts_omega_propagator
-      =2.*g_omega_V*g_rho_V*g_rho_S*Pi_omega_1_sq*regge_omega
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_omega_rho_P*Re_B_and_omega_1
-	  +sin_omega_rho_P*Im_B_and_omega_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_omega_rho_f2*Re_B_and_omega_1
-	  +sin_omega_rho_f2*Im_B_and_omega_1)); 
-    double Im_a1_aS_omega_V_rho_V_rho_cuts_omega_propagator
-      =2.*g_omega_V*g_rho_V*g_rho_S*Pi_omega_1_sq*regge_omega
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_omega_rho_P*Im_B_and_omega_1
-	  -sin_omega_rho_P*Re_B_and_omega_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_omega_rho_f2*Im_B_and_omega_1
-	  -sin_omega_rho_f2*Re_B_and_omega_1));   
-    double Re_a1_aS_omega_V_sq
-      =g_omega_V*g_omega_V*g_omega_S*Pi_omega_1_sq*regge_omega_sq
-      *(Re_B_and_omega_1*one_minus_cos_omega-Im_B_and_omega_1*sin_omega);
-    double Im_a1_aS_omega_V_sq
-      =g_omega_V*g_omega_V*g_omega_S*Pi_omega_1_sq*regge_omega_sq
-      *(Re_B_and_omega_1*sin_omega+Im_B_and_omega_1*one_minus_cos_omega); 
-    double Re_a1_aS_omega_V_sq_omega_cuts
-      =2.*g_omega_V*g_omega_V*g_omega_S*Pi_omega_1_sq*regge_omega
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_omega_omega_P*Re_B_and_omega_1
-	  +sin_omega_omega_P*Im_B_and_omega_1)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_omega_omega_f2*Re_B_and_omega_1
-	  +sin_omega_omega_f2*Im_B_and_omega_1));
-    double Im_a1_aS_omega_V_sq_omega_cuts
-      =2.*g_omega_V*g_omega_V*g_omega_S*Pi_omega_1_sq*regge_omega
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_omega_omega_P*Im_B_and_omega_1
-	  -sin_omega_omega_P*Re_B_and_omega_1)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_omega_omega_f2*Im_B_and_omega_1
-	  -sin_omega_omega_f2*Re_B_and_omega_1));
-
-    double Re_a2_aS_rho_V_and_T_sq
-      =gsq_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*one_minus_cos_rho-Im_B_and_omega_2*sin_rho);
-    double Im_a2_aS_rho_V_and_T_sq
-      =gsq_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*sin_rho+Im_B_and_omega_2*one_minus_cos_rho); 
-    double Re_a2_aS_rho_V_and_T_rho_cuts
-      =2.*g_rho_S*g_rho_V_and_T*g_rho_V*regge_rho*Pi_omega_2_sq
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Re_B_and_omega_2
-	  +sin_rho_rho_P*Im_B_and_omega_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Re_B_and_omega_2
-	  +sin_rho_rho_f2*Im_B_and_omega_2)); 
-    double Im_a2_aS_rho_V_and_T_rho_cuts
-      =2.*g_rho_S*g_rho_V_and_T*g_rho_V*regge_rho*Pi_omega_2_sq
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Im_B_and_omega_2
-	  -sin_rho_rho_P*Re_B_and_omega_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Im_B_and_omega_2
-	  -sin_rho_rho_f2*Re_B_and_omega_2)); 
-    double Re_a2_aS_omega_V_rho_V_and_T
-      =g_omega_S*g_rho_V_and_T*g_omega_V*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Re_B_and_omega_2
-			      -sin_rho_omega_sum2*Im_B_and_omega_2);  
-    double Im_a2_aS_omega_V_rho_V_and_T
-      =g_omega_S*g_rho_V_and_T*g_omega_V*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Im_B_and_omega_2
-			      +sin_rho_omega_sum2*Re_B_and_omega_2);   
-    double Re_a2_aS_rho_V_and_T_omega_cuts
-      =2.*g_omega_S*g_rho_V_and_T*g_omega_V*regge_rho*Pi_omega_2_sq
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Re_B_and_omega_2
-	  +sin_rho_omega_P*Im_B_and_omega_2)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Re_B_and_omega_2
-	  +sin_rho_omega_f2*Im_B_and_omega_2)); 
-    double Im_a2_aS_rho_V_and_T_omega_cuts
-      =2.*g_omega_S*g_rho_V_and_T*g_omega_V*regge_rho*Pi_omega_2_sq
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Im_B_and_omega_2
-	  -sin_rho_omega_P*Re_B_and_omega_2)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Im_B_and_omega_2
-	  -sin_rho_omega_f2*Re_B_and_omega_2));   
-    double Re_a2_aS_omega_V_rho_V_and_T_rho_propagator
-      =g_rho_S*g_rho_V_and_T*g_omega_V*Pi_rho_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum1*Re_B_and_rho_2
-			      -sin_rho_omega_sum1*Im_B_and_rho_2);  
-    double Im_a2_aS_omega_V_rho_V_and_T_rho_propagator
-      =g_rho_S*g_rho_V_and_T*g_omega_V*Pi_rho_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum1*Im_B_and_rho_2
-			      +sin_rho_omega_sum1*Re_B_and_rho_2);  
-    double Re_a2_aS_omega_V_rho_V_rho_cuts_rho_propagator
-      =2.*g_omega_V*g_rho_V*g_rho_S*Pi_rho_2_sq*regge_omega
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_omega_rho_P*Re_B_and_rho_2
-	  +sin_omega_rho_P*Im_B_and_rho_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_omega_rho_f2*Re_B_and_rho_2
-	  +sin_omega_rho_f2*Im_B_and_rho_2)); 
-    double Im_a2_aS_omega_V_rho_V_rho_cuts_rho_propagator
-      =2.*g_omega_V*g_rho_V*g_rho_S*Pi_rho_2_sq*regge_omega
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_omega_rho_P*Im_B_and_rho_2
-	  -sin_omega_rho_P*Re_B_and_rho_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_omega_rho_f2*Im_B_and_rho_2
-	  -sin_omega_rho_f2*Re_B_and_rho_2));   
-    double Re_a2_aS_omega_V_sq
-      =g_omega_V*g_omega_V*g_omega_S*Pi_rho_2_sq*regge_omega_sq
-      *(Re_B_and_rho_2*one_minus_cos_omega-Im_B_and_rho_2*sin_omega);
-    double Im_a2_aS_omega_V_sq
-      =g_omega_V*g_omega_V*g_omega_S*Pi_rho_2_sq*regge_omega_sq
-      *(Re_B_and_rho_2*sin_omega+Im_B_and_rho_2*one_minus_cos_omega); 
-    double Re_a2_aS_omega_V_sq_omega_cuts
-      =2.*g_omega_V*g_omega_V*g_omega_S*Pi_rho_2_sq*regge_omega
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_omega_omega_P*Re_B_and_rho_2
-	  +sin_omega_omega_P*Im_B_and_rho_2)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_omega_omega_f2*Re_B_and_rho_2
-	  +sin_omega_omega_f2*Im_B_and_rho_2));
-    double Im_a2_aS_omega_V_sq_omega_cuts
-      =2.*g_omega_V*g_omega_V*g_omega_S*Pi_rho_2_sq*regge_omega
-      *(C_omega_P_cut*regge_omega_P_cut
-	*(cos_omega_omega_P*Im_B_and_rho_2
-	  -sin_omega_omega_P*Re_B_and_rho_2)
-	+ C_omega_f2_cut*regge_omega_f2_cut
-	*(cos_omega_omega_f2*Im_B_and_rho_2
-	  -sin_omega_omega_f2*Re_B_and_rho_2));
-   
-    double Re_b1_aS_rho_V_and_T
-      =-2.*g_rho_S*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq
-      *(Re_B_and_rho_1*one_minus_cos_rho-Im_B_and_rho_1*sin_rho);   
-    double Im_b1_aS_rho_V_and_T
-      =-2.*g_rho_S*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq
-      *(Re_B_and_rho_1*sin_rho+Im_B_and_rho_1*one_minus_cos_rho); 
-    double Re_b1_aS_omega_V=-2.*g_omega_S*g_rho_V*g_rho_T*Pi_rho_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Re_B_and_rho_1
-			      -sin_rho_omega_sum2*Im_B_and_rho_1);
-    double Im_b1_aS_omega_V=-2.*g_omega_S*g_rho_V*g_rho_T*Pi_rho_1_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Im_B_and_rho_1
-			      +sin_rho_omega_sum2*Re_B_and_rho_1);
-    double Re_b1_aS_rho_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_rho_1_sq*regge_rho   
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Re_B_and_rho_1
-	  +sin_rho_rho_P*Im_B_and_rho_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Re_B_and_rho_1
-	  +sin_rho_rho_f2*Im_B_and_rho_1));   
-    double Im_b1_aS_rho_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_rho_1_sq*regge_rho   
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Im_B_and_rho_1
-	  -sin_rho_rho_P*Re_B_and_rho_1)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Im_B_and_rho_1
-	  -sin_rho_rho_f2*Re_B_and_rho_1));  
-    double Re_b1_aS_omega_cuts
-      =-4.*g_omega_V*g_omega_S*g_rho_T*Pi_rho_1_sq*regge_rho   
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Re_B_and_rho_1
-	  +sin_rho_omega_P*Im_B_and_rho_1)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Re_B_and_rho_1
-	  +sin_rho_omega_f2*Im_B_and_rho_1));   
-    double Im_b1_aS_omega_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_rho_1_sq*regge_rho   
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Im_B_and_rho_1
-	  -sin_rho_omega_P*Re_B_and_rho_1)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Im_B_and_rho_1
-	  -sin_rho_omega_f2*Re_B_and_rho_1));  
-    double Re_b2_aS_rho_V_and_T
-      =-2.*g_rho_S*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*one_minus_cos_rho-Im_B_and_omega_2*sin_rho);   
-    double Im_b2_aS_rho_V_and_T
-      =-2.*g_rho_S*g_rho_T*g_rho_V_and_T*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*sin_rho+Im_B_and_omega_2*one_minus_cos_rho); 
-    double Re_b2_aS_omega_V=-2.*g_omega_S*g_rho_V*g_rho_T*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Re_B_and_omega_2
-			      -sin_rho_omega_sum2*Im_B_and_omega_2);
-    double Im_b2_aS_omega_V=-2.*g_omega_S*g_rho_V*g_rho_T*Pi_omega_2_sq
-      *regge_rho*regge_omega*(cos_rho_omega_sum2*Im_B_and_omega_2
-			      +sin_rho_omega_sum2*Re_B_and_omega_2);
-    double Re_b2_aS_rho_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_2_sq*regge_rho   
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Re_B_and_omega_2
-	  +sin_rho_rho_P*Im_B_and_omega_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Re_B_and_omega_2
-	  +sin_rho_rho_f2*Im_B_and_omega_2));   
-    double Im_b2_aS_rho_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_2_sq*regge_rho   
-      *(C_rho_P_cut*regge_rho_P_cut
-	*(cos_rho_rho_P*Im_B_and_omega_2
-	  -sin_rho_rho_P*Re_B_and_omega_2)
-	+ C_rho_f2_cut*regge_rho_f2_cut
-	*(cos_rho_rho_f2*Im_B_and_omega_2
-	  -sin_rho_rho_f2*Re_B_and_omega_2));  
-    double Re_b2_aS_omega_cuts
-      =-4.*g_omega_V*g_omega_S*g_rho_T*Pi_omega_2_sq*regge_rho   
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Re_B_and_omega_2
-	  +sin_rho_omega_P*Im_B_and_omega_2)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Re_B_and_omega_2
-	  +sin_rho_omega_f2*Im_B_and_omega_2));   
-    double Im_b2_aS_omega_cuts
-      =-4.*g_rho_V*g_rho_S*g_rho_T*Pi_omega_2_sq*regge_rho   
-      *(C_rho_P_cut*regge_omega_P_cut
-	*(cos_rho_omega_P*Im_B_and_omega_2
-	  -sin_rho_omega_P*Re_B_and_omega_2)
-	+ C_rho_f2_cut*regge_omega_f2_cut
-	*(cos_rho_omega_f2*Im_B_and_omega_2
-	  -sin_rho_omega_f2*Re_B_and_omega_2)); 
-
-    double Re_a1_bS_rho_V_and_T
-      =-2.*g_rho_T*g_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_rho_1_sq
-      *(Re_B_and_rho_1*one_minus_cos_rho-Im_B_and_rho_1*sin_rho);
-    double Im_a1_bS_rho_V_and_T
-      =-2.*g_rho_T*g_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_rho_1_sq
-      *(Re_B_and_rho_1*sin_rho+Im_B_and_rho_1*one_minus_cos_rho);
-    double Re_a1_bS_omega_V
-      =-2.*g_rho_S*g_rho_V*g_rho_T*regge_rho*regge_omega*Pi_omega_1_sq
-      *(cos_rho_omega_sum1*Re_B_and_omega_1-sin_rho_omega_sum1*Im_B_and_omega_1); 
-    double Im_a1_bS_omega_V
-      =-2.*g_rho_S*g_rho_V*g_rho_T*regge_rho*regge_omega*Pi_omega_1_sq
-      *(cos_rho_omega_sum1*Im_B_and_omega_1+sin_rho_omega_sum1*Re_B_and_omega_1);
-
-    double Re_a2_bS_rho_V_and_T
-      =-2.*g_rho_T*g_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*one_minus_cos_rho-Im_B_and_omega_2*sin_rho);
-    double Im_a2_bS_rho_V_and_T
-      =-2.*g_rho_T*g_rho_V_and_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*sin_rho+Im_B_and_omega_2*one_minus_cos_rho);
-    double Re_a2_bS_omega_V
-      =-2.*g_rho_S*g_rho_V*g_rho_T*regge_rho*regge_omega*Pi_rho_2_sq
-      *(cos_rho_omega_sum1*Re_B_and_rho_2-sin_rho_omega_sum1*Im_B_and_rho_2);  
-    double Im_a2_bS_omega_V
-      =-2.*g_rho_S*g_rho_V*g_rho_T*regge_rho*regge_omega*Pi_rho_2_sq
-      *(cos_rho_omega_sum1*Im_B_and_rho_2+sin_rho_omega_sum1*Re_B_and_rho_2);
-
-
-    Re_b1_bS=(4./3.)*C*gR*gsq_rho_T*g_rho_S*regge_rho_sq*Pi_rho_1_sq
-      *(Re_B_and_rho_1*one_minus_cos_rho-Im_B_and_rho_1*sin_rho);
-    Im_b1_bS=(4./3.)*C*gR*gsq_rho_T*g_rho_S*regge_rho_sq*Pi_rho_1_sq
-      *(Re_B_and_rho_1*sin_rho+Im_B_and_rho_1*one_minus_cos_rho);   
-    Re_b2_bS=(4./3.)*C*gR*gsq_rho_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*one_minus_cos_rho-Im_B_and_omega_2*sin_rho);
-    Im_b2_bS=(4./3.)*C*gR*gsq_rho_T*g_rho_S*regge_rho_sq*Pi_omega_2_sq
-      *(Re_B_and_omega_2*sin_rho+Im_B_and_omega_2*one_minus_cos_rho);
-
-    Re_b2_aS=(1./3.)*C*gR*(Re_b2_aS_rho_V_and_T + Re_b2_aS_rho_cuts
-		   + Re_b2_aS_omega_V + Re_b2_aS_omega_cuts
-		   );
-    Im_b2_aS=(1./3.)*C*gR*(Im_b2_aS_rho_V_and_T + Im_b2_aS_rho_cuts
-		   + Im_b2_aS_omega_V + Im_b2_aS_omega_cuts
-		   );  
-    Re_b1_aS=(1./3.)*C*gR*(Re_b1_aS_rho_V_and_T + Re_b1_aS_rho_cuts
-		   + Re_b1_aS_omega_V + Re_b1_aS_omega_cuts
-		   );
-    Im_b1_aS=(1./3.)*C*gR*(Im_b1_aS_rho_V_and_T + Im_b1_aS_rho_cuts
-		   + Im_b1_aS_omega_V + Im_b1_aS_omega_cuts
-		   );
-
-    Re_a1_bS=C*gR*((1./3.)*Re_a1_bS_rho_V_and_T + Re_a1_bS_omega_V);  
-    Im_a1_bS=C*gR*((1./3.)*Im_a1_bS_rho_V_and_T + Im_a1_bS_omega_V);  
-    Re_a2_bS=C*gR*((1./3.)*Re_a2_bS_rho_V_and_T + Re_a2_bS_omega_V);  
-    Im_a2_bS=C*gR*((1./3.)*Im_a2_bS_rho_V_and_T + Im_a2_bS_omega_V);
-    
-    Re_a1_aS=C*gR*((1./3.)*Re_a1_aS_rho_V_and_T_sq
-		   + (1./3.)*Re_a1_aS_rho_V_and_T_rho_cuts
-		   + (1./3.)*Re_a1_aS_omega_V_rho_V_and_T
-		   + (1./3.)*Re_a1_aS_rho_V_and_T_omega_cuts
-		   + Re_a1_aS_omega_V_rho_V_and_T_omega_propagator
-		   + Re_a1_aS_omega_V_rho_V_rho_cuts_omega_propagator
-		   + Re_a1_aS_omega_V_sq
-		   + Re_a1_aS_omega_V_sq_omega_cuts
-		   );
-    Im_a1_aS=C*gR*((1./3.)*Im_a1_aS_rho_V_and_T_sq
-		   + (1./3.)*Im_a1_aS_rho_V_and_T_rho_cuts
-		   + (1./3.)*Im_a1_aS_omega_V_rho_V_and_T
-		   + (1./3.)*Im_a1_aS_rho_V_and_T_omega_cuts
-		   + Im_a1_aS_omega_V_rho_V_and_T_omega_propagator
-		   + Im_a1_aS_omega_V_rho_V_rho_cuts_omega_propagator
-		   + Im_a1_aS_omega_V_sq
-		   + Im_a1_aS_omega_V_sq_omega_cuts
-		   ); 
-
-    Re_a2_aS=C*gR*((1./3.)*Re_a2_aS_rho_V_and_T_sq
-		   + (1./3.)*Re_a2_aS_rho_V_and_T_rho_cuts
-		   + (1./3.)*Re_a2_aS_omega_V_rho_V_and_T
-		   + (1./3.)*Re_a2_aS_rho_V_and_T_omega_cuts
-		   + Re_a2_aS_omega_V_rho_V_and_T_rho_propagator
-		   + Re_a2_aS_omega_V_rho_V_rho_cuts_rho_propagator
-		   + Re_a2_aS_omega_V_sq
-		   + Re_a2_aS_omega_V_sq_omega_cuts
-		   );
-    Im_a2_aS=C*gR*((1./3.)*Im_a2_aS_rho_V_and_T_sq
-		   + (1./3.)*Im_a2_aS_rho_V_and_T_rho_cuts
-		   + (1./3.)*Im_a2_aS_omega_V_rho_V_and_T
-		   + (1./3.)*Im_a2_aS_rho_V_and_T_omega_cuts 
-		   + Im_a2_aS_omega_V_rho_V_and_T_rho_propagator
-		   + Im_a2_aS_omega_V_rho_V_rho_cuts_rho_propagator
-		   + Im_a2_aS_omega_V_sq
-		   + Im_a2_aS_omega_V_sq_omega_cuts
-		   );
-    
-
   }
-
-  // Real and imaginary parts of the trace term
-  double ReT=(m_p_sq-p1_dot_p2)*(Re_a1_aS*M_M1+Re_a2_aS*M_M2
-				 +2.*Re_a1_aS*N_N1+2.*Re_a2_aS*N_N2)
-    +2.*m_p*((Re_b1_aS+Re_a1_bS)*N_N1+(Re_b2_aS+Re_a2_bS)*N_N2)
-    +(m_p_sq+p1_dot_p2)*(Re_b1_bS*N_N1+Re_b2_bS*N_N2);
-  double ImT=(m_p_sq-p1_dot_p2)*(Im_a1_aS*M_M1+Im_a2_aS*M_M2
-				 +2.*Im_a1_aS*N_N1+2.*Im_a2_aS*N_N2)
-    +2.*m_p*((Im_b1_aS+Im_a1_bS)*N_N1+(Im_b2_aS+Im_a2_bS)*N_N2)
-    +(m_p_sq+p1_dot_p2)*(Im_b1_bS*N_N1+Im_b2_bS*N_N2);
-   
-  //double T=zeta*gR*sqrt(g0_sq)*(cos(phase)*ReT+sin(phase)*ImT)/(ReB*ReB+ImB*ImB);
-  double T=zeta*sqrt(g0_sq)*(cos(phase)*ReT+sin(phase)*ImT)/(ReB*ReB+ImB*ImB);
+ 
+  double T=zeta*sqrt(g0_sq)*C*gR/(ReB*ReB+ImB*ImB)
+    *((m_p_sq-p1_dot_p2)*(a1_aS*M_M1+a2_aS*M_M2)
+      + 2.*a1_aS*N_N1+2.*a2_aS*N_N2
+      + 2.*m_p*((b1_aS+a1_bS)*N_N1+(b2_aS+a2_bS)*N_N2)
+      + (m_p_sq+p1_dot_p2)*(b1_bS*N_N1+b2_bS*N_N2)
+      );
   
   return T;
 }
@@ -1398,16 +728,8 @@ double CrossSection(double m1,double m2, double ms_sq, double s, double t,
   double kin_b1=-0.5*t*kin1;
 
   // Coupling constants 
-  double g_omega_V=15.;
-  double gsq_omega_V=g_omega_V*g_omega_V;
-  double g_rho_V=3.4;
-  double gsq_rho_V=g_rho_V*g_rho_V;
-  double g_rho_T=11.0; // GeV^-1
-  double g_rho_V_and_T=g_rho_V+2.*m_p*g_rho_T;
-  double gsq_rho_V_and_T=g_rho_V_and_T*g_rho_V_and_T;
   double g_rho_S=sqrt(gsq_rho_S);
   double g_omega_S=sqrt(gsq_omega_S);
-  double gRsq=gR*gR;
 
   // s scale for regge trajectories
   double s0=1.;
@@ -1524,7 +846,7 @@ double CrossSection(double m1,double m2, double ms_sq, double s, double t,
   double T=0.,aS_aS=0.,aS_bS=0.,bS_bS=0.,b1S_b1S=0.;
   double Pi_R_sq=0.; // Breit-Wigner scale factor
   if (interfere==false){
-    Pi_R_sq=gRsq/(ReB*ReB+ImB*ImB);
+    Pi_R_sq=gR*gR/(ReB*ReB+ImB*ImB);
    
     aS_aS=gsq_rho_S*gsq_rho_V_and_T*regge_rho_sq_sum
       + gsq_omega_S*gsq_omega_V*regge_omega_sq_sum
@@ -1627,7 +949,7 @@ double CrossSection(double m1,double m2, double ms_sq, double s, double t,
   //aS_bS=0.;
 
   
-  T=Pi_R_sq*(aS_aS*kin_aS_aS+aS_bS*kin_aS_bS+bS_bS*kin_bS_bS + b1S_b1S*kin_b1);
+  T=Pi_R_sq*(aS_aS*kin_aS_aS+aS_bS*kin_aS_bS+bS_bS*kin_bS_bS+b1S_b1S*kin_b1);
 
   return T;
 }
@@ -1780,10 +1102,6 @@ double TensorBackgroundInterference(TLorentzVector &q /* beam */,
     f=1.; // guess
     gT_sq=f*183.675;  // GeV^2
   } 
-  double g_omega_V=15.;
-  double g_rho_V=3.4;
-  double g_rho_T=11.0; // GeV^-1
-  double g_rho_V_and_T=g_rho_V+2.*m_p*g_rho_T;
 
   // Rho propagator for top exchange for double-exchange diagrams
   double m_rho=0.7685;
@@ -1999,11 +1317,7 @@ double TensorScalarInterference(TLorentzVector &q /* beam */,
     f=1.; // guess
     gT_sq=f*183.675;  // GeV^2
   } 
-  double g_omega_V=15.;
-  double g_rho_V=3.4;
-  double g_rho_T=11.0; // GeV^-1
-  double g_rho_V_and_T=g_rho_V+2.*m_p*g_rho_T;
-
+ 
   // s scale for regge trajectories
   double s0=1.;
  
@@ -2266,9 +1580,9 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.8;//0.6;
+    double m_Sigma=0.55;// PDG (2020), upper end of range
     double M_sq_R=m_Sigma*m_Sigma; 
-    width=1.0;
+    width=0.7; // PDG (2020)
     ReBf500=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
@@ -2301,17 +1615,17 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     T+=CrossSection(m1,m2,M_sq,s,t,gRf1370,ReBf1370,ImBf1370,
 		    gsq_rho_f1370_gamma,gsq_omega_f1370_gamma,false,
 		    0.,0.,0.,0.,0.,0.);
-    
-  }  
-  // Interference between f0(500) and f0(1370)
-  if (got_pipi && generate[0] && generate[2]){
-    T+=CrossSection(m1,m2,M_sq,s,t,gRf1370,ReBf1370,ImBf1370,
-		       gsq_rho_f1370_gamma,
-		       gsq_omega_f1370_gamma,true,gRf500,ReBf500,ImBf500,
-		       gsq_rho_f500_gamma,gsq_omega_f500_gamma,
-		       phase[9]);
-  }	
-  
+      
+    // Interference between f0(500) and f0(1370)
+    if (generate[0]){
+      T+=CrossSection(m1,m2,M_sq,s,t,gRf1370,ReBf1370,ImBf1370,
+		      gsq_rho_f1370_gamma,
+		      gsq_omega_f1370_gamma,true,gRf500,ReBf500,ImBf500,
+		      gsq_rho_f500_gamma,gsq_omega_f500_gamma,
+		      phase[0]-phase[2]);
+    }	
+  }
+
   // a0(1450)
   if (got_pipi==false && generate[2]){
     double m_a1450=1.448;// Bugg:arXiv:0808.2706v2,Table 2
@@ -2341,7 +1655,12 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 		     /(4.*my_msq_R));
       double partial_width=0.05; //?? // guess from note in pdg
       gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
-      gsq_rho_S_gamma=0.15; // GeV^-2
+      // gsq_rho_S_gamma=0.15; // GeV^-2
+      //gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
+      //gsq_omega_S_gamma=0.0054; // 3 keV
+      //gsq_rho_S_gamma=9.*gsq_omega_S_gamma;
+      // Molecular KK model (need reference)
+      gsq_rho_S_gamma=0.044;
       gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
     }
     else{ // a0(980)  
@@ -2362,25 +1681,24 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     // Interference between f0(1370) and f0(980)
     if (got_pipi && generate[2]){
       T+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
-			 gsq_omega_S_gamma,true,gRf1370,ReBf1370,ImBf1370,
-			 gsq_rho_f1370_gamma,gsq_omega_f1370_gamma,
-			 phase[1]);
+		      gsq_omega_S_gamma,true,gRf1370,ReBf1370,ImBf1370,
+		      gsq_rho_f1370_gamma,gsq_omega_f1370_gamma,
+		      phase[1]-phase[2]);
     }	
     // Interference between f0(500) and f0(980)
-    if (got_pipi && generate[0]){
-      
+    if (got_pipi && generate[0]){      
       T+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
-			 gsq_omega_S_gamma,true,gRf500,ReBf500,ImBf500,
-			 gsq_rho_f500_gamma,gsq_omega_f500_gamma,
-			 phase[0]);
+		      gsq_omega_S_gamma,true,gRf500,ReBf500,ImBf500,
+		      gsq_rho_f500_gamma,gsq_omega_f500_gamma,
+		      phase[0]-phase[1]);
       
     }	
     // Interference between a0(1450) and a0(980)
     if (got_pipi==false && generate[2]){
       T+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
-			 gsq_omega_S_gamma,true,gRa1450,ReBa1450,ImBa1450,
-			 gsq_rho_a1450_gamma,gsq_omega_a1450_gamma,
-			 phase[1]);
+		      gsq_omega_S_gamma,true,gRa1450,ReBa1450,ImBa1450,
+		      gsq_rho_a1450_gamma,gsq_omega_a1450_gamma,
+		      phase[1]-phase[2]);
     }
   }
   if (generate[4]){ // non-resonant background
@@ -2388,29 +1706,28 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 
     if (generate[1]){ // interference with resonant signal
       T+=InterferenceCrossSection(beam,particle_types,particle_vectors,
-				     gR,ReB,ImB,gsq_rho_S_gamma,
-				     gsq_omega_S_gamma,phase[3]);
+				  gR,ReB,ImB,gsq_rho_S_gamma,
+				  gsq_omega_S_gamma,phase[1]);
     }
     if (got_pipi){
       if (generate[0]){ // interference with f0(500)
 	T+=InterferenceCrossSection(beam,particle_types,particle_vectors,
-				       gRf500,ReBf500,ImBf500,
-				       gsq_rho_f500_gamma,
-				       gsq_omega_f500_gamma,phase[7]);
+				    gRf500,ReBf500,ImBf500,gsq_rho_f500_gamma,
+				    gsq_omega_f500_gamma,phase[0]);
       }  
       if (generate[2]){ // interference with f0(1370)
 	T+=InterferenceCrossSection(beam,particle_types,particle_vectors,
-				       gRf1370,ReBf1370,ImBf1370,
-				       gsq_rho_f1370_gamma,
-				       gsq_omega_f1370_gamma,phase[8]);
+				    gRf1370,ReBf1370,ImBf1370,
+				    gsq_rho_f1370_gamma,
+				    gsq_omega_f1370_gamma,phase[2]);
       }
     }
     else{ 
       if (generate[2]){ // interference with a0(1450)
 	T+=InterferenceCrossSection(beam,particle_types,particle_vectors,
-				       gRa1450,ReBa1450,ImBa1450,
-				       gsq_rho_a1450_gamma,
-				       gsq_omega_a1450_gamma,0.);
+				    gRa1450,ReBa1450,ImBa1450,
+				    gsq_rho_a1450_gamma,
+				    gsq_omega_a1450_gamma,phase[2]);
       }
       
     }
@@ -2442,43 +1759,39 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
       gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width*q_over_qR);
       ImB_T=M*Gamma_T*(0.145*q_over_qR_5*M_sq_R_T/M_sq+0.855);
     }
-    T+=TensorCrossSection(beam,particle_types,particle_vectors,
-			     gR_T,ReB_T,ImB_T);
+    T+=TensorCrossSection(beam,particle_types,particle_vectors,gR_T,ReB_T,
+			  ImB_T);
     if (generate[1]){ // interference with a0(980)/f0(980)
       T+=TensorScalarInterference(beam,particle_types,particle_vectors,
-				     gR_T,ReB_T,ImB_T,gR,ReB,ImB,
-				     sqrt(gsq_omega_S_gamma),
-				     sqrt(gsq_rho_S_gamma),phase[2]);
+				  gR_T,ReB_T,ImB_T,gR,ReB,ImB,
+				  sqrt(gsq_omega_S_gamma),
+				  sqrt(gsq_rho_S_gamma),phase[1]-phase[3]);
     }
     // interference with f0(600)
     if (got_pipi && generate[0]){
       T+=TensorScalarInterference(beam,particle_types,particle_vectors,
-				     gR_T,ReB_T,ImB_T,gRf500,ReBf500,
-				     ImBf500,
-				     sqrt(gsq_omega_f500_gamma),
-				     sqrt(gsq_rho_f500_gamma),phase[5]);
+				  gR_T,ReB_T,ImB_T,gRf500,ReBf500,ImBf500,
+				  sqrt(gsq_omega_f500_gamma),
+				  sqrt(gsq_rho_f500_gamma),phase[0]-phase[3]);
     }
     // interference with f0(1370)
     if (got_pipi && generate[2]){
       T+=TensorScalarInterference(beam,particle_types,particle_vectors,
-				     gR_T,ReB_T,ImB_T,gRf1370,ReBf1370,
-				     ImBf1370,
-				     sqrt(gsq_omega_f1370_gamma),
-				     sqrt(gsq_rho_f1370_gamma),phase[6]);
+				  gR_T,ReB_T,ImB_T,gRf1370,ReBf1370,ImBf1370,
+				  sqrt(gsq_omega_f1370_gamma),
+				  sqrt(gsq_rho_f1370_gamma),phase[2]-phase[3]);
     }	
     // interference with a0(1450)
     if (got_pipi==false && generate[2]){
       T+=TensorScalarInterference(beam,particle_types,particle_vectors,
-				     gR_T,ReB_T,ImB_T,gRa1450,ReBa1450,
-				     ImBa1450,
-				     sqrt(gsq_omega_a1450_gamma),
-				     sqrt(gsq_rho_a1450_gamma),phase[6]);
+				  gR_T,ReB_T,ImB_T,gRa1450,ReBa1450,ImBa1450,
+				  sqrt(gsq_omega_a1450_gamma),
+				  sqrt(gsq_rho_a1450_gamma),phase[2]-phase[3]);
     }
     
     if (generate[4]){ //interference with background wave
-      T+=TensorBackgroundInterference(beam,particle_types,
-					 particle_vectors,
-					 gR_T,ReB_T,ImB_T,phase[4]);
+      T+=TensorBackgroundInterference(beam,particle_types,particle_vectors,
+				      gR_T,ReB_T,ImB_T,phase[3]);
     } 
     
   }
@@ -2874,9 +2187,6 @@ int main(int narg, char *argv[])
       thrown_mass->Fill((particle_vectors[0]+particle_vectors[1]).M());  
       thrown_mass_vs_E->Fill(Egamma,(particle_vectors[0]+particle_vectors[1]).M());
    
-      // Randomly generate z position in target
-      vert[2]=zmin+myrand->Uniform(zmax-zmin);
-      
       WriteEvent(i,beam,vert,particle_types,particle_vectors,file);
     
       if ((i%(Nevents/10))==0) 
@@ -2891,11 +2201,10 @@ int main(int narg, char *argv[])
     cout << mymax << endl;
   }
    
-    // Write histograms and close root file
-    rootfile->Write();
-    rootfile->Close();
-    
-    
+  // Write histograms and close root file
+  rootfile->Write();
+  rootfile->Close();
+      
   return 0;
 }
 
