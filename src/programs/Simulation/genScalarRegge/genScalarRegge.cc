@@ -544,83 +544,83 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
     a1_aS=Pi_omega_1_sq*(ReBWfac_omega_1*(g_rho_S*gsq_rho_V_and_T
 					  *regge_rho_sq_sum
 					  + g_omega_S*g_omega_V*g_rho_V_and_T
-					  *regge_rho_omega_back_sum)
+					  *regge_omega_rho_back_sum)
 			 + ImBWfac_omega_1*(g_rho_S*gsq_rho_V_and_T
 					    *regge_rho_sq_diff
 					    + g_omega_S*g_omega_V*g_rho_V_and_T
-					    *regge_rho_omega_back_diff
+					    *regge_omega_rho_back_diff
 					    )
 			 )
       + (1./3.)*Pi_rho_1_sq*(ReBWfac_rho_1*(g_omega_S*gsq_omega_V
 					    *regge_omega_sq_sum
 					    + g_rho_S*g_omega_V*g_rho_V_and_T
-					    *regge_omega_rho_back_sum)
+					    *regge_rho_omega_back_sum)
 			     + ImBWfac_rho_1*(g_omega_S*gsq_omega_V
 					      *regge_omega_sq_diff
 					      + g_rho_S*g_omega_V*g_rho_V_and_T
-					      *regge_omega_rho_back_diff
+					      *regge_rho_omega_back_diff
 					      )
 			     );
     a2_aS=Pi_omega_2_sq*(ReBWfac_omega_2*(g_rho_S*gsq_rho_V_and_T
 					  *regge_rho_sq_sum
 					  + g_omega_S*g_omega_V*g_rho_V_and_T
-					  *regge_rho_omega_back_sum)
+					  *regge_omega_rho_back_sum)
 			 + ImBWfac_omega_2*(g_rho_S*gsq_rho_V_and_T
 					    *regge_rho_sq_diff
 					    + g_omega_S*g_omega_V*g_rho_V_and_T
-					    *regge_rho_omega_back_diff
+					    *regge_omega_rho_back_diff
 					    )
 			 )
       + (1./3.)*Pi_rho_2_sq*(ReBWfac_rho_2*(g_omega_S*gsq_omega_V
 					    *regge_omega_sq_sum
 					    + g_rho_S*g_omega_V*g_rho_V_and_T
-					    *regge_omega_rho_back_sum)
+					    *regge_rho_omega_back_sum)
 			     + ImBWfac_rho_2*(g_omega_S*gsq_omega_V
 					      *regge_omega_sq_diff
 					      + g_rho_S*g_omega_V*g_rho_V_and_T
-					      *regge_omega_rho_back_diff
+					      *regge_rho_omega_back_diff
 					      )
 			     );
     b1_aS=-2.*g_rho_T*Pi_omega_1_sq*(ReBWfac_omega_1*(g_rho_S*g_rho_V_and_T
 						      *regge_rho_sq_sum
 						      +g_omega_S*g_omega_V
-						      *regge_rho_omega_back_sum
+						      *regge_omega_rho_back_sum
 						      )
 				     + ImBWfac_omega_1*(g_rho_S*g_rho_V_and_T
 							*regge_rho_sq_diff
 							+ g_omega_S*g_omega_V
-							*regge_rho_omega_back_diff							
+							*regge_omega_rho_back_diff							
 							)
 				     );
     b2_aS=-2.*g_rho_T*Pi_omega_2_sq*(ReBWfac_omega_2*(g_rho_S*g_rho_V_and_T
 						      *regge_rho_sq_sum
 						      +g_omega_S*g_omega_V
-						      *regge_rho_omega_back_sum
+						      *regge_omega_rho_back_sum
 						      )
 				     + ImBWfac_omega_2*(g_rho_S*g_rho_V_and_T
 							*regge_rho_sq_diff
 							+ g_omega_S*g_omega_V
-							*regge_rho_omega_back_diff	
+							*regge_omega_rho_back_diff	
 							)
 				     );
     a1_bS=-2.*g_rho_S*g_rho_T*(Pi_omega_1_sq*g_rho_V_and_T
 			       *(ReBWfac_omega_1*regge_rho_sq_sum
-				 + ImBWfac_omega_1*regge_rho_omega_back_diff)
+				 + ImBWfac_omega_1*regge_rho_sq_diff)
 			       + (1./3.)*Pi_rho_1_sq*g_omega_V
-			       *(ReBWfac_rho_1*regge_omega_rho_back_sum
-				 + ImBWfac_rho_1*regge_omega_rho_back_diff)
+			       *(ReBWfac_rho_1*regge_rho_omega_back_sum
+				 + ImBWfac_rho_1*regge_rho_omega_back_diff)
 			       );
     a2_bS=-2.*g_rho_S*g_rho_T*(Pi_omega_2_sq*g_rho_V_and_T
 			       *(ReBWfac_omega_2*regge_rho_sq_sum
-				 + ImBWfac_omega_2*regge_rho_omega_back_diff)
+				 + ImBWfac_omega_2*regge_rho_sq_diff)
 			       + (1./3.)*Pi_rho_2_sq*g_omega_V
-			       *(ReBWfac_rho_2*regge_omega_rho_back_sum
-				 + ImBWfac_rho_2*regge_omega_rho_back_diff)
+			       *(ReBWfac_rho_2*regge_rho_omega_back_sum
+				 + ImBWfac_rho_2*regge_rho_omega_back_diff)
 			       );
-    b1_bS=4.*g_rho_S*gsq_rho_T*(ReBWfac_omega_1*regge_rho_sq_sum
-				+ ImBWfac_omega_1*regge_rho_omega_back_diff);
-    b2_bS=4.*g_rho_S*gsq_rho_T*(ReBWfac_omega_2*regge_rho_sq_sum
-				+ ImBWfac_omega_2*regge_rho_omega_back_diff);
+    b1_bS=4.*g_rho_S*gsq_rho_T*Pi_omega_1_sq
+      *(ReBWfac_omega_1*regge_rho_sq_sum + ImBWfac_omega_1*regge_rho_sq_diff);
+    b2_bS=4.*g_rho_S*gsq_rho_T*Pi_omega_2_sq
+      *(ReBWfac_omega_2*regge_rho_sq_sum + ImBWfac_omega_2*regge_rho_sq_diff);
      
   }
   if (two_particles==(7+17)){ // pi0 eta
