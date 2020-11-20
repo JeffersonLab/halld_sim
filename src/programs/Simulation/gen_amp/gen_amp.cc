@@ -296,8 +296,11 @@ int main( int argc, char* argv[] ){
 	  return 1;
 	}
 
+	double targetMass = ParticleMass(ParticleEnum("Proton"));
+	if(recoil == ProductionMechanism::kZ)
+		targetMass = ParticleMass(Particles[1]);
 	double recMass = ParticleMass(Particles[1]);
-	double cmEnergy = sqrt(recMass*(recMass + 2*beamLowE));
+	double cmEnergy = sqrt(targetMass*(targetMass + 2*beamLowE));
 	if ( cmEnergy < minMass + recMass ){
 	  cout << "ConfigFileParser ERROR:  Minimum photon energy not high enough to create resonance!" << endl;
 	  return 1;
