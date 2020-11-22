@@ -165,10 +165,21 @@ c               07-29-20 - redo creating random number seeds using the system cl
 c                          reusing the same random number sequence each time.   Controlled from the definition file.
 c               07-30-20 - code clean-up to make it conform to standard Fortran more closely; remove some CERNLIB stuff
 c               08-10-20 - insert code in output ascii file that indicates when identical partcles were swapped
-c
-      parameter (version=12.52) !Version of the program... keep this updated     
+c               10-01-20 - hackery to search for possible round-off error
+c               10-05-20 - switch to using GCC-intrisic vers. of RANDOM_NUMBER generator.
+c               10-07-20 - go back to using RNDNOR since RANDOM_NUMBER does not work on parallel machines
+c               10-09-20 - use the system clock to select one of the approved random number sequences
+c               10-12-20 - discovered (thanks to Hao Li), that *every* routine that call for a
+c                          random number needs the statement "external ran".
+c                          This was not a problem before running the code in parallel on multiple processors
+c               10-14-20 - implement a more elaborate method of offsetting the random number sequence in view
+c                          of the fact that in bulk we generate 10000 events at a time and we want idependent sequences
+c               10-30-20 - Tweak the output to reduce the precision of the vertex information; include decay vertexes;
+c                          enable Cascades to be written out;  add more info to the output file used for GlueX
+      
+        parameter (version=12.90) !Version of the program... keep this updated     
 c      
-	external ran  !forces the use of "my" version of random number generator (see RNDNOR.F)
+	external ran  !forces the use of local random number generator (see RNDNOR.F)
 	parameter (maxnumpar=65) !Maximum number of particles in the table
 	parameter (maxnumlis=60) !Maximum number of particles in the decay list
 	parameter (maxdecays=12) !Maximum number of decay modes per particle
@@ -201,7 +212,7 @@ c
 	data rmx1280   /1.282/      !x(1280) mass 
         data idcountmax/0/
 	common /decaytable/idecay,lundid,rm
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /stuff/poldir(4),xx,icount,ikeep,ihackflag,iattempt
         common /fermi/prec,qfmass,pfermi,ndynamics
 	common /beam/pbeam,ppbeam,rmbeam,rmtarg,jcode,xsigma,ysigma,ncode
@@ -209,7 +220,7 @@ c
         common /bremselectname/fluxfilename,lfluxfilename
 	common /target/icode,size1,size2,size3,size4,maxtstep
 	common /misc/cthcm_gen,itoken          !for tests and hacks
-	common /temp/eloss_clas,eloss_prop,pcmag_clas,pvmag_prop
+	common /temp/ptestval
 c
 c       Iargc:  Unix function to return the number of command line args.
 c       Getarg: Unix function to get a specific argument.
@@ -378,12 +389,14 @@ c
 	read(1,*,err=25)idummy,
      1    names(i),rm(i),width(i),zpart(i),ct(i),rlundid,numdecays(i)
 	lundid(i) = rlundid    !a hack to avoid changing all the input files for Linux
-c	write(6,*)'Input:',idummy,i,' ',names(i),int(rlundid),numdecays(i)
-	if(idummy.eq.-1)goto 40
+	if(ihackflag)then
+           write(6,*)'Input:',idummy,i,' ',names(i),int(rlundid),numdecays(i)
+        endif
+        if(idummy.eq.-1)goto 40
 c       width(i) = width(i) / 2.354 /1000.	!Width sigma in GeV
 	width(i) = width(i) / 2.0   /1000.      !Gamma/2     in GeV
 	if(idummy.ne.i)then
-           write(6,*)'Definition table has messed up syntax:'
+           write(6,*)'Definition table has a mistake in its syntax:'
            write(6,*)'  Reading information for particle        ',i
            write(6,*)'  But reading index is already on particle',idummy
            call exit()
@@ -468,6 +481,8 @@ c     1  	branch(3,idecaynum,1)
 c 55	   format(1x,'Number of bodies, Lund IDs, Branching_Fraction',/,
 c     1            1x, 7i5, f6.3)
 c 60	continue
+        
+c        write(6,*)'Using GCC-intrinsic random number generator'
         if(irestart.eq.0)then
            write(6,*)
      1  'Random number generator is restarting from its original seed'
@@ -479,8 +494,8 @@ c
 c	Coding for the list of particles generated in the decay chain:
 c	All variables in this list are given in the lab frame.
 c	PLIST(I,MARK)	
-c	I = index into list of a given particle's parameters
-c	MARK = counts the particles produced
+c	I    = indexes the list of a given particle's parameters
+c	MARK = indexes all the particles in the decay chain
 c	I = 
 c	1	PX
 c	2	PY
@@ -504,8 +519,8 @@ c	19	Y OF DECAY
 c	20	Z OF DECAY
 c	21	CTAU for THIS PARTICLE
 c       22      Charge of the particle
-c       23      spare
-c       24      spare 
+c       23      MARK index of where this particle is in the decay chain
+c       24      IPARENT index of the parent of this particle in the decay chain
 c
 c	KINPACK parameters used in kinematics calculations
 c	PP(1,i) = px, PP(2,i) = py, PP(3,i) = pz, PP(4,i) = mass, PP(5,i) = energy
@@ -615,6 +630,12 @@ c
         if(idocuts)then
            write(6,*)'Histogram file name will be: ',histnm(1:lfl) !,j,k,lfl
         endif
+c        
+c       Initialize several counters that will be used...
+c        
+        numwrite = 0
+	ievent   = 0
+        iattempt = 0
 c     
 c       Initialize the random number generator:
 c       As of Jan 2010, reuse the external functions 
@@ -629,9 +650,20 @@ c       The algorithm below hacks iseed2 together from the system clock time
 c       and arbitraily moving the least significant digit to the most
 c       significant place. The variable iseed is a dummy needed by the ran(iseed)
 c       function call.
-c           
-        iseed = 0
-	if(irestart.eq.0)then
+c
+c       Hacked to use the GFortran intrinsic random number generator version
+c       of RAN instead of the GEANT3 version.  (Oct 5, 2020)
+c        - Removed GFortran use again because it does not work on parallel machines
+c
+c        Added option "3" for initializing the GEANT3 random number generator.
+c        Use the system clock to select one of 215 allowed sequence starts.
+c        Furthermore, use the system clock to select a random offset into the
+c        selected sequence, so as to minimize the possibility of selecting the 
+c        exact same sequence twice.   All of this is an issue when running parallel
+c        jobs for creating the full Monte Carlo data set we need.
+c
+        iseed = 0               !this is just a dummy: not used in the code except as a fake argument
+ 83     if(irestart.eq.0)then
 	   write(6,*)'Repeating standard random number sequence:'
            iseq = 1
 	   call grndmq(iseed1,iseed2,iseq,' ') !' ': use Sequence 1
@@ -652,34 +684,62 @@ c
            call system_clock(itcount,itcountrate,itcountmax)
 c           write(6,*)itcount,itcountrate,itcountmax
            iseed1 = int(mod((abs(itcount)),1000000000)) !use the last 9 digits
+c           iseed1 = 906519378  !hack to test this algorithm
+           iseed1 = int(mod((abs(itcount)),1000000000)) !use the last 9 digits
            call system_clock(itcount,itcountrate,itcountmax)
 c           write(6,*)itcount,itcountrate,itcountmax
            itemp1 = int(mod((abs(itcount)),1000000000)) !last 9 digits
            itemp2 = int(mod((abs(itcount)),10)) !the last digit
            iseed2 = itemp2*100000000 + itemp1/10 !move last digit to left
+c           iseed2 = 890651937  !hack to test this algorithm
            iseq = 1
-	   call grndmq(iseed1,iseed2,iseq,'S')! 'S": use given numbers
-c           write(6,*)iseed1,iseed2,iseq
+	   call grndmq(iseed1,iseed2,iseq,'S')! "S": use given numbers
+           write(6,*)iseed1,iseed2,iseq
+        elseif(irestart.eq.3)then
+	   write(6,*)
+     1       'Using the system clock to select random number sequence'
+           call system_clock(itcount,itcountrate,itcountmax)
+c           write(6,*)itcount,itcountrate,itcountmax
+           iseq = int(mod((abs(itcount)),215))+1 ! select "sequence" to use
+           call system_clock(itcount,itcountrate,itcountmax)
+c           write(6,*)itcount,itcountrate,itcountmax
+           ioffset1 = int(mod((abs(itcount)),1000))*1000000 !divide each "good" sequence into 1000 subsequences of length 1E6
+           call system_clock(itcount,itcountrate,itcountmax)
+c           write(6,*)itcount,itcountrate,itcountmax
+           ioffset2 = int(mod((abs(itcount)),10000)) !additional random offset into sequence
+	   call grndmq(iseed1,iseed2,iseq,'Q')! "Q": use specified sequence
+	   call grndmq(iseed1,iseed2,iseq,'S')! "S": use specified sequence
+           write(6,*)'Offset pseudo-random number generator... randomly'
+           ioffset = ioffset1 + ioffset2
+           write(6,*)iseq,iseed1,iseed2,ioffset1,ioffset2
+c
+           call cpu_time(tstart)
+           do i=1,ioffset
+              x = ran(iseed)
+           enddo
+           call cpu_time(tfinish)
+           write(6,85)tfinish-tstart
+ 85        format(1x,'Time spent offsetting generator = ',f10.2,' seconds')
         else
            write(6,*)
-     1      'No method selected for starting the random number sequence'
+     1    'No method selected for starting the random number sequence.'
            call exit()
 	endif
 c
 	do i=1,4
 	   x=ran(iseed)
-	   write(6,*)'  Random Number Test: ',x
+	   y=ran(iseed)
+	   z=ran(iseed)       
+	   write(6,*)'  Random Number Test: ',x,y,z
 	enddo
+c        goto 83  ! test random number generator
         imax = 1000000
+        sum  = 0.0
         do i=1,imax
            sum = sum + ran(iseed)
         enddo
         average = sum/imax
         write(6,*)'Average of',imax,' random numbers is',average
-c        
-        numwrite = 0
-	ievent   = 0
-        iattempt = 0
 c
 c
 c	TOP OF LOOP for letting the system decay
@@ -702,6 +762,8 @@ c
 	ievent     = ievent   + 1
 	iattempt   = iattempt + 1
         imechanism = 999         ! used later for (optionally) writing out GlueX-style data (obsolete)
+c        write(6,*)'> Previous event:',ixcount,' random numbers'
+        ixcount = 0
 c	write(6,*)'> Generating event',ievent,ikeep,iattempt
  	test = mod(float(ievent),5000.)*1000.
 	if(test.eq.0.0)then
@@ -771,11 +833,6 @@ c           ppbeam = 9.0  !! for tests...
 c
 c        Some legacy code that may still be useful
 c           
-c        else if(iprule.eq.3)then !get input from a txt2part GSIM file
-c	   call txt2bos_input(plist,imark)
-c	   iflat    = 0
-c	   goto 150  !skip the whole event generation code and go to analyzer
-c
 c           Some comments from older code with some possibly-useful references...
 c
 c           apomeron = 6.0       ! See Donnachie and Landshoff, hep-ph/9912312 (12 Dec 1999)
@@ -787,8 +844,6 @@ c           betaregge     = 0.93
 c	    rmrecoil = rmproton
 c	    rmtarget = rmproton
 c	    bslope   = 6.6  !from Ballam et al.  Phys Rev D 5, 545 (1972).
-c 	    call exponentialpick(ppbeam,pbeammax,bslope,sminf,rmtarget,rmmeson,
-c     1                     rmrecoil,cosinethetacm,iregge)
 c
         else
            write(6,*)
@@ -876,6 +931,8 @@ c        write(6,*)'Pseudo particle:',ptot
 	plist(20,1) = r0(3)	!Z location of decay
 	plist(21,1) = 0		!ctau for this particle type
 	plist(22,1) = 999       !charge of the particle
+	plist(23,1) = 1         !index of this particle in decay list
+	plist(24,1) = 0         !index of parent particle in decay list
 c
 c	Top of loop of decay chain
 c
@@ -885,7 +942,8 @@ c	write(6,*)'> Decay the event...'
 150	continue
 	imark = imark + 1
 	if(plist(6,imark).ne.0)then !any undecayed particles left?
-	   lund = plist(6,imark)
+	   lund    = plist(6,imark)
+           iparent = plist(23,imark)
 c           write(6,*)'> Look for the next particle',imark,lund
 	   if(lund.eq.999)then	!flags the initial-state "particle"
 	      iindex = 3
@@ -1808,6 +1866,8 @@ c           write(6,*)id3,p3
 	   plist(10,inext) = pol1(1) !X polarization
 	   plist(11,inext) = pol1(2) !Y polarization
 	   plist(12,inext) = pol1(3) !Z polarization
+	   plist(23,inext) = inext   !index of this particle in decay list
+	   plist(24,inext) = iparent !parent index of this particle
 	   inext = inext + 1
 	   plist(1,inext)  = p2(1) !X momentum
 	   plist(2,inext)  = p2(2)
@@ -1821,6 +1881,8 @@ c           write(6,*)id3,p3
 	   plist(10,inext) = pol2(1) !X polarization
 	   plist(11,inext) = pol2(2) !Y polarization
 	   plist(12,inext) = pol2(3) !Z polarization
+	   plist(23,inext) = inext   !index of this particle in decay list
+	   plist(24,inext) = iparent !parent index of this particle
 	   inext = inext + 1
 	   if(nbody.eq.2)goto 150  !Quit here for 2-body modes
 	   plist(1,inext)  = p3(1) !X momentum
@@ -1835,6 +1897,8 @@ c           write(6,*)id3,p3
 	   plist(10,inext) = pol3(1) !X polarization
 	   plist(11,inext) = pol3(2) !Y polarization
 	   plist(12,inext) = pol3(3) !Z polarization
+	   plist(23,inext) = inext   !index of this particle in decay list
+	   plist(24,inext) = iparent !parent index of this particle
 	   inext = inext + 1
 	   if(nbody.eq.3)goto 150  !Quit here for 3-body modes
 	   plist(1,inext)  = p4(1) !X momentum
@@ -1849,6 +1913,8 @@ c           write(6,*)id3,p3
 	   plist(10,inext) = pol4(1) !X polarization
 	   plist(11,inext) = pol4(2) !Y polarization
 	   plist(12,inext) = pol4(3) !Z polarization
+	   plist(23,inext) = inext   !index of this particle in decay list
+	   plist(24,inext) = iparent !parent index of this particle
 	   inext = inext + 1
 	   if(nbody.eq.4)goto 150  !Quit here for 4-body modes
 	   plist(1,inext)  = p5(1) !X momentum
@@ -1863,6 +1929,8 @@ c           write(6,*)id3,p3
 	   plist(10,inext) = pol5(1) !X polarization
 	   plist(11,inext) = pol5(2) !Y polarization
 	   plist(12,inext) = pol5(3) !Z polarization
+	   plist(23,inext) = inext   !index of this particle in decay list
+	   plist(24,inext) = iparent !parent index of this particle
 	   inext = inext + 1
 	   goto 150
 	else
@@ -1909,13 +1977,19 @@ c          it is necessary to comment it out here AND below in the closeout rout
 c
 c           if(idocuts)write(6,*)'Event analyzer is not linked into the code.' 
            if(idocuts) call mc_analyze(plist,imark-1)
-	   if(idogluex)call write_output(plist,imark-1,imechanism)
-	   if(numwrite.eq.ngevent)then
+	   if(idogluex)then
+              call write_output(plist,imark-1,imechanism,ireset)
+              if(ireset.eq.1)then  !special test case
+                 write(6,*)'Re-initializing random number generator'
+                 goto 83
+              endif
+           endif 
+	   if(numwrite.ge.ngevent)then
               write(6,*)'Hit the limit of number of events to write:',
      1             numwrite,ngevent
               goto 500
            endif
-	   goto 100
+	   goto 100   ! normal looping to generate the next event
 	end if
 c
 c       All done except for the final accounting.
@@ -1933,7 +2007,6 @@ c       Save the random number seed(s) in case we later want to pick up
 c       the sequence from here.
 c        
 	open(unit=20,file='randomseed.num',status='unknown')
-	iseq = 1
 	call grndmq(iseed1,iseed2,iseq,'G')
 	write(20,*)iseq,iseed1,iseed2
 	write(6,*)'Saving random number seeds to "randomseed.num":'
@@ -2069,10 +2142,11 @@ c
       
 c********************************************************************************
 c
-c       Output to file in text format suitable for conversion to full-scale Monte Carlo modeling
-c        -MC_GENERATOR_2_HDDM (for GlueX) 
+c       Output to file in text format suitable for conversion to full-scale
+c       Monte Carlo modeling    MC_GENERATOR_2_HDDM (for GlueX) 
 c
- 	subroutine write_output(plist,imark,imechanism)
+ 	subroutine write_output(plist,imark,imechanism,ireset)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	parameter (maxnumlis=60) !Maximum number of particles in the decay list
 	character nam*4,fname*200
 	real plist(24,maxnumlis),pgsim(4)
@@ -2081,7 +2155,8 @@ c
  	data ifirst/.true./
 	common /beam/pbeam,ppbeam,rmbeam,rmtarg,jcode,xsigma,ysigma,ncode
 	common /eventiolocal/ifirst,ifile,ieventout
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
+        common /temp/ptestval
 c
 	character*256  prg_name, histnm, filenm, prefix
 	common /run_control/n_arg,prg_name,filenm,histnm,prefix,
@@ -2130,6 +2205,10 @@ c                write(6,*)'New output file: ',nam
      1      prefix(1:lprefix)//histnm(1:lfl-4)//'_'//nam//'.ascii'
 	   write(6,*)'Opening raw data output file ',fname
 	   open(unit=2,file=fname,status='UNKNOWN')
+c           ireset = 1     !reset the random number generator
+           ireset = 0     !don't reset the random number generator
+        else
+           ireset = 0
 	endif
 c
 c       Repackage tracks in a format suitable for input to TXT2PART or the GlueX HDDM converter
@@ -2149,14 +2228,15 @@ c          Also, put "0" for the ID of any particle we don't want HDGEANT to
 c          decay for us, since we are producing the decay products ourselves.
 c
 	   igsimid(i) = -1
-	   if(plist(6,i).eq.  1)igsimid(i) = 1 !0 !1   !photon
-	   if(plist(6,i).eq. -1)igsimid(i) = 1 !0 !1   !photon
+	   if(plist(6,i).eq.  1)igsimid(i) = 1   !photon
+	   if(plist(6,i).eq. -1)igsimid(i) = 1   !photon
 	   if(plist(6,i).eq. -7)igsimid(i) = 2   !positron
 	   if(plist(6,i).eq.  7)igsimid(i) = 3   !electron
 	   if(plist(6,i).eq.  2)igsimid(i) = 4   !neutrino
 	   if(plist(6,i).eq. -9)igsimid(i) = 5   !mu+
 	   if(plist(6,i).eq.  9)igsimid(i) = 6   !mu-
-	   if(plist(6,i).eq. 23)igsimid(i) = 7 !0 !7   !pi0
+	   if(plist(6,i).eq. 23)igsimid(i) = 7   !pi0
+	   if(plist(6,i).eq.-23)igsimid(i) = 7   !pi0
 	   if(plist(6,i).eq. 17)igsimid(i) = 8   !pi+
 	   if(plist(6,i).eq.-17)igsimid(i) = 9   !pi-
 	   if(plist(6,i).eq. 18)igsimid(i) = 11  !K+
@@ -2164,32 +2244,33 @@ c
 	   if(plist(6,i).eq. 42)igsimid(i) = 13  !neutron
 	   if(plist(6,i).eq. 41)igsimid(i) = 14  !proton
 	   if(plist(6,i).eq.-41)igsimid(i) = 15  !anti-proton
-	   if(plist(6,i).eq. 19)igsimid(i) = 0 !16  !K short (only! short, not long) 
-	   if(plist(6,i).eq. 24)igsimid(i) = 0 !17  !eta
-	   if(plist(6,i).eq. 57)igsimid(i) = 0 !18  !Lambda
-	   if(plist(6,i).eq.-57)igsimid(i) = 0 !18  !Lambda
-	   if(plist(6,i).eq. 43)igsimid(i) = 0 !19  !Sigma+
-	   if(plist(6,i).eq. 44)igsimid(i) = 0 !20  !Sigma0
-	   if(plist(6,i).eq.-44)igsimid(i) = 0 !20  !Sigma0
-	   if(plist(6,i).eq. 45)igsimid(i) = 0 !21  !Sigma-
-	   if(plist(6,i).eq. 46)igsimid(i) = 0 !??  !Xi- (Cascade)
-	   if(plist(6,i).eq.-46)igsimid(i) = 0 !??  !Xi- (Cascade)
-      	   if(plist(6,i).eq. 33)igsimid(i) = 0 !57  !rho0
-	   if(plist(6,i).eq. 27)igsimid(i) = 0 !58  !rho+
-	   if(plist(6,i).eq.-27)igsimid(i) = 0 !59  !rho-
-	   if(plist(6,i).eq. 34)igsimid(i) = 0 !60  !omega meson
-	   if(plist(6,i).eq. 36)igsimid(i) = 0 !61  !eta prime
-	   if(plist(6,i).eq. 35)igsimid(i) = 0 !62  !phi
+	   if(plist(6,i).eq. 19)igsimid(i) = 16  !K short (only! short, not long) 
+	   if(plist(6,i).eq.-19)igsimid(i) = 16  !K short (only! short, not long) 
+	   if(plist(6,i).eq. 24)igsimid(i) = 17  !eta
+	   if(plist(6,i).eq. 57)igsimid(i) = 18  !Lambda
+	   if(plist(6,i).eq.-57)igsimid(i) = 26  !anti-Lambda
+	   if(plist(6,i).eq. 43)igsimid(i) = 19  !Sigma+
+	   if(plist(6,i).eq. 44)igsimid(i) = 20  !Sigma0
+	   if(plist(6,i).eq.-44)igsimid(i) = 20  !Sigma0
+	   if(plist(6,i).eq. 45)igsimid(i) = 21  !Sigma-
+	   if(plist(6,i).eq. 46)igsimid(i) = 23  !Xi- (Cascade)
+	   if(plist(6,i).eq.-46)igsimid(i) = 31  !anti-Xi+ (Cascade)
+	   if(plist(6,i).eq. 47)igsimid(i) = 22  !Xi0 (Cascade)
+	   if(plist(6,i).eq.-47)igsimid(i) = 30  !anti-Xi0 (Cascade)
+      	   if(plist(6,i).eq. 33)igsimid(i) = 57  !rho0
+	   if(plist(6,i).eq. 27)igsimid(i) = 58  !rho+
+	   if(plist(6,i).eq.-27)igsimid(i) = 59  !rho-
+	   if(plist(6,i).eq. 34)igsimid(i) = 60  !omega meson
+	   if(plist(6,i).eq. 36)igsimid(i) = 61  !eta prime
+	   if(plist(6,i).eq. 35)igsimid(i) = 62  !phi
 
 c	   if(plist(6,i).eq. 58)igsimid(i) =  0  !Lambda(1405)
 c	   if(plist(6,i).eq. 59)igsimid(i) =  0  !Lambda(1520)
 c	   if(plist(6,i).eq. 56)igsimid(i) =  0  !Sigma+(1385)
 c	   if(plist(6,i).eq. 48)igsimid(i) =  0  !Sigma0(1385)
 c	   if(plist(6,i).eq. 60)igsimid(i) =  0  !Sigma-(1385)
-c	   if(plist(6,i).eq. 19)igsimid(i) =  0  !K0
-c	   if(plist(6,i).eq.-19)igsimid(i) =  0  !K0
-c	   if(plist(6,i).eq. 20)igsimid(i) =  0  !K*0
-c	   if(plist(6,i).eq. 21)igsimid(i) =  0  !K*+
+	   if(plist(6,i).eq. 20)igsimid(i) =  0  !K*0
+	   if(plist(6,i).eq. 21)igsimid(i) =  0  !K*+
 c	   if(plist(6,i).eq. 61)igsimid(i) =  0  !Delta++
 c	   if(plist(6,i).eq.-61)igsimid(i) =  0  !Delta++
 c	   if(plist(6,i).eq. 63)igsimid(i) =  0  !Delta+
@@ -2205,17 +2286,18 @@ c	   if(plist(6,i).eq. 75)igsimid(i) =  0  !a0+(980)
 c	   if(plist(6,i).eq. 76)igsimid(i) =  0  !N(1535)
 c	   if(plist(6,i).eq. 77)igsimid(i) =  0  !a2(1320)
 c	   if(plist(6,i).eq. 78)igsimid(i) =  0  !
-c	   if(plist(6,i).eq. 91)igsimid(i) =  0  !Baryonium
-c	   if(plist(6,i).eq. 92)igsimid(i) =  0  !di-proton
-c	   if(plist(6,i).eq. 93)igsimid(i) =  0  !Lambda-anti-Lambda
-c	   if(plist(6,i).eq. 94)igsimid(i) =  0  !
-c	   if(plist(6,i).eq. 95)igsimid(i) =  0  !anti-Lambda - proton
-c	   if(plist(6,i).eq. 96)igsimid(i) =  0  !anti-Sigma0 - Sigma0
-c	   if(plist(6,i).eq. 97)igsimid(i) =  0  !anti-Delta0 - Delta0
-c	   if(plist(6,i).eq.101)igsimid(i) =  0  !anti-Sigma0 - Lambda
-c	   if(plist(6,i).eq.-101)igsimid(i) =  0 !Sigma0 - anti-Lambda
-c	   if(plist(6,i).eq. 98)igsimid(i) =  0  !Non-Such
-c	   if(plist(6,i).eq. 99)igsimid(i) =  0  !Non-Such
+	   if(plist(6,i).eq. 91)igsimid(i) =  0  !Baryonium
+	   if(plist(6,i).eq. 92)igsimid(i) =  0  !
+	   if(plist(6,i).eq. 93)igsimid(i) =  0  !
+	   if(plist(6,i).eq. 94)igsimid(i) =  0  !
+	   if(plist(6,i).eq. 95)igsimid(i) =  0  !
+	   if(plist(6,i).eq. 96)igsimid(i) =  0  !
+	   if(plist(6,i).eq. 97)igsimid(i) =  0  !
+	   if(plist(6,i).eq. 98)igsimid(i) =  0  !
+	   if(plist(6,i).eq. 99)igsimid(i) =  0  !
+	   if(plist(6,i).eq.100)igsimid(i) =  0  !
+	   if(plist(6,i).eq.101)igsimid(i) =  0  !
+	   if(plist(6,i).eq.-101)igsimid(i) =  0 !
 	   if(igsimid(i).eq.-1)then
 	      write(6,*)'Unknown Lund-->HDGEANT mapping for Lund ID:',plist(6,i)
 c	      call exit()
@@ -2236,7 +2318,7 @@ c       enddo
 c        
 c       Special hack the the p-anti-p case which has 3 particles in the final state.
 c       If there are two protons in the event, swap them in half of all events
-c       in order to randomize their occurrance in the file that gets passes to HDGEANT
+c       in order to randomize their occurrance in the file that gets passed to HDGEANT
 c
 c       If the protons are swapped we signal this by changing the sign of the key
 c       variable that indicates the generation mechanism.   This is for Hao Li's
@@ -2302,9 +2384,12 @@ c
 	      do k=1,3
 		 pgsim(k+1) = plist(k,i)
 	      enddo
-	      vx  = plist(7,i)	!creation location for this track
-	      vy  = plist(8,i)
-	      vz  = plist(9,i)
+	      vx   = plist(7,i)	!creation location for this track
+	      vy   = plist(8,i)
+	      vz   = plist(9,i)
+	      vxd  = plist(18,i)	!decay location for this track
+	      vyd  = plist(19,i)
+	      vzd  = plist(20,i)
 c     
 	      icrash = 0
               ichoke = 0
@@ -2326,6 +2411,24 @@ c
 		 icrash = 1
                  ichoke = ichoke +1000
 	      endif
+	      if(vxd==vxd)then
+		 continue
+	      else
+		 icrash = 1
+                 ichoke = ichoke +10
+	      endif
+	      if(vyd==vyd)then
+		 continue
+	      else
+		 icrash = 1
+                 ichoke = ichoke +100
+	      endif
+	      if(vzd==vzd)then
+		 continue
+	      else
+		 icrash = 1
+                 ichoke = ichoke +1000
+	      endif
 	      do j=1,4
 		 if(pgsim(j)==pgsim(j))then
 		    continue
@@ -2337,7 +2440,7 @@ c
 c
 c             Also test for ridiculously large values
 c
-              toobig = 1.E4  !centimeters
+              toobig = 999.  !centimeters
               if(abs(vx) .gt. toobig)then
                  icrash = 1
                  ichoke = ichoke +100000
@@ -2352,7 +2455,7 @@ c
               endif
 c
 	      if(icrash.eq.1)then
-		 write(6,*)'Aborting event output due to NaN status',ieventout, ichoke
+		 write(6,*)'Aborting event: NaN status, vertex',ieventout, ichoke
                  write(6,*)vx,vy,vz,pgsim,plist(4,i),plist(6,i)
                  call prevent(plist,8,100)
 		 ieventout = ieventout-1
@@ -2365,159 +2468,47 @@ c
 c       This event is OK, so write it out...
 c       GEANT version
 c        
-	write(2,10)icount
+	write(2,10)icount !Number of particle in this event
  10	format(i2)
 c        write(6,*)'Output stream photon energy:'
 c	write(6,20)ppbeam,imechanism
 	write(2,20)ppbeam,imechanism
- 20	format(f10.6,i4)
+c 20	format(e14.6,i6)
+ 20	format(f10.6,i6)
 c
 	do i = 2,imark
 	   if(igsimid(i).gt.0)then
 	      pgsim(1) = plist(5,i)
+              iparent = plist(24,i)
 	      do k=1,3
 		 pgsim(k+1) = plist(k,i)
 	      enddo
-	      vx  = plist(7,i)	!creation location for this track
+	      vx  = plist(7,i)  	!creation location for this track
 	      vy  = plist(8,i)
 	      vz  = plist(9,i)
+	      vxd  = plist(18,i)	!decay location for this track
+	      vyd  = plist(19,i)
+	      vzd  = plist(20,i)
+              if(abs(vxd) .gt. toobig)then !decay vertex positions may be huge
+                 vxd = toobig
+              endif
+              if(abs(vyd) .gt. toobig)then !decay vertex positions may be huge
+                 vyd = toobig
+              endif
+              if(abs(vzd) .gt. toobig)then !decay vertex positions may be huge
+                 vzd = toobig
+              endif
 c
-	      write(2,30)igsimid(i),pgsim
- 30	      format(i2,4f10.6)
-	      write(2,40)vx,vy,vz
- 40	      format(3f11.6)
-c
+	      write(2,30)i,iparent,igsimid(i),pgsim
+c 30	      format(3i5,i2,4e14.6)
+ 30	      format(3i5,4f10.6)
+	      write(2,40)vx,vy,vz, vxd, vyd, vzd
+ 40	      format(11x,6f10.2)
+c              if(i.eq.2)ptestval = pgsim(3)  ! Y momentum of first proton;  a hack for random number testing
 c	      write(6,*)plist(6,i),igsimid(i)
 	   endif
 	enddo
         return 
-	end 
-
-c********************************************************************************
-c
-c	Input from file in TXT2BOS format 
-c
-c       plist holds the tracks for this event
-c       imark indexes the last track in the event
-c
- 	subroutine txt2bos_input(plist,imark)
-	parameter (maxnumlis=60) !Maximum number of particles in the decay list
-	character nam*3,fname*150
-	real plist(24,maxnumlis),pgsim(4)
-	integer igsimid(maxnumlis)
-	logical ifirst
-c 	data ifirst/.true./
-	common /beam/pbeam,ppbeam,rmbeam,rmtarg,jcode,xsigma,ysigma,ncode
-	common /eventiolocal/ifirst,ifile,ieventin
-c
-	character*256  prg_name, histnm, filenm, prefix
-	common /run_control/n_arg,prg_name,filenm,histnm,prefix,
-     1                      irestart,lfl,lprefix,maxbosoutput
-	data rmprot/0.93827/  !proton rest mass
-c       
-c	On first call just open the data file
-c
-	if(ifirst)then
-	   ifirst = .false.
-	   ifile  = 1		!specifies starting number of input files
-	   ieventin = 0
-c original	   write(nam,'(i3)'),ifile !fancy internal write to convert # to ascii
-	   write(nam,'(i3)')ifile !fancy internal write to convert # to ascii
-	   if(ifile.lt.10)then
-	      nam(2:2)=char(48)
-	   endif
-	   if(ifile.lt.100)then
-	      nam(1:1)=char(48)
-	   endif
-c           fname = '/raid5/schumach/'//histnm(1:lfl-4)//'_'//nam//'.ascii'
-	   fname = prefix(1:lprefix)//histnm(1:lfl-4)//'_'//nam//'.ascii'
-	   write(6,*)'New TXT2BOS input ',fname
-	   open(unit=2,file=fname,status='OLD')
-	end if
-	ieventin = ieventin+1
-	if(ieventin.gt.maxbosoutput)then  !open new file after <maxbosoutput> events
-	   close(2)
-	   ifile = ifile+1
-	   ieventout = 1
-c original	   write(nam,'(i3)'),ifile
-	   write(nam,'(i3)')ifile
-	   if(ifile.lt.10)then
-	      nam(2:2)=char(48)
-	   endif
-	   if(ifile.lt.100)then
-	      nam(1:1)=char(48)
-	   endif
-c	   fname = '/raid5/schumach/'//histnm(1:lfl-4)//'_'//nam//'.ascii'
-	   fname = prefix(1:lprefix)//histnm(1:lfl-4)//'_'//nam//'.ascii'
-	   write(6,*)'Opening TXT2BOS input ',fname
-	   open(unit=2,file=fname,status='OLD')
-	endif
-c
-	read(2,10)imark
- 10	format(i2)
-	read(2,20)ebeam,ppbeam,toff
- 20	format(f8.6,2f10.6)
-c	write(6,*)'> ',imark,ebeam,ppbeam,toff
-	plist(1,1) = 0.0                !create pseudo-particle in initial state
-	plist(2,1) = 0.0
-	plist(3,1) = ppbeam             !total lab momentum
-	plist(4,1) = sqrt(2.*ppbeam*rmprot + rmprot**2.)
-	plist(5,1) = ppbeam+rmprot      !total lab energy, for photoproduction
-	plist(6,1) = 999
-	plist(22,1)= +1                 !charge
-	pbeam      = ppbeam
-	rmtarg     = rmprot
-c
-	do i = 2,imark+1
-	   read(2,30)igsimid(i),pgsim
- 30	   format(i2,4f10.6)
-	   read(2,40)vx,vy,vz
- 40	   format(3f11.6)
-	   plist(5,i) = pgsim(1)       !total energy
-	   do k=1,3
-	      plist(k,i)    = pgsim(k+1)  !momentum
-	      plist(k+12,i) = pgsim(k+1)  !momentum at decay point
-	   enddo
-	 rmass=sqrt(pgsim(1)**2.-(pgsim(2)**2.+pgsim(3)**2.+pgsim(4)**2.))
-	   plist(4,i)  = rmass
-	   plist(7,i)  = vx	!creation location for this track
-	   plist(8,i)  = vy
-	   plist(9,i)  = vz
-	   plist(16,i) = rmass
-	   plist(18,i) = vx	!decay location for this track
-	   plist(19,i) = vy
-	   plist(20,i) = vz
-c
-c          Map GSIM ID's to LUND ID's
-c          ...yes, yes, this code is inefficient...
-c
-	   if(igsimid(i).lt.1 .or. igsimid(i).gt.14)then
-	      write(6,*)'Unknown GSIM-->Lund mapping for particle ID:',igsimid(i)
-	      call exit()
-	   endif
-	   if(igsimid(i).eq.  1)plist(6,i) = 1     !photon
-	   if(igsimid(i).eq.  2)plist(6,i) = -7    !positron
-	   if(igsimid(i).eq.  3)plist(6,i) = 7     !electron
-	   if(igsimid(i).eq.  4)plist(6,i) = 2     !neutrino
-	   if(igsimid(i).eq.  5)plist(6,i) = -9    !mu+
-	   if(igsimid(i).eq.  6)plist(6,i) = 9     !mu-
-	   if(igsimid(i).eq.  7)plist(6,i) = 23    !pi0
-	   if(igsimid(i).eq.  8)plist(6,i) = 17    !pi+
-	   if(igsimid(i).eq.  9)plist(6,i) = -17   !pi-
-	   if(igsimid(i).eq. 11)plist(6,i) = 18    !K+
-	   if(igsimid(i).eq. 12)plist(6,i) = -18   !K-
-	   if(igsimid(i).eq. 13)plist(6,i) = 42    !neutron
-	   if(igsimid(i).eq. 14)plist(6,i) = 41    !proton
-	   plist(22,i) = 0                          !charge
-	   if(plist(6,i).gt.1)then
-	      plist(22,1) = +1	!charge
-	   else
-	      plist(22,1) = -1	!charge
-	   endif
-c	   write(6,*)'>>',i,pgsim,igsimid(i),int(plist(6,i))
-	enddo
-c
-	return 
 	end 
 
 c*****************************************************************************
@@ -2665,6 +2656,7 @@ c       7-04-17         sort out why anti-Lambda are not treated equally to the 
 c       7-26-18         lots of testing for the Lambda anti-Lambda case
 c      
 	subroutine weakdecay(p0,p1,p2,polv,pol1,pol2,cthcm,lund,ierr)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	real p0(5),p1(5),p2(5),polv(3),rot(3),pol1(3),pol2(3)
 	real p0tmp(5),p1tmp(5),p2tmp(5),dtmp(5),beta(3),polvnorm(3)
 	logical ihackflag
@@ -2672,7 +2664,7 @@ c
 	data twopi /6.283185308/
 	data piover2/1.5707963/
 c
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /stuff/poldir(4),xx,icount,ikeep,ihackflag,iattempt
 c
 	if(lund.eq.57)then	!Lambda case
@@ -2811,11 +2803,12 @@ c               and genealize some of the variable names
 c
 	subroutine product_stuffit(p0,p1,p2,pol1,pol2,id1,id2,
      1             cthcm,lund,ierr)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	real p0(5),p1(5),p2(5),rot(5),pol1(3),pol2(3)
 	real p0tmp(5),p1tmp(5),p2tmp(5),dtmp(5),beta(3),ex(5)
 	data twopi,piover2 /6.283185308,1.570796327/
 c
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c
 c       Hackery to check which particle is a LUND meson (or a decaying dibaryon)
 c
@@ -2930,6 +2923,7 @@ c               and generalize some of the variable names
 c       7-19-19 create this program for the case of quasi-three-body decays
 c      
 	subroutine product_rotate(p0,p1,p2,p3,p23,costhetacm,ierr)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	real p0(5),p1(5),p2(5),p3(5),p23(5),rot(5)
 	real p0tmp(5),p1tmp(5),p2tmp(5),p3tmp(5),p23tmp(5),dtmp(5)
         real beta(3),ex(5),ze(5)
@@ -2938,7 +2932,7 @@ c
         data ze/0,0,1,0,0/      !the Z (beam) axis
 	data rade /57.29577951/ !convert radians to degrees
 c     
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c
 c       Hackery to check which particle is a LUND meson (or a decaying dibaryon)
 c
@@ -3101,8 +3095,9 @@ c       12-6-2005 - displaced vertex added
 c        7-5-2018 - fix up code so it works for GlueX       
 c
 	subroutine getvertex(r0)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	real r0(3),r1(3),direc(3)
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /beam/pbeam,ppbeam,rmbeam,rmtarg,jcode,xsigma,ysigma,ncode
 	common /target/icode,size1,size2,size3,size4,maxtstep
 c
@@ -3189,8 +3184,9 @@ c       Modified: 10-17-2006 - fix it!
 c                  3-31-2014 - change (fix?) it according to 4-11-89 notes
 c
 	subroutine bremsstrahlung(pbeammin,pbeammax,ppbeam)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	common /bremlocal/ ifirst,pendpoint,pdelta,xmax,ratio,scale
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	data ifirst/1/
 c
 	if(ifirst.eq.1)then
@@ -3256,10 +3252,11 @@ c
 c      R.A.Sch,  December 2019
 c      
       subroutine doublereggepick(ppbeam,rmtarget,tt,bslope2,iyesno,ierr)
+      external ran !forces the use of local random number generator (RNDNOR.F)
       data ifirst/1/
       data scale/1000./
       common /doublelocal/ifirst
-      common /monte/ iseed,xflat,xnormal,xbw
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c
       if(ifirst.eq.1)then
          ifirst=0
@@ -3314,9 +3311,10 @@ c       5-07-2020 - add parameter tcutoff to mark where the t-slope changes
 c
 	subroutine reggepick(ppbeam,pbeammax,wscale,bslope,tcutoff,sminf,rmtarget,
      1                        rmproduce,rmrecoil,cosinethetacm,iregge)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	data rmg/0.0/		!photon mass  (use this term so the equations look symmetric)
 	data ifirst/1/  
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /reggelocal/ifirst,snot,dsigmadtnot,dsdtmax,
      1                     dsdtmin,bslopelocal,tcutofflocal
 c
@@ -3464,9 +3462,10 @@ c
 c       R.A.Sch. April 2014
 c
 	subroutine exponentialpick(ppbeam,pbeammax,bslope,sminf,rmtarget,
-     1                        rmmeson,rmrecoil,cosinethetacm,iregge)
-	data rmg/0.0/		!photon mass  (use it so equations look symmetric)
-	common /monte/ iseed,xflat,xnormal,xbw
+     1     rmmeson,rmrecoil,cosinethetacm,iregge)
+	external ran !forces the use of local random number generator (RNDNOR.F)
+       	data rmg/0.0/		!photon mass  (use it so equations look symmetric)
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /explocal/ifirst,snot,dsigmadtnot,dsdtmax,dsdtmin,wthreshold
 	data ifirst/1/  
 c       
@@ -3657,10 +3656,11 @@ c       R.A. Schumacher
 c       CMU, October 2009
 c
 	subroutine phasespaceweight(p0,p1,p2,pcmin,ipskeep)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	real p0(4),p1(4),p2(4)
 	data psratiomax/0/
 	common /phasespacekeep/psratiomax,threeweightmax,threeweightmin,ifirst
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c
 	rm0 = p0(4)
 	rm1 = p1(4)
@@ -3710,10 +3710,11 @@ c       CMU, November 2013
 c
 	subroutine phasespaceweight3
      1    (p0,p1,p2,pcminter,pcmvaluein,wvalue,threeweight,ipskeep)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	real p0(4),p1(4),p2(4)
         data ifirst/0/
 	common /phasespacekeep3/psratiomax,threeweightmax,threeweightmin,ifirst
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c
         if(ifirst.eq.0)then
            ifirst = 1
@@ -3772,12 +3773,13 @@ c     07-24-2017 - modified to create a "triangle-like" distribution for Spring 
 c     11-08-2019 - reduce minimum energy to ppar treshold
 c
       subroutine bremsculpt(ppbeam,ibremkeep)
+      external ran !forces the use of local random number generator (RNDNOR.F)
       data fvaluemax/0.0/
       data ppbeamnot/0.65/  !GeV
       data wparam/0.1/  !dimensionless
       data ifirst/1/
       common /bremsculptcom/fvaluemax
-      common /monte/ iseed,xflat,xnormal,xbw
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
 cc
 cc     Landau distribution
 cc
@@ -3841,6 +3843,7 @@ c     This version of the code is intended to be adapted for use with 2017, 2018
 c     GlueX data.
 c
       subroutine bremselect(ppbeam,ibremkeep)
+      external ran !forces the use of local random number generator (RNDNOR.F)
       character*200 fluxfilename
       data fvaluemax/0.0/
       data ppbeamnot/0.65/  !GeV
@@ -3849,7 +3852,7 @@ c
       real egamma(2000),counts(2000)
       common /bremselectname/fluxfilename,lfluxfilename
       common /bremselectlocal/ifirst,nmin,nmax,fvaluemax,egamma,counts
-      common /monte/ iseed,xflat,xnormal,xbw
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c
 c     Read in the actual experimental distribution of beam photons, a "flux file"
 c     The code was written using a specific file for Spring 2017 data, it has 1000 channels, with
@@ -3948,6 +3951,7 @@ c
 c     R.A.Sch. 12-2014
 c
       subroutine getdeuteronmomentum(p)
+      external ran !forces the use of local random number generator (RNDNOR.F)
       real p(4)
       logical ifirst
       data ifirst /.true./
@@ -3956,7 +3960,7 @@ c
       data hbarc / .197337/     !GeV fm
       data pmaxgen/0.40/        !GeV/c
 c
-      common /monte/ iseed,xflat,xnormal,xbw
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
       common/deutmomgen/phivaluemax,alphahc,betahc
 c
 c     Pick Fermi-motion of target particles uniformly within a sphere...
@@ -4045,11 +4049,12 @@ c
 c       R. A. Sch., CMU,  ~2016
 c      
 	subroutine gsmear(ppure,pspect,lund)
+	external ran !forces the use of local random number generator (RNDNOR.F)
 	real ppure(5),pspect(5),ptotrest(5)
 	data rade /57.29577951/
 
 	common /analysis/dpoverp_in,dpoverp_out,ptotrest
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c
 c	write(6,*)'Using GlueX smearing...' 
 	rmas   = ppure(4)	!GeV
@@ -4203,8 +4208,9 @@ c
 c     R.A.Sch. 3-23-20
       
       subroutine sculptmass(rm23,rmassmin,bslope2,bslope3,ipick,iyesno)
+      external ran !forces the use of local random number generator (RNDNOR.F)
       data hbarc/ 197./  !MeV.fm
-      common /monte/ iseed,xflat,xnormal,xbw
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c
       iyesno = 0
       xx = rm23 - rmassmin
@@ -4237,5 +4243,90 @@ c      write(6,*)'>>',xx,qq,wk,ymax,yy
 c      write(6,*)'> ',yy,ytest,iyesno
       return
       end
+     
+c********************************************************************************
+c     RAN
+c     Uniform random variable as given intrinsically by FORTRAN as implemented
+c     by the GCC compiler.   This routine replaces the random number machinery
+c      used up to October 2020 that emulates the GEANT3 random number generator
+c      implemented in the code RNDNOR.F.
+c      
+c      We did this because of possible aliasing problems using the GEANT3 code
+c      when running on a multi-threaded machine.   Supposedly, every
+c      instance of the code gets its own seed value, producing a different
+c      sequence of numbers.   We have no control over the seed value now.
+c
+c     R.A.Sch.  10-5-2020 
+c
+      function x_ran(iseed)
+      call random_number(x)
+      ran = x
+      return
+      end
+
+
+c*****************************************************************************
+c	PREVENT
+c
+c	Prints out the details of one event block
+c
+c	Coding for the list of particles generated in the decay chain:
+c	All variables in this list are measured in the lab.
+c	PLIST(I,MARK)	
+c	I = index into list of a given particle's parameters
+c	MARK = counts the particles produced
+c	I = 
+c	1	PX
+c	2	PY
+c	3	PZ
+c	4	MASS
+c	5	TOTAL ENERGY
+c	6	LUND ID FOR THIS PARTICLE
+c	7	X OF CREATION
+c	8	Y OF CREATION
+c	9	Z OF CREATION
+c	10	X COMPONENT OF POLARIZATION
+c	11	Y COMPONENT OF POLARIZATION
+c	12	Z COMPONENT OF POLARIZATION
+c	13	PX AT DECAY POINT
+c	14	PY AT DECAY POINT
+c	15	PZ AT DECAY POINT
+c	16	MASS
+c	17	TOTAL ENERGY AT DECAY POINT
+c	18	X OF DECAY
+c	19	Y OF DECAY
+c	20	Z OF DECAY
+c	21	CTAU
+c	22	CHARGE
+c	23	INDEX OF THIS   PARTICLE
+c	24	INDEX OF PARENT PARTICLE
+c
+c        9-23-2014 - tweak output to give time-of-flight over 4 meters.
+c        3-23-2016 - add beam momentum to output
+c       10-31-2020 - add indicies for present and parent particle
+c       
+	subroutine prevent(plist,inext,ievent)
+	parameter (maxnumlis=50) !Maximum number of particles in the decay list
+	real plist(24,maxnumlis)
+	common /beam/pbeam,ppbeam,rmbeam,rmtarg,jcode,xsigma,ysigma,ncode
+	write(6,2)ievent,ppbeam
+ 2	format(1x,/,1x,'Event ',i7,'; Beam momentum',f8.2)
+	do i=1,inext-1
+	   beta = absp(plist(1,i))/plist(5,i)   !pc/E
+	   tof  = 4.0/(beta*0.3) !nanoseconds over 4 meter flight path
+	   write(6,5)int(plist(23,i)),int(plist(24,i)),int(plist(6,i))
+ 5	   format(1x,'Indicies:  Particle:',i3,'; Parent:',i3,'; LUND ID:',i4)
+	   write(6,10)(plist(j,i),j=1,5),  beta,tof,
+     1     (plist(j,i),j=13,15),
+     1     plist(17,i),
+     1     (plist(j,i),j=7,9),(plist(j,i),j=10,12),(plist(j,i),j=18,20)
+ 10	   format(1x,'      px,py,pz,m,E ',5f10.3,
+     1     '            beta, tof ',f10.3,f10.3,/,
+     1     6x,'              ',3f10.3,10x,f10.3,/
+     1     6x,'X,Y,Z,Polx,y,z',3(1pe10.1),3f10.4,/,
+     1     6x,'              ',3(1pe10.1))
+	enddo
+	return
+	end
       
 c========================== End of MC_GEN code ==============================
