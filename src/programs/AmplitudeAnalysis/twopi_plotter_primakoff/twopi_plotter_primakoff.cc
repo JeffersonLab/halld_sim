@@ -32,6 +32,7 @@
 #include "AMPTOOLS_AMPS/TwoPiW_brokenetas.h"
 #include "AMPTOOLS_AMPS/TwoPitdist.h"
 #include "AMPTOOLS_AMPS/TwoPiNC_tdist.h"
+#include "AMPTOOLS_AMPS/TwoPiEtas_tdist.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 
@@ -67,6 +68,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( TwoPiW_brokenetas() );
   AmpToolsInterface::registerAmplitude( TwoPitdist() );
   AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
+  AmpToolsInterface::registerAmplitude( TwoPiEtas_tdist() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
 }
