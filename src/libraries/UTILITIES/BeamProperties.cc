@@ -364,6 +364,11 @@ void BeamProperties::fillFluxFromCCDB() {
 		if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
 		fluxVsEgamma->Fill(energy, flux);
 	}
+
+	if (fluxVsEgamma->Integral() == 0){
+	  cout << "ERROR: Flux in CCDB not available for this energy range!" << endl;
+	  exit(101);
+	}
 	
 	return;
 }

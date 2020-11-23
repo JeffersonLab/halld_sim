@@ -71,7 +71,7 @@ int main( int argc, char* argv[] ){
 	double slope = 6.0;
 
 	int nEvents = 10000;
-	int batchSize = 10000;
+	int batchSize = 100000;
 	
 	float Mpip=ParticleMass(PiPlus), Mpi0=ParticleMass(Pi0), Momega=0.782;
 
@@ -345,9 +345,9 @@ int main( int argc, char* argv[] ){
 		ati.clearEvents();
 		for( int i = 0; i < batchSize; ++i ){
 			
-                        pair< double, double > bw = m_bwGen[0]();
-                        double omega_mass_bw = bw.first;
-                        if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.864) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
+			double omega_mass_bw = 0.0;
+                        while( omega_mass_bw < 0.45 || omega_mass_bw > 0.864 ) omega_mass_bw = m_bwGen[0]().first;
+			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
 			vector<double> childMasses;
               		childMasses.push_back(0.135);

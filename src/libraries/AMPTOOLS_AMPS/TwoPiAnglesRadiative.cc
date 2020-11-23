@@ -51,10 +51,16 @@ TwoPiAnglesRadiative::TwoPiAnglesRadiative( const vector< string >& args ) :
 
     registerParameter( polAngle );
 
-    // BeamProperties configuration file
-    TString beamConfigFile = args[10].c_str();
-    BeamProperties beamProp(beamConfigFile);
-    polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+    if (polFraction > 0.0)
+      cout << "Fitting with constant polarization" << endl;
+    else
+      {
+	cout << "Fitting with polarization from BeamProperties class" << endl;
+	// BeamProperties configuration file
+	TString beamConfigFile = args[10].c_str();
+	BeamProperties beamProp(beamConfigFile);
+	polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+      }
 }
 
 complex< GDouble >
