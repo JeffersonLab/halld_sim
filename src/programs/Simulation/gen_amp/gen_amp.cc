@@ -419,9 +419,9 @@ int main( int argc, char* argv[] ){
 					
 					// calculate angular variables
 					TLorentzVector beam = evt->particle ( 0 );
-					TLorentzVector recoil = evt->particle ( 1 );
+					TLorentzVector rec = evt->particle ( 1 );
 					TLorentzVector p1 = evt->particle ( 2 );
-					TLorentzVector target(0,0,0,recoil[3]);
+					TLorentzVector target(0,0,0,rec[3]);
 					
 					if(isBaryonResonance) // assume t-channel
 						t->Fill(-1*(beam-evt->particle(1)).M2());
@@ -434,14 +434,14 @@ int main( int argc, char* argv[] ){
 					TLorentzRotation resonanceBoost( -resonance.BoostVector() );
 					
 					TLorentzVector beam_res = resonanceBoost * beam;
-					TLorentzVector recoil_res = resonanceBoost * recoil;
+					TLorentzVector rec_res = resonanceBoost * rec;
 					TLorentzVector p1_res = resonanceBoost * p1;
 					
 					// normal to the production plane
-                                        TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();
+                                        TVector3 y = (beam.Vect().Unit().Cross(-rec.Vect().Unit())).Unit();
 
                                         // choose helicity frame: z-axis opposite recoil proton in rho rest frame
-                                        TVector3 z = -1. * recoil_res.Vect().Unit();
+                                        TVector3 z = -1. * rec_res.Vect().Unit();
                                         TVector3 x = y.Cross(z).Unit();
                                         TVector3 angles( (p1_res.Vect()).Dot(x),
                                                          (p1_res.Vect()).Dot(y),
@@ -452,7 +452,7 @@ int main( int argc, char* argv[] ){
 
 					M_CosTheta->Fill( resonance.M(), cosTheta);
 					M_Phi->Fill( resonance.M(), phi);
-					M_Phi_lab->Fill( resonance.M(), recoil.Phi());
+					M_Phi_lab->Fill( resonance.M(), rec.Phi());
 					
 					TVector3 eps(1.0, 0.0, 0.0); // beam polarization vector
                                         double Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
@@ -479,7 +479,7 @@ int main( int argc, char* argv[] ){
 				
 				intenW->Fill( weightedInten );
 				intenWVsM->Fill( resonance.M(), weightedInten );
-				TLorentzVector recoil = evt->particle ( 1 );
+				TLorentzVector rec = evt->particle ( 1 );
 				
 				++eventCounter;
 			}
