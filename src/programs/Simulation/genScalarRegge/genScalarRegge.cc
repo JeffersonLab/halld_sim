@@ -26,8 +26,9 @@ const double m_p=0.93827; // GeV
 const double m_p_sq=m_p*m_p;
 // Width
 double width=0.;
+
 // Coupling constants 
-const double g0_sq=110.5; // GeV^-2
+//const double g0_sq=0.05*110.5; // GeV^-2
 const double g_omega_V=15.;
 const double gsq_omega_V=g_omega_V*g_omega_V;
 const double g_rho_V=3.4;
@@ -49,7 +50,7 @@ TH1D *thrown_dalitzZ;
 TH1D *thrown_Egamma;
 TH2D *thrown_dalitzXY;  
 TH2D *thrown_theta_vs_p;
-TH2D *thrown_mass_vs_E;
+TH2D *thrown_mass_vs_E,*thrown_mass_vs_t;
 TH1D *cobrems_vs_E;
 
 char input_file_name[50]="scalar.in";
@@ -118,7 +119,7 @@ void ParseCommandLineArguments(int narg, char* argv[])
 // arXiv:0806.3698v1
 double BackgroundCrossSection(TLorentzVector &q /* beam */,
 			      vector<Particle_t>&particle_types,
-			      vector<TLorentzVector>&particles){
+			      vector<TLorentzVector>&particles,double g0_sq){
   
   int two_particles=particle_types[0]+particle_types[1];
   TLorentzVector p1(0,0,0.,ParticleMass(Proton));
@@ -137,7 +138,6 @@ double BackgroundCrossSection(TLorentzVector &q /* beam */,
   double p_dot_v2=p.Dot(v2);
   double v1sq=v1.M2();
   double v2sq=v2.M2();
-  double v1sq_minus_v2sq=v1sq-v2sq;
   double v1_dot_v2=v1.Dot(v2);
   double psq=p.M2();
   double b1=q_dot_p*v1sq-q_dot_v1*p_dot_v1;
@@ -178,10 +178,9 @@ double BackgroundCrossSection(TLorentzVector &q /* beam */,
   // Regge trajectory for rho
   double a_rho=0.55+0.8*t;
   double a_rho_prime=0.8;
-  double cos_rho=cos(M_PI*a_rho);
   double sin_rho=sin(M_PI*a_rho);
   double regge_rho=pow(s/s0,a_rho-1.)*M_PI*a_rho_prime/(sin_rho*TMath::Gamma(a_rho)); // excluding phase factor
-  // Assume rotating phase:  regge_rho=f_rho(s,t) exp(-i pi a_rho(t))
+  // Phase factor = exp(-i pi a_rho(t))
   double regge_rho_sq=regge_rho*regge_rho;
 
   // omega propagators for top exchange
@@ -200,14 +199,13 @@ double BackgroundCrossSection(TLorentzVector &q /* beam */,
   // Regge trajectory for omega
   double a_omega=0.44+0.9*t;
   double a_omega_prime=0.9; 
-  double cos_omega=cos(M_PI*a_omega);
   double sin_omega=sin(M_PI*a_omega);
   double regge_omega=pow(s/s0,a_omega-1.)*M_PI*a_omega_prime/(sin_omega*TMath::Gamma(a_omega)); // excluding phase factor
-  // Assume rotating phase:  regge_omega=f_omega(s,t) exp(-i pi a_omega(t))
+  // Phase factor = exp(-i pi a_omega(t))
   double regge_omega_sq=regge_omega*regge_omega;
 
   // rho-omega interference 
-  double regge_rho_omega_sum
+  double regge_rho_omega_sum 
     =2.*regge_rho*regge_omega*cos(M_PI*(a_rho-a_omega));
 
   // i (Domega Drho* - Domega* Drho)
@@ -323,21 +321,6 @@ double BackgroundCrossSection(TLorentzVector &q /* beam */,
 		       );
   }
 
-    /*
-    b1_b1=0.;
-    b2_b2=0.;
-    b1_b2=0.;
-    
-    b1_a1=0.;
-    b2_a2=0.;
-    b1_a2=0.;
-    b2_a1=0.;
-    /*
-    a2_a2=0.;
-    a1_a1=0.;
-    a1_a2=0.;
-    */  
-
   double T=Csq*((m_p_sq-p1_dot_p2)*(a1_a1*M1_M1 + a1_a2*M1_M2 + a2_a2*M2_M2)
 		+ 2.*(a1_a1*N1_N1 + a1_a2*N1_N2 + a2_a2*N2_N2)
 		+ 2.*m_p*(b1_a1*N1_N1 + (b1_a2+b2_a1)*N1_N2 + b2_a2*N2_N2)
@@ -353,7 +336,7 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
 				vector<TLorentzVector>&particles,
 				double gR,double ReB, double ImB,
 				double gsq_rho_S,double gsq_omega_S,
-				double phase){ 
+				double g0_sq,double phase){ 
   int two_particles=particle_types[0]+particle_types[1];
   
   // Four vectors
@@ -412,7 +395,6 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   double a_rho=0.55+0.8*t;
   double a_rho_prime=0.8;
   double cos_rho=cos(M_PI*a_rho);
-  double one_minus_cos_rho=1.-cos_rho;
   double sin_rho=sin(M_PI*a_rho);
   double regge_rho=pow(s/s0,a_rho-1.)*M_PI*a_rho_prime/(sin_rho*TMath::Gamma(a_rho)); // excluding phase factor 
 
@@ -437,7 +419,6 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   double a_omega=0.44+0.9*t;
   double a_omega_prime=0.9; 
   double cos_omega=cos(M_PI*a_omega);
-  double one_minus_cos_omega=1.-cos_omega;
   double sin_omega=sin(M_PI*a_omega);
   double regge_omega=pow(s/s0,a_omega-1.)*M_PI*a_omega_prime/(sin_omega*TMath::Gamma(a_omega)); // excluding phase factor
 
@@ -464,15 +445,6 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   // Natural parity:
   double C_n_P_cut=regge_cuts[1];
   double C_n_f2_cut=regge_cuts[2];
-  double Csq_n_P_cut=C_n_P_cut*C_n_P_cut;
-  double Csq_n_f2_cut=C_n_f2_cut*C_n_f2_cut;
-  double C_n_f2_C_n_P_cut=C_n_f2_cut*C_n_P_cut;
-  // Unnatural parity
-  double C_u_P_cut=regge_cuts[3];
-  double C_u_f2_cut=regge_cuts[4];
-  double Csq_u_P_cut=C_u_P_cut*C_u_P_cut;
-  double Csq_u_f2_cut=C_u_f2_cut*C_u_f2_cut;
-  double C_u_f2_C_u_P_cut=C_u_f2_cut*C_u_P_cut;
 
   // terms for interference between resonance shape and propagator in top
   // part of background diagrams
@@ -913,14 +885,6 @@ double CrossSection(double m1,double m2, double ms_sq, double s, double t,
 
     double sin_rho_omega_sum=-0.5*(sin(M_PI*a_rho)-sin(M_PI*a_omega)
 				   +sin(M_PI*(a_omega-a_rho)));
-    double sin_omega_omega_P_sum=sin(M_PI*(a_omega-0.5*a_omega_P))
-      +sin(M_PI_2*a_omega_P);
-    double sin_omega_omega_f2_sum=sin(M_PI*(a_omega-0.5*a_omega_f2))
-      +sin(M_PI_2*a_omega_f2);
-    double sin_rho_omega_P_sum=sin(M_PI*(a_rho-0.5*a_omega_P))
-      +sin(M_PI_2*a_omega_P);
-    double sin_rho_omega_f2_sum=sin(M_PI*(a_rho-0.5*a_omega_f2))
-      +sin(M_PI_2*a_omega_f2);
     double sin_rho_rho_P_sum=sin(M_PI*(a_rho-0.5*a_rho_P))
       +sin(M_PI_2*a_rho_P);
     double sin_rho_rho_f2_sum=sin(M_PI*(a_rho-0.5*a_rho_f2))
@@ -998,7 +962,7 @@ double CrossSection(double m1,double m2, double ms_sq, double s, double t,
 double TensorCrossSection(TLorentzVector &q /* beam */,
 			  vector<Particle_t>&particle_types,
 			  vector<TLorentzVector>&particles,
-			  double gR,double ReB, double ImB){
+			  double gR,double ReB, double ImB,double gT_sq){
   int two_particles=particle_types[0]+particle_types[1];
   
   // Four vectors
@@ -1025,13 +989,13 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
   double m_rho_sq=m_rho*m_rho;
  
   // Coupling constants 
-  double f=1.;  // scale factor to account for normalization of regge factor 
+  // double f=1.;  // scale factor to account for normalization of regge factor 
   // to data?? 
-  double gT_sq=f*(2./3.)*150.; // GeV^2
-  if (two_particles==(7+17)){
-    f=1.; // guess
-    gT_sq=f*183.675;  // GeV^2
-  }
+  //double gT_sq=f*(2./3.)*150.; // GeV^2
+  //if (two_particles==(7+17)){
+  // f=1.; // guess
+    //gT_sq=f*183.675;  // GeV^2
+  //}
 
   // s scale for regge trajectories
   double s0=1.;
@@ -1081,6 +1045,7 @@ double TensorBackgroundInterference(TLorentzVector &q /* beam */,
 				    vector<Particle_t>&particle_types,
 				    vector<TLorentzVector>&particles,
 				    double gR,double ReB, double ImB,
+				    double gT_sq,double g0_sq,
 				    double phase){
   int two_particles=particle_types[0]+particle_types[1];
   
@@ -1136,13 +1101,13 @@ double TensorBackgroundInterference(TLorentzVector &q /* beam */,
   double v2x_plus_v2y=v2.Vect().x()+v2.Vect().y();
   
   // Coupling constants 
-  double f=1.;  // scale factor to account for normalization of regge factor 
+  //double f=1.;  // scale factor to account for normalization of regge factor 
   // to data?? 
-  double gT_sq=f*(2./3.)*150.; // GeV^2
-  if (two_particles==(7+17)){
-    f=1.; // guess
-    gT_sq=f*183.675;  // GeV^2
-  } 
+  // double gT_sq=f*(2./3.)*150.; // GeV^2
+  //if (two_particles==(7+17)){
+  //  f=1.; // guess
+  //  gT_sq=f*183.675;  // GeV^2
+  //} 
 
   // Rho propagator for top exchange for double-exchange diagrams
   double m_rho=0.7685;
@@ -1323,8 +1288,8 @@ double TensorScalarInterference(TLorentzVector &q /* beam */,
 				double gR,double ReB, double ImB,
 				double gR_S,double ReB_S,double ImB_S,
 				double g_omega_S,double g_rho_S,
-				double phase){
-  int two_particles=particle_types[0]+particle_types[1];
+				double gT_sq,double phase){
+  //  int two_particles=particle_types[0]+particle_types[1];
   double m_rho=0.7685;
   double m_rho_sq=m_rho*m_rho;
 
@@ -1351,13 +1316,13 @@ double TensorScalarInterference(TLorentzVector &q /* beam */,
   double dpx_plus_dpy=dpx+dpy;
 
   // Coupling constants 
-  double f=1.;  // scale factor to account for normalization of regge factor 
+  //double f=1.;  // scale factor to account for normalization of regge factor 
   // to data?? 
-  double gT_sq=f*(2./3.)*150.; // GeV^2
-  if (two_particles==(7+17)){
-    f=1.; // guess
-    gT_sq=f*183.675;  // GeV^2
-  } 
+  //double gT_sq=f*(2./3.)*150.; // GeV^2
+  //if (two_particles==(7+17)){
+  //  f=1.; // guess
+  //  gT_sq=f*183.675;  // GeV^2
+  // } 
  
   // s scale for regge trajectories
   double s0=1.;
@@ -1573,6 +1538,10 @@ void CreateHistograms(string beamConfigFile){
 			    48,2.8,12.4,450,0,4.5);
   thrown_mass_vs_E->SetYTitle("M(4#gamma) [GeV]");
   thrown_mass_vs_E->SetXTitle("E(beam) [GeV]");
+  thrown_mass_vs_t=new TH2D("thrown_mass_vs_t","M(4#gamma) vs -t",
+			    1000,0,5,450,0,4.5);
+  thrown_mass_vs_E->SetYTitle("M(4#gamma) [GeV]");
+  thrown_mass_vs_E->SetXTitle("-t [GeV^{2}]");
   
   thrown_theta_vs_p=new TH2D("thrown_theta_vs_p","Proton #theta_{LAB} vs. p",
 			       200,0,2.,180,0.,90.);
@@ -1586,7 +1555,8 @@ void CreateHistograms(string beamConfigFile){
 double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 		       vector<Particle_t>&particle_types,
 		       vector<TLorentzVector>&particle_vectors,
-		       double phase[],int *generate
+		       double phase[],int generate[],
+		       double coupling_constants[]
 		       ){
   // Decay particles
   double m1=ParticleMass(particle_types[0]);
@@ -1599,14 +1569,14 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   double m1sq_plus_m2sq=m1sq+m2sq;
 
   // Coupling constants for f0(500)
-  double gsq_rho_f500_gamma=0.25;
+  double gsq_rho_f500_gamma=coupling_constants[0]; // 0.25?
   double gsq_omega_f500_gamma=(1./9)*gsq_rho_f500_gamma;
   // Coupling constants: Donnachie and Kalashnikova (2008) scenario IV
-  double gsq_rho_S_gamma=0.02537;
-  double gsq_omega_S_gamma=0.2283;
-  double gsq_rho_f1370_gamma=0.094;
+  double gsq_rho_S_gamma=coupling_constants[1];// 0.02537 GeV^-2
+  double gsq_omega_S_gamma=9.*gsq_rho_S_gamma;//0.2283;
+  double gsq_rho_f1370_gamma=coupling_constants[2];//0.094;
   double gsq_omega_f1370_gamma=(1./9.)*gsq_rho_f1370_gamma;
-  double gsq_rho_a1450_gamma=0.0054;
+  double gsq_rho_a1450_gamma=coupling_constants[2];//0.0054;
   double gsq_omega_a1450_gamma=9.*gsq_rho_a1450_gamma;
   
   //Resonance parameters 
@@ -1621,9 +1591,9 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.55;// PDG (2020), upper end of range
+    double m_Sigma=0.55;// (0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
-    width=0.7; // PDG (2020)
+    width=0.7; // 0.4-0.7 GeV, PDG (2020)
     ReBf500=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
@@ -1701,8 +1671,8 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
       //gsq_omega_S_gamma=0.0054; // 3 keV
       //gsq_rho_S_gamma=9.*gsq_omega_S_gamma;
       // Molecular KK model (need reference)
-      gsq_rho_S_gamma=0.044;
-      gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
+      //gsq_rho_S_gamma=0.044;
+      //gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
     }
     else{ // a0(980)  
       my_msq_R=0.9825*0.9825;	
@@ -1712,8 +1682,8 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 			 /(4.*my_msq_R));
       double partial_width=0.06; //?? guess from note in pdg
       gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
-      gsq_rho_S_gamma=0.02537;
-      gsq_omega_S_gamma=9.*gsq_rho_S_gamma;
+      //gsq_rho_S_gamma=0.02537;
+      //gsq_omega_S_gamma=9.*gsq_rho_S_gamma;
     } 
     GetResonanceParameters(m1,m2,M_sq,my_msq_R,ReB,ImB);
     T+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
@@ -1743,24 +1713,25 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     }
   }
   if (generate[4]){ // non-resonant background
-    T+=BackgroundCrossSection(beam,particle_types,particle_vectors);
+    double g0_sq=coupling_constants[4];
+    T+=BackgroundCrossSection(beam,particle_types,particle_vectors,g0_sq);
 
     if (generate[1]){ // interference with resonant signal
       T+=InterferenceCrossSection(beam,particle_types,particle_vectors,
 				  gR,ReB,ImB,gsq_rho_S_gamma,
-				  gsq_omega_S_gamma,phase[1]);
+				  gsq_omega_S_gamma,g0_sq,phase[1]);
     }
     if (got_pipi){
       if (generate[0]){ // interference with f0(500)
 	T+=InterferenceCrossSection(beam,particle_types,particle_vectors,
 				    gRf500,ReBf500,ImBf500,gsq_rho_f500_gamma,
-				    gsq_omega_f500_gamma,phase[0]);
+				    gsq_omega_f500_gamma,g0_sq,phase[0]);
       }  
       if (generate[2]){ // interference with f0(1370)
 	T+=InterferenceCrossSection(beam,particle_types,particle_vectors,
 				    gRf1370,ReBf1370,ImBf1370,
 				    gsq_rho_f1370_gamma,
-				    gsq_omega_f1370_gamma,phase[2]);
+				    gsq_omega_f1370_gamma,g0_sq,phase[2]);
       }
     }
     else{ 
@@ -1768,7 +1739,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 	T+=InterferenceCrossSection(beam,particle_types,particle_vectors,
 				    gRa1450,ReBa1450,ImBa1450,
 				    gsq_rho_a1450_gamma,
-				    gsq_omega_a1450_gamma,phase[2]);
+				    gsq_omega_a1450_gamma,g0_sq,phase[2]);
       }
       
     }
@@ -1800,39 +1771,45 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
       gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width*q_over_qR);
       ImB_T=M*Gamma_T*(0.145*q_over_qR_5*M_sq_R_T/M_sq+0.855);
     }
+    double gT_sq=coupling_constants[3];
     T+=TensorCrossSection(beam,particle_types,particle_vectors,gR_T,ReB_T,
-			  ImB_T);
+			  ImB_T,gT_sq);
     if (generate[1]){ // interference with a0(980)/f0(980)
       T+=TensorScalarInterference(beam,particle_types,particle_vectors,
 				  gR_T,ReB_T,ImB_T,gR,ReB,ImB,
 				  sqrt(gsq_omega_S_gamma),
-				  sqrt(gsq_rho_S_gamma),phase[1]-phase[3]);
+				  sqrt(gsq_rho_S_gamma),gT_sq,
+				  phase[1]-phase[3]);
     }
     // interference with f0(600)
     if (got_pipi && generate[0]){
       T+=TensorScalarInterference(beam,particle_types,particle_vectors,
 				  gR_T,ReB_T,ImB_T,gRf500,ReBf500,ImBf500,
 				  sqrt(gsq_omega_f500_gamma),
-				  sqrt(gsq_rho_f500_gamma),phase[0]-phase[3]);
+				  sqrt(gsq_rho_f500_gamma),gT_sq,
+				  phase[0]-phase[3]);
     }
     // interference with f0(1370)
     if (got_pipi && generate[2]){
       T+=TensorScalarInterference(beam,particle_types,particle_vectors,
 				  gR_T,ReB_T,ImB_T,gRf1370,ReBf1370,ImBf1370,
 				  sqrt(gsq_omega_f1370_gamma),
-				  sqrt(gsq_rho_f1370_gamma),phase[2]-phase[3]);
+				  sqrt(gsq_rho_f1370_gamma),gT_sq,
+				  phase[2]-phase[3]);
     }	
     // interference with a0(1450)
     if (got_pipi==false && generate[2]){
       T+=TensorScalarInterference(beam,particle_types,particle_vectors,
 				  gR_T,ReB_T,ImB_T,gRa1450,ReBa1450,ImBa1450,
 				  sqrt(gsq_omega_a1450_gamma),
-				  sqrt(gsq_rho_a1450_gamma),phase[2]-phase[3]);
+				  sqrt(gsq_rho_a1450_gamma),gT_sq,
+				  phase[2]-phase[3]);
     }
     
     if (generate[4]){ //interference with background wave
+      double g0_sq=coupling_constants[4];
       T+=TensorBackgroundInterference(beam,particle_types,particle_vectors,
-				      gR_T,ReB_T,ImB_T,phase[3]);
+				      gR_T,ReB_T,ImB_T,gT_sq,g0_sq,phase[3]);
     } 
     
   }
@@ -1863,9 +1840,8 @@ void GetDecayVectors(double m1, double m2, double p_rest, double theta_rest,
 
 // Create a graph of the cross section dsigma/dt as a function of -t
 void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
-		       int *generate){
-  double xsec_max=0.;
-  
+		       int generate[],double coupling_constants[],
+		       double &xsec_max){
   TLorentzVector beam(0,0,EgammaPlot,EgammaPlot);
   TLorentzVector target(0,0,0,m_p);
   vector<TLorentzVector>particle_vectors(3);
@@ -1886,11 +1862,11 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
   double m1_minus_m2_sq=m1_minus_m2*m1_minus_m2;
   double m_max=m_p*(sqrt(1.+2.*EgammaPlot/m_p)-1.);
   double dmrange=m_max-m1_plus_m2;
-  double dm=dmrange/1000.;
-
+ 
   // Momenta of incoming photon and outgoing S and proton in cm frame
   double p_gamma=(s-m_p_sq)/(2.*Ecm);
-  double M_sq=0.980*0.980; // f0(980)/a0(980)
+  double M=0.980;
+  double M_sq=M*M; // f0(980)/a0(980)
   double E_S=(s+M_sq-m_p_sq)/(2.*Ecm);
   double p_S=sqrt(E_S*E_S-M_sq);
   
@@ -1904,7 +1880,8 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
   double t_array[1000];
   double xsec_array[1000];
   for (unsigned int k=0;k<1000;k++){
-    double theta_cm=M_PI*double(k)/1000.;
+    double cos_theta_cm=-1.+double(k)/500.;
+    double theta_cm=acos(cos_theta_cm);
     double sin_theta_over_2=sin(0.5*theta_cm);
     double t=t0-4.*p_gamma*p_S*sin_theta_over_2*sin_theta_over_2;
 
@@ -1923,20 +1900,21 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
     particle_vectors[2]=beam+target-S4;
  
     // Decay particles
-    double p_rest=sqrt((M_sq-m1_plus_m2_sq)*(M_sq-m1_minus_m2_sq))/(2.*M_sq);
+    double p_rest=sqrt((M_sq-m1_plus_m2_sq)*(M_sq-m1_minus_m2_sq))/(2.*M);
     double theta_rest=0.;
     double phi_rest=0.; 
     GetDecayVectors(m1,m2,p_rest,theta_rest,phi_rest,v_S,particle_vectors);
 
     double xsec=GetCrossSection(s,t,M_sq,beam,particle_types,particle_vectors,
-				phase,generate);
+				phase,generate,coupling_constants);
     t_array[k]=-t;
     xsec_array[k]=4*M_PI*1000*xsec;
   }  
   
-  double m_array[1000];
-  double xsec_array2[1000];  
-  for (unsigned int j=0;j<1000;j++){
+  double dm=dmrange/100.;
+  double m_array[100];
+  double xsec_array2[100];  
+  for (unsigned int j=0;j<100;j++){
     double mass=m1_plus_m2+dm*double(j);
     m_array[j]=mass;
     M_sq=mass*mass;
@@ -1949,8 +1927,9 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
     t_old=t0;
     
     double xsec=0.;
-    for (unsigned int k=0;k<1000;k++){
-      double theta_cm=M_PI*double(k)/1000.;
+    for (unsigned int k=0;k<100;k++){
+      double cos_theta_cm=1.-double(k)/50.;
+      double theta_cm=acos(cos_theta_cm);
       double sin_theta_over_2=sin(0.5*theta_cm);
       double t=t0-4.*p_gamma*p_S*sin_theta_over_2*sin_theta_over_2;
 
@@ -1968,28 +1947,39 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
       // Compute the 4-momentum for the recoil proton
       particle_vectors[2]=beam+target-S4;
 
-      // Decay particles
-      double p_rest=sqrt((M_sq-m1_plus_m2_sq)*(M_sq-m1_minus_m2_sq))/(2.*M_sq);
-      double theta_rest=0.;
-      double phi_rest=0.;
-      GetDecayVectors(m1,m2,p_rest,theta_rest,phi_rest,v_S,particle_vectors);
-     
-      double dsigma_dtdMdOmega=GetCrossSection(s,t,M_sq,beam,particle_types,
-					       particle_vectors,phase,generate);
-      if (dsigma_dtdMdOmega>xsec_max) xsec_max=dsigma_dtdMdOmega;
-      xsec+=(t_old-t)*dsigma_dtdMdOmega;
+      // Decay particles     
+      double p_rest=sqrt((M_sq-m1_plus_m2_sq)*(M_sq-m1_minus_m2_sq))/(2.*M);
+      for (unsigned int m=0;m<100;m++){
+	double cos_theta_rest=1.-double(m)/100.;
+	double theta_rest=acos(cos_theta_rest);
+	for (unsigned int n=0;n<100;n++){
+	  double phi_rest=2.*M_PI*double(n)/100.;
+	  GetDecayVectors(m1,m2,p_rest,theta_rest,phi_rest,v_S,particle_vectors);
+	  
+	  double dsigma_dtdMdOmega=GetCrossSection(s,t,M_sq,beam,particle_types,
+						   particle_vectors,phase,
+						   generate,coupling_constants);
+	  if (dsigma_dtdMdOmega>xsec_max){
+	    xsec_max=dsigma_dtdMdOmega;
+	  }
+	
+	  xsec+=(t_old-t)*dsigma_dtdMdOmega/100./100.;
+	}
+      }
       t_old=t;
+
     }
     sum+=4*M_PI*1000*xsec*dm;
     xsec_array2[j]=4*M_PI*1000*xsec;
   }
-  cout << "xec mx " << xsec_max << endl;
+  //cout << "Maxium cross section:  dsigma/dt=" << xsec_max 
+  //     <<  " M " << sqrt(m2_at_max) << " t " << t_at_max << endl;
 
   TGraph *Gxsec=new TGraph(1000,t_array,xsec_array);
   Gxsec->GetXaxis()->SetTitle("-t [GeV^{2}]");
   Gxsec->GetYaxis()->SetTitle("d#sigma/dt [nb/GeV^{2}]");
   Gxsec->Write("Cross section d#sigma/dt");
-  TGraph *Gxsec2=new TGraph(1000,m_array,xsec_array2);
+  TGraph *Gxsec2=new TGraph(100,m_array,xsec_array2);
   Gxsec2->GetXaxis()->SetTitle("M [GeV]");
   Gxsec2->GetYaxis()->SetTitle("d#sigma/dM [nb/GeV]");
   Gxsec2->Write("Cross section d#sigma/dM"); 
@@ -2071,18 +2061,28 @@ int main(int narg, char *argv[])
   cout << endl;
 
   // processes to simulate
-  int num_processes=5;
   getline(infile,comment_line);
-  int *generate=new int[num_processes];
-  for (int k=0;k<num_processes;k++){
+  int generate[5];
+  for (int k=0;k<5;k++){
     infile >> generate[k];
   } 
   infile.ignore(); // ignore the '\n' at the end of this line
+  
+  // Coupling constants
+  double coupling_constants[5];
+  getline(infile,comment_line);
+  cout << "Coupling constants =";
+  for (int k=0;k<5;k++){
+    infile >> coupling_constants[k];
+    cout << " " << coupling_constants[k]; 
+  } 
+  infile.ignore(); // ignore the '\n' at the end of this line
+  cout << endl;
 
   // phases for interference
   getline(infile,comment_line);
   double phase[10];
-  cout << " Interference phases =";
+  cout << "Interference phases =";
   for (int k=0;k<10;k++){
     infile >> phase[k];
     cout << " " << phase[k]; 
@@ -2092,7 +2092,8 @@ int main(int narg, char *argv[])
   infile.close();
  
   // Make a TGraph of the cross section at a fixed beam energy
-  GraphCrossSection(particle_types,phase,generate);
+  double xsec_max=0.;
+  GraphCrossSection(particle_types,phase,generate,coupling_constants,xsec_max);
 
   if (Nevents>0){
     // open HDDM file
@@ -2105,9 +2106,7 @@ int main(int narg, char *argv[])
     // masses of decay particles
     double m1=decay_masses[0];
     double m2=decay_masses[1];
-    bool got_pipi=(fabs(m1-m2)>0.01)?false:true;
-    
-    double mymax=0.;
+
     //--------------------------------------------------------------------------
     // Event generation loop
     //--------------------------------------------------------------------------
@@ -2117,7 +2116,7 @@ int main(int narg, char *argv[])
       TLorentzVector beam;
       
       // Maximum value for cross section 
-      double xsec_max=(got_pipi)?10.0:3.5;
+      //double xsec_max=(got_pipi)?10.0:10.0;
       double xsec=0.,xsec_test=0.;
 
       // Polar angle in center of mass frame
@@ -2128,7 +2127,7 @@ int main(int narg, char *argv[])
       
       // Mass squared of resonance
       double M_sq=0.;
-      
+
       // Transfer 4-momentum;
       double t=0.;
       
@@ -2183,24 +2182,20 @@ int main(int narg, char *argv[])
 	double pt=p_S*sin(theta_cm);
 	TLorentzVector S4(pt*cos(phi_cm),pt*sin(phi_cm),p_S*cos(theta_cm),
 			  sqrt(p_S*p_S+M_sq));
-	// S4.Print();
+	//S4.Print();
 	
 	//Boost the S 4-momentum into the lab
 	S4.Boost(v_cm);
 	// S4.Print();
-        
+         TVector3 v_S=(1./S4.E())*S4.Vect();
+
 	// Compute the 4-momentum for the recoil proton
 	TLorentzVector proton4=beam+target-S4;
       
 	// Generate decay of S according to phase space
 	TGenPhaseSpace phase_space;
 	phase_space.SetDecay(S4,num_decay_particles,decay_masses);
-	double weight=0.,rand_weight=1.;
-	do{
-	  weight=phase_space.Generate();
-	  rand_weight=myrand->Uniform(1.);
-	}
-	while (rand_weight>weight);
+	phase_space.Generate();
 	
 	// Gather the particles in the reaction and write out event in hddm 
 	// format
@@ -2208,25 +2203,25 @@ int main(int narg, char *argv[])
 	for (int j=0;j<num_decay_particles;j++){
 	  particle_vectors[j]=*phase_space.GetDecay(j);
 	}
-	
+
 	// Cross section
 	xsec=GetCrossSection(s,t,M_sq,beam,particle_types,particle_vectors,
-			     phase,generate);
-	
-	if (xsec>mymax ) mymax=xsec;
+			     phase,generate,coupling_constants);
 	
 	// Generate a test value for the cross section
 	xsec_test=myrand->Uniform(xsec_max);
       }
       while (xsec_test>xsec);
-
+    
       // Other diagnostic histograms
+      double M=sqrt(M_sq);
       thrown_t->Fill(-t);
       thrown_Egamma->Fill(Egamma);
       thrown_theta_vs_p->Fill(particle_vectors[last_index].P(),
 			      180./M_PI*particle_vectors[last_index].Theta());
-      thrown_mass->Fill((particle_vectors[0]+particle_vectors[1]).M());  
-      thrown_mass_vs_E->Fill(Egamma,(particle_vectors[0]+particle_vectors[1]).M());
+      thrown_mass->Fill(M);  
+      thrown_mass_vs_E->Fill(Egamma,M);
+      thrown_mass_vs_t->Fill(-t,M);
    
       WriteEvent(i,beam,vert,particle_types,particle_vectors,file);
     
@@ -2239,7 +2234,7 @@ int main(int narg, char *argv[])
     cout<<endl<<"Closed HDDM file"<<endl;
     cout<<" "<<Nevents<<" event written to "<<output_file_name<<endl;
     
-    cout << mymax << endl;
+    //cout << mymax << " M " << sqrt(m2_at_max) << " t " << t_at_max <<endl;
   }
    
   // Write histograms and close root file
