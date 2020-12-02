@@ -198,13 +198,13 @@ int main( int argc, char* argv[] ){
 	unsigned int maxUpperVertexChild = reaction->particleList().size();
 	// don't include non-nucleon lower vertex decay particles in meson decay
 	if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
-	for (unsigned int i = 0; i < maxUpperVertexChild; i++){
+	for (unsigned int i = 0; i < reaction->particleList().size(); i++){
 	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
 	    cout << "ConfigFileParser WARNING:  unknown particle type \"" << reaction->particleList()[i] << "\"" << endl;
 	  Particles.push_back(ParticleEnum(reaction->particleList()[i].c_str()));
-	  if (i>1){
+	  if (i>1 && i<maxUpperVertexChild){
 	    childMasses.push_back(ParticleMass(Particles[i]));
 	    threshold += ParticleMass(Particles[i]);
 	  }
