@@ -396,7 +396,8 @@ int main( int argc, char* argv[] ){
 		cout << "Generating four-vectors..." << endl;
 		
 		ati.clearEvents();
-		for( int i = 0; i < batchSize; ++i ){
+		int i=0;
+                while( i < batchSize ){
 
 			Kinematics* kin;
 			if(bwGenLowerVertex.size() == 0) 
@@ -443,6 +444,7 @@ int main( int argc, char* argv[] ){
 			
 			ati.loadEvent( kin, i, batchSize );
 			delete kin;
+			i++;
 		}
 		
 		cout << "Processing events..." << endl;
