@@ -80,6 +80,7 @@ private:
   int parity;
   int spin_proj;
   int l;
+  int nat_sign;
 	AmpParameter dalitz_alpha;
 	AmpParameter dalitz_beta;
 	AmpParameter dalitz_gamma;

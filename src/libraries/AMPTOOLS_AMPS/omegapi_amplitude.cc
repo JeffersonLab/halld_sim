@@ -30,16 +30,16 @@
 omegapi_amplitude::omegapi_amplitude( const vector< string >& args ):
   UserAmplitude< omegapi_amplitude >( args )
 {
-	assert( args.size() == (5+4+2) || args.size() == (5+4+3) );
+	assert( args.size() == (6+4+2) || args.size() == (6+4+3) );
 	
-	if(args.size() == (5+4+3)){
-		polAngle  = atof(args[5+4+1].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
-		polFraction = AmpParameter( args[5+4+2] ); // polarization fraction
+	if(args.size() == (6+4+3)){
+		polAngle  = atof(args[6+4+1].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
+		polFraction = AmpParameter( args[6+4+2] ); // polarization fraction
 		std::cout << "Fixed polarization fraction =" << polFraction << " and pol.angle= " << polAngle << " degrees." << std::endl;
 	}
-	else if (args.size() == (5+4+2)){//beam properties requires halld_sim
+	else if (args.size() == (6+4+2)){//beam properties requires halld_sim
 		// BeamProperties configuration file
-		TString beamConfigFile = args[5+4+1].c_str();
+		TString beamConfigFile = args[6+4+1].c_str();
 		cout<<beamConfigFile.Data()<<endl;
 		BeamProperties beamProp(beamConfigFile);
 		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
@@ -58,13 +58,14 @@ omegapi_amplitude::omegapi_amplitude( const vector< string >& args ):
     spin = atoi(args[2].c_str() );
     parity = atoi(args[3].c_str() );
     spin_proj = atoi(args[4].c_str() );
-    l = atoi(args[5].c_str() );   
+    l = atoi(args[5].c_str() );  // partial wave l 
+    nat_sign = atoi(args[6].c_str() ); // sign for amplitude given by naturality of exchange
  
    //Dalitz Parameters
-   dalitz_alpha  = AmpParameter(args[5+1]);
-   dalitz_beta  = AmpParameter(args[5+2]);
-   dalitz_gamma  = AmpParameter(args[5+3]);
-   dalitz_delta  = AmpParameter(args[5+4]);
+   dalitz_alpha  = AmpParameter(args[6+1]);
+   dalitz_beta  = AmpParameter(args[6+2]);
+   dalitz_gamma  = AmpParameter(args[6+3]);
+   dalitz_delta  = AmpParameter(args[6+4]);
 
    registerParameter(dalitz_alpha);
    registerParameter(dalitz_beta);
@@ -178,6 +179,9 @@ omegapi_amplitude::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
    complex <GDouble> prefactor ( cos( lambda_gamma * prod_angle ), sin( lambda_gamma * prod_angle ));
    if (sign == -1 && lambda_gamma == -1){amplitude *= -1*sqrt( ( 1 - (sign * polfrac) )/2 ) * prefactor;}
    else{amplitude *= sqrt( ( 1 - (sign * polfrac) )/2 ) * prefactor;}
+
+   // multiply amplitude by a sign given by the naturality of the exchange (set to +1 if unknown naturality) 
+   amplitude *= nat_sign;
 
    return amplitude;
 }
