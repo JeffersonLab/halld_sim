@@ -97,11 +97,17 @@ int main( int argc, char* argv[] ){
   assert( numBins < kMaxBins );
   
   double step = ( highT - lowT ) / numBins;
-  
+  int events[numBins];
+  double Tsum[numBins];
+  double TsumSq[numBins+1];
+
   ROOTDataWriter* outFile[kMaxBins];
   
   for( int i = 0; i < numBins; ++i ){
-    
+    events[i]=0;
+    Tsum[i]=0;
+    TsumSq[i]=0;
+
     ostringstream outName;
     outName << outBase << "_" << i << ".root";
     outFile[i] = new ROOTDataWriter( outName.str(),
@@ -124,14 +130,19 @@ int main( int argc, char* argv[] ){
     
     int bin = static_cast< int >( floor( ( t - lowT ) / step ) );
     if( ( bin < numBins ) && ( bin >= 0 ) ){
-      
+      Tsum[bin]+=t;
+      TsumSq[bin]+=t*t;
+      events[bin]++;
       outFile[bin]->writeEvent( *event );
       delete event;
     }
   }
   
   for( int i = 0; i < numBins; ++i ){
-    
+    double mean = Tsum[i]/events[i];
+    double RMS = sqrt(TsumSq[i]/events[i] - mean*mean);
+    printf("bin %2i  %10i events  mean T %.3f  RMS %.3f\n",
+	   i,events[i],mean,RMS);
     delete outFile[i];
   }
   
