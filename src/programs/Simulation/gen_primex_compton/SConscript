@@ -10,9 +10,9 @@ SConscript(dirs=['sd_compton','run'], exports='env osname', duplicate=0)
 # Verify CERN environment variable is set
 if os.getenv('CERN', 'nada')=='nada':
 	if env.Dir('.').srcnode().abspath.startswith(env.GetLaunchDir()):
-		print '============================================================'
-		print 'CERN environment variable not set. Skipping build of bggen'
-		print '============================================================'
+		print('============================================================')
+		print('CERN environment variable not set. Skipping build of bggen')
+		print('============================================================')
 
 else:
 
