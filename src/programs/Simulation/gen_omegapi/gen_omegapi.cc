@@ -373,10 +373,11 @@ int main( int argc, char* argv[] ){
 
 		// decay omega (and Delta++, if generated)
 		ati.clearEvents();
-		for( int i = 0; i < batchSize; ++i ){
+		int i=0;
+		while( i < batchSize ){
 			
-			double omega_mass_bw = 0.0;
-                        while( omega_mass_bw < 0.45 || omega_mass_bw > 0.864 ) omega_mass_bw = m_bwGen[0]().first;
+			double omega_mass_bw = m_bwGen[0]().first;
+                        if( omega_mass_bw < 0.45 || omega_mass_bw > 0.864 ) continue;
 			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
 			vector<double> childMasses_omega_bw;
@@ -449,6 +450,7 @@ int main( int argc, char* argv[] ){
 			  ati.loadEvent( kin, i, batchSize );
 			  delete step1;
 			  delete kin;
+			  i++;
     		}
 		
 		cout << "Processing events..." << endl;
