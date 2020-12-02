@@ -17,7 +17,7 @@
 
 #ifdef GPU_ACCELERATION
 void GPUomegapi_amplitude_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, 
-			     int sign, int lambda_gamma, int spin, int parity, int spin_proj, GDouble c_0, GDouble c_1, GDouble c_2,
+			     int sign, int lambda_gamma, int spin, int parity, int spin_proj, int l,
 	 GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction);
 
 #endif // GPU_ACCELERATION
@@ -79,11 +79,7 @@ private:
   int spin;
   int parity;
   int spin_proj;
-
-	AmpParameter c_0;
-	AmpParameter c_1;
-	AmpParameter c_2;
-
+  int l;
 	AmpParameter dalitz_alpha;
 	AmpParameter dalitz_beta;
 	AmpParameter dalitz_gamma;

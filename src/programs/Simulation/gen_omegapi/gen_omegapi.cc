@@ -205,12 +205,14 @@ int main( int argc, char* argv[] ){
 	unsigned int maxUpperVertexChild = reaction->particleList().size();
         if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
         for (unsigned int i = 0; i < maxUpperVertexChild; i++){
-	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
+	  TString particleName = reaction->particleList()[i].c_str(); 
+	particleName.ReplaceAll("1","");  particleName.ReplaceAll("2",""); // ignore distinguishable particle notation
+	  Particle_t locEnum = ParticleEnum(particleName.Data());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
-	    cout << "ConfigFileParser WARNING:  unknown particle type \"" << reaction->particleList()[i] << "\"" << endl;
-	  Particles.push_back(ParticleEnum(reaction->particleList()[i].c_str()));
-      }
+	    cout << "ConfigFileParser WARNING:  unknown particle type \"" << particleName.Data() << "\"" << endl;
+	  Particles.push_back(ParticleEnum(particleName.Data()));
+        }
 
 	vector<double> childMasses;
 	double threshold = 0;
@@ -308,7 +310,7 @@ int main( int argc, char* argv[] ){
 	}
 	
 	vector< int > pTypes;
-	for (unsigned int i=0; i<Particles.size(); i++)
+	for (unsigned int i=0; i<Particles.size(); i++)  
 	  pTypes.push_back( Particles[i] );
 	for (unsigned int i=1; i<ParticlesLowerVertex.size(); i++)
           pTypes.push_back( ParticlesLowerVertex[i] );

@@ -30,16 +30,16 @@
 omegapi_amplitude::omegapi_amplitude( const vector< string >& args ):
   UserAmplitude< omegapi_amplitude >( args )
 {
-	assert( args.size() == (7+4+2) || args.size() == (7+4+3) );
+	assert( args.size() == (5+4+2) || args.size() == (5+4+3) );
 	
-	if(args.size() == (7+4+3)){
-		polAngle  = atof(args[7+4+1].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
-		polFraction = AmpParameter( args[7+4+2] ); // polarization fraction
+	if(args.size() == (5+4+3)){
+		polAngle  = atof(args[5+4+1].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
+		polFraction = AmpParameter( args[5+4+2] ); // polarization fraction
 		std::cout << "Fixed polarization fraction =" << polFraction << " and pol.angle= " << polAngle << " degrees." << std::endl;
 	}
-	else if (args.size() == (7+4+2)){//beam properties requires halld_sim
+	else if (args.size() == (5+4+2)){//beam properties requires halld_sim
 		// BeamProperties configuration file
-		TString beamConfigFile = args[7+4+1].c_str();
+		TString beamConfigFile = args[5+4+1].c_str();
 		cout<<beamConfigFile.Data()<<endl;
 		BeamProperties beamProp(beamConfigFile);
 		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
@@ -58,21 +58,13 @@ omegapi_amplitude::omegapi_amplitude( const vector< string >& args ):
     spin = atoi(args[2].c_str() );
     parity = atoi(args[3].c_str() );
     spin_proj = atoi(args[4].c_str() );
-    
-    c_0 = AmpParameter(args[5]);
-    registerParameter(c_0);
-    
-    c_1 = AmpParameter(args[6]);
-    registerParameter(c_1);
-    
-    c_2 = AmpParameter(args[7]);
-    registerParameter(c_2);
-    
+    l = atoi(args[5].c_str() );   
+ 
    //Dalitz Parameters
-   dalitz_alpha  = AmpParameter(args[7+1]);
-   dalitz_beta  = AmpParameter(args[7+2]);
-   dalitz_gamma  = AmpParameter(args[7+3]);
-   dalitz_delta  = AmpParameter(args[7+4]);
+   dalitz_alpha  = AmpParameter(args[5+1]);
+   dalitz_beta  = AmpParameter(args[5+2]);
+   dalitz_gamma  = AmpParameter(args[5+3]);
+   dalitz_delta  = AmpParameter(args[5+4]);
 
    registerParameter(dalitz_alpha);
    registerParameter(dalitz_beta);
@@ -174,21 +166,12 @@ omegapi_amplitude::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
    GDouble G = sqrt(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta
 			 + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta );
 
-   GDouble hel_c[3] = { c_0, c_1, c_2};
-   
    complex <GDouble> amplitude = CZero;
  
    for (int lambda = -1; lambda <= 1; lambda++)//omega helicity
 	      {
-		  GDouble hel_amp = 0.0;
-
-		  for(int l = 0; l <= 2; l++)//partial waves (l).
-		  {//if ( (parity == -1 && l% 2 == 0) || (parity == 1 && l%2 != 0) ) continue;  
-		  
-		  hel_amp += hel_c[l] * clebschGordan(l, 1, 0, lambda, spin, lambda);
-		  }//loop over l
-		  
-		  amplitude += wignerD( spin, spin_proj, lambda, cosTheta, Phi ) * hel_amp * wignerD( 1, lambda, 0, cosThetaH, PhiH ) * G;
+		  GDouble hel_amp = clebschGordan(l, 1, 0, lambda, spin, lambda);
+		  amplitude += conj(wignerD( spin, spin_proj, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
 		}//loop over lambda
 		
    // multiply by square root of photon spin density matrix in helicity basis
@@ -209,7 +192,7 @@ void
 omegapi_amplitude::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
     
   GPUomegapi_amplitude_exec( dimGrid, dimBlock, GPU_AMP_ARGS, 
-			  sign, lambda_gamma, spin, parity, spin_proj, c_0, c_1, c_2, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction);
+			  sign, lambda_gamma, spin, parity, spin_proj, l, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction);
 }
 #endif //GPU_ACCELERATION
 
