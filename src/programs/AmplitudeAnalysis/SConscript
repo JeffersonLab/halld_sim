@@ -3,7 +3,7 @@ import sbms
 
 Import('*')
 
-subdirs = ['fit', 'twopi_plotter', 'twopi_plotter_amp', 'twopi_plotter_mom', 'twopi_plotter_primakoff', 'split_mass', 'split_t', 'threepi_plotter_schilling', 'omega_radiative_plotter', 'plot_etapi_delta', 'omegapi_plotter'] # , 'project_moments'
+subdirs = ['fit', 'twopi_plotter', 'twopi_plotter_amp', 'twopi_plotter_mom', 'twopi_plotter_primakoff', 'split_mass', 'split_t', 'threepi_plotter_schilling', 'omega_radiative_plotter', 'project_moments', 'plot_etapi_delta', 'project_moments_polarized', 'Bootstrap_plot_etapi_delta_SPDG_allamps_mass_t_bins', 'Pol_moments_viafittedPW', 'project_moments_SPD_etapi0_posepsilon']
 
 SConscript(dirs=subdirs, exports='env osname', duplicate=0)
 

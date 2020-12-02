@@ -8,9 +8,9 @@ Import('*')
 # Verify CERN environment variable is set
 if os.getenv('CERN', 'nada')=='nada':
 	if env.Dir('.').srcnode().abspath.startswith(env.GetLaunchDir()):
-		print '============================================================='
-		print 'CERN environment variable not set. Skipping build of comptrc0'
-		print '============================================================='
+		print('=============================================================')
+		print('CERN environment variable not set. Skipping build of comptrc0')
+		print('=============================================================')
 
 else:
 
@@ -21,7 +21,7 @@ else:
 
 	sbms.AddCERNLIB(env)
 	env.Append(LIBS=File('lib/libkernlib.a'))		
-        env.Append(LIBS=File('lib/libpawlib.a'))		
+	env.Append(LIBS=File('lib/libpawlib.a'))		
 	env.Append(LIBS=File('lib/libgraflib.a'))
 	env.Append(LIBS=File('lib/libgrafX11.a'))		
 	env.Append(LIBS=File('lib/libmathlib.a'))		

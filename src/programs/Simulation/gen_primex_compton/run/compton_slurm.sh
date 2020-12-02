@@ -16,6 +16,9 @@ evtnb=$3
 runnb_min=$4
 runnb_max=$5
 wf=$6
+filename=$7
+linenumber=$8
+opt=$9
 
 store=$path/run_${runnb_min}_${runnb_max}_egam_${egam}GeV
 
@@ -32,7 +35,7 @@ config=bases-init.dbf
 run=$store/$file.sh
 echo 'source /work/halld/home/ijaegle/Env/custom_GlueX_dev.sh' > $run
 echo "cd ${store}" >> $run
-echo "sd_compton ${config} ${file} ${egam} ${evtnb} > ${file}.log" >> $run
+echo "sd_compton ${config} ${file} ${egam} ${evtnb} ${filename} ${linenumber} ${opt} > ${file}.log" >> $run
 echo "h2root ${file}.hbook" >> $run
 echo "rm ${file}.bin ${file}.dat ${file}.hbook" >> $run
 chmod +x $run
