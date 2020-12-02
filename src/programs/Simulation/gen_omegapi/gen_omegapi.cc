@@ -449,7 +449,6 @@ int main( int argc, char* argv[] ){
 			  ati.loadEvent( kin, i, batchSize );
 			  delete step1;
 			  delete kin;
-			  i++;
     		}
 		
 		cout << "Processing events..." << endl;
