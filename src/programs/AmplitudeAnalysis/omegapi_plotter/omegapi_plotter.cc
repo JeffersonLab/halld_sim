@@ -25,6 +25,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
+#include "AMPTOOLS_AMPS/BreitWigner.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -36,6 +37,7 @@ void atiSetup(){
   
   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
+  AmpToolsInterface::registerAmplitude( BreitWigner() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
 }
@@ -152,6 +154,7 @@ int main( int argc, char* argv[] ){
              else if (ivar == OmegaPiPlotGenerator::kPhiH)  histname += "Phi_H";
              else if (ivar == OmegaPiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
              else if (ivar == OmegaPiPlotGenerator::kt)  histname += "t";
+	     else if (ivar == OmegaPiPlotGenerator::kRecoilMass)  histname += "MRecoil";
 
 	else continue;
 

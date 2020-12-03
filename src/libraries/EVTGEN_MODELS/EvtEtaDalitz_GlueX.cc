@@ -35,6 +35,7 @@ void EvtEtaDalitz_GlueX::init()
 	checkSpinDaughter(0,EvtSpinType::SCALAR);
 	checkSpinDaughter(1,EvtSpinType::SCALAR);
 	checkSpinDaughter(2,EvtSpinType::SCALAR);
+	
 }
 
 

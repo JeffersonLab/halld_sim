@@ -71,7 +71,7 @@ int main( int argc, char* argv[] ){
 	double slope = 6.0;
 
 	int nEvents = 10000;
-	int batchSize = 10000;
+	int batchSize = 100000;
 	
 	float Mpip=ParticleMass(PiPlus), Mpi0=ParticleMass(Pi0), Momega=0.782;
 
@@ -205,12 +205,14 @@ int main( int argc, char* argv[] ){
 	unsigned int maxUpperVertexChild = reaction->particleList().size();
         if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
         for (unsigned int i = 0; i < maxUpperVertexChild; i++){
-	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
+	  TString particleName = reaction->particleList()[i].c_str(); 
+	particleName.ReplaceAll("1","");  particleName.ReplaceAll("2",""); // ignore distinguishable particle notation
+	  Particle_t locEnum = ParticleEnum(particleName.Data());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
-	    cout << "ConfigFileParser WARNING:  unknown particle type \"" << reaction->particleList()[i] << "\"" << endl;
-	  Particles.push_back(ParticleEnum(reaction->particleList()[i].c_str()));
-      }
+	    cout << "ConfigFileParser WARNING:  unknown particle type \"" << particleName.Data() << "\"" << endl;
+	  Particles.push_back(ParticleEnum(particleName.Data()));
+        }
 
 	vector<double> childMasses;
 	double threshold = 0;
@@ -227,13 +229,12 @@ int main( int argc, char* argv[] ){
 
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
-	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
+	    if ((*it).arguments()[0] == "b1"){
 	      if ( (*it).arguments().size() != 3 )
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
 	      resonance[1]=atof((*it).arguments()[2].c_str());
 	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
-	      if((*it).arguments()[0] == "Lambda1520")
 	      foundResonance = true;
 	      break;
 	    }
@@ -308,7 +309,7 @@ int main( int argc, char* argv[] ){
 	}
 	
 	vector< int > pTypes;
-	for (unsigned int i=0; i<Particles.size(); i++)
+	for (unsigned int i=0; i<Particles.size(); i++)  
 	  pTypes.push_back( Particles[i] );
 	for (unsigned int i=1; i<ParticlesLowerVertex.size(); i++)
           pTypes.push_back( ParticlesLowerVertex[i] );
@@ -371,12 +372,12 @@ int main( int argc, char* argv[] ){
 
 		// decay omega (and Delta++, if generated)
 		ati.clearEvents();
-		int i = 0;
-		while( i < batchSize ) {
-			// setup omega decay
-                        pair< double, double > bw = m_bwGen[0]();
-                        double omega_mass_bw = bw.first;
-                        if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.86) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
+		int i=0;
+		while( i < batchSize ){
+			
+			double omega_mass_bw = m_bwGen[0]().first;
+                        if( omega_mass_bw < 0.45 || omega_mass_bw > 0.864 ) continue;
+			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
 			vector<double> childMasses_omega_bw;
               		childMasses_omega_bw.push_back(childMasses[0]);

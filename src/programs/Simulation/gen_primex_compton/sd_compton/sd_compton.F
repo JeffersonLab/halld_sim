@@ -20,10 +20,16 @@ C
 	include 'kinem.cmn'
 C
         real*8 E0,Br(500),dEg
-	integer*8 i,imax,ipoint
+	integer*8 i,j,imax,ipoint
 	logical brem_init,cobrems
 C
+	integer ic
+	real tmin,tmax
+	real etag(400)
+C
 	integer      iargc
+C
+	integer opt
 C
 	integer*4    lenocc
 	external     lenocc
@@ -36,7 +42,10 @@ C
 	character*20 str_ilast
 	character*20 str_eg
 	character*20 str_evtnb
+	character*20 str_chnb
+	character*20 str_opt
 	character*80 infile
+	character*80 tagfile
 	character*80 outfile
 	character*80 binfile
 	character*80 hbkfile
@@ -45,25 +54,63 @@ C
 	real*8 csec1
 	real*8 csec2
 C
+	real*8 egam
+C
 	integer pos
 	save pos
 	data pos /1/
 C
-        if (iargc().NE.4) then
-	   print*, '===> USAGE: comprc inputfile outfile egam [GeV] evtnb <==='
+        if (iargc().NE.7) then
+	   print*, '===> USAGE: comprc inputfile outfile egam [GeV] evtnb tagfile chnb opt<==='
+	   print*, '            if opt=0 use egam'
+	   print*, '            if opt=1 use etag(chnb)'
+	   print*, '            if opt not 0 or 1 use all etag(i)'
 	   stop
 	endif
 	call getarg(1,infile)
 	call getarg(2,outfile)
 	call getarg(3,str_eg)
 	call getarg(4,str_evtnb)
+	call getarg(5,tagfile)
+	call getarg(6,str_chnb)
+	call getarg(7,str_opt)
 	read(str_Eg,*) eg
 	read(str_evtnb,*) evtnb
+	read(str_chnb,*) chnb
+	read(str_opt,*) opt
  1000	format(I3)
 C
 	call hlimit(iPawSize)
 	call init_parms(infile)
 C
+	print*,'infile ',infile
+	print*,'outfile ',outfile
+	print*,'str_eg ',eg
+	print*,'str_evtnb ',evtnb
+	print*,'str_chnb ',chnb
+C
+	if (chnb>0) then
+	   print*,'tagfile ',tagfile,' ch nb ',chnb
+	   open(24, file=tagfile,form='formatted', status='old')
+	   do i = 1, chnb
+	      read(24,'(1(i6,1x),5(x,F15.6))')ic,tmin,tmax
+*       
+	      etag(i) = eg*(tmin+tmax)/2
+	      print*,'ic ', ic,' tmin ',tmin,' tmax ',tmax,' eg ',etag(i)
+	   enddo
+	   close(24)
+	endif
+	if (opt==0) then
+	   chnb = 1
+	   etag(1) = eg 
+	   print*,'no tagfile ',tagfile,' ch nb ',chnb, ' eg ',eg
+	endif
+	if (opt==1) then
+	   etag(1) = etag(chnb)
+	   chnb = 1
+	   print*,'no tagfile ',tagfile,' ch nb ',chnb, ' eg ',eg
+	endif
+C       
 	ipos = index(outfile,'.')
 	if (ipos.EQ.0) then
 	   fileroot = outfile(1:lenocc(outfile))
@@ -101,7 +148,9 @@ C
 	   write(*,*)'Filling in file: ',hbkfile(1:lenocc(hbkfile))
 	endif
 C
-	   print*, eg
+	do iEbin = chnb, 1, -1
+	   egam=etag(iEbin)
+	   print*, egam
 C
 	   call bsinit
 C       
@@ -113,8 +162,8 @@ C       Cosine theta of the scattered photon
 	   xu(2) =  1.0d0
 C       
 C       Energy of the initial photon
-	   xl(1) = eg
-	   xu(1) = eg + dE
+	   xl(1) = egam
+	   xu(1) = egam + dE
 C
 	   call init_parms(infile)
 	   acc1 = acc(1)
@@ -127,7 +176,7 @@ C
 	   print*,' Value of integral = ',vint*0.389379, ' mb'
 	   print*,' Standard deviation = ',sigma*0.389379, ' mb'
 C
-	   write(ichtxt, *) xl(1), xu(1), vint*0.389379*(eg+0.5*dE)/dE, sigma, ievent-1
+	   write(ichtxt, *) xl(1), xu(1), vint*0.389379*(egam+0.5*dE)/dE, sigma, ievent-1
 C
 	   call spinfo(6)
 C
@@ -143,8 +192,8 @@ C
 C       Energy of the initial photon
 c	   xl(1) = Elow(iEbin)
 c	   xu(1) = Elow(iEbin) + dE
-	   xl(1) = eg
-	   xu(1) = eg + dE
+	   xl(1) = egam
+	   xu(1) = egam + dE
 C
 	   call init_parms(infile)
 	   acc1 = acc(1)
@@ -173,7 +222,7 @@ c	      DO 100 WHILE (ievent.LE.mxevnt)
 		 call comp_kin
 		 call accept
 C       
-		 write(ichbin, rec=pos) 180-iEbin, sngl(Egamma), 
+		 write(ichbin, rec=pos) chnb-iEbin, sngl(Egamma), 
 	1	      sngl(Pe1(1)),sngl(Pe1(2)),sngl(Pe1(3)),
 	2	      sngl(Pg1(1)),sngl(Pg1(2)),sngl(Pg1(3)),
 	3	      sngl(Pg2(1)),sngl(Pg2(2)),sngl(Pg2(3))
@@ -184,7 +233,7 @@ C
  100	      continue
 	   endif
 C       
-	   write(ichtxt, *) xl(1), xu(1), vint*0.389379*(eg+0.5*dE)/dE, sigma, ievent-1
+	   write(ichtxt, *) xl(1), xu(1), vint*0.389379*(egam+0.5*dE)/dE, sigma, ievent-1
 C
 	   call spinfo(6)
 C
@@ -211,8 +260,8 @@ C       Phi angle between two photons
 	   xu(4) = 2 * pi
 C       
 C       Energy of the initial photon
-	   xl(5) = eg
-	   xu(5) = eg + dE
+	   xl(5) = egam
+	   xu(5) = egam + dE
 C
 	   call init_parms(infile)
 	   acc1 = acc(3)
@@ -244,7 +293,7 @@ C
 		 call hard_kin
 		 call accept
 C       
-		 write(ichbin, rec=pos) 180-iEbin, sngl(Egamma), 
+		 write(ichbin, rec=pos) chnb-iEbin, sngl(Egamma), 
 	1	      sngl(Pe1(1)),sngl(Pe1(2)),sngl(Pe1(3)),
 	2	      sngl(Pg1(1)),sngl(Pg1(2)),sngl(Pg1(3)),
 	3	      sngl(Pg2(1)),sngl(Pg2(2)),sngl(Pg2(3))
@@ -255,11 +304,13 @@ C
  200	      continue
 	   endif
 C
-	   write(ichtxt, *) xl(5), xu(5), vint*0.389379*(eg+0.5*dE)/dE, sigma, ievent-1
+	   write(ichtxt, *) xl(5), xu(5), vint*0.389379*(egam+0.5*dE)/dE, sigma, ievent-1
 C
 	   call spinfo(6)
 
 	   endif
+C
+	enddo
 C       
 	close(ichtxt)
 	close(ichbin)

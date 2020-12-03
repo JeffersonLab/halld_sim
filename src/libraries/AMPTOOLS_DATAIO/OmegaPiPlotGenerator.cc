@@ -38,14 +38,20 @@ PlotGenerator( )
 void OmegaPiPlotGenerator::createHistograms( ) {
   cout << " calls to bookHistogram go here" << endl;
   
-   bookHistogram( kOmegaPiMass, new Histogram1D( 200, 0.6, 2., "MOmegaPi", "Invariant Mass of #omega #pi^{0}") );
+   bookHistogram( kOmegaPiMass, new Histogram1D( 200, 0.6, 2., "MOmegaPi", "Invariant Mass of #omega #pi") );
    bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta", "cos#theta;cos#theta" ) );
    bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#Phi; #Phi[rad.]" ) );
    bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_H", "cos#theta_H;cos#theta_H" ) );
    bookHistogram( kPhiH, new Histogram1D( 50, -1*PI, PI, "Phi_H", "#Phi_H; #Phi_H[rad.]" ) );
    bookHistogram( kProd_Ang, new Histogram1D( 50, -1*PI, PI, "Prod_Ang", "Prod_Ang; Prod_Ang[rad.]" ) );
    bookHistogram( kt, new Histogram1D( 100, 0, 2.0 , "t", "-t" ) );
+<<<<<<< HEAD
    
+=======
+   bookHistogram( kRecoilMass, new Histogram1D( 100, 0.9, 1.9 , "MRecoil", "Invariant Mass of Recoil" ) );
+   bookHistogram( kTwoPiMass, new Histogram1D( 100, 0.25, 1.75, "MTwoPi", "Invariant Mass of 2 #pi" ) ); 
+  
+>>>>>>> origin/unstableLowerVertex
 }
 
 void
@@ -59,6 +65,15 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
    TLorentzVector rhos_pip = kin->particle( 4 );//pi-
    TLorentzVector rhos_pim = kin->particle( 5 );//pi+
 
+<<<<<<< HEAD
+=======
+   TLorentzVector two_pi = kin->particle( 2 );
+   for(uint i=6; i<kin->particleList().size(); i++) {
+	recoil += kin->particle(i);
+	two_pi += kin->particle(i);
+   }
+
+>>>>>>> origin/unstableLowerVertex
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   TLorentzVector rho = rhos_pip + rhos_pim;
   TLorentzVector omega = rho + omegas_pi;
@@ -70,7 +85,12 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
 
   double b1_mass = X.M();
   double Mandt = fabs((target-recoil).M2());
+<<<<<<< HEAD
   
+=======
+  double recoil_mass = recoil.M();  
+
+>>>>>>> origin/unstableLowerVertex
     //////////////////////// Boost Particles and Get Angles//////////////////////////////////
 
   //Helicity coordinate system
@@ -95,6 +115,11 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
    fillHistogram( kPhiH, PhiH );
    fillHistogram( kProd_Ang, prod_angle );
    fillHistogram( kt, Mandt );
+<<<<<<< HEAD
+=======
+   fillHistogram( kRecoilMass, recoil_mass );
+   fillHistogram( kTwoPiMass, two_pi.M() );
+>>>>>>> origin/unstableLowerVertex
 
 }
 
