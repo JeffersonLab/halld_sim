@@ -144,7 +144,7 @@ C
          IF(ier.NE.0) THEN
             WRITE(6,1001) i,IPINIT(i)
  1001              FORMAT('  *** Init. error: PARTINIT:',I1,I5,
-     +					  ' not defined')
+     +                                    ' not defined')
             GO TO 999
          ENDIF
       ENDDO
@@ -241,7 +241,7 @@ C
         IF(ier.NE.0) THEN
            WRITE(6,1030) IPREAC,TSLREAC,ELREAC,NPXREAC
  1030            FORMAT('  *** Initialization error REAC: :',
-     +					4I4,3E11.3,I6)
+     +                                  4I4,3E11.3,I6)
            GO TO 999
         ENDIF
         DO i=1,NPXREAC

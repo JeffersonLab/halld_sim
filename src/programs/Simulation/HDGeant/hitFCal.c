@@ -274,21 +274,29 @@ void hitForwardEMcal (float xin[4], float xout[4],
       int row = getrow_wrapper_();
       int column = getcolumn_wrapper_();
       
+      LENGTH_OF_BLOCK=45.0;
+      if (row>=100 || column>=100){
+	LENGTH_OF_BLOCK=20.0;
+	transformCoord(x,"global",xfcal,"LTB1");
+      }
+
       float dist = 0.5*LENGTH_OF_BLOCK-xfcal[2];
       float dEcorr = dEsum * exp(-dist/ATTEN_LENGTH);
 
-      // Place holder for the MIP correction function. Currently apply 
-      // simple correction
+      if (row<100 && column<100){
+	// Place holder for the MIP correction function. Currently apply 
+	// simple correction
       
-      if (ipart == 1 || ipart == 2 || ipart == 3) {
-         dEcorr *= 0.976;
-      }
-      else {
-         double beta = pin[4] / pin[3];
-	 if (beta > 0.6)
+	if (ipart == 1 || ipart == 2 || ipart == 3) {
+	  dEcorr *= 0.976;
+	}
+	else {
+	  double beta = pin[5] / pin[4];
+	  if (beta > 0.6)
             dEcorr *= 1.35;
-	 else
-	   dEcorr = 0;
+	  else
+            dEcorr = 0;
+	}
       }
 
       float tcorr = t + dist/C_EFFECTIVE;
@@ -380,9 +388,13 @@ s_ForwardEMcal_t* pickForwardEMcal ()
       {
          int row = blocks->in[block].row;
          int column = blocks->in[block].column;
-         float y0 = (row - CENTRAL_ROW)*WIDTH_OF_BLOCK;
-         float x0 = (column - CENTRAL_COLUMN)*WIDTH_OF_BLOCK;
-         float dist = sqrt(x0*x0+y0*y0);
+	 
+	 float dist=0.;
+	 if (row<100 && column<100){
+	   float y0 = (row - CENTRAL_ROW)*WIDTH_OF_BLOCK;
+	   float x0 = (column - CENTRAL_COLUMN)*WIDTH_OF_BLOCK;
+	   dist = sqrt(x0*x0+y0*y0);
+	 }
 
          s_FcalTruthHits_t* hits = blocks->in[block].fcalTruthHits;
 
@@ -465,3 +477,4 @@ s_ForwardEMcal_t* pickForwardEMcal ()
 #endif
    return box;
 }
+

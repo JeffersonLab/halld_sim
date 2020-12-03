@@ -32,7 +32,7 @@ typedef struct{
 
 extern controlparams_t controlparams_;
 
-int itrack;
+static int itrack;
 
 const float wire_dead_zone_radius[4]={3.0,3.0,3.9,3.9};
 const float strip_dead_zone_radius[4]={1.3,1.3,1.3,1.3};

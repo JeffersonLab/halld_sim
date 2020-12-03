@@ -48,11 +48,12 @@ typedef struct {
 
 string INPUT_FILE = "";
 string OUTPUT_FILE = "";
+string USER_DECAY = "userDecay.dec";
 EvtGen *myGenerator = nullptr;
 
 bool PROCESS_ALL_EVENTS = true;
 int NUM_EVENTS_TO_PROCESS = -1;
-
+bool GEN_SCHANNEL = false;
 
 void InitEvtGen();
 void ParseCommandLineArguments(int narg,char *argv[]);
@@ -105,9 +106,8 @@ void InitEvtGen()
 
 	// open optional user decay file, if it exists
 	struct stat buffer;   
-	if(stat("userDecay.dec", &buffer) == 0)
-	  	myGenerator->readUDecay("userDecay.dec");
-
+	if(stat(USER_DECAY.c_str(), &buffer) == 0)
+	  	myGenerator->readUDecay(USER_DECAY.c_str());
 
 }
 
@@ -176,7 +176,7 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 		
 		if(part.decayed)
 			continue;
-		if(part.type == 0) {
+		if(!GEN_SCHANNEL && part.type == 0) {
 			cout << "Particle of type 0 detected, skipping!" << endl;
 			continue;
 		}
@@ -373,6 +373,12 @@ void ParseCommandLineArguments(int narg,char *argv[])
             case 'o':
               OUTPUT_FILE = &ptr[1];
               break;
+            case 'u':
+              USER_DECAY = &ptr[1];
+              break;
+            case 'S':
+              GEN_SCHANNEL = true;
+              break;
             default:
               cerr << "Unknown option \"" << argv[i] << "\"" << endl;
               Usage();
@@ -402,14 +408,21 @@ void Usage(void)
   cout << "Usage:" << endl;
   cout << "       decay_evtgen [options] file.hddm" << endl;
   cout << endl;
-  cout << "Decay any particles via EvtGen (update!)" << endl;
+  cout << "Decay thrown particles via EvtGen" << endl;
+  cout << "The particle types and decays are defined in $EVTGENDIR/evt.pdl " << endl
+       << "  and $EVTGENDIR/DECAY.DEC respectively." << endl;
+  cout << "The location of these files can be override by the environment variables " << endl
+       << "  EVTGEN_PARTICLE_DEFINITIONS and EVTGEN_DECAY_FILE respectively." << endl;
+  cout << endl << "For more documentation on EvtGen, go to https://evtgen.hepforge.org/" << endl;
   cout << endl;
   cout << " options:" << endl;
   cout << endl;
   cout << "  -nNumEvents               "
                "number of events to process (default: all)" << endl;
   cout << "  -o\"output_file_name\"    "
-               "set the file name used for output." << endl;
+               "set the file name used for output (default: append \"_decayed\")" << endl;
+  cout << "  -u\"user_decay_file_name\"    "
+               "set the file name of the user decay file (default: userDecay.dec)" << endl;
   cout << "  -h                        "
                "print this usage statement." << endl;
   cout << endl;
