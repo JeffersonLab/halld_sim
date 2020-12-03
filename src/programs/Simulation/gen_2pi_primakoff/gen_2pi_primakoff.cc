@@ -48,12 +48,13 @@ int main( int argc, char* argv[] ){
 	// default upper and lower bounds 
 	// double lowMass = 0.2;
 	// double highMass = 2.0; 
-	double lowMass = 0.28;
-	double highMass = 0.58 ;
+	double PiMass = ParticleMass(PiPlus);
+	double lowMass = 0.28;               // slightly larger than twice the pion mass.
+	double highMass = 0.8 ;
 	
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 6.0;
-	double beamLowE   = 0.139*2;
+	double beamLowE   = lowMass;
 	double beamHighE  = 12.0;
 	
 	int runNum = 9001;
@@ -178,7 +179,6 @@ int main( int argc, char* argv[] ){
 	
 	// generate over a range of mass -- the daughters are two charged pions
 	float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
-	double PiMass = ParticleMass(PiPlus);
 	GammaZToXYZ resProd( lowMass, highMass, PiMass, PiMass, type, beamConfigFile , Bslope);
 	
 	// seed the distribution with a sum of noninterfering s-wave amplitudes
