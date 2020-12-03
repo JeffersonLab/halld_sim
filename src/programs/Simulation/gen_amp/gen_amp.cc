@@ -198,13 +198,13 @@ int main( int argc, char* argv[] ){
 	unsigned int maxUpperVertexChild = reaction->particleList().size();
 	// don't include non-nucleon lower vertex decay particles in meson decay
 	if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
-	for (unsigned int i = 0; i < reaction->particleList().size(); i++){
+	for (unsigned int i = 0; i < maxUpperVertexChild; i++){
 	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
 	    cout << "ConfigFileParser WARNING:  unknown particle type \"" << reaction->particleList()[i] << "\"" << endl;
 	  Particles.push_back(ParticleEnum(reaction->particleList()[i].c_str()));
-	  if (i>1 && i<maxUpperVertexChild){
+	  if (i>1){
 	    childMasses.push_back(ParticleMass(Particles[i]));
 	    threshold += ParticleMass(Particles[i]);
 	  }
@@ -349,7 +349,11 @@ int main( int argc, char* argv[] ){
 	vector< int > pTypes;
 	for (unsigned int i=0; i<Particles.size(); i++)
 	  pTypes.push_back( Particles[i] );
-	
+	for (unsigned int i=0; i<ParticlesLowerVertex.size(); i++) {
+	  if(ParticlesLowerVertex[i] == Proton || ParticlesLowerVertex[i] == Neutron) continue;
+          pTypes.push_back( ParticlesLowerVertex[i] );
+	}
+
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
 	ROOTDataWriter rootOut( outname );
