@@ -1,0 +1,38 @@
+#Run Compton PRIMEX true/false
+run: BOOL
+
+#Options
+#0 use egam
+#1 use one tagger counter energy
+#Not 0 or 1, use all tagger counter energies
+option: 0
+
+#Electron energy
+#11.6061 GeV (Be)
+#11.1671 GeV (He)
+Ee: 11.6061
+
+#Tagger file
+#primex_tagm.txt
+#primex_tagh.txt
+tagger_file: 
+
+#What is your shell
+#bash/tcsh
+shell: bash
+
+#Path to the lhe file location
+#If you want to produce one single HDDM file for all lhe files contained in one directory
+#leave it blank/give directory path of the lhe file
+dir:
+
+#Path to the lhe file location
+#leave it blank/give the full path name of one single lhe file
+file: 
+
+#Path to output root file
+out_dir: PATH
+
+#work flow name
+#leave it blank for prompt terminal usage/give a name for slurm usage
+workflow: FLOW

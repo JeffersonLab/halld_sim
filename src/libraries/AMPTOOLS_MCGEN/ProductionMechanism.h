@@ -24,6 +24,7 @@ public:
 	void setMassRange( double low, double high );
 	void setTRange( double low, double high );
         void setGeneratorType( Type type );
+	void setRecoilMass( double recMass );
 	
 	TLorentzVector produceResonance( const TLorentzVector& beam );
 	TLorentzVector produceResonanceZ( const TLorentzVector& beam);
