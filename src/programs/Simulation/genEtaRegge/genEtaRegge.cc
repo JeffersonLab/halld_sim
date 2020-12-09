@@ -105,7 +105,7 @@ char output_file_name[250]="eta_gen.hddm";
 bool gen_uniform_t=false;
 double t_uniform_eval=-1; // Only used if gen_uniform is true. Currently, 
 float t_min_uniform=0; // takes min(t_min_uniform,t_0) so as to avoid unphysical t_values
-float t_max_uniform=-100; // takes max(t_max_uniform,t_max) so as to avoid unphysical t_values
+float t_max_uniform=-3; // takes max(t_max_uniform,t_max) so as to avoid unphysical t_values
 
 void Usage(void){
   printf("genEtaRegge: generator for eta production based on Regge trajectory formalism.\n");
@@ -418,7 +418,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
 // Create some diagnostic histograms
 void CreateHistograms(string beamConfigFile){
 
-  thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,3.0);
+  thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,abs(t_max_uniform));
   thrown_t->SetXTitle("-t [GeV^{2}]");
   thrown_dalitzZ=new TH1D("thrown_dalitzZ","thrown dalitz Z",110,-0.05,1.05);
   thrown_Egamma=new TH1D("thrown_Egamma","Thrown E_{#gamma} distribution",
@@ -565,6 +565,11 @@ int main(int narg, char *argv[])
 
   cout << "number of decay particles = " << num_decay_particles << endl;
 
+  if( abs(t_max_uniform)>21. ) { // Max t at GlueX endpoint energy is about 20 GeV^2. Reset value to protect against inefficient accept/reject.
+    t_max_uniform=-21;
+	cout << "tmax provided is larger than physically allowed t at GlueX highest E, resetting to physical max........" << endl;
+  }
+  
   if(gen_uniform_t) cout << "GENERATING DATA WITH UNIFORM T-DIST FROM " << t_min_uniform << " TO " << t_max_uniform << endl;
 
   bool use_evtgen = false;
@@ -899,6 +904,7 @@ int main(int narg, char *argv[])
 		  // Make t uniform, calculate theta_cm based off of it
 		  t=myrand->Uniform(t_max_uniform,  min( float(t0),t_min_uniform) ); // If t_min_uniform provided is unphysical, then use physical t_min.
 		  theta_cm=2.*asin(0.5*sqrt( (t0-t)/(p_gamma*p_eta) ) );
+		  if( std::isnan(theta_cm)==true ) xsec=-1.; // Lazy person's way of skipping unphysical theta_cm. Breaking do/while to accept event will never be satisfied for this case.
 	  }
 
       // Generate a test value for the cross section
