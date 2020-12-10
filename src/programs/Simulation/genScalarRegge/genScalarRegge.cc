@@ -1571,9 +1571,8 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   // Coupling constants for f0(500)
   double gsq_rho_f500_gamma=coupling_constants[0]; // 0.25?
   double gsq_omega_f500_gamma=(1./9)*gsq_rho_f500_gamma;
-  // Coupling constants: Donnachie and Kalashnikova (2008) scenario IV
-  double gsq_rho_S_gamma=coupling_constants[1];// 0.02537 GeV^-2
-  double gsq_omega_S_gamma=9.*gsq_rho_S_gamma;//0.2283;
+  // Coupling constants for a0/f0(980)
+  double gsq_rho_S_gamma=0.,gsq_omega_S_gamma=0.;
   double gsq_rho_f1370_gamma=coupling_constants[2];//0.094;
   double gsq_omega_f1370_gamma=(1./9.)*gsq_rho_f1370_gamma;
   double gsq_rho_a1450_gamma=coupling_constants[2];//0.0054;
@@ -1666,8 +1665,8 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 		     /(4.*my_msq_R));
       double partial_width=0.05; //?? // guess from note in pdg
       gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
-      // gsq_rho_S_gamma=0.15; // GeV^-2
-      //gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
+      gsq_rho_S_gamma=coupling_constants[1]; // GeV^-2
+      gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
       //gsq_omega_S_gamma=0.0054; // 3 keV
       //gsq_rho_S_gamma=9.*gsq_omega_S_gamma;
       // Molecular KK model (need reference)
@@ -1682,8 +1681,8 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 			 /(4.*my_msq_R));
       double partial_width=0.06; //?? guess from note in pdg
       gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
-      //gsq_rho_S_gamma=0.02537;
-      //gsq_omega_S_gamma=9.*gsq_rho_S_gamma;
+      gsq_rho_S_gamma=coupling_constants[1];
+      gsq_omega_S_gamma=9.*gsq_rho_S_gamma;
     } 
     GetResonanceParameters(m1,m2,M_sq,my_msq_R,ReB,ImB);
     T+=CrossSection(m1,m2,M_sq,s,t,gR,ReB,ImB,gsq_rho_S_gamma,
