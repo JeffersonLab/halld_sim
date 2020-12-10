@@ -173,6 +173,9 @@ int main( int argc, char* argv[] ){
   TString m_dir = ReadFile->GetConfigName("dir");
   TString m_out_dir = ReadFile->GetConfigName("out_dir"); 
   TString m_shell = ReadFile->GetConfigName("shell");
+  Double_t * m_Ee = ReadFile->GetConfig1Par("Ee");  
+  TString m_tagger_file = ReadFile->GetConfigName("tagger_file");
+  TString m_option = ReadFile->GetConfigName("option");
 
   TFile * diagOut = new TFile( TString::Format("gen_primex_compton_runnb_%d.root", runNum), "recreate" );
   TH1F * h_egam1 = new TH1F("egam1", ";E_{#gamma} [GeV];Count/MeV", 12000, 0.0, 12.0);
@@ -181,20 +184,44 @@ int main( int argc, char* argv[] ){
   TH1F * h_Tkin_rec = new TH1F("Tkin_rec", ";T_{e^{-}-recoil}^{kin} [GeV];Count/10MeV", 1200, 0.0, 12.0);
   TH2F * h_theta_vs_Tkin_gam = new TH2F("theta_vs_Tkin_gam", ";T_{#gamma}^{kin} [GeV];log_{10}(#theta) [^{o}];Count/10MeV", 1200, 0.0, 12.0, 1200, -5, 2.25);
   TH2F * h_theta_vs_Tkin_rec = new TH2F("theta_vs_Tkin_rec", ";T_{e^{-}-recoil}^{kin} [GeV];log_{10}(#theta) [^{o}];Count/10MeV", 1200, 0.0, 12.0, 1200, -5, 2.25);
-    
+ 
   if (m_run == "true") { //If "true" run WO
-    for (int i = 0; i < nEvents; ++i) { //Generate photon beam spectrum
-      if (i%10000 == 1)
-	cout << "event " << i <<endl;
+    if (m_tagger_file = "") {
+      for (int i = 0; i < nEvents; ++i) { //Generate photon beam spectrum
+	if (i%10000 == 1)
+	  cout << "event " << i <<endl;
+	
+	// get beam energy
+	double ebeam = 0;
+	if (beamconfigfile == "" || cobrem_vs_E == 0) 
+	  ebeam = ebeam_spectrum.GetRandom();
+	else if (beamconfigfile != "")
+	  ebeam = cobrem_vs_E->GetRandom();
+	
+	h_egam1->Fill(ebeam);
+      } 
+    } else if (m_tagger_file.Contains("primex_tagm.txt") || m_tagger_file.Contains("primex_tagh.txt")) {
       
-      // get beam energy
-      double ebeam = 0;
-      if (beamconfigfile == "" || cobrem_vs_E == 0) 
-	ebeam = ebeam_spectrum.GetRandom();
-      else if (beamconfigfile != "")
-	ebeam = cobrem_vs_E->GetRandom();
-      
-      h_egam1->Fill(ebeam);
+      int tagger_channel_nb = 102;
+      if (m_tagger_file.Contains("primex_tagh.txt"))
+	tagger_channel_nb = 274;
+
+      if (m_workflow != "" && m_shell == "bash")
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s %s %d %d", 
+			       //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
+			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_workflow.Data(), m_tagger_file.Data(), tagger_channel_nb, m_option[0]));
+      else if (m_workflow != "" && m_shell == "tcsh")
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s %s %d %d", 
+			       //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
+			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_workflow.Data(), m_tagger_file.Data(), tagger_channel_nb, m_option[0]));
+      else if (m_workflow == "" && m_shell == "bash")
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d %s %d %d", 
+			       //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
+			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_tagger_file.Data(), tagger_channel_nb, m_option[0]));
+      else if (m_workflow == "" && m_shell == "tcsh")
+	system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d %s %d %d", 
+			       //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
+			       m_out_dir.Data(), m_Ee[0], nEvents, runNum, runNum, m_tagger_file.Data(), tagger_channel_nb, m_option[0]));
     }
     
     for (int i = 0; i < h_egam1->GetNbinsX(); i ++) { //Generate LHE file
@@ -202,19 +229,19 @@ int main( int argc, char* argv[] ){
       int nbofevt =  h_egam1->GetBinContent(i + 1);
       if (nbofevt > 0) {
 	if (m_workflow != "" && m_shell == "bash")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.sh %s %f %d %d %d %s test 0 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum, m_workflow.Data()));
 	else if (m_workflow != "" && m_shell == "tcsh")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_slurm.csh %s %f %d %d %d %s test 0 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum, m_workflow.Data()));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum, m_workflow.Data()));
 	else if (m_workflow == "" && m_shell == "bash")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum));
 	else if (m_workflow == "" && m_shell == "tcsh")
-	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d", 
+	  system(TString::Format("source $HALLD_SIM_HOME/src/programs/Simulation/gen_primex_compton/run/compton_prompt.sh %s %f %d %d %d test 0 0", 
 				 //m_out_dir.Data(), (int) egam, nbofevt, runNum, runNum));
 				 m_out_dir.Data(), egam, nbofevt, runNum, runNum));
       }
@@ -271,7 +298,7 @@ int main( int argc, char* argv[] ){
       
       m_tree->GetEntry(counter);
       
-      TLorentzVector gamma_4Vec(0, 0, 0, 0);
+      TLorentzVector gamma_4Vec(0, 0, Ebeam, Ebeam);
       TLorentzVector photon_4Vec[10];
       int npart_photon = 1;
       int npart_electron = 1;
