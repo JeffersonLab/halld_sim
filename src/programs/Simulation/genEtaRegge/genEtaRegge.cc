@@ -116,7 +116,7 @@ void Usage(void){
   printf("             -R<run number>    (default: 10000)\n");
   printf("             -U                (generate uniform t-distribution instead of sloped)\n");
   printf("             -tmin<val>        (min t value for uniform dist., if -U specified, default=physical min.)\n");
-  printf("             -tmax<val>        (max t value for uniform dist., if -U specified, default=2.0)\n");
+  printf("             -tmax<val>        (max t value for uniform dist., if -U specified, default=3.0)\n");
   printf("             -h                (Print this message and exit.)\n");
   printf("Coupling constants, photon beam energy range, and eta decay products are\n");
   printf("specified in the <input.in> file.\n");
