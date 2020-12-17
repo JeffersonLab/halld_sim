@@ -84,6 +84,7 @@ ROOTDataReaderTEM::ROOTDataReaderTEM( const vector< string >& args ):
 
          vector< TLorentzVector > particleList;
          TLorentzVector finalstate;
+	 TLorentzVector recoil;
 
          particleList.
             push_back( TLorentzVector( m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ) );
@@ -92,13 +93,14 @@ ROOTDataReaderTEM::ROOTDataReaderTEM( const vector< string >& args ):
 
             particleList.push_back( TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] ) );
 	    
-	    if (i > 0) finalstate += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
+	    if (i > 0 && i < 5) finalstate += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
+	    if (i == 0 || i == 5) recoil += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
          }
 
          // Calculate -t and check if it is in range
          // Use the reconstructed proton
          TLorentzVector target = TLorentzVector(0.0,0.0,0.0,0.938272);
-         double tMag = fabs((target-particleList[1]).M2());
+         double tMag = fabs((target-recoil).M2());
          double EMag = TLorentzVector(m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ).E();
 
 	 double MMag = finalstate.M();
@@ -163,6 +165,7 @@ ROOTDataReaderTEM::getEvent()
 
             vector< TLorentzVector > particleList;
 	    TLorentzVector finalstate;
+	    TLorentzVector recoil;
 
             particleList.
                push_back( TLorentzVector( m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ) );
@@ -170,13 +173,14 @@ ROOTDataReaderTEM::getEvent()
             for( int i = 0; i < m_nPart; ++i ){
 
                particleList.push_back( TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] ) );
-	       if (i > 0) finalstate += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
+	       if (i > 0 && i < 5) finalstate += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
+	       if (i == 0 || i == 5) recoil += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
             }
 
             // Calculate -t and check if it is in range
             // Use the reconstructed proton
             TLorentzVector target = TLorentzVector(0.0,0.0,0.0,0.938272);
-            double tMag = fabs((target-particleList[1]).M2());
+            double tMag = fabs((target-recoil).M2());
 	    double EMag = TLorentzVector(m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ).E();
 
 	    double MMag = finalstate.M();
