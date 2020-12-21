@@ -2296,8 +2296,8 @@ c	   if(plist(6,i).eq. 78)igsimid(i) =  0  !
 	   if(plist(6,i).eq. 98)igsimid(i) =  998  !
 	   if(plist(6,i).eq. 99)igsimid(i) =  999  !
 	   if(plist(6,i).eq.100)igsimid(i) =  9100  !
-	   if(plist(6,i).eq.101)igsimid(i) =  0  !
-	   if(plist(6,i).eq.-101)igsimid(i) =  0 !
+	   if(plist(6,i).eq.101)igsimid(i) =  9101  !
+	   if(plist(6,i).eq.-101)igsimid(i) =  9101 !
 	   if(igsimid(i).eq.-1)then
 	      write(6,*)'Unknown Lund-->HDGEANT mapping for Lund ID:',plist(6,i)
 c	      call exit()

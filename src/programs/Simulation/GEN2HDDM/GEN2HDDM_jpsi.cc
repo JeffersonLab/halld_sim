@@ -129,11 +129,16 @@ int main(int narg, char *argv[])
              //recoiling proton
              char typestr[256];
              float p1x, p1y, p1z, E1, x, y, z, vx, vy, vz;
-             *infile >> typestr >> E1 >> p1x >> p1y >> p1z;
-             *infile >> x >> y >> z >> vx >> vy >> vz;
-             //t =  (z-65.0)/29.9792458 ;
+
+
+
+             *infile  >> typestr;
              int type = Str2GeantParticleID(typestr);
              if (type < 0) type = atoi(typestr);
+
+             *infile >> E1 >> p1x >> p1y >> p1z;
+             *infile >> x >> y >> z >> vx >> vy >> vz;
+             
 
              ps_primary(0).setType((Particle_t)type);
              ps_primary(0).setPdgtype(PDGtype((Particle_t)type));
