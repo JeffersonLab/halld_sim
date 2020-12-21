@@ -65,6 +65,11 @@ ProductionMechanism::setGeneratorType( Type type ){
   m_type = type;
 }
 
+void
+ProductionMechanism::setRecoilMass( double recMass ){
+
+	m_recMass = recMass;
+}
 
 TLorentzVector
 ProductionMechanism::produceResonance( const TLorentzVector& beam ){
