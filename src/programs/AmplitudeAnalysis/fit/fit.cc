@@ -17,7 +17,10 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_amp.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
+#include "AMPTOOLS_AMPS/TwoPiW_brokenetas.h"
 #include "AMPTOOLS_AMPS/TwoPitdist.h"
+#include "AMPTOOLS_AMPS/TwoPiNC_tdist.h"
+#include "AMPTOOLS_AMPS/TwoPiEtas_tdist.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
@@ -89,7 +92,10 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
   AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
   AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+  AmpToolsInterface::registerAmplitude( TwoPiW_brokenetas() );
   AmpToolsInterface::registerAmplitude( TwoPitdist() );
+  AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
+  AmpToolsInterface::registerAmplitude( TwoPiEtas_tdist() );
   AmpToolsInterface::registerAmplitude( ThreePiAngles() );
   AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
@@ -106,8 +112,14 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
   
   AmpToolsInterface ati( cfgInfo );
+
+  double likelihood_init =  ati.likelihood();
   
-  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << likelihood_init << endl;
+  if (!isfinite(likelihood_init)) {
+      cout << "*** fit- infinite Likelihood before minimization EXIT***" << endl;
+      exit(1);
+    }
   
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   

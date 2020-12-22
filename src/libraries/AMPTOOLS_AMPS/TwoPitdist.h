@@ -44,6 +44,7 @@ private:
 	
   AmpParameter Bslope;    // for the moment assume W cross section has 4 parameters
   AmpParameter Bgen;
+  AmpParameter mtmax;
   
   pair< string, string > m_daughters;  
 };

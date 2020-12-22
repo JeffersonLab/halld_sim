@@ -1,5 +1,5 @@
-#if !defined(TWOPIWT_PRIMAKOFF)
-#define TWOPIWT_PRIMAKOFF
+#if !defined(TWOPIW_BROKENETAS)
+#define TWOPIW_BROKENETAS
 
 #include "IUAmpTools/Amplitude.h"
 #include "IUAmpTools/AmpParameter.h"
@@ -16,17 +16,17 @@ using namespace std;
 
 class Kinematics;
 
-class TwoPiWt_primakoff : public UserAmplitude< TwoPiWt_primakoff >
+class TwoPiW_brokenetas : public UserAmplitude< TwoPiW_brokenetas >
 {
   
 public:
 	
-	TwoPiWt_primakoff() : UserAmplitude< TwoPiWt_primakoff >() {}
-	TwoPiWt_primakoff( const vector< string >& args );
+	TwoPiW_brokenetas() : UserAmplitude< TwoPiW_brokenetas >() {}
+	TwoPiW_brokenetas( const vector< string >& args );
 	
-	~TwoPiWt_primakoff(){}
+	~TwoPiW_brokenetas(){}
   
-	string name() const { return "TwoPiWt_primakoff"; }
+	string name() const { return "TwoPiW_brokenetas"; }
   
   complex< GDouble > calcAmplitude( GDouble** pKin ) const;
 	  
@@ -42,10 +42,8 @@ public:
   
 private:
 	
-  AmpParameter m_par1;    // for the moment assume W cross section has 5 parameters
+  AmpParameter m_par1;    // for the moment assume W cross section has 2 parameters
   AmpParameter m_par2;
-  AmpParameter Bgen;
-  AmpParameter mtmax;
   
   pair< string, string > m_daughters;  
 };
