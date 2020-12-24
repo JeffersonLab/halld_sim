@@ -54,6 +54,8 @@
 
 #define USE_ENERGY_WEIGHTED_TIMES 1
 
+#define SUPPRESS_LIGHT_BY_HEAVY_PARTICLES 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -418,6 +420,28 @@ unsigned int find_incident_id(float *x)
    return closest_id;
 }
 
+#if SUPPRESS_LIGHT_BY_HEAVY_PARTICLES
+//----------------------
+// get_particle_mass
+//
+// Look up the properties of the G3 particle type ipart,
+// and return the central value of the mass in GeV/c^2.
+//----------------------
+double get_particle_mass(int ipart)
+{
+   Particle_t part = (Particle_t)ipart;
+   char chnpar[20] = {};
+   int itrtyp = 0;
+   float amass = 0;
+   float charge = 0;
+   float tlife = 0;
+   float ub = 0;
+   int nwb = 0;
+   gfpart_(&part, chnpar, &itrtyp, &amass, &charge, &tlife, &ub, &nwb);
+   return amass;
+}
+#endif
+
 //----------------------
 // hitBarrelEMcal
 //
@@ -494,6 +518,24 @@ void hitBarrelEMcal (float xin[4], float xout[4],
    // cell. Full timing spectra for each hit has been removed.
   
   /* post the hit to the hits tree, mark sector as hit */
+
+#if SUPPRESS_LIGHT_BY_HEAVY_PARTICLES
+   double mass_GeV = get_particle_mass(ipart);
+   if (mass_GeV > 0.939) {
+      static int was_seen[999] = {0};
+      if (was_seen[ipart] == 0 && dEsum > 0) {
+         printf("Notice in GlueXSensitiveDetectorBCAL - "
+                "particle type %d"
+                ", mass %f GeV "
+                "wants to deposit %f MeV "
+                "in the BCAL.\n"
+                "Suppressing this and all future hits "
+                "by this particle type in the BCAL!",
+                ipart, mass_GeV, dEsum);
+         ++was_seen[ipart];
+      }
+   } else
+#endif
 
    if (dEsum > 0)
    {
