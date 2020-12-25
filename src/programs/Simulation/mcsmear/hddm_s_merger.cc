@@ -28,19 +28,23 @@ const double fadc250_period_ns(4.);
 
 static thread_local double t_shift_ns(0);
 
+static thread_local bool   enable_cdc_merging(true);
 static thread_local int    cdc_max_hits(1);
 static thread_local double cdc_integration_window_ns(800.);
 
+static thread_local bool   enable_fdc_merging(true);
 static thread_local int    fdc_wires_max_hits(8);
 static thread_local double fdc_wires_min_delta_t_ns(35.);
 static thread_local int    fdc_strips_max_hits(1);
 static thread_local double fdc_strips_integration_window_ns(200.);
 
+static thread_local bool   enable_stc_merging(true);
 static thread_local int    stc_adc_max_hits(3);
 static thread_local int    stc_tdc_max_hits(8);
 static thread_local double stc_min_delta_t_ns(25.);
 static thread_local double stc_integration_window_ns(100.);
 
+static thread_local bool   enable_bcal_merging(true);
 static thread_local int    bcal_adc_max_hits(1);
 static thread_local int    bcal_tdc_max_hits(8);
 static thread_local double bcal_min_delta_t_ns(25.);
@@ -48,40 +52,56 @@ static thread_local double bcal_integration_window_ns(114.);
 static thread_local double bcal_fadc_counts_per_ns(16.);
 static thread_local double bcal_tdc_counts_per_ns(16.13);
 
+static thread_local bool   enable_ftof_merging(true);
 static thread_local int    ftof_adc_max_hits(3);
 static thread_local int    ftof_tdc_max_hits(64);
 static thread_local double ftof_min_delta_t_ns(25.);
 static thread_local double ftof_integration_window_ns(104.);
 
+static thread_local bool   enable_fcal_merging(true);
 static thread_local int    fcal_max_hits(3);
 static thread_local double fcal_min_delta_t_ns(70.);
 static thread_local double fcal_integration_window_ns(64.);
 
+static thread_local bool   enable_ccal_merging(true);
 static thread_local int    ccal_max_hits(3);
 static thread_local double ccal_min_delta_t_ns(70.);
 static thread_local double ccal_integration_window_ns(64.);
 
+static thread_local bool   enable_ps_merging(true);
 static thread_local int    ps_max_hits(3);
 static thread_local double ps_integration_window_ns(72.);
+static thread_local bool   enable_psc_merging(true);
 static thread_local int    psc_adc_max_hits(3);
 static thread_local int    psc_tdc_max_hits(3);
 static thread_local double psc_min_delta_t_ns(25.);
 static thread_local double psc_integration_window_ns(36.);
 
+static thread_local bool   enable_tag_merging(true);
 static thread_local int    tag_adc_max_hits(3);
 static thread_local int    tag_tdc_max_hits(8);
 static thread_local double tag_min_delta_t_ns(25.);
 static thread_local double tag_integration_window_ns(36.);
 
+static thread_local bool   enable_tpol_merging(true);
 static thread_local int    tpol_max_hits(1);
 static thread_local double tpol_integration_window_ns(2500.);
 
+static thread_local bool   enable_fmwpc_merging(true);
 static thread_local int    fmwpc_max_hits(1);
 static thread_local double fmwpc_min_delta_t_ns(400.);
 
 extern const mcsmear_config_t *mcsmear_config;
 
 namespace hddm_s_merger {
+
+   bool get_cdc_merging() {
+      return enable_cdc_merging;
+   }
+   
+   void set_cdc_merging(bool merging_status) {
+      enable_cdc_merging = merging_status;
+   }
 
    double get_t_shift_ns() {
       return t_shift_ns;
@@ -105,6 +125,14 @@ namespace hddm_s_merger {
 
    void set_cdc_integration_window_ns(double dt_ns) {
       cdc_integration_window_ns = dt_ns;
+   }
+
+   bool get_fdc_merging() {
+      return enable_fdc_merging;
+   }
+   
+   void set_fdc_merging(bool merging_status) {
+      enable_fdc_merging = merging_status;
    }
 
    int get_fdc_wires_max_hits() {
@@ -139,6 +167,14 @@ namespace hddm_s_merger {
       fdc_strips_integration_window_ns = dt_ns;
    }
 
+   bool get_stc_merging() {
+      return enable_stc_merging;
+   }
+   
+   void set_stc_merging(bool merging_status) {
+      enable_stc_merging = merging_status;
+   }
+
    int get_stc_adc_max_hits() {
       return stc_adc_max_hits;
    }
@@ -169,6 +205,14 @@ namespace hddm_s_merger {
 
    void set_stc_integration_window_ns(double dt_ns) {
       stc_integration_window_ns = dt_ns;
+   }
+
+   bool get_bcal_merging() {
+      return enable_bcal_merging;
+   }
+   
+   void set_bcal_merging(bool merging_status) {
+      enable_bcal_merging = merging_status;
    }
 
    int get_bcal_adc_max_hits() {
@@ -219,6 +263,14 @@ namespace hddm_s_merger {
       bcal_tdc_counts_per_ns = slope;
    }
 
+   bool get_ftof_merging() {
+      return enable_ftof_merging;
+   }
+   
+   void set_ftof_merging(bool merging_status) {
+      enable_ftof_merging = merging_status;
+   }
+
    int get_ftof_adc_max_hits() {
       return ftof_adc_max_hits;
    }
@@ -251,6 +303,14 @@ namespace hddm_s_merger {
       ftof_integration_window_ns = dt_ns;
    }
 
+   bool get_fcal_merging() {
+      return enable_fcal_merging;
+   }
+   
+   void set_fcal_merging(bool merging_status) {
+      enable_fcal_merging = merging_status;
+   }
+
    int get_fcal_max_hits() {
       return fcal_max_hits;
    }
@@ -273,6 +333,14 @@ namespace hddm_s_merger {
 
    void set_fcal_integration_window_ns(double dt_ns) {
       fcal_integration_window_ns = dt_ns;
+   }
+
+   bool get_ccal_merging() {
+      return enable_ccal_merging;
+   }
+   
+   void set_ccal_merging(bool merging_status) {
+      enable_ccal_merging = merging_status;
    }
 
    int get_ccal_max_hits() {
@@ -299,6 +367,14 @@ namespace hddm_s_merger {
       ccal_integration_window_ns = dt_ns;
    }
 
+   bool get_ps_merging() {
+      return enable_ps_merging;
+   }
+   
+   void set_ps_merging(bool merging_status) {
+      enable_ps_merging = merging_status;
+   }
+
    int get_ps_max_hits() {
       return ps_max_hits;
    }
@@ -313,6 +389,14 @@ namespace hddm_s_merger {
 
    void set_ps_integration_window_ns(double dt_ns) {
       ps_integration_window_ns = dt_ns;
+   }
+
+   bool get_psc_merging() {
+      return enable_psc_merging;
+   }
+   
+   void set_psc_merging(bool merging_status) {
+      enable_psc_merging = merging_status;
    }
 
    int get_psc_adc_max_hits() {
@@ -347,6 +431,14 @@ namespace hddm_s_merger {
       psc_integration_window_ns = dt_ns;
    }
 
+   bool get_tag_merging() {
+      return enable_tag_merging;
+   }
+   
+   void set_tag_merging(bool merging_status) {
+      enable_tag_merging = merging_status;
+   }
+
    int get_tag_adc_max_hits() {
       return tag_adc_max_hits;
    }
@@ -379,6 +471,14 @@ namespace hddm_s_merger {
       tag_integration_window_ns = dt_ns;
    }
 
+   bool get_tpol_merging() {
+      return enable_tpol_merging;
+   }
+   
+   void set_tpol_merging(bool merging_status) {
+      enable_tpol_merging = merging_status;
+   }
+
    int get_tpol_max_hits() {
       return tpol_max_hits;
    }
@@ -395,6 +495,14 @@ namespace hddm_s_merger {
       tpol_integration_window_ns = dt_ns;
    }
  
+   bool get_fmwpc_merging() {
+      return enable_fmwpc_merging;
+   }
+   
+   void set_fmwpc_merging(bool merging_status) {
+      enable_fmwpc_merging = merging_status;
+   }
+
    int get_fmwpc_max_hits() {
       return fmwpc_max_hits;
    }
@@ -433,18 +541,18 @@ hddm_s::HitViewList &operator+=(hddm_s::HitViewList &dst,
       dst.add(1);
    hddm_s::HitViewList::iterator iter;
    for (iter = src.begin(); iter != src.end(); ++iter) {
-      dst(0).getCentralDCs() += iter->getCentralDCs();
-      dst(0).getForwardDCs() += iter->getForwardDCs();
-      dst(0).getStartCntrs() += iter->getStartCntrs();
-      dst(0).getBarrelEMcals() += iter->getBarrelEMcals();
-      dst(0).getForwardEMcals() += iter->getForwardEMcals();
-      dst(0).getForwardTOFs() += iter->getForwardTOFs();
-      dst(0).getComptonEMcals() += iter->getComptonEMcals();
-      dst(0).getTaggers() += iter->getTaggers();
-      dst(0).getPairSpectrometerFines() += iter->getPairSpectrometerFines();
-      dst(0).getPairSpectrometerCoarses() += iter->getPairSpectrometerCoarses();
-      dst(0).getTripletPolarimeters() += iter->getTripletPolarimeters();
-      dst(0).getForwardMWPCs() += iter->getForwardMWPCs();
+      if(enable_cdc_merging) dst(0).getCentralDCs() += iter->getCentralDCs();
+      if(enable_fdc_merging) dst(0).getForwardDCs() += iter->getForwardDCs();
+      if(enable_stc_merging) dst(0).getStartCntrs() += iter->getStartCntrs();
+      if(enable_bcal_merging) dst(0).getBarrelEMcals() += iter->getBarrelEMcals();
+      if(enable_fcal_merging) dst(0).getForwardEMcals() += iter->getForwardEMcals();
+      if(enable_ftof_merging) dst(0).getForwardTOFs() += iter->getForwardTOFs();
+      if(enable_ccal_merging) dst(0).getComptonEMcals() += iter->getComptonEMcals();
+      if(enable_tag_merging) dst(0).getTaggers() += iter->getTaggers();
+      if(enable_ps_merging) dst(0).getPairSpectrometerFines() += iter->getPairSpectrometerFines();
+      if(enable_psc_merging) dst(0).getPairSpectrometerCoarses() += iter->getPairSpectrometerCoarses();
+      if(enable_tpol_merging) dst(0).getTripletPolarimeters() += iter->getTripletPolarimeters();
+      if(enable_fmwpc_merging) dst(0).getForwardMWPCs() += iter->getForwardMWPCs();
    }
    return dst;
 }

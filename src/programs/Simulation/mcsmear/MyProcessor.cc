@@ -472,7 +472,7 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
    hddm_s::HDDM *record = (hddm_s::HDDM*)event.GetRef();
    if (!record)
       return NOERROR;
-
+ 
    // Handle geometry records
    hddm_s::GeometryList geom = record->getGeometrys();
    if (geom.size() > 0) {
@@ -512,6 +512,9 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
             //pthread_mutex_unlock(&input_file_mutex);
          }
          
+         if(config->MERGE_TAGGER_HITS == false) {
+         	hddm_s_merger::set_tag_merging(false);
+         }
          hddm_s_merger::set_t_shift_ns(0);
          hddm_s::RFsubsystemList RFtimes = record2.getRFsubsystems();
          hddm_s::RFsubsystemList::iterator RFiter;
