@@ -26,16 +26,17 @@ c                  is on the high side of the distribution
 c        1-21-11 - modified to give a momentum-idependent lineshape in cases when
 c                  the requested decay products are more massive than the centroid
 c                  of the parent particle
-c	8-10-17 - turned this into TWO identical subroutines so that I can call two
-c                 separate instances within a single reaction description
-c       	  (Lambda anti-Lambda case)  Only the common blocks differ
-c
+c	 8-10-17 - turned this into TWO identical subroutines so that I can call two
+c                  separate instances within a single reaction description
+c         	   (Lambda anti-Lambda case)  Only the common blocks differ
+c       10-12-20 - update /monte/ common block and declare "external ran"
 	subroutine relativisticbwran1(rmnot,gammanot,rm1,rm2,lvalue,bwmass)
+	external ran
 	parameter (nbin=1000)
 	real bwint(0:nbin)
 	logical ifirst,ignoremasses
 	data ifirst/.true./
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /rbwlocal1/ifirst,ignoremasses,
      1                   bwint,rmmin,drm,rmnotsave,rm1save,rm2save
 	if(ifirst.eqv..true.)then
@@ -139,11 +140,12 @@ c	write(6,*)'Relativistic Breit-Wigner mass:',bwmass,rmnot,rm1,rm2,icount
 C       Second identical instance of this subroutine (excpet for separate common block)
 C
 	subroutine relativisticbwran2(rmnot,gammanot,rm1,rm2,lvalue,bwmass)
+	external ran
 	parameter (nbin=1000)
 	real bwint(0:nbin)
 	logical ifirst,ignoremasses
 	data ifirst/.true./
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /rbwlocal2/ifirst,ignoremasses,
      1                   bwint,rmmin,drm,rmnotsave,rm1save,rm2save
 	if(ifirst.eqv..true.)then
