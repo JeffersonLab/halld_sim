@@ -22,11 +22,23 @@ PlotGenerator( results )
   bookHistogram( cosT_m23, new Histogram2D(100, 1.8, 3.2, 100, -1.0, 1.0, "cosT_m23", "cos(#theta) vs. Mass(#eta #pi^{0})" ) );
   bookHistogram( cosT_phi, new Histogram2D(40, -3.2, 3.2, 100, -1.0, 1.0, "cosT_phi", "cos(#theta) vs. #phi" ) );
   bookHistogram( cosT_Phi, new Histogram2D(40, -3.2, 3.2, 100, -1.0, 1.0, "cosT_Phi", "cos(#theta) vs. #Phi" ) );
-
-  polAngle = stod(results.configInfo()->amplitudeList("","","S0-").at(0)->factors().at(0).at(5));
 }
 
 void EtaPi0PlotGenerator::projectEvent( Kinematics* kin ){
+  
+  // this function will make this class backwards-compatible with older versions
+  // (v0.10.x and prior) of AmpTools, but will not be able to properly obtain
+  // the polariation plane in the lab when multiple orientations are used
+  
+  projectEvent( kin, "" );
+}
+
+void EtaPi0PlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
+  
+  // obtain the polarzation angle for this event by getting the list of amplitudes
+  // associated with this reaction -- we know all are Zlm amplitudes
+  // take the sixth argument of the first factor of the first amplitude in the first sum
+  double polAngle = stod(cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0).at(5));
 
   TLorentzVector P0 = kin->particle(0); //beam
   TLorentzVector P1 = kin->particle(1); //proton
@@ -74,7 +86,7 @@ void EtaPi0PlotGenerator::projectEvent( Kinematics* kin ){
   GDouble omega = atan2(y.Dot(eta), P0.Vect().Unit().Dot(eta.Cross(y)));
   
 
-  fillHistogram( PhiT, Phi); 
+  fillHistogram( PhiT, Phi);
   fillHistogram( cosT, cosTheta);
   fillHistogram( phiAng, phi);
   fillHistogram( Omega, omega);
