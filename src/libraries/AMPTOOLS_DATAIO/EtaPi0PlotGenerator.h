@@ -20,9 +20,8 @@ public:
 
 private:
 
-  double polAngle; // polarization angle in DEGREES
   void projectEvent( Kinematics* kin );
-
+  void projectEvent( Kinematics* kin, const string& reactionName );
 };
 
 #endif
