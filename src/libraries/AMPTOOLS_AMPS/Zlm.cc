@@ -18,7 +18,7 @@
 Zlm::Zlm( const vector< string >& args ) :
 UserAmplitude< Zlm >( args )
 {
-  assert( args.size() == 6 );
+  assert( args.size() == 6 || args.size() == 7);
   
   m_j = atoi( args[0].c_str() );
   m_m = atoi( args[1].c_str() );
@@ -46,6 +46,16 @@ UserAmplitude< Zlm >( args )
   // m_s = -1 for 1 - Pgamma
   assert( abs( m_s ) == 1 );
   
+
+  // Default reference frame: Helicity frame
+  refFrame_sel = HELI;
+
+  if(args.size()==7) {
+     if(args[6] == "GJ")
+        refFrame_sel = GJ;
+     else if(args[6] == "Adair") 
+        refFrame_sel = ADAIR;
+   }
 }
 
 
@@ -65,10 +75,20 @@ Zlm::calcAmplitude( GDouble** pKin ) const {
   TLorentzVector recoil_res = resRestBoost * recoil;
   TLorentzVector p1_res = resRestBoost * p1;
   
-  // Helicity frame
+
+  // Switch reference frame:
+  //
+  // DEFAULT: Set z axis as required in helicity frame
   TVector3 z = -1. * recoil_res.Vect().Unit();
-  // or GJ frame?
-  // TVector3 z = beam_res.Vect().Unit();
+
+  // Switch frame if option was set:
+  if(refFrame_sel == GJ) {
+    z = beam_res.Vect().Unit();
+  } else if(refFrame_sel == ADAIR) {
+    z = beam.Vect().Unit();
+  }
+
+
 
   // normal to the production plane
   TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();

@@ -35,6 +35,8 @@ public:
 	string name() const { return "Zlm"; }
     
 	complex< GDouble > calcAmplitude( GDouble** pKin ) const;
+  
+  enum refFrame {HELI, GJ, ADAIR};
 	
 private:
         
@@ -44,6 +46,7 @@ private:
   int m_s;
 	
   AmpParameter polAngle;
+  refFrame refFrame_sel;
 
   double polFraction;
   TH1D *polFrac_vs_E;
