@@ -137,12 +137,21 @@ int main( int argc, char* argv[] ){
 
         // set unique histogram name for each plot (could put in directories...)
         string histname =  "";
-             if (ivar == OmegaRadiativePlotGenerator::kOmegaMass)  histname += "MOmega";
-	     else if (ivar == OmegaRadiativePlotGenerator::kCosTheta)  histname += "cosTheta";
+        if (ivar == OmegaRadiativePlotGenerator::kOmegaMass)  histname += "MOmega";
+        else if (ivar == OmegaRadiativePlotGenerator::kCosTheta)  histname += "cosTheta";
         else if (ivar == OmegaRadiativePlotGenerator::kPhi)  histname += "Phi";
         else if (ivar == OmegaRadiativePlotGenerator::kphi)  histname += "phi";
         else if (ivar == OmegaRadiativePlotGenerator::kPsi)  histname += "psi";
         else if (ivar == OmegaRadiativePlotGenerator::kt)  histname += "t";
+        else if (ivar == OmegaRadiativePlotGenerator::kCosThetaPi0)  histname += "CosThetaPi0";
+        else if (ivar == OmegaRadiativePlotGenerator::kCosThetaGamma)  histname += "CosThetaGamma";
+        else if (ivar == OmegaRadiativePlotGenerator::kPhiPi0)  histname += "PhiPi0";
+        else if (ivar == OmegaRadiativePlotGenerator::kPhiGamma)  histname += "PhiGamma";
+
+        else if (ivar == OmegaRadiativePlotGenerator::kThetaLabPi0)  histname += "ThetaLabPi0";
+        else if (ivar == OmegaRadiativePlotGenerator::kThetaLabGamma)  histname += "ThetaLabGamma";
+        else if (ivar == OmegaRadiativePlotGenerator::kPThetaLabPi0)  histname += "PThetaLabPi0";
+        else if (ivar == OmegaRadiativePlotGenerator::kPThetaLabGamma)  histname += "PThetaLabGamma";
         else continue;
 
         if (iplot == PlotGenerator::kData) histname += "dat";
@@ -165,11 +174,9 @@ int main( int argc, char* argv[] ){
         thist->SetName(histname.c_str());
         plotfile->cd();
         thist->Write();
-
       }
     }
   }
-
   plotfile->Close();
 
     // ************************
@@ -205,14 +212,25 @@ int main( int argc, char* argv[] ){
   vector< vector< double > > covMatrix;
   covMatrix = results.errorMatrix();
 
+  for (int i=0; i<9; i++) {
+    for (int j=0; j<9; j++) {
+      printf("% e  ",covMatrix[i][j]);
+    }
+    printf("\n");
+  }
+
   double SigmaN = results.parValue(pars[3]) + results.parValue(pars[6]);
   double SigmaN_err = covMatrix[5][5] + covMatrix[8][8] + 2*covMatrix[5][8];
 
   double SigmaD = 0.5*(1 - results.parValue(pars[0])) + results.parValue(pars[2]);
   double SigmaD_err = 0.5*0.5*covMatrix[2][2] + covMatrix[4][4] - 2*0.5*covMatrix[2][4];
 
-  double Sigma = SigmaN/SigmaD;
-  double Sigma_err = fabs(Sigma) * sqrt(SigmaN_err/SigmaN/SigmaN + SigmaD_err/SigmaD/SigmaD);
+  double Sigma = 0;
+  double Sigma_err = 0;
+  if (SigmaD!=0 && SigmaN!=0) {
+    Sigma = SigmaN/SigmaD;
+    Sigma_err = fabs(Sigma) * sqrt(SigmaN_err/SigmaN/SigmaN + SigmaD_err/SigmaD/SigmaD);
+  }
   outfile << Sigma << "\t" << Sigma_err << "\t";
 
   double P = 2*results.parValue(pars[6]) - results.parValue(pars[4]);
