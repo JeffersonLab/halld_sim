@@ -24,16 +24,22 @@ PlotGenerator( )
 void OmegaRadiativePlotGenerator::createHistograms( ) {
   // calls to bookHistogram go here
   
-   bookHistogram( kOmegaMass, new Histogram1D( 200, 0.2, 0.8, "MOmega", "Invariant Mass of #pi^{0} #gamma") );
-   bookHistogram( kCosThetaPi0, new Histogram1D( 50, -1., 1., "cosTheta", "cos( #theta ) of #pi^{0}") );
-   bookHistogram( kCosThetaGamma, new Histogram1D( 50, -1., 1., "cosTheta", "cos( #theta ) of #Gamma") );
+   bookHistogram( kOmegaMass, new Histogram1D( 200, 0.6, 1.0, "MOmega", "Invariant Mass;M_{#pi^{0} #gamma}") );
+   bookHistogram( kCosThetaPi0, new Histogram1D( 50, -1., 1., "cosTheta", "cos(#theta) of #pi^{0}") );
+   bookHistogram( kCosThetaGamma, new Histogram1D( 50, -1., 1., "cosTheta", "cos(#theta) of #gamma") );
    bookHistogram( kPhiPi0,  new Histogram1D( 50, -1*PI, PI, "PhiPiPlus",  "#Phi_{#pi_{0}}" ) );
    bookHistogram( kPhiGamma, new Histogram1D( 50, -1*PI, PI, "PhiPiMinus", "#Phi_{#gamma}" ) );
    bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta", "cos#theta;cos#theta" ) );
-   bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#Phi; #Phi[rad.]" ) );
-   bookHistogram( kphi, new Histogram1D( 50, -1*PI, PI, "phi", "#phi; #phi[rad.]" ) );
+   bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#Phi; #Phi [rad.]" ) );
+   bookHistogram( kphi, new Histogram1D( 50, -1*PI, PI, "phi", "#phi; #phi [rad.]" ) );
    bookHistogram( kPsi, new Histogram1D( 50, -1*PI, PI, "psi", "#psi; #psi [rad.]" ) );
-   bookHistogram( kt, new Histogram1D( 100, 0, 1.0 , "t", "-t" ) );
+   bookHistogram( kt, new Histogram1D( 400, 0, 2.0 , "t", "-t;-t" ) );
+
+   bookHistogram( kThetaLabPi0,  new Histogram1D( 40, 0, 20, "ThetaLabPi0",  "#theta lab;#theta_{#pi^{0}}  [deg]" ) );
+   bookHistogram( kThetaLabGamma,  new Histogram1D( 40, 0, 20, "ThetaLabGamma",  "#theta lab;#theta_{#gamma}  [deg]" ) );
+   bookHistogram( kPThetaLabPi0,  new Histogram2D( 40, 0, 20, 45, 0, 9, "PThetaLabPi0",  ";#theta_{#pi^{0}}  [deg];P_{#pi^{0}}  [GeV]" ) );
+   bookHistogram( kPThetaLabGamma,  new Histogram2D( 40, 0, 20, 45, 0, 9, "PThetaLabGamma",  ";#theta_{#gamma}  [deg];P_{#gamma}  [GeV]" ) );
+
 }
 
 void
@@ -81,13 +87,18 @@ OmegaRadiativePlotGenerator::projectEvent( Kinematics* kin ){
    // calls to fillHistogram go here
 
    fillHistogram( kOmegaMass, ( resonance ).M() );
-   fillHistogram( kCosThetaPi0, p1_res.CosTheta());
-   fillHistogram( kCosThetaGamma, p2_res.CosTheta() );
-   fillHistogram( kPhiPi0,  p1.Phi() );
-   fillHistogram( kPhiGamma, p2.Phi() );
+   fillHistogram( kCosThetaPi0, p2_res.CosTheta());
+   fillHistogram( kCosThetaGamma, p1_res.CosTheta() );
+   fillHistogram( kPhiPi0,  p2.Phi() );
+   fillHistogram( kPhiGamma, p1.Phi() );
    fillHistogram( kCosTheta,   cosTheta);
    fillHistogram( kPhi, Phi );
    fillHistogram( kphi, phi );
    fillHistogram( kPsi, psi );
    fillHistogram( kt, -t );      // fill with -t to make positive
+
+   fillHistogram( kThetaLabPi0, p2.Theta()*180./PI );
+   fillHistogram( kThetaLabGamma, p1.Theta()*180./PI );
+   fillHistogram( kPThetaLabPi0, p2.Theta()*180./PI, p2.P() );
+   fillHistogram( kPThetaLabGamma, p1.Theta()*180./PI, p1.P() );
 }
