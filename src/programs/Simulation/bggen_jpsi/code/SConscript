@@ -20,7 +20,7 @@ else:
 	env['FORTRANFLAGS'].remove('-Wall')
     	# link with gfortran as well, in order to bring in the right libraries
 	# probably should not hardcode this?  but it's an optional build
-    	env['LINK'] = 'gfortran' 
+	env['LINK'] = 'gfortran' 
     	# allow long line lengths\
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-132'])
 
