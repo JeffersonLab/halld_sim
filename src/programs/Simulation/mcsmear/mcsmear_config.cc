@@ -28,6 +28,7 @@ mcsmear_config_t::mcsmear_config_t()
 	APPLY_HITS_TRUNCATION  = true;
 	FCAL_ADD_LIGHTGUIDE_HITS = false;
 	SKIP_READING_RCDB = false;
+	MERGE_TAGGER_HITS = true;
 
           BCAL_NO_T_SMEAR = false;             
           BCAL_NO_DARK_PULSES = false;        
