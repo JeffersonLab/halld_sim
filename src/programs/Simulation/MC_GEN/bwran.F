@@ -16,13 +16,15 @@ c        1-17-11  - shift  range to be -5  to +15
 c        5- 6-11  - expand range to be -15 to +15
 c        5-11-11  - expand range to be +30 to -30
 c       10-29-19  - fixed a subtle bug that biased the distribution to negative numbers by half a bin
+c       10-12.20  - added crucial declaration than RAN is EXTERNAL
 c
 	subroutine bwran(bw)
+	external ran !force use of local random number generator
 	parameter (nbin=1001)
 	real bwi(0:nbin)
 	logical ifirst
 	data ifirst/.true./
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /bwlocal/bwi,xmin,dx !needed for Linux fortran
 	if(ifirst.eqv..true.)then
 	   ifirst = .false.

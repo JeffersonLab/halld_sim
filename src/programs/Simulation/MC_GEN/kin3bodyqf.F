@@ -1,6 +1,6 @@
 c******************************************************************************
 c	KIN3BODYQF
-c	Monte Carlo three-body phase space
+c	Monte Carlo three-body phase space.
 c	Treat it as a quasi-free two-body problem 
 c	Take P1 and P2 as the correlated pair which does a (quasi)
 c	two-body decay, and take particle 3 as the recoiling particle
@@ -38,12 +38,13 @@ c		   of the three outgoing particles; going out these are the
 c		   vectors for the final state particles in the lab frame. 
 c
 	subroutine kin3bodyqf(p0,p1,p2,p3,ierr)
+	external ran
 	logical ifirst
 	real p0(5),p1(5),p2(5),p3(5),p12(5)
 	real p1tmp(5),p2tmp(5),p12tmp(5),beta(3)
 	data ifirst /.true./
 c
-	common/monte/iseed
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
         common /fermi/prec,qfmass,pfermi,ndynamics
 c
 	do i=1,3
