@@ -19,20 +19,20 @@ using namespace std;
 // particles 1 and 2 are pseudoscalars
 //
 // j,m are the total and z projection of the spin of R
-// r=+/-1 indicates real/imaginary part of vec_ps_refl
+// r=+/-1 indicates real/imaginary part of Vec_ps_refl
 // s=+/-1 multiplies with sqrt(1+/- P_gamma)
 
 class Kinematics;
 
-class vec_ps_refl : public UserAmplitude< vec_ps_refl >
+class Vec_ps_refl : public UserAmplitude< Vec_ps_refl >
 {
     
 public:
 	
-	vec_ps_refl() : UserAmplitude< vec_ps_refl >() { };
-	vec_ps_refl( const vector< string >& args );
+	Vec_ps_refl() : UserAmplitude< Vec_ps_refl >() { };
+	Vec_ps_refl( const vector< string >& args );
 	
-	string name() const { return "vec_ps_refl"; }
+	string name() const { return "Vec_ps_refl"; }
     
 	complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
 

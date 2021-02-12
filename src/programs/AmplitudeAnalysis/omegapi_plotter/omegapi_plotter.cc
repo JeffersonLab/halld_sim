@@ -28,7 +28,7 @@
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
-#include "AMPTOOLS_AMPS/vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -42,7 +42,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerAmplitude( Uniform() );
-  AmpToolsInterface::registerAmplitude( vec_ps_refl() );
+  AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
