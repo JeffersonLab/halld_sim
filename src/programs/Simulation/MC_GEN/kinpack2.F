@@ -10,7 +10,9 @@ c      11-12-13   "      Make KIN1R give c.m. momentum back to calling program
 c      12-16-14   "      Change BOOST to return the total energy of the boosted 4-vector
 c       9-30-15   "      Tweak code to make gfortran on Mac stop complaining
 c       6-28-17   "      Make more of the 4-vectors of the form (px,py,pz,mass,energy)
-c
+c      10-10-20   "      update /monte/ common block
+c     
+c*********************************************************************************************
       SUBROUTINE EPCM(P1,P2,PCM)
 c calculates total momentum and cm energy (invariant mass) of two particles
       REAL P1(5),P2(5),PCM(5)
@@ -27,18 +29,21 @@ c calculates total momentum and cm energy (invariant mass) of two particles
       RETURN
       END
 
+c*********************************************************************************************
       FUNCTION ABSP(P)
       REAL P(5)
       ABSP=SQRT(P(1)**2+P(2)**2+P(3)**2)
       RETURN
       END
 
+c*********************************************************************************************
       FUNCTION PSQ(P)
       REAL P(5)
       PSQ=P(1)**2+P(2)**2+P(3)**2
       RETURN
       END
 
+c*********************************************************************************************
       FUNCTION ETOT(P)
       REAL P(5)
       ETOT = SQRT(P(1)**2+P(2)**2+P(3)**2+P(4)**2)
@@ -49,12 +54,14 @@ c calculates total momentum and cm energy (invariant mass) of two particles
       RETURN
       END
 
+c*********************************************************************************************
       FUNCTION DOT(P1,P2)
       REAL P1(3),P2(3)
       DOT=P1(1)*P2(1)+P1(2)*P2(2)+P1(3)*P2(3)
       RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE KIN2R(P1,P2,P3,P4,CTHP3,IERR)
 c 2 body kinematics S-wave P1+P2 to P3+P4
       REAL P0(5),P1(5),P2(5),P3(5),P4(5)
@@ -63,6 +70,7 @@ c 2 body kinematics S-wave P1+P2 to P3+P4
       RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE KIN1R(P0,P1,P2,CTHCM,PCM,IERR)
 c     Decay kinematics. Random angles
 c     P0 - 4-vector (px,py,pz,m,E) of parent particle
@@ -72,10 +80,10 @@ c     CTHCM - randomly-selected cosine of decay angle with respect to P0 directi
 c     PCM - magnitude of the rest-frame P0 momentum of the decay products
 c     IERR - signals that an error was detected
 c
+      external ran
       REAL P0(5),P1(5),P2(5)
       REAL P0TMP(5),P1TMP(5),P2TMP(5),DTMP(5),BETA(3)
-      COMMON/monte/ISEED
-c      DATA ISEED /123456/
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c     Pick angles relative to velocity of P0
       CTHCM=1.-2.*RAN(ISEED)
       PHI=2.*3.14159*RAN(ISEED)      
@@ -116,17 +124,19 @@ c      write(6,*)'pcm  ',pcm
       RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE KIN1RM(P0,P3,P1,P2,P4,P5,CTHCM,IERR)
 c     decay kinematics. Random angles.
 c     lets two particles decay in exactly the same way at rest.
 c     also returns cosine of P1 and P4 relative to P0.
 c     P0 goes to P1 and P2, P3 goes to P4 and P5.
 c
+      external ran
       REAL P0(5),P1(5),P2(5),P3(5),P4(5),P5(5)
       REAL P0TMP(5),P1TMP(5),P2TMP(5),P3TMP(5),P4TMP(5)
      1    ,P5TMP(5),DTMP(5)
       REAL BETA0(3),BETA3(3)
-      COMMON /monte/ ISEED
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
 c     pick angles relative to velocity of P0 and P3
       CTHCM=1.-2.*RAN(ISEED)
       PHI=2.*3.14159*RAN(ISEED)
@@ -166,6 +176,7 @@ c     DTMP respectively.
       RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE KIN22(P1,P2,P3,P4,DIR3,IERR)
 c     2 body kinematics P1+P2 goes to P3+P4, P3 in direction DIR3
 c     returns momentum in P3 and P4
@@ -176,6 +187,7 @@ c     returns momentum in P3 and P4
       RETURN
       END
 
+c*********************************************************************************************
 c     Calculates calculates decay of 1 particle to 2 particles
 c     P0   = momentum and mass of initial particle
 c     DIR3 = directional cosines of particle P3 (not necessarily normalized)
@@ -215,6 +227,7 @@ c     assume highest value P3 if two solutions:
       RETURN
       END
 
+c*********************************************************************************************
 c
 c     Boosts momentum P1 to frame with velocity BETA3(I)
 c     (px,py,pz,m,E) is the form of the '4'-vectors
@@ -240,6 +253,7 @@ c      write(6,*)'Boost out ',p2
       RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE JACOB(P1,BET,P2,THETA,AJAC)
 c     Boosts momentum P1 to frame moving with velocity BET along z-axis
 c     Also returns jacobian needed for differentical cross section
@@ -266,6 +280,7 @@ c     now compute Jacobian according to CERN notes
       RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE ROTATE(P1,DIR3,P2)
 c     Rotates vector P1 into direction given by direction cosines DIR3
 c     (rotates vector DIR3 into (0,0,1) )
@@ -297,6 +312,7 @@ c     now transform
       RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE UNROT(P1,DIR3,P2)
 c     Unrotates the rotate of routine ROTATE
 c     first work out the two angles
@@ -328,6 +344,7 @@ c     now transform
       RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE NEARST(A1,V1,A2,V2,R1,R2,D,IERR)
 c
 c     find distance and points of closest approach between 2 lines in 3D
@@ -370,6 +387,7 @@ c     IERR=1 if lines are parallel (but "D" is still valid)
 950   RETURN
       END
 
+c*********************************************************************************************
       SUBROUTINE TRAVEL(RIN,DIR,D,ROUT)
 c     calculates new position of particle starting at position RIN(i)
 c     travelling in direction DIR(i).  Output is ROUT(i)
@@ -383,3 +401,4 @@ c     if DIR(i) is un-normalized, D=distance/abs(DIR(i))
       RETURN
       END
 
+c*********************************************************************************************
