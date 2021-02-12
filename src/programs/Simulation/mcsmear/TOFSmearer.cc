@@ -115,9 +115,7 @@ tof_config_t::tof_config_t(JEventLoop *loop)
 	}
 #endif // DTOFGEOMETRY_VERSION
 
-	cout << "****************************************" << endl;
-	cout << "TOF BARS = " << TOF_NUM_BARS << endl;
-	cout << "****************************************" << endl;
+	cout << "Number of TOF bars per plane = " << TOF_NUM_BARS << endl;
 }
 
 
