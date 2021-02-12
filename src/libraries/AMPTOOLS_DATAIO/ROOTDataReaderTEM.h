@@ -31,7 +31,9 @@ public:
   ROOTDataReaderTEM( const vector< string >& args );
   
   string name() const { return "ROOTDataReaderTEM"; }
-  
+ 
+  virtual vector<TLorentzVector> particleList();
+  virtual bool checkEvent();
   virtual Kinematics* getEvent();
   virtual void resetSource();
 

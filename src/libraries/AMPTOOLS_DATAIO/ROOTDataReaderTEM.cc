@@ -79,35 +79,9 @@ ROOTDataReaderTEM::ROOTDataReaderTEM( const vector< string >& args ):
 
       while( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
 
-         m_inTree->GetEntry( m_eventCounter++ );
-         assert( m_nPart < Kinematics::kMaxParticles );
+	 m_inTree->GetEntry( m_eventCounter++ );
+         if(checkEvent()) m_numEvents++;
 
-         vector< TLorentzVector > particleList;
-         TLorentzVector finalstate;
-	 TLorentzVector recoil;
-
-         particleList.
-            push_back( TLorentzVector( m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ) );
-
-         for( int i = 0; i < m_nPart; ++i ){
-
-            particleList.push_back( TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] ) );
-	    
-	    if (i > 0 && i < 5) finalstate += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
-	    if (i == 0 || i == 5) recoil += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
-         }
-
-         // Calculate -t and check if it is in range
-         // Use the reconstructed proton
-         TLorentzVector target = TLorentzVector(0.0,0.0,0.0,0.938272);
-         double tMag = fabs((target-recoil).M2());
-         double EMag = TLorentzVector(m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ).E();
-
-	 double MMag = finalstate.M();
-
-         if (m_tMin <= tMag && tMag < m_tMax && m_EMin <= EMag && EMag < m_EMax && m_MMin <= MMag && MMag < m_MMax){
-            m_numEvents++;
-         }
       }
       cout << "Number of events kept    = " << m_numEvents << endl;
       cout << "*********************************************" << endl;
@@ -133,7 +107,6 @@ void ROOTDataReaderTEM::resetSource()
 ROOTDataReaderTEM::getEvent()
 {
 
-
    if (m_RangeSpecified == false){
 
       if( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
@@ -141,62 +114,69 @@ ROOTDataReaderTEM::getEvent()
          m_inTree->GetEntry( m_eventCounter++ );
          assert( m_nPart < Kinematics::kMaxParticles );
 
-         vector< TLorentzVector > particleList;
-
-         particleList.
-            push_back( TLorentzVector( m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ) );
-
-         for( int i = 0; i < m_nPart; ++i ){
-
-            particleList.push_back( TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] ) );
-         }
-
-         return new Kinematics( particleList, m_useWeight ? m_weight : 1.0 );
+         return new Kinematics( particleList(), m_useWeight ? m_weight : 1.0 );
       }
       else return NULL;
 
-      } 
-      else{
+   } 
+   else{
 
-         while( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
+      while( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
 
-            m_inTree->GetEntry( m_eventCounter++ );
-            assert( m_nPart < Kinematics::kMaxParticles );
+	  m_inTree->GetEntry( m_eventCounter++ );
+	  assert( m_nPart < Kinematics::kMaxParticles );
+	  
+	  if(checkEvent())
+		  return new Kinematics( particleList(), m_useWeight ? m_weight : 1.0 ); 
 
-            vector< TLorentzVector > particleList;
-	    TLorentzVector finalstate;
-	    TLorentzVector recoil;
-
-            particleList.
-               push_back( TLorentzVector( m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ) );
-
-            for( int i = 0; i < m_nPart; ++i ){
-
-               particleList.push_back( TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] ) );
-	       if (i > 0 && i < 5) finalstate += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
-	       if (i == 0 || i == 5) recoil += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
-            }
-
-            // Calculate -t and check if it is in range
-            // Use the reconstructed proton
-            TLorentzVector target = TLorentzVector(0.0,0.0,0.0,0.938272);
-            double tMag = fabs((target-recoil).M2());
-	    double EMag = TLorentzVector(m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ).E();
-
-	    double MMag = finalstate.M();
-
-         if (m_tMin <= tMag && tMag < m_tMax && m_EMin <= EMag && EMag < m_EMax && m_MMin <= MMag && MMag < m_MMax){
-               return new Kinematics( particleList, m_useWeight ? m_weight : 1.0 ); 
-            }
-
-         }
-         return NULL;
       }
-
       return NULL;
    }
 
-   unsigned int ROOTDataReaderTEM::numEvents() const
-   {	
-      return m_numEvents;
-   }
+   return NULL;
+}
+
+vector<TLorentzVector> ROOTDataReaderTEM::particleList()
+{
+	assert( m_nPart < Kinematics::kMaxParticles );
+
+	vector<TLorentzVector> locParticleList;
+	locParticleList.push_back( TLorentzVector( m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ) );
+
+	for( int i = 0; i < m_nPart; ++i )
+	    locParticleList.push_back( TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] ) );
+	    
+	return locParticleList;
+	}
+
+bool ROOTDataReaderTEM::checkEvent() 
+{
+	assert( m_nPart < Kinematics::kMaxParticles );
+	
+	TLorentzVector finalstate;
+	TLorentzVector recoil;
+
+	for( int i = 0; i < m_nPart; ++i ){
+	    
+	    if (i > 0 && i < 5) finalstate += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
+	    if (i == 0 || i == 5) recoil += TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] );
+         }
+
+         // Calculate -t and check if it is in range
+         // Use the reconstructed proton
+         TLorentzVector target = TLorentzVector(0.0,0.0,0.0,0.938272);
+         double tMag = fabs((target-recoil).M2());
+         double EMag = TLorentzVector(m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ).E();
+
+	 double MMag = finalstate.M();
+
+         if (m_tMin <= tMag && tMag < m_tMax && m_EMin <= EMag && EMag < m_EMax && m_MMin <= MMag && MMag < m_MMax)
+		 return true;
+	 
+	 return false;
+}
+
+unsigned int ROOTDataReaderTEM::numEvents() const
+{	
+	return m_numEvents;
+}
