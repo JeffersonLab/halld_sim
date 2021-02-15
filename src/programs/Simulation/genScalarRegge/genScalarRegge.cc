@@ -1590,7 +1590,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.55;// (0.4-0.55 GeV,  PDG (2020)
+    double m_Sigma=0.7; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
     width=0.7; // 0.4-0.7 GeV, PDG (2020)
     ReBf500=M_sq_R-M_sq;
@@ -1948,10 +1948,10 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
 
       // Decay particles     
       double p_rest=sqrt((M_sq-m1_plus_m2_sq)*(M_sq-m1_minus_m2_sq))/(2.*M);
-      for (unsigned int m=0;m<100;m++){
-	double cos_theta_rest=1.-double(m)/100.;
+      for (unsigned int m=0;m<=100;m++){
+	double cos_theta_rest=1.-double(m)/50.;
 	double theta_rest=acos(cos_theta_rest);
-	for (unsigned int n=0;n<100;n++){
+	for (unsigned int n=0;n<=100;n++){
 	  double phi_rest=2.*M_PI*double(n)/100.;
 	  GetDecayVectors(m1,m2,p_rest,theta_rest,phi_rest,v_S,particle_vectors);
 	  
@@ -1971,8 +1971,7 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
     sum+=4*M_PI*1000*xsec*dm;
     xsec_array2[j]=4*M_PI*1000*xsec;
   }
-  //cout << "Maxium cross section:  dsigma/dt=" << xsec_max 
-  //     <<  " M " << sqrt(m2_at_max) << " t " << t_at_max << endl;
+  cout << "Maximum cross section:  dsigma/dt=" << xsec_max << endl;
 
   TGraph *Gxsec=new TGraph(1000,t_array,xsec_array);
   Gxsec->GetXaxis()->SetTitle("-t [GeV^{2}]");
