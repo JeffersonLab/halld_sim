@@ -179,11 +179,12 @@ int main( int argc, char* argv[] ){
   TString m_histo = ReadFile->GetConfigName("histo"); 
   TString m_decay = ReadFile->GetConfigName("decay"); 
   TString m_target = ReadFile->GetConfigName("target"); 
-  TString m_Fermi = ReadFile->GetConfigName("Fermi"); 
+  TString m_Fermi_file = ReadFile->GetConfigName("Fermi_file"); 
   cout << "rfile " << m_rfile << endl;
   cout << "histo " << m_histo << endl;
   cout << "decay " << m_decay << endl;
   cout << "target " << m_target << endl;
+  cout << "Fermi_file " << m_Fermi_file << endl;
 
   double M_target = M_He4;
   if (m_target == "He4") M_target = M_He4;
@@ -204,6 +205,7 @@ int main( int argc, char* argv[] ){
   
   // Create decayGen
   TGenPhaseSpace decayGen;
+  TGenPhaseSpace decayGenTMP;
   
   TFile* diagOut = new TFile( "gen_primex_eta_he4_diagnostic.root", "recreate" );
   TH2F* h_Tkin_eta_vs_egam = new TH2F("Tkin_eta_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{#eta} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 12.0);
@@ -392,10 +394,10 @@ int main( int argc, char* argv[] ){
       }
       for (int j = 0; j < 3; j ++) {
 	double mass[] = {M_gamma, M_gamma};
-	if (decayGen.SetDecay(pi0_4Vec[j], 2, mass)) {
-	  decayGen.Generate();
-	  photon_4Vec[0 + 2 * j] = * decayGen.GetDecay(0);
-	  photon_4Vec[1 + 2 * j] = * decayGen.GetDecay(1);
+	if (decayGenTMP.SetDecay(pi0_4Vec[j], 2, mass)) {
+	  decayGenTMP.Generate();
+	  photon_4Vec[0 + 2 * j] = * decayGenTMP.GetDecay(0);
+	  photon_4Vec[1 + 2 * j] = * decayGenTMP.GetDecay(1);
 	}
       }
     }
