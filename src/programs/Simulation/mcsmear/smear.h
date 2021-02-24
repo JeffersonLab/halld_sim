@@ -29,6 +29,7 @@ using namespace jana;
 #include <PSCSmearer.h>
 #include <TPOLSmearer.h>
 #include <FMWPCSmearer.h>
+#include <CGEMSmearer.h>
 
 
 

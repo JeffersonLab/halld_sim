@@ -47,6 +47,7 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 		smearers[SYS_DIRC]  = static_cast<Smearer*>(new DIRCSmearer(loop,config));
 		smearers[SYS_CCAL]  = static_cast<Smearer*>(new CCALSmearer(loop,config));
 		smearers[SYS_FMWPC] = static_cast<Smearer*>(new FMWPCSmearer(loop,config));
+		smearers[SYS_CGEM] = static_cast<Smearer*>(new CGEMSmearer(loop,config));
 	} else {
 		// Parse string of system names
     	std::istringstream ss(detectors_to_load);
@@ -69,6 +70,7 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 				case SYS_DIRC:   smearers[the_detector] = static_cast<Smearer*>(new DIRCSmearer(loop,config));  break;
 				case SYS_CCAL:   smearers[the_detector] = static_cast<Smearer*>(new CCALSmearer(loop,config));  break;
 				case SYS_FMWPC:  smearers[the_detector] = static_cast<Smearer*>(new FMWPCSmearer(loop,config));  break;
+	         		case SYS_CGEM:   smearers[the_detector] = static_cast<Smearer*>(new CGEMSmearer(loop,config));  break;
                 default:  break;   // don't smear any other detectors
 			}
 		}
