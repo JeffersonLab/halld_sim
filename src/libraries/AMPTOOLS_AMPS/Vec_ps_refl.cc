@@ -9,15 +9,15 @@
 #include "TLorentzRotation.h"
 
 #include "IUAmpTools/Kinematics.h"
-#include "AMPTOOLS_AMPS/vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 
 #include "UTILITIES/BeamProperties.h"
 
-vec_ps_refl::vec_ps_refl( const vector< string >& args ) :
-UserAmplitude< vec_ps_refl >( args )
+Vec_ps_refl::Vec_ps_refl( const vector< string >& args ) :
+UserAmplitude< Vec_ps_refl >( args )
 {
   assert( args.size() == 11 );
   
@@ -66,7 +66,7 @@ UserAmplitude< vec_ps_refl >( args )
 }
 
 void
-vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
+Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   
   TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
   TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
@@ -151,7 +151,7 @@ vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 ////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
 
 complex< GDouble >
-vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
+Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
 
   GDouble cosTheta = userVars[uv_cosTheta];
@@ -187,7 +187,7 @@ vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 }
 
 
-void vec_ps_refl::updatePar( const AmpParameter& par ){
+void Vec_ps_refl::updatePar( const AmpParameter& par ){
 
   // could do expensive calculations here on parameter updates  
 }
