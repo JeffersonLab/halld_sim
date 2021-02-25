@@ -31,6 +31,7 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
 #include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 
@@ -101,6 +102,7 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( polCoef() );
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( dblRegge() );
+  AmpToolsInterface::registerAmplitude( dblReggeMod() );
   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
   
