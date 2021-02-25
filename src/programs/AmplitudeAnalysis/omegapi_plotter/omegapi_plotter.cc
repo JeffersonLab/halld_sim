@@ -23,9 +23,12 @@
 #include "AMPTOOLS_DATAIO/OmegaPiPlotGenerator.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
+#include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/Uniform.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -38,8 +41,11 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
+  AmpToolsInterface::registerAmplitude( Uniform() );
+  AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
+  AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
 }
 
 using namespace std;
