@@ -54,17 +54,8 @@ dblReggeMod::calcAmplitude( GDouble** pKin ) const {
 	double inv[5] = {s, s12, s23, t1 ,u3};
 //	double varGJ[5] = {s,s12,u3, theta, phi};
 
-	//cout << "s: " << s << endl;
-	//cout << "s12: " << s12 << endl;
-	//cout << "s23: " << s23 << endl;
-	//cout << "t1: " << t1 << endl;
-	//cout << "u3: " << u3 << endl;
-
 	int hel[3] = {1,-1,-1};
 	std::complex<double> amp = ampEtaPi0(param, hel, inv, mass2);
-
-//	if(abs(amp) > 1000)
-//		cout << "Amplitude: " << abs(amp) << endl;
 
 	return amp;
 }
@@ -73,12 +64,6 @@ dblReggeMod::calcAmplitude( GDouble** pKin ) const {
 std::complex<double> dblReggeMod::ampEtaPi0(double par[4], int hel[3], double inv[5], double mass2[4]) const{
 
 	std::complex<double> zero (0,0);
-	// check that inputs are physical
-	//double delta4 = GramDet4(mass2, inv);
-	//if(delta4>0){return zero;}
-
-	//	if(abs(hel[0]*hel[1]*hel[2]) != 1 || hel[0]==0){return zero;}
-
 
 	double s,s12,s23,t1,u3;
 	double m12, m22, m32, ma2, mb2;
@@ -93,24 +78,19 @@ std::complex<double> dblReggeMod::ampEtaPi0(double par[4], int hel[3], double in
 	double alp0pi0 = app*t2 + 0.5;
 	double alp1    = app*u3 + 0.5;
 
-//	cout <<"t1, t2, u3: " << t1 <<", " <<t2<<", "<<u3 << endl;
-//	cout <<"s, s12, s23: " << s <<", "<<s12<<", "<<s23 <<endl;
-
 
 	int tau[2] = {-1, -1};    // only vector exchange
 	double si[2] = {s12,s23};
 	double alp[2] = {alp0eta, alp1};
 
 
-	//cout << "fast: " << fast <<endl;
- 	std::complex<double> ADR1 = DoubleRegge(tau, s, si, alp); // fast eta
+	std::complex<double> ADR1 = DoubleRegge(tau, s, si, alp); // fast eta
 
-	//cout <<"ADR1: " << ADR1 <<endl;
 
 	si[1] = s13; alp[0] = alp0pi0;
-	//	if(fast==2){
+
 	std::complex<double> ADR2 = DoubleRegge(tau, s, si, alp); // fast pi0
-	//	}
+
 	// helicity part
 	double fac1 =  sqrt(-t1/mass2[2]);
 	double fac2 = sqrt(-t2/mass2[2]);    // use the pion mass in both fac1 and fac2
@@ -120,13 +100,7 @@ std::complex<double> dblReggeMod::ampEtaPi0(double par[4], int hel[3], double in
 
 	double Bot1 = a_eta*exp(b_eta*t1);
 	double Bot2 = a_pi*exp(b_pi*t2);
-//	cout <<"fac3: " << fac3 <<endl;
-//	cout <<"fac2: " << fac2 <<endl;
-//	cout <<"fac1: " << fac1 <<endl;
-//	cout <<"Bot1: " << Bot1 <<endl;
-//	cout <<"Bot2: " << Bot2 <<endl;
-//	cout <<"ADR2: " << ADR2 <<endl;
-//	cout << "frac: " << (fac3*(Bot1*fac1*ADR1 + Bot2*fac2*ADR2 )) << endl;
+
 	return fac3*(Bot1*fac1*ADR1 + Bot2*fac2*ADR2 );
 }
 
@@ -136,8 +110,6 @@ std::complex<double> dblReggeMod::V12(double alp1, double alp2, double eta) cons
 	std::complex<double> res = CHGM(-alp1, 1.-alp1+alp2, -1/eta);
 	res *= cgamma(alp1-alp2,0)/cgamma(-alp2,0);
 
-//	cout << "alp1, alp2: " << alp1 <<", " <<alp2 <<endl;
-//	cout << "res: " << res << endl;
 	return res;
 }
 
@@ -152,15 +124,12 @@ std::complex<double> dblReggeMod::DoubleRegge(int tau[2], double s, double si[2]
 	double eta = S0*s/(si[0]*si[1]);
 	std::complex<double> V0 = V12(alp[0], alp[1], eta);
 	std::complex<double> V1 = V12(alp[1], alp[0], eta);
-//	cout << "V0, V1: " << V0 <<", " <<V1 << endl;
-//	cout << "x0, x1: " << x0 <<", "<<x1<< endl;
-//	cout << "x01, x10: " <<x01<<", "<<x10<<endl;
 		
 	// combine pieces:
 	std::complex<double> t1 = pow(s/S0,alp[1])*pow(si[0]/S0,alp[0]-alp[1])*x1*x01*V1;
 	std::complex<double> t0 = pow(s/S0,alp[0])*pow(si[1]/S0,alp[1]-alp[0])*x0*x10*V0;
 
-//	cout << "t0, t1: " << t0 <<", " <<t1 << endl;
+
 	return (t0+t1)*cgamma(-alp[0],0)*cgamma(-alp[1],0);;
 }
 
@@ -244,7 +213,6 @@ std::complex<double> dblReggeMod::cgamma(std::complex<double> z,int OPT) const{
 	}
 	g = gr + ui*gi;
 
-//	cout << "g: " << g << endl;
 	return g;
 }
 
@@ -335,7 +303,7 @@ double dblReggeMod::CHGM(double A, double B, double X) const{
 	A = A1;
 	X = X0;
 
-//	cout << "HG: " << HG << endl;
+
 	return HG;
 }
 
