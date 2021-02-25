@@ -19,10 +19,10 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
    for (iter = layers.begin(); iter != layers.end(); ++iter) {
      
      // If the element already contains a cdcStrawHit list then delete it.
-      hddm_s::CGEMHitList hits = iter->getCGEMHits();
+      hddm_s::CgemHitList hits = iter->getCgemHits();
       if (hits.size() > 0) {
          static bool warned = false;
-         iter->deleteCGEMHits();
+         iter->deleteCgemHits();
          if (!warned) {
 	   warned = true;
 	   cerr << endl;
@@ -32,8 +32,8 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
       }
       
      //iter->deleteCGEMHits();
-     hddm_s::CGEMTruthHitList thits = iter->getCGEMTruthHits();
-     hddm_s::CGEMTruthHitList::iterator titer;
+     hddm_s::CgemTruthHitList thits = iter->getCgemTruthHits();
+     hddm_s::CgemTruthHitList::iterator titer;
      //layers(0).setLayer(siter->second->layer_);
      for (titer = thits.begin(); titer != thits.end(); ++titer) {
        //int layer = iter->getLayer();
@@ -49,7 +49,7 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
        // Apply a single block threshold. 
        // Scale threshold by gains
        //if (E >= Ethreshold){
-       hddm_s::CGEMHitList hits = iter->addCGEMHits();
+       hddm_s::CgemHitList hits = iter->addCgemHits();
        //hits().setLayer(layer);
        hits().setDE(E);
        hits().setT(t);
@@ -59,6 +59,6 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
      }
       
      if (config->DROP_TRUTH_HITS)
-       iter->deleteCGEMTruthHits();
+       iter->deleteCgemTruthHits();
    }
 }
