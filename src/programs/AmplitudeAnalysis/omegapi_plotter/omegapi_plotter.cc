@@ -127,10 +127,10 @@ int main( int argc, char* argv[] ){
   plotGen.enableReaction( reactionName );
   vector<string> sums = plotGen.uniqueSums();
   vector<string> amps = plotGen.uniqueAmplitudes();
-  cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << amplitudes << endl;
+  cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
   const int nAmpHist = 9;
-  string amphistname[nAmps] = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1p", "1m"};
+  string amphistname[nAmpHist] = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1p", "1m"};
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
   for (unsigned int isum = 0; isum <= sums.size(); isum++){
