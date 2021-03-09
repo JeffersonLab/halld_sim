@@ -40,101 +40,144 @@
 using std::complex;
 using namespace std;
 
-int main( int argc, char* argv[] ){
-	
-  // set default parameters
-  
-  bool useMinos = false;
 
-  string configfile;
-  string seedfile;
-  
-  // parse command line
-  
-  for (int i = 1; i < argc; i++){
-    
-    string arg(argv[i]);
-    
-    if (arg == "-c"){  
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  configfile = argv[++i]; }
-    if (arg == "-s"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  seedfile = argv[++i]; }
-    if (arg == "-n") useMinos = true;
-    if (arg == "-h"){
-      cout << endl << " Usage for: " << argv[0] << endl << endl;
-      cout << "   -n \t\t\t\t\t use MINOS instead of MIGRAD" << endl;
-      cout << "   -c <file>\t\t\t\t config file" << endl;
-      cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
-      exit(1);}
-  }
-  
-  if (configfile.size() == 0){
-    cout << "No config file specified" << endl;
-    exit(1);
-  }
 
-  ConfigFileParser parser(configfile);
-  ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
-  cfgInfo->display();
+double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, string seedfile) {
+   AmpToolsInterface ati( cfgInfo );
 
-  AmpToolsInterface::registerAmplitude( BreitWigner() );
-  AmpToolsInterface::registerAmplitude( BreitWigner3body() );
-  AmpToolsInterface::registerAmplitude( TwoPSAngles() );
-  AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
-  AmpToolsInterface::registerAmplitude( TwoPiAngles() );
-  AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
-  AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
-  AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
-  AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
-  AmpToolsInterface::registerAmplitude( TwoPitdist() );
-  AmpToolsInterface::registerAmplitude( ThreePiAngles() );
-  AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-  AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
-  AmpToolsInterface::registerAmplitude( Zlm() );
-  AmpToolsInterface::registerAmplitude( b1piAngAmp() );
-  AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
-  AmpToolsInterface::registerAmplitude( polCoef() );
-  AmpToolsInterface::registerAmplitude( Uniform() );
-  AmpToolsInterface::registerAmplitude( dblRegge() );
-  
-  AmpToolsInterface::registerDataReader( ROOTDataReader() );
-  AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
-  AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
-  
-  AmpToolsInterface ati( cfgInfo );
-  
-  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
-  
-  MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
-  
-  if( useMinos ){
-    
-    fitManager->minosMinimization();
-  }
-  else{
-    
-    fitManager->migradMinimization();
-  }
-  
-  bool fitFailed =
-    ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
-  
-  if( fitFailed ){
-    cout << "ERROR: fit failed use results with caution..." << endl;
-  }
-  
-  cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
-  
-  ati.finalizeFit();
-  
-  if( seedfile.size() != 0 && !fitFailed ){
-    
-    ati.fitResults()->writeSeed( seedfile );
-  }
-  
-  return 0;
+   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+
+   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
+
+   if( useMinos ){
+
+      fitManager->minosMinimization();
+   }
+   else{
+
+      fitManager->migradMinimization();
+   }
+
+   bool fitFailed =
+      ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
+
+   if( fitFailed ){
+      cout << "ERROR: fit failed use results with caution..." << endl;
+      return 1e6;
+   }
+
+   cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
+
+   ati.finalizeFit();
+
+   if( seedfile.size() != 0 && !fitFailed ){
+      ati.fitResults()->writeSeed( seedfile );
+   }
+
+   return ati.likelihood();
 }
+
+void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int numRnd, double maxFraction) {
+   AmpToolsInterface ati( cfgInfo );
+
+   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+
+   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
+   
+   for(int i=0; i<numRnd; i++) {
+     if(useMinos)
+        fitManager->minosMinimization();
+     else
+        fitManager->migradMinimization();
+  
+     bool fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+
+     if( fitFailed )
+        cout << "ERROR: fit failed use results with caution..." << endl;
+
+     cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
+
+     ati.finalizeFit(to_string(i));
+     ati.randomizeProductionPars(maxFraction);
+   }
+}
+
+int main( int argc, char* argv[] ){
+
+   // set default parameters
+
+   bool useMinos = false;
+
+   string configfile;
+   string seedfile;
+   int numRnd = 0;
+
+   // parse command line
+
+   for (int i = 1; i < argc; i++){
+
+      string arg(argv[i]);
+
+      if (arg == "-c"){  
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  configfile = argv[++i]; }
+      if (arg == "-s"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  seedfile = argv[++i]; }
+      if (arg == "-r"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  numRnd = atoi(argv[++i]); }
+      if (arg == "-n") useMinos = true;
+      if (arg == "-h"){
+         cout << endl << " Usage for: " << argv[0] << endl << endl;
+         cout << "   -n \t\t\t\t\t use MINOS instead of MIGRAD" << endl;
+         cout << "   -c <file>\t\t\t\t config file" << endl;
+         cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
+         cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
+         exit(1);}
+   }
+
+   if (configfile.size() == 0){
+      cout << "No config file specified" << endl;
+      exit(1);
+   }
+
+   ConfigFileParser parser(configfile);
+   ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
+   cfgInfo->display();
+
+   AmpToolsInterface::registerAmplitude( BreitWigner() );
+   AmpToolsInterface::registerAmplitude( BreitWigner3body() );
+   AmpToolsInterface::registerAmplitude( TwoPSAngles() );
+   AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
+   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
+   AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
+   AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
+   AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
+   AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+   AmpToolsInterface::registerAmplitude( TwoPitdist() );
+   AmpToolsInterface::registerAmplitude( ThreePiAngles() );
+   AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
+   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+   AmpToolsInterface::registerAmplitude( Zlm() );
+   AmpToolsInterface::registerAmplitude( b1piAngAmp() );
+   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
+   AmpToolsInterface::registerAmplitude( polCoef() );
+   AmpToolsInterface::registerAmplitude( Uniform() );
+   AmpToolsInterface::registerAmplitude( dblRegge() );
+
+   AmpToolsInterface::registerDataReader( ROOTDataReader() );
+   AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
+   AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
+
+   if(numRnd==0){
+     runSingleFit(cfgInfo, useMinos, seedfile);
+   } else {
+      runRndFits(cfgInfo, useMinos, numRnd, 0.5);
+   }
+
+   return 0;
+}
+
 
 
