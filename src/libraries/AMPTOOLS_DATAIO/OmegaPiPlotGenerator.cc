@@ -22,8 +22,8 @@
 #include "IUAmpTools/Kinematics.h"
 
 /* Constructor to display FitResults */
-OmegaPiPlotGenerator::OmegaPiPlotGenerator( const FitResults& results ) :
-PlotGenerator( results )
+OmegaPiPlotGenerator::OmegaPiPlotGenerator( const FitResults& results, Option opt ) :
+PlotGenerator( results, opt )
 {
 	createHistograms();
 }
