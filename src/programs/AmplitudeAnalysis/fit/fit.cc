@@ -8,6 +8,8 @@
 #include <utility>
 #include <map>
 
+#include "TSystem.h"
+
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
@@ -31,7 +33,6 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
 #include "AMPTOOLS_AMPS/dblRegge.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 
@@ -49,7 +50,8 @@ int main( int argc, char* argv[] ){
   // set default parameters
   
   bool useMinos = false;
-
+  int numRand = 0;
+  
   string configfile;
   string seedfile;
   
@@ -65,12 +67,16 @@ int main( int argc, char* argv[] ){
     if (arg == "-s"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  seedfile = argv[++i]; }
+    if (arg == "-r"){
+      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+      else  numRand = atoi(argv[++i]); }
     if (arg == "-n") useMinos = true;
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
       cout << "   -n \t\t\t\t\t use MINOS instead of MIGRAD" << endl;
       cout << "   -c <file>\t\t\t\t config file" << endl;
       cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
+      cout << "   -r <num random>\t\t\t randomize starting parameters (optional)" << endl;
       exit(1);}
   }
   
@@ -82,6 +88,7 @@ int main( int argc, char* argv[] ){
   ConfigFileParser parser(configfile);
   ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
   cfgInfo->display();
+  string fitName = cfgInfo->fitName();
 
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerAmplitude( BreitWigner3body() );
@@ -102,7 +109,6 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( polCoef() );
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( dblRegge() );
-  AmpToolsInterface::registerAmplitude( dblReggeMod() );
   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
   
@@ -116,31 +122,74 @@ int main( int argc, char* argv[] ){
   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
   
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
-  fitManager->setMaxIterations(10000); 
- 
-  if( useMinos ){
+  fitManager->setMaxIterations(25000); 
+  //fitManager->setPrecision(1e-16);
+
+  // Randomized starting values for multiple fits 
+  if(numRand > 0) { 
     
-    fitManager->minosMinimization();
-  }
-  else{
+    // keep track of best fit (mininum log-likelihood)
+    double minLL = 0;
+    int minFitTag = -1;
+
+    // loop over randomized starting values
+    for(int ifit=1; ifit <= numRand; ifit++) {
+      cout << endl << "###############################" << endl;
+      cout << "FIT " << ifit << " OF " << numRand << endl;
+      cout << endl << "###############################" << endl;
+
+      ati.randomizeProductionPars(0.5);
+      ati.randomizeParameter("dsratio", 0.2, 0.34);
+
+      if( useMinos ) fitManager->minosMinimization();
+      else  fitManager->migradMinimization();
+
+      cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
+
+      bool fitFailed = ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
+      if( fitFailed ){
+	 cout << "ERROR: fit failed use results with caution..." << endl;
+      }
     
-    fitManager->migradMinimization();
+      // save individual fits
+      ati.finalizeFit( Form("%d",ifit) );
+
+      // update best fit
+      if( !fitFailed && ati.likelihood() < minLL ) {
+	minLL = ati.likelihood();
+	minFitTag = ifit;
+	//gSystem->Exec(Form("mv %s.ni %s_%d.ni", fitName.data(), fitName.data(), ifit));
+      }
+    }
+
+    // print best fit results
+    if(minFitTag < 0) cout << "ALL FITS FAILED!" << endl;
+    else {
+      cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRand << " RANDOM PRODUCTION PARS = " << minLL << endl;
+
+      // make best fit available for plotter
+      //gSystem->Exec(Form("cp %s_%d.ni %s.ni", fitName.data(), minFitTag, fitName.data()));
+      gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data())); 
+    }
   }
-  
-  bool fitFailed =
-    ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
-  
-  if( fitFailed ){
-    cout << "ERROR: fit failed use results with caution..." << endl;
-  }
-  
-  cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
-  
-  ati.finalizeFit();
-  
-  if( seedfile.size() != 0 && !fitFailed ){
+  else { // single fit with input parameters from config file
+
+    if( useMinos ) fitManager->minosMinimization();
+    else  fitManager->migradMinimization();
     
-    ati.fitResults()->writeSeed( seedfile );
+    bool fitFailed = ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
+  
+    if( fitFailed ){
+      cout << "ERROR: fit failed use results with caution..." << endl;
+    }
+  
+    cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
+  
+    ati.finalizeFit();
+  
+    if( seedfile.size() != 0 && !fitFailed ){
+      ati.fitResults()->writeSeed( seedfile );
+    }
   }
   
   return 0;
