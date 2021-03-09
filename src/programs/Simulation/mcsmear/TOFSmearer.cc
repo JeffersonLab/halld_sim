@@ -162,4 +162,9 @@ void TOFSmearer::SmearEvent(hddm_s::HDDM *record)
          iter->deleteFtofTruthHits();
       }
    }
+   if (config->DROP_TRUTH_HITS) {
+      hddm_s::ForwardTOFList tofs = record->getForwardTOFs();
+      if (tofs.size() > 0)
+         tofs().deleteFtofTruthPoints();
+   }
 }

@@ -128,4 +128,9 @@ void CCALSmearer::SmearEvent(hddm_s::HDDM *record){
     if (config->DROP_TRUTH_HITS)
       iter->deleteCcalTruthHits();
   }
+  if (config->DROP_TRUTH_HITS) {
+    hddm_s::ComptonEMcalList ccals = record->getComptonEMcals();   
+    if (ccals.size() > 0)
+      ccals().deleteCcalTruthShowers();
+  }
 }
