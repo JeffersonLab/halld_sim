@@ -113,7 +113,7 @@ int main( int argc, char* argv[] ){
   atiSetup();
         cout << "Plotgen results"<< endl;
 
-  omegapi_PlotGen plotGen( results );
+  omegapi_PlotGen plotGen( results , PlotGenerator::kNoGenMC );
   cout << " Initialized ati and PlotGen" << endl;
 
     // ************************
@@ -126,7 +126,11 @@ int main( int argc, char* argv[] ){
   string reactionName = results.reactionList()[0];
   plotGen.enableReaction( reactionName );
   vector<string> sums = plotGen.uniqueSums();
-  cout << "Reaction " << reactionName << " enabled" << endl;
+  vector<string> amps = plotGen.uniqueAmplitudes();
+  cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << amplitudes << endl;
+
+  const int nAmpHist = 9;
+  string amphistname[nAmps] = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1p", "1m"};
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
   for (unsigned int isum = 0; isum <= sums.size(); isum++){
@@ -146,6 +150,7 @@ int main( int argc, char* argv[] ){
    cout << "Looping over input data" << endl;
     // loop over data, accMC, and genMC
     for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
+      if (iplot == PlotGenerator::kGenMC) continue;
       if (isum < sums.size() && iplot == PlotGenerator::kData) continue; // only plot data once
 
       // loop over different variables
@@ -191,32 +196,17 @@ int main( int argc, char* argv[] ){
 
   plotfile->Close();
 
-    // ************************
-    // retrieve SDME parameters for plotting and asymmetry
-    // ************************
-/*
+  // model parameters
   cout << "Checking Parameters" << endl;
-// parameters to check
+  
+  // parameters to check
   vector< string > pars;
-
-  pars.push_back("hel_c_0_m_1");
-
-  pars.push_back("hel_c_1_m_1");
-
-  pars.push_back("hel_c_1_p_0");
-  pars.push_back("hel_c_1_p_2");
-
-  pars.push_back("hel_c_2_m_1");
-
-  pars.push_back("hel_c_2_p_2");
-
+  
+  pars.push_back("dalitz_alpha");
   pars.push_back("dalitz_beta");
-  pars.push_back("dalitz_gamma");
-  pars.push_back("dalitz_delta");
-
-  pars.push_back("polFrac");
-
-
+  //pars.push_back("dalitz_gamma");
+  //pars.push_back("dalitz_delta");
+  pars.push_back("dsratio");
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
@@ -225,29 +215,52 @@ int main( int argc, char* argv[] ){
   for(unsigned int i = 0; i<pars.size(); i++) {
     double parValue = results.parValue( pars[i] );
     double parError = results.parError( pars[i] );
-    outfile << parValue << "\t" << parError << "\t";
+    outfile << parValue << "\t" << parError << "\t" << endl;
+  }
+
+  outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
+  vector<string> fullamps = plotGen.fullAmplitudes();
+  for (unsigned int i = 0; i < fullamps.size(); i++){
+    vector<string> useamp;  useamp.push_back(fullamps[i]);
+    outfile << "FIT FRACTION " << fullamps[i] << " = "
+         << results.intensity(useamp).first /
+            results.intensity().first <<  " +- "
+         << results.intensity(useamp).second /
+            results.intensity().first <<  endl;
+  }
+
+  const int nAmps = 9;
+  string ampname[nAmps] = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1p", "1m", "2m"};
+  
+  vector<string> ampsumPosRefl[nAmps];
+  vector<string> ampsumNegRefl[nAmps];
+
+  for(unsigned int i = 0; i < fullamps.size(); i++){
+
+    // combine amplitudes with names defined above
+    for(int iamp=0; iamp<nAmps; iamp++) {
+	    string locampname = "::" + ampname[iamp];// "::";
+	    if(fullamps[i].find("NegRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos) 
+		    ampsumNegRefl[iamp].push_back(fullamps[i]);
+	    if(fullamps[i].find("PosRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos)
+		    ampsumPosRefl[iamp].push_back(fullamps[i]);
+    }
+  }
+
+  for(int i = 0; i < nAmps; i++){
+    if(ampsumPosRefl[i].empty()) continue;
+    outfile << "FIT FRACTION (coherent sum) PosRefl " << ampname[i] << " = "
+          << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
+          << results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
+     outfile << "FIT FRACTION (coherent sum) NegRefl " << ampname[i] << " = "
+          << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
+          << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
   }
 
   // covariance matrix
   vector< vector< double > > covMatrix;
   covMatrix = results.errorMatrix();
 
-//   double SigmaN = results.parValue(pars[3]) + results.parValue(pars[6]);
-//   double SigmaN_err = covMatrix[5][5] + covMatrix[8][8] + 2*covMatrix[5][8];
-// 
-//   double SigmaD = 0.5*(1 - results.parValue(pars[0])) + results.parValue(pars[2]);
-//   double SigmaD_err = 0.5*0.5*covMatrix[2][2] + covMatrix[4][4] - 2*0.5*covMatrix[2][4];
-// 
-//   double Sigma = SigmaN/SigmaD;
-//   double Sigma_err = fabs(Sigma) * sqrt(SigmaN_err/SigmaN/SigmaN + SigmaD_err/SigmaD/SigmaD);
-//   outfile << Sigma << "\t" << Sigma_err << "\t";
-// 
-//   double P = 2*results.parValue(pars[6]) - results.parValue(pars[4]);
-//   double P_err = sqrt(2*2*covMatrix[8][8] + covMatrix[6][6] - 2*2*covMatrix[6][8]);
-//   outfile << P << "\t" << P_err << "\t";
-
-  outfile << endl;
-*/
     // ************************
     // start the GUI
     // ************************

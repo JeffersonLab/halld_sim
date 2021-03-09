@@ -33,6 +33,7 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
 #include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 
