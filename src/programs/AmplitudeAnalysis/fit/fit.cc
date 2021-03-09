@@ -110,6 +110,7 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( polCoef() );
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( dblRegge() );
+  AmpToolsInterface::registerAmplitude( dblReggeMod() );
   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
   
