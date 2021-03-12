@@ -649,6 +649,13 @@ void BCALSmearer::CopyBCALHitsToHDDM(map<int, fADCHitList> &fADCHits,
       // Delete any existing bcalfADCDigiHit and bcalTDCDigiHit structures
        iter->deleteBcalfADCDigiHits();
        iter->deleteBcalTDCDigiHits();
+
+       if (config->DROP_TRUTH_HITS)
+          iter->deleteBcalTruthHits();
+   }
+   if (config->DROP_TRUTH_HITS) {
+      bcals().deleteBcalTruthIncidentParticles();
+      bcals().deleteBcalTruthShowers();
    }
 
    // If we have no cells over threshold, then bail now.

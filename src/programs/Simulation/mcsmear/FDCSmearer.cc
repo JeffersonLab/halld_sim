@@ -141,6 +141,8 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
          if (config->DROP_TRUTH_HITS)
             witer->deleteFdcAnodeTruthHits();
       }
+      if (config->DROP_TRUTH_HITS)
+         iter->deleteFdcTruthPoints();
    }
 }
 

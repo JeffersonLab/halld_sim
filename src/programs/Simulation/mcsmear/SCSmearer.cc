@@ -170,6 +170,11 @@ void SCSmearer::SmearEvent(hddm_s::HDDM *record)
       if (config->DROP_TRUTH_HITS)
          iter->deleteStcTruthHits();
    }
+   if (config->DROP_TRUTH_HITS) {
+      hddm_s::StartCntrList stcs = record->getStartCntrs();
+      if (stcs.size() > 0)
+         stcs().deleteStcTruthPoints();
+   }
 }
 
 // ----------------------
