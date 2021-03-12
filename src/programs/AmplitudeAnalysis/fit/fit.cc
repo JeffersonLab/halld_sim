@@ -127,7 +127,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, int numR
      // update best fit
      if( !fitFailed && ati.likelihood() < minLL ) {
         minLL = ati.likelihood();
-        minFitTag = ifit;
+        minFitTag = i;
      }
    }
 
