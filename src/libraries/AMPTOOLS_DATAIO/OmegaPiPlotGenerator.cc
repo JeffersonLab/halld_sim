@@ -39,14 +39,16 @@ void OmegaPiPlotGenerator::createHistograms( ) {
   cout << " calls to bookHistogram go here" << endl;
   
    bookHistogram( kOmegaPiMass, new Histogram1D( 200, 0.6, 2., "MOmegaPi", "Invariant Mass of #omega #pi") );
-   bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta", "cos#theta;cos#theta" ) );
-   bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#Phi; #Phi[rad.]" ) );
-   bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_H", "cos#theta_H;cos#theta_H" ) );
-   bookHistogram( kPhiH, new Histogram1D( 50, -1*PI, PI, "Phi_H", "#Phi_H; #Phi_H[rad.]" ) );
-   bookHistogram( kProd_Ang, new Histogram1D( 50, -1*PI, PI, "Prod_Ang", "Prod_Ang; Prod_Ang[rad.]" ) );
+   bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta", "cos#theta" ) );
+   bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#phi[rad.]" ) );
+   bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_H", "cos#theta_H" ) );
+   bookHistogram( kPhiH, new Histogram1D( 50, -1*PI, PI, "Phi_H", "#phi_H[rad.]" ) );
+   bookHistogram( kProd_Ang, new Histogram1D( 50, -1*PI, PI, "Prod_Ang", "Prod_Ang[rad.]" ) );
    bookHistogram( kt, new Histogram1D( 100, 0, 2.0 , "t", "-t" ) );
    bookHistogram( kRecoilMass, new Histogram1D( 100, 0.9, 1.9 , "MRecoil", "Invariant Mass of Recoil" ) );
    bookHistogram( kTwoPiMass, new Histogram1D( 100, 0.25, 1.75, "MTwoPi", "Invariant Mass of 2 #pi" ) ); 
+   bookHistogram( kProtonPiMass, new Histogram1D( 100, 0.9, 2.9, "MProtonPi", "Invariant Mass of proton and bachelor pion" ) );
+   bookHistogram( kRecoilPiMass, new Histogram1D( 100, 0.9, 2.9, "MRecoilPi", "Invariant Mass of recoil and bachelor pion" ) );
   
 }
 
@@ -61,9 +63,12 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
    TLorentzVector rhos_pip = kin->particle( 4 );//pi-
    TLorentzVector rhos_pim = kin->particle( 5 );//pi+
 
+   TLorentzVector proton_pi = recoil + Xs_pi;
+   TLorentzVector recoil_pi = proton_pi;
    TLorentzVector two_pi = kin->particle( 2 );
    for(uint i=6; i<kin->particleList().size(); i++) {
 	recoil += kin->particle(i);
+	recoil_pi += kin->particle(i);
 	two_pi += kin->particle(i);
    }
 
@@ -106,6 +111,8 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
    fillHistogram( kt, Mandt );
    fillHistogram( kRecoilMass, recoil_mass );
    fillHistogram( kTwoPiMass, two_pi.M() );
+   fillHistogram( kProtonPiMass, proton_pi.M() );
+   fillHistogram( kRecoilPiMass, recoil_pi.M() );
 
 }
 
