@@ -11,6 +11,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
+#include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -33,7 +34,9 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
 #include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -105,12 +108,15 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( polCoef() );
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( dblRegge() );
+  AmpToolsInterface::registerAmplitude( dblReggeMod() );
   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
+  AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
   
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
-  
+  AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() ); 
+ 
   AmpToolsInterface ati( cfgInfo );
 
   double likelihood_init =  ati.likelihood();
@@ -122,7 +128,8 @@ int main( int argc, char* argv[] ){
     }
   
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
-  
+  fitManager->setMaxIterations(10000); 
+ 
   if( useMinos ){
     
     fitManager->minosMinimization();

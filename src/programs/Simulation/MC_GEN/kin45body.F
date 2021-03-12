@@ -11,16 +11,18 @@ c     to use CERNLIB directly.
 c     
 c     R. A. Schumacher, CMU 5-08
 c
-c     5-15-15 - make the 4-vectors have 5 elements, with E in element 5
-c     2-11-18 - fix a bug in the way the total energy was being transferred to local variables
-c     8-01-20 - use the CERNLIB GENBOD code that is included below.
+c      5-15-15 - make the 4-vectors have 5 elements, with E in element 5
+c      2-11-18 - fix a bug in the way the total energy was being transferred to local variables
+c      8-01-20 - use the CERNLIB GENBOD code that is included below.
+c     10-12-20 - fix /monte/ common block and declare "external ran"
 c
       subroutine kin45body(nbody,p0,p1,p2,p3,p4,p5,ierr)
+      external ran
       real p0(5),p1(5),p2(5),p3(5),p4(5),p5(5),beta(3)
       real p1tmp(5),p2tmp(5),p3tmp(5),p4tmp(5),p5tmp(5)
       data valmax/0/
       common/kin4bodylocal/valmax
-      common/monte/iseed
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
       COMMON/GENIN / NP, TECM, AMASS(18), KGENEV
       COMMON/GENOUT/ PCM(5,18) , WT
 c     
@@ -132,7 +134,9 @@ C             PCM(2,I)=Y-MOMENTUM IF ITH PARTICLE
 C             PCM(3,I)=Z-MOMENTUM IF ITH PARTICLE
 C             PCM(4,I)=ENERGY OF ITH PARTICLE
 C             PCM(5,I)=MOMENTUM OF ITH PARTICLE
-C             WT=WEIGHT OF EVENT
+C     WT=WEIGHT OF EVENT
+      external ran
+      common /monte/ iseed,xflat,xnormal,xbw,ixcount
       COMMON/GENIN / NP, TECM, AMASS(18), KGENEV
       COMMON/GENOUT/ PCM(5,18) , WT
       DIMENSION EMM(18)

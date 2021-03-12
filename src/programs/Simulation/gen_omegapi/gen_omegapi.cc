@@ -19,6 +19,7 @@
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 
@@ -224,7 +225,7 @@ int main( int argc, char* argv[] ){
 	// loop to look for resonance in config file
 	// currently only one at a time is supported 
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
-	double resonance[]={1.235, 0.142};
+	double resonance[]={1.235, 1.0};
 	bool foundResonance = false;
 
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
@@ -252,6 +253,7 @@ int main( int argc, char* argv[] ){
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
+	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
 
@@ -376,7 +378,7 @@ int main( int argc, char* argv[] ){
 		while( i < batchSize ){
 			
 			double omega_mass_bw = m_bwGen[0]().first;
-                        if( omega_mass_bw < 0.45 || omega_mass_bw > 0.864 ) continue;
+                        if( omega_mass_bw < 0.45 || omega_mass_bw > 0.86 ) continue;
 			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
 			vector<double> childMasses_omega_bw;

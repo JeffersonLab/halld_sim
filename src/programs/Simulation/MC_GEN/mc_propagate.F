@@ -17,6 +17,7 @@ c                       1-09-14 - test final location r1 for NaN
 c                       5-15-15 - make PV have 5 elements, with energy in element 5
 c                       7-05-18 - resurrect this code for GlueX Lambda's;  no energy losses calculated
 c                       6-26-19 - slim code down to remove energy loss calculation
+c                      10-12-20 - updte /monte/ common block and declare "external ran"  	
 c       
 c	PV - vector for particle: px, py, pz, mass
 c	   - used both for input and output
@@ -26,11 +27,12 @@ c	CTAU - c-tau value of decaying particle in centimeters  -input
 c	ZPAR - charge of particle in units of elementary charge -input
 c
 	subroutine propagate(pv,r0,r1,ctau,zpar,lund)
+	external ran
 	real pv(5),r0(3),r1(3),direc(3),r0tmp(3),r1tmp(3)
 	real pvtmp(5)
 	common /target/icode,size1,size2,size3,size4,maxtstep
 	common /dedxlocal/ztarg,zda,riadj,rho
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /temp/eloss_clas,eloss_prop,pcmag_clas,pvmag_prop
 c
 	pvmag = absp(pv)

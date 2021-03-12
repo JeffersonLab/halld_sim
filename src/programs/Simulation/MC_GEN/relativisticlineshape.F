@@ -40,6 +40,7 @@ c       09-22-17 - If the width is "-9999", return just the value drawn from pha
 c       03-06-19 - Trap possible failure in computing RMMAX
 c       07-17-19 - Improve comments written to screen
 c       11-08-19 - turn off some rare and not helpful error messages
+c	10-12-20 - correct /monte/ common block and declare "external ran"
 c       
 	subroutine relativisticlineshape(rmnot,gammanot,rm1,rm2,lvalue,
      1                             	rm3,ww,bwmass,ifail)
@@ -56,9 +57,10 @@ c	Outputs:
 c	BWMASS    - Monte Carlo selection of mass 
 c	IFAIL     - error flag
 c
+	external ran
 	logical ifirst
 	data ifirst/.true./
-	common /monte/ iseed,xflat,xnormal,xbw
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
 	common /lineshapelocal/ifirst,bwmaxval,rmnotsave,scale
 c
 	ifail = 0
