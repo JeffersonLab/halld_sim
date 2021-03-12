@@ -129,67 +129,117 @@ int main( int argc, char* argv[] ){
   vector<string> amps = plotGen.uniqueAmplitudes();
   cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-  const int nAmpHist = 8;
-  string amphistname[nAmpHist] = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1p", "1m"};
+  vector<string> amphistname = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "1p", "1m"};
+  vector<string> reflname = {"PosRefl", "NegRefl"};
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
-  for (unsigned int isum = 0; isum <= sums.size(); isum++){
+  for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
 
-    // turn on all sums by default
-    for (unsigned int i = 0; i < sums.size(); i++){
-      plotGen.enableSum(i);
-    }
+    // loop over desired amplitudes 
+    for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
 
-    // for individual contributions turn off all sums but the one of interest
-    if (isum < sums.size()){
-      for (unsigned int i = 0; i < sums.size(); i++){
-        if (i != isum) plotGen.disableSum(i);
+      // turn all ampltiudes by default 
+      for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
+	plotGen.enableAmp( jamp );
       }
-    }
 
-   cout << "Looping over input data" << endl;
-    // loop over data, accMC, and genMC
-    for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
-      if (iplot == PlotGenerator::kGenMC) continue;
-      if (isum < sums.size() && iplot == PlotGenerator::kData) continue; // only plot data once
+      // turn off unwanted amplitudes and sums
+      if (iamp < amphistname.size()) {
+	
+        string locampname = amphistname[iamp];
+	
+	// parse amplitude name for naturality to compute reflectivity 
+	int j = locampname[0]-'0';
+	int parity = 0;
+	if( locampname[1] == 'p' ) parity = +1;
+	else if( locampname[1] == 'm' ) parity = -1;
+	else cout<<"Undefined parity in amplitude"<<endl;
+	int naturality = parity*pow(-1,j);
 
-      // loop over different variables
-      for (unsigned int ivar  = 0; ivar  < OmegaPiPlotGenerator::kNumHists; ivar++){
+	// turn on all sums by default
+	for (unsigned int i = 0; i < sums.size(); i++) plotGen.enableSum(i);
 
-      // set unique histogram name for each plot (could put in directories...)
-        string histname =  "";
-             if (ivar == OmegaPiPlotGenerator::kOmegaPiMass)  histname += "MOmegaPi";
-             else if (ivar == OmegaPiPlotGenerator::kCosTheta)  histname += "CosTheta";
-             else if (ivar == OmegaPiPlotGenerator::kPhi)  histname += "Phi";
-             else if (ivar == OmegaPiPlotGenerator::kCosThetaH)  histname += "CosTheta_H";
-             else if (ivar == OmegaPiPlotGenerator::kPhiH)  histname += "Phi_H";
-             else if (ivar == OmegaPiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
-             else if (ivar == OmegaPiPlotGenerator::kt)  histname += "t";
-	     else if (ivar == OmegaPiPlotGenerator::kRecoilMass)  histname += "MRecoil";
+	// turn off unwanted sums for reflectivity (based on naturality)
+	//cout<<"refl = "<<irefl<<endl;
+	if (irefl < 2) {
+	  for (unsigned int i = 0; i < sums.size(); i++){
+	    
+	    bool disableSum = false;
+	    if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
+	      if (naturality>0 && irefl==1) disableSum = true;
+	      if (naturality<0 && irefl==0) disableSum = true;
+	    }
+	    else {
+	      if (naturality>0 && irefl==0) disableSum = true;
+	      if (naturality<0 && irefl==1) disableSum = true;
+	    }
+	    
+	    if(disableSum) {
+	      plotGen.disableSum(i);
+	      //cout<<"disable sum "<<sums[i]<<endl;
+	    }
+	  }
+	}
 
-	else continue;
+	// turn off unwanted amplitudes
+        for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
 
-        if (iplot == PlotGenerator::kData) histname += "dat";
-        if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
-        if (iplot == PlotGenerator::kAccMC) histname += "acc";
-        if (iplot == PlotGenerator::kGenMC) histname += "gen";
+	  if( amps[jamp].find(locampname.data()) == std::string::npos ) {
+	    plotGen.disableAmp( jamp );
+	    //cout<<"disable amplitude "<<amps[jamp]<<endl;
+	  }
+	}
 
-        if (isum < sums.size()){
-          //ostringstream sdig;  sdig << (isum + 1);
-          //histname += sdig.str();
+      }
 
-	  // get name of sum for naming histogram
-          string sumName = sums[isum];
-          histname += "_";
-          histname += sumName;
-        }
+      cout << "Looping over input data" << endl;
+      // loop over data, accMC, and genMC
+      for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
+	if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd) continue;
+	if (irefl < reflname.size() && iamp < amphistname.size() && iplot == PlotGenerator::kData) continue; // only plot data once
+	
+	// loop over different variables
+	for (unsigned int ivar  = 0; ivar  < OmegaPiPlotGenerator::kNumHists; ivar++){
+	  
+	  // set unique histogram name for each plot (could put in directories...)
+	  string histname =  "";
+	  if (ivar == OmegaPiPlotGenerator::kOmegaPiMass)  histname += "MOmegaPi";
+	  else if (ivar == OmegaPiPlotGenerator::kCosTheta)  histname += "CosTheta";
+	  else if (ivar == OmegaPiPlotGenerator::kPhi)  histname += "Phi";
+	  else if (ivar == OmegaPiPlotGenerator::kCosThetaH)  histname += "CosTheta_H";
+	  else if (ivar == OmegaPiPlotGenerator::kPhiH)  histname += "Phi_H";
+	  else if (ivar == OmegaPiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
+	  else if (ivar == OmegaPiPlotGenerator::kt)  histname += "t";
+	  else if (ivar == OmegaPiPlotGenerator::kRecoilMass)  histname += "MRecoil";
+	  else if (ivar == OmegaPiPlotGenerator::kProtonPiMass)  histname += "MProtonPi";
+	  else if (ivar == OmegaPiPlotGenerator::kRecoilPiMass)  histname += "MRecoilPi";
+	  
+	  else continue;
+	  
+	  if (iplot == PlotGenerator::kData) histname += "dat";
+	  if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
+	  if (iplot == PlotGenerator::kAccMC) histname += "acc";
+	  if (iplot == PlotGenerator::kGenMC) histname += "gen";
+	  
+	  if (irefl < reflname.size()){
+	    // get name of sum for naming histogram
+	    string sumName = reflname[irefl];
+	    histname += "_";
+	    histname += sumName;
+	  }
+	  if (iamp < amphistname.size()) {
+	    // get name of amp for naming histogram  
+	    histname += "_";
+	    histname += amphistname[iamp];
+	  }
 
-        Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
-        TH1* thist = hist->toRoot();
-        thist->SetName(histname.c_str());
-        plotfile->cd();
-        thist->Write();
-
+	  Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
+	  TH1* thist = hist->toRoot();
+	  thist->SetName(histname.c_str());
+	  plotfile->cd();
+	  thist->Write();
+	  
+	}
       }
     }
   }
@@ -229,9 +279,7 @@ int main( int argc, char* argv[] ){
             results.intensity().first <<  endl;
   }
 
-  const int nAmps = 9;
-  string ampname[nAmps] = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1p", "1m", "2m"};
-  
+  const int nAmps = amphistname.size();
   vector<string> ampsumPosRefl[nAmps];
   vector<string> ampsumNegRefl[nAmps];
 
@@ -239,20 +287,54 @@ int main( int argc, char* argv[] ){
 
     // combine amplitudes with names defined above
     for(int iamp=0; iamp<nAmps; iamp++) {
-	    string locampname = "::" + ampname[iamp];// "::";
-	    if(fullamps[i].find("NegRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos) 
-		    ampsumNegRefl[iamp].push_back(fullamps[i]);
-	    if(fullamps[i].find("PosRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos)
-		    ampsumPosRefl[iamp].push_back(fullamps[i]);
+	    string locampname = amphistname[iamp];
+	    
+	    if(fullamps[i].find("::" + locampname) == std::string::npos) continue;
+	    //cout<<locampname.data()<<endl;
+
+	    // parse amplitude name for naturality to compute reflectivity 
+	    int j = locampname[0]-'0';
+	    int parity = 0;
+	    if( locampname[1] == 'p' ) parity = +1;
+	    else if( locampname[1] == 'm' ) parity = -1;
+	    else cout<<"Undefined parity in amplitude"<<endl;
+	    int naturality = parity*pow(-1,j);
+	    
+	    // select reflectivity (based on naturality)
+	    if(fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
+		    if (naturality>0) {
+			    //cout<<"refl+"<<endl;
+			    ampsumPosRefl[iamp].push_back(fullamps[i]);
+		    }
+		    if (naturality<0) {
+			    //cout<<"refl-"<<endl;
+			    ampsumNegRefl[iamp].push_back(fullamps[i]);
+		    }
+	    }
+	    else {
+		    if (naturality>0) {
+			    //cout<<"refl+"<<endl;
+			    ampsumNegRefl[iamp].push_back(fullamps[i]);
+		    }
+		    if (naturality<0) {
+			    //cout<<"refl-"<<endl;
+			    ampsumPosRefl[iamp].push_back(fullamps[i]);
+		    }
+	    }
+
+	    //if(fullamps[i].find("NegRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos) 
+	    //	    ampsumNegRefl[iamp].push_back(fullamps[i]);
+	    //if(fullamps[i].find("PosRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos)
+	    //	    ampsumPosRefl[iamp].push_back(fullamps[i]);
     }
   }
 
   for(int i = 0; i < nAmps; i++){
     if(ampsumPosRefl[i].empty()) continue;
-    outfile << "FIT FRACTION (coherent sum) PosRefl " << ampname[i] << " = "
+    outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = "
           << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
           << results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
-     outfile << "FIT FRACTION (coherent sum) NegRefl " << ampname[i] << " = "
+     outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = "
           << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
           << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
   }

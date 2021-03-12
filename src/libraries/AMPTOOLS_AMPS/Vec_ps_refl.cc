@@ -171,7 +171,7 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 
   // dalitz parameters for 3-body vector decay
   GDouble G = 1; // not relevant for 2-body vector decays
-  //if(m_3pi) G = sqrt(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta );
+  if(m_3pi) G = sqrt(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta );
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
@@ -182,19 +182,19 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   } 
   
   GDouble Factor = sqrt(1 + m_s * polfrac);
-  complex< GDouble > zjlambda = 0;
+  complex< GDouble > zjm = 0;
   complex< GDouble > rotateY = polar(1., -1.*prod_angle);
   if (m_r == 1)
-	  zjlambda = real(amplitude * rotateY);
+	  zjm = real(amplitude * rotateY);
   if (m_r == -1) 
-	  zjlambda = i*imag(amplitude * rotateY);
+	  zjm = imag(amplitude * rotateY);
 
   // E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
   GDouble kinFactor = barrierFactor(M4Pi, m_l, M3Pi, 0.139);
   //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
   Factor *= kinFactor;
 
-  return complex< GDouble >( static_cast< GDouble>( Factor ) * zjlambda );
+  return complex< GDouble >( static_cast< GDouble>( Factor ) * zjm );
 }
 
 
