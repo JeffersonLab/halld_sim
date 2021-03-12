@@ -94,7 +94,14 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, int numR
  
    vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
+   // keep track of best fit (mininum log-likelihood
+   double minLL = 0;
+   int minFitTag = -1;
+
    for(int i=0; i<numRnd; i++) {
+     cout << endl << "###############################" << endl;
+     cout << "FIT " << ifit << " OF " << numRand << endl;
+     cout << endl << "###############################" << endl;
 
      // randomize parameters
      ati.randomizeProductionPars(maxFraction);
@@ -115,6 +122,19 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, int numR
      cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
      ati.finalizeFit(to_string(i));
+
+     // update best fit
+     if( !fitFailed && ati.likelihood() < minLL ) {
+        minLL = ati.likelihood();
+        minFitTag = ifit;
+     }
+   }
+
+   // print best fit results
+   if(minFitTag < 0) cout << "ALL FITS FAILED!" << endl;
+    else {
+      cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRand << " RANDOM PRODUCTION PARS = " << minLL << endl;
+      gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
    }
 }
 
