@@ -7,7 +7,7 @@ cgem_config_t::cgem_config_t(JEventLoop *loop)
 {
   m_CGEM_WORK_FUNCTION = 20; // 20 pair / eV [FIXME]
   m_CGEM_FANO_FACTOR = 0.1; // [FIXME]
-  m_CGEM_ENERGY_THRES = 20.0; // eeV 
+  m_CGEM_ENERGY_THRES = 0.01; // keV 
   m_CGEM_SPATIAL_RESOLUTION = 100; // um
   m_CGEM_TIMING_RESOLUTION = 10; // ns
 }
@@ -46,13 +46,13 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
        double x = titer->getX(); 
        double y = titer->getY(); 
        double z = titer->getZ(); 
-       
+       //cout <<"Before smearing E " << E << " t " << t << " x " << x << " y " << y << " z " << z << endl; 
        if(config->SMEAR_HITS) {
-	 double meanEl = E * 1e6 / cgem_config->m_CGEM_WORK_FUNCTION; // MeV to eV
+	 double meanEl = E * 1e9 / cgem_config->m_CGEM_WORK_FUNCTION; // GeV to eV
 	 double sigma = sqrt(cgem_config->m_CGEM_FANO_FACTOR * meanEl);
 	 int NbEle = (int) (meanEl + gDRandom.SampleGaussian(sigma));
-	 
-	 double Esmear = NbEle * cgem_config->m_CGEM_WORK_FUNCTION;
+	 //cout << "meanEl " << meanEl << " sigma "  << sigma << " NbEl " << NbEle << endl;
+	 double Esmear = (((double) NbEle) * cgem_config->m_CGEM_WORK_FUNCTION) * 1e-3;
 	 double tsmear = t + gDRandom.SampleGaussian(cgem_config->m_CGEM_TIMING_RESOLUTION);
 	 double xsmear = x + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
 	 double ysmear = y + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
@@ -67,6 +67,7 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
 	   hits().setX(xsmear);
 	   hits().setY(ysmear);
 	   hits().setZ(zsmear);
+	   //cout <<"After smearing E " << Esmear << " t " << tsmear << " x " << xsmear << " y " << ysmear << " z " << zsmear << endl; 
 	 }
        }
      }
