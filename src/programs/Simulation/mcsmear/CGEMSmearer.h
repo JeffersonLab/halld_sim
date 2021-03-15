@@ -10,7 +10,14 @@ class cgem_config_t
 {
   public:
 	cgem_config_t(JEventLoop *loop);
-	
+		
+
+	double m_CGEM_WORK_FUNCTION;
+	int m_CGEM_FANO_FACTOR; 
+	double m_CGEM_ENERGY_THRES;
+	double m_CGEM_SPATIAL_RESOLUTION;
+	double m_CGEM_TIMING_RESOLUTION;
+
 };
 
 

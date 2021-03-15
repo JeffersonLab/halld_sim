@@ -5,7 +5,11 @@
 //-----------
 cgem_config_t::cgem_config_t(JEventLoop *loop) 
 {
-                  
+  m_CGEM_WORK_FUNCTION = 20; // 20 pair / eV [FIXME]
+  m_CGEM_FANO_FACTOR = 0.1; // [FIXME]
+  m_CGEM_ENERGY_THRES = 20.0; // eeV 
+  m_CGEM_SPATIAL_RESOLUTION = 100; // um
+  m_CGEM_TIMING_RESOLUTION = 10; // ns
 }
 
 	
@@ -43,22 +47,32 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
        double y = titer->getY(); 
        double z = titer->getZ(); 
        
-       //if(config->SMEAR_HITS) {
-       //	}
-       
-       // Apply a single block threshold. 
-       // Scale threshold by gains
-       //if (E >= Ethreshold){
-       hddm_s::CgemHitList hits = iter->addCgemHits();
-       //hits().setLayer(layer);
-       hits().setDE(E);
-       hits().setT(t);
-       hits().setX(x);
-       hits().setY(y);
-       hits().setZ(z);
+       if(config->SMEAR_HITS) {
+	 double meanEl = E * 1e6 / cgem_config->m_CGEM_WORK_FUNCTION; // MeV to eV
+	 double sigma = sqrt(cgem_config->m_CGEM_FANO_FACTOR * meanEl);
+	 int NbEle = (int) (meanEl + gDRandom.SampleGaussian(sigma));
+	 
+	 double Esmear = NbEle * cgem_config->m_CGEM_WORK_FUNCTION;
+	 double tsmear = t + gDRandom.SampleGaussian(cgem_config->m_CGEM_TIMING_RESOLUTION);
+	 double xsmear = x + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
+	 double ysmear = y + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
+	 double zsmear = z + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
+	 // Apply a single block threshold. 
+	 // Scale threshold by gains
+	 if (Esmear >= cgem_config->m_CGEM_ENERGY_THRES){
+	   hddm_s::CgemHitList hits = iter->addCgemHits();
+	   //hits().setLayer(layer);
+	   hits().setDE(Esmear);
+	   hits().setT(tsmear);
+	   hits().setX(xsmear);
+	   hits().setY(ysmear);
+	   hits().setZ(zsmear);
+	 }
+       }
      }
-      
+     
      if (config->DROP_TRUTH_HITS)
        iter->deleteCgemTruthHits();
    }
 }
+
