@@ -116,7 +116,7 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
 	}
 
 
-	// cout << " m_rho=" << m_rho << " CosTheta=" << CosTheta << " phi=" << phi << " prefactor=" << prefactor << " Amp=" << Amp << endl;
+	if (abs(Amp) <= 0) cout << " m_rho=" << m_rho << " CosTheta=" << CosTheta << " phi=" << phi << " factor=" << factor << " Amp=" << Amp << endl;
 
 	return Amp;
 }
