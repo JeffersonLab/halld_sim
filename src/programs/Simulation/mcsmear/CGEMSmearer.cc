@@ -7,7 +7,7 @@ cgem_config_t::cgem_config_t(JEventLoop *loop)
 {
   m_CGEM_WORK_FUNCTION = 20; // 20 pair / eV [FIXME]
   m_CGEM_FANO_FACTOR = 0.1; // [FIXME]
-  m_CGEM_ENERGY_THRES = 0.01; // keV 
+  m_CGEM_ENERGY_THRES = 0.0; // keV 
   m_CGEM_SPATIAL_RESOLUTION = 100; // um
   m_CGEM_TIMING_RESOLUTION = 10; // ns
 }
@@ -52,7 +52,7 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
 	 double sigma = sqrt(cgem_config->m_CGEM_FANO_FACTOR * meanEl);
 	 int NbEle = (int) (meanEl + gDRandom.SampleGaussian(sigma));
 	 //cout << "meanEl " << meanEl << " sigma "  << sigma << " NbEl " << NbEle << endl;
-	 double Esmear = (((double) NbEle) * cgem_config->m_CGEM_WORK_FUNCTION) * 1e-3;
+	 double Esmear = (((double) NbEle) * cgem_config->m_CGEM_WORK_FUNCTION) * 1e-6;
 	 double tsmear = t + gDRandom.SampleGaussian(cgem_config->m_CGEM_TIMING_RESOLUTION);
 	 double xsmear = x + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
 	 double ysmear = y + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
