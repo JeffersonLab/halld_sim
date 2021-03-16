@@ -202,6 +202,12 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
         double dmax = cdc_config->CDC_GAIN_DOCA_PARS[0];  //hits with doca > dmax are not used for dE/dx in recon
         double dmin = cdc_config->CDC_GAIN_DOCA_PARS[1];  //gain is not suppressed for doca < dmin
 
+        double refp0 = cdc_config->CDC_GAIN_DOCA_PARS[2];  // reference p0
+        double refp1 = cdc_config->CDC_GAIN_DOCA_PARS[3];  // reference p1
+
+        double thisp0 = cdc_config->CDC_GAIN_DOCA_PARS[4];  // p0 for this run
+        double thisp1 = cdc_config->CDC_GAIN_DOCA_PARS[5];  // p1 for this run
+
         bool suppress_gain = 0;
         if (dmin < dmax) suppress_gain = 1;   // default values for good-gas runs have dmin=dmax=1.0cm 
 
@@ -213,26 +219,42 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
           // apply correction for pulse amplitude.  Convert from charge to amplitude later on, after adding pedestal charge smearing 
 
           if (d > dmin) {
-              reference = cdc_config->CDC_GAIN_DOCA_PARS[2] + d*cdc_config->CDC_GAIN_DOCA_PARS[3];
-              this_run = cdc_config->CDC_GAIN_DOCA_PARS[4] + d*cdc_config->CDC_GAIN_DOCA_PARS[5];
+
+	      if (d <= dmax) {
+		  reference = refp0 + d*refp1;
+                  this_run = thisp0 + d*thisp1;
+
+              } else {
+
+  		  double newp1 = -1*(refp0 + dmax*refp1)/0.35;
+                  double newp0 =  -1*(dmax+0.35)*newp1;
+
+                  reference = newp0 + d*newp1;
+
+  		  newp1 = -1*(thisp0 + dmax*thisp1)/0.35;
+                  newp0 =  -1*(dmax+0.35)*newp1;
+
+                  this_run = newp0 + d*newp1;
+
+	      }
               amplitude = amplitude * this_run/reference;   
           }  
 
        
-  	  // This is the correction for pulse integral. 
-
+  	  // This is the correction for pulse integral.
+ 
           if (d < dmin) {
 
-             reference    = (cdc_config->CDC_GAIN_DOCA_PARS[2] + cdc_config->CDC_GAIN_DOCA_PARS[3]*dmin) * (dmin - d);
-             reference += (cdc_config->CDC_GAIN_DOCA_PARS[2] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[3]*(dmin+dmax)) * (dmax - dmin);
+             reference    = (refp0 + refp1*dmin) * (dmin - d);
+             reference += (refp0 + 0.5*refp1*(dmin+dmax)) * (dmax - dmin);
 
-             this_run    = (cdc_config->CDC_GAIN_DOCA_PARS[4] + cdc_config->CDC_GAIN_DOCA_PARS[5]*dmin) * (dmin - d);
-             this_run += (cdc_config->CDC_GAIN_DOCA_PARS[4] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[5]*(dmin+dmax)) * (dmax - dmin);
+             this_run    = (thisp0 + thisp1*dmin) * (dmin - d);
+             this_run += (thisp0 + 0.5*thisp1*(dmin+dmax)) * (dmax - dmin);
 
           } else { 
 
-             reference = (cdc_config->CDC_GAIN_DOCA_PARS[2] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[3]*(d+dmax)) * (dmax - d);
-             this_run   = (cdc_config->CDC_GAIN_DOCA_PARS[4] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[5]*(d+dmax)) * (dmax - d);
+             reference = (refp0 + 0.5*refp1*(d+dmax)) * (dmax - d);
+             this_run   = (thisp0 + 0.5*thisp1*(d+dmax)) * (dmax - d);
 
           }
 
