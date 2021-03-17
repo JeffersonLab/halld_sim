@@ -20,6 +20,7 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
 {
    hddm_s::CgemLayerList layers = record->getCgemLayers();
    hddm_s::CgemLayerList::iterator iter;
+   cout <<"events" << endl;
    for (iter = layers.begin(); iter != layers.end(); ++iter) {
      
      // If the element already contains a cdcStrawHit list then delete it.
@@ -47,12 +48,13 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
        double y = titer->getY(); 
        double z = titer->getZ(); 
        //cout <<"Before smearing E " << E << " t " << t << " x " << x << " y " << y << " z " << z << endl; 
+       
        if(config->SMEAR_HITS) {
-	 double meanEl = E * 1e9 / cgem_config->m_CGEM_WORK_FUNCTION; // GeV to eV
-	 double sigma = sqrt(cgem_config->m_CGEM_FANO_FACTOR * meanEl);
-	 int NbEle = (int) (meanEl + gDRandom.SampleGaussian(sigma));
+	 //double meanEl = E * 1e9 / cgem_config->m_CGEM_WORK_FUNCTION; // GeV to eV
+	 //double sigma = sqrt(cgem_config->m_CGEM_FANO_FACTOR * meanEl);
+	 //int NbEle = (int) (meanEl + gDRandom.SampleGaussian(sigma));
 	 //cout << "meanEl " << meanEl << " sigma "  << sigma << " NbEl " << NbEle << endl;
-	 double Esmear = (((double) NbEle) * cgem_config->m_CGEM_WORK_FUNCTION) * 1e-6;
+	 double Esmear = E; //(((double) NbEle) * cgem_config->m_CGEM_WORK_FUNCTION) * 1e-6;
 	 double tsmear = t + gDRandom.SampleGaussian(cgem_config->m_CGEM_TIMING_RESOLUTION);
 	 double xsmear = x + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
 	 double ysmear = y + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
@@ -70,6 +72,15 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
 	   //cout <<"After smearing E " << Esmear << " t " << tsmear << " x " << xsmear << " y " << ysmear << " z " << zsmear << endl; 
 	 }
        }
+       /*
+       hddm_s::CgemHitList hits = iter->addCgemHits();
+       //hits().setLayer(layer);
+       hits().setDE(E);
+       hits().setT(t);
+       hits().setX(x);
+       hits().setY(y);
+       hits().setZ(z);
+       */
      }
      
      if (config->DROP_TRUTH_HITS)
