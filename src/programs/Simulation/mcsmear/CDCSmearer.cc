@@ -216,6 +216,9 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
           double reference;
           double this_run;
 
+          // try matching a second line segment to the first at dmax, descending to 0 at dmax+extra
+          double extra = 0.33;  //cm
+
           // apply correction for pulse amplitude.  Convert from charge to amplitude later on, after adding pedestal charge smearing 
 
           if (d > dmin) {
@@ -226,13 +229,13 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 
               } else {
 
-  		  double newp1 = -1*(refp0 + dmax*refp1)/0.35;
-                  double newp0 =  -1*(dmax+0.35)*newp1;
+  		  double newp1 = -1*(refp0 + dmax*refp1)/extra;
+                  double newp0 =  -1*(dmax+extra)*newp1;
 
                   reference = newp0 + d*newp1;
 
-  		  newp1 = -1*(thisp0 + dmax*thisp1)/0.35;
-                  newp0 =  -1*(dmax+0.35)*newp1;
+  		  newp1 = -1*(thisp0 + dmax*thisp1)/extra;
+                  newp0 =  -1*(dmax+extra)*newp1;
 
                   this_run = newp0 + d*newp1;
 
