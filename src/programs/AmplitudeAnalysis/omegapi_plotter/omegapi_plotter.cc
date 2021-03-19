@@ -135,22 +135,6 @@ int main( int argc, char* argv[] ){
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
   for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
 
-    // turn on all sums by default
-    for (unsigned int i = 0; i < sums.size(); i++){
-      plotGen.enableSum(i);
-    }
-
-    // for individual reflectivity contributions turn off all sums but the one of interest
-    cout<<"refl = "<<irefl<<endl;
-    if (irefl < 2) {
-      for (unsigned int i = 0; i < sums.size(); i++){
-        if (sums[i].find(reflname[irefl]) != std::string::npos) {
-	  plotGen.disableSum(i);
-	  cout<<"disable sum "<<sums[i]<<endl;
-	}
-      }
-    }
-
     // loop over desired amplitudes 
     for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
 
@@ -159,17 +143,53 @@ int main( int argc, char* argv[] ){
 	plotGen.enableAmp( jamp );
       }
 
-      // turn off unecessary amplitudes
+      // turn off unwanted amplitudes and sums
       if (iamp < amphistname.size()) {
-        for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
 	
-          string locampname = amphistname[iamp];
+        string locampname = amphistname[iamp];
+	
+	// parse amplitude name for naturality to compute reflectivity 
+	int j = locampname[0]-'0';
+	int parity = 0;
+	if( locampname[1] == 'p' ) parity = +1;
+	else if( locampname[1] == 'm' ) parity = -1;
+	else cout<<"Undefined parity in amplitude"<<endl;
+	int naturality = parity*pow(-1,j);
+
+	// turn on all sums by default
+	for (unsigned int i = 0; i < sums.size(); i++) plotGen.enableSum(i);
+
+	// turn off unwanted sums for reflectivity (based on naturality)
+	//cout<<"refl = "<<irefl<<endl;
+	if (irefl < 2) {
+	  for (unsigned int i = 0; i < sums.size(); i++){
+	    
+	    bool disableSum = false;
+	    if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
+	      if (naturality>0 && irefl==1) disableSum = true;
+	      if (naturality<0 && irefl==0) disableSum = true;
+	    }
+	    else {
+	      if (naturality>0 && irefl==0) disableSum = true;
+	      if (naturality<0 && irefl==1) disableSum = true;
+	    }
+	    
+	    if(disableSum) {
+	      plotGen.disableSum(i);
+	      //cout<<"disable sum "<<sums[i]<<endl;
+	    }
+	  }
+	}
+
+	// turn off unwanted amplitudes
+        for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
+
 	  if( amps[jamp].find(locampname.data()) == std::string::npos ) {
 	    plotGen.disableAmp( jamp );
-	    cout<<"disable amplitude "<<amps[jamp]<<endl;
+	    //cout<<"disable amplitude "<<amps[jamp]<<endl;
 	  }
-	  
 	}
+
       }
 
       cout << "Looping over input data" << endl;
@@ -267,11 +287,45 @@ int main( int argc, char* argv[] ){
 
     // combine amplitudes with names defined above
     for(int iamp=0; iamp<nAmps; iamp++) {
-	    string locampname = "::" + amphistname[iamp];// "::";
-	    if(fullamps[i].find("NegRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos) 
-		    ampsumNegRefl[iamp].push_back(fullamps[i]);
-	    if(fullamps[i].find("PosRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos)
-		    ampsumPosRefl[iamp].push_back(fullamps[i]);
+	    string locampname = amphistname[iamp];
+	    
+	    if(fullamps[i].find("::" + locampname) == std::string::npos) continue;
+	    cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
+
+	    // parse amplitude name for naturality to compute reflectivity 
+	    int j = locampname[0]-'0';
+	    int parity = 0;
+	    if( locampname[1] == 'p' ) parity = +1;
+	    else if( locampname[1] == 'm' ) parity = -1;
+	    else cout<<"Undefined parity in amplitude"<<endl;
+	    int naturality = parity*pow(-1,j);	   
+ 
+	    // select reflectivity (based on naturality)
+	    if(fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
+		    if (naturality>0) {
+			    cout<<"refl+"<<endl;
+			    ampsumPosRefl[iamp].push_back(fullamps[i]);
+		    }
+		    if (naturality<0) {
+			    cout<<"refl-"<<endl;
+			    ampsumNegRefl[iamp].push_back(fullamps[i]);
+		    }
+	    }
+	    else {
+		    if (naturality>0) {
+			    cout<<"refl-"<<endl;
+			    ampsumNegRefl[iamp].push_back(fullamps[i]);
+		    }
+		    if (naturality<0) {
+			    cout<<"refl+"<<endl;
+			    ampsumPosRefl[iamp].push_back(fullamps[i]);
+		    }
+	    }
+
+	    //if(fullamps[i].find("NegRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos) 
+	    //	    ampsumNegRefl[iamp].push_back(fullamps[i]);
+	    //if(fullamps[i].find("PosRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos)
+	    //	    ampsumPosRefl[iamp].push_back(fullamps[i]);
     }
   }
 
