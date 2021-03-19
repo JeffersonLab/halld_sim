@@ -68,7 +68,12 @@ vector <double> getomegapiAngles(TLorentzVector daughter, TLorentzVector parent,
   TVector3 y = ((InverseOfX_rfunit).Cross(z)).Unit();
   TVector3 x = (y.Cross(z)).Unit();
   
-  TVector3 Angles(normal_parentunit.Dot(x),normal_parentunit.Dot(y),normal_parentunit.Dot(z));
+  // decay vector is normal to decay plane for omega->3pi and one of the ps for vec->ps1+ps2
+  TVector3 decayVector;
+  if(seconddaughter.E() > 0) decayVector = normal_parentunit;
+  else decayVector = daughter_parentunit;
+  
+  TVector3 Angles(decayVector.Dot(x),decayVector.Dot(y),decayVector.Dot(z));
 
   double theta = Angles.Theta();
   double phi = Angles.Phi();

@@ -74,35 +74,44 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   // common vector and pseudoscalar P4s
   TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); // 1st after proton
-  TLorentzVector vec; // compute for each final state below 
+  TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
 
   // omega ps proton, omega -> 3pi (6 particles)
   // omega pi- Delta++, omega -> 3pi (7 particles)
-  TLorentzVector pi0(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
-  TLorentzVector pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
-  TLorentzVector pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
-  vec = pi0 + pip + pim;
-
-  ///////////////////////////////////////////// Dalitz Parameters ///////////////////////////////
-  double dalitz_s = (pip+pim).M2(); //s=M2(pip pim)
-  double dalitz_t = (pip+pi0).M2(); //t=M2(pip pi0)
-  double dalitz_u = (pim+pi0).M2(); //u=M2(pim pi0)
-  double m3pi = (2*pip.M())+pi0.M();
-  double dalitz_d = 2*vec.M()*( vec.M() - m3pi);
-  double dalitz_sc = (1/3.)*( vec.M2() - pip.M2() - pim.M2() - pi0.M2());
-  double dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
-  double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
-  double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
-  double dalitz_sin3theta = TMath::Sin(3 *  TMath::ASin( (dalitzy/sqrt(dalitz_z) )) );
-
-  userVars[uv_dalitz_z] = dalitz_z;
-  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
-
-  // omega ps proton, omega -> pi0 g (4 particles)
-  // omega pi- Delta++, omega -> pi0 g (5 particles)
-
-  // phi ps proton, phi -> KK (5 particles)
-  // phi pi- Delta++, phi -> KK (6 particles)
+  if(m_3pi) {
+	  TLorentzVector pi0(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+	  TLorentzVector pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+	  TLorentzVector pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
+	  vec = pi0 + pip + pim;
+	  vec_daught1 = pip;
+	  vec_daught2 = pim;
+	  
+	  ///////////////////////////////////////////// Dalitz Parameters ///////////////////////////////
+	  double dalitz_s = (pip+pim).M2(); //s=M2(pip pim)
+	  double dalitz_t = (pip+pi0).M2(); //t=M2(pip pi0)
+	  double dalitz_u = (pim+pi0).M2(); //u=M2(pim pi0)
+	  double m3pi = (2*pip.M())+pi0.M();
+	  double dalitz_d = 2*vec.M()*( vec.M() - m3pi);
+	  double dalitz_sc = (1/3.)*( vec.M2() - pip.M2() - pim.M2() - pi0.M2());
+	  double dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
+	  double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
+	  double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
+	  double dalitz_sin3theta = TMath::Sin(3 *  TMath::ASin( (dalitzy/sqrt(dalitz_z) )) );
+	  
+	  userVars[uv_dalitz_z] = dalitz_z;
+	  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
+  }
+  else {
+	  // omega ps proton, omega -> pi0 g (4 particles)
+	  // omega pi- Delta++, omega -> pi0 g (5 particles)
+	  
+	  // (vec 2-body) ps proton, vec 2-body -> pipi, KK (5 particles)
+	  // (vec 2-body) pi- Delta++, vec 2-body -> pipi, KK (6 particles)
+	  // (vec 2-body) K+ Lambda, vec 2-body -> Kpi (6 particles)
+	  vec_daught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+	  vec_daught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+	  vec = vec_daught1 + vec_daught2;
+  }
 
   // final meson system P4
   TLorentzVector X = vec + ps;
@@ -133,7 +142,9 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   vector <double> locthetaphi = getomegapiAngles(polAngle, vec, X, beam, Gammap);
 
   // Calculate vector decay angles (unique for each vector)
-  vector <double> locthetaphih = getomegapiAngles(pip, vec, X, Gammap, pim);
+  vector <double> locthetaphih;
+  if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
+  else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
 
   userVars[uv_cosTheta] = TMath::Cos(locthetaphi[0]);
   userVars[uv_Phi] = locthetaphi[1];
@@ -180,7 +191,7 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 	  GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
 	  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
   } 
-  
+
   GDouble Factor = sqrt(1 + m_s * polfrac);
   complex< GDouble > zjm = 0;
   complex< GDouble > rotateY = polar(1., -1.*prod_angle);
