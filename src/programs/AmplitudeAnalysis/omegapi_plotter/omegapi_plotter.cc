@@ -290,7 +290,7 @@ int main( int argc, char* argv[] ){
 	    string locampname = amphistname[iamp];
 	    
 	    if(fullamps[i].find("::" + locampname) == std::string::npos) continue;
-	    //cout<<locampname.data()<<endl;
+	    //cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
 
 	    // parse amplitude name for naturality to compute reflectivity 
 	    int j = locampname[0]-'0';
@@ -298,34 +298,25 @@ int main( int argc, char* argv[] ){
 	    if( locampname[1] == 'p' ) parity = +1;
 	    else if( locampname[1] == 'm' ) parity = -1;
 	    else cout<<"Undefined parity in amplitude"<<endl;
-	    int naturality = parity*pow(-1,j);
-	    
+	    int naturality = parity*pow(-1,j);	   
+ 
 	    // select reflectivity (based on naturality)
 	    if(fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
 		    if (naturality>0) {
-			    //cout<<"refl+"<<endl;
 			    ampsumPosRefl[iamp].push_back(fullamps[i]);
 		    }
 		    if (naturality<0) {
-			    //cout<<"refl-"<<endl;
 			    ampsumNegRefl[iamp].push_back(fullamps[i]);
 		    }
 	    }
 	    else {
 		    if (naturality>0) {
-			    //cout<<"refl+"<<endl;
 			    ampsumNegRefl[iamp].push_back(fullamps[i]);
 		    }
 		    if (naturality<0) {
-			    //cout<<"refl-"<<endl;
 			    ampsumPosRefl[iamp].push_back(fullamps[i]);
 		    }
 	    }
-
-	    //if(fullamps[i].find("NegRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos) 
-	    //	    ampsumNegRefl[iamp].push_back(fullamps[i]);
-	    //if(fullamps[i].find("PosRefl") != std::string::npos && fullamps[i].find(locampname.data()) != std::string::npos)
-	    //	    ampsumPosRefl[iamp].push_back(fullamps[i]);
     }
   }
 
