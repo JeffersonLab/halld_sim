@@ -20,7 +20,10 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_amp.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
+#include "AMPTOOLS_AMPS/TwoPiW_brokenetas.h"
 #include "AMPTOOLS_AMPS/TwoPitdist.h"
+#include "AMPTOOLS_AMPS/TwoPiNC_tdist.h"
+#include "AMPTOOLS_AMPS/TwoPiEtas_tdist.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
@@ -45,8 +48,6 @@
 
 using std::complex;
 using namespace std;
-
-
 
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile) {
    AmpToolsInterface ati( cfgInfo );
@@ -218,7 +219,7 @@ int main( int argc, char* argv[] ){
    if(numRnd==0){
      runSingleFit(cfgInfo, useMinos, maxIter, seedfile);
    } else {
-      runRndFits(cfgInfo, useMinos, maxIter, numRnd, 0.5);
+     runRndFits(cfgInfo, useMinos, maxIter, numRnd, 0.5);
    }
 
    return 0;

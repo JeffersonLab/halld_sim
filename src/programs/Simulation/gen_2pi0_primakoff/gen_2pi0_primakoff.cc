@@ -1,4 +1,6 @@
 
+// Modification of gen_2pi_primakoff for pi0pi0 production. Goal is to add generality to this generator so that 
+//     various reactions can be run using the same high level files.
 #include <iostream>
 #include <fstream>
 #include <complex>
@@ -49,13 +51,12 @@ int main( int argc, char* argv[] ){
 	// default upper and lower bounds 
 	// double lowMass = 0.2;
 	// double highMass = 2.0; 
-	double PiMass = ParticleMass(PiPlus);
-	double lowMass = 2*PiMass + 0.01;   // slightly higher than actual threshold to avoid zeros.;              
-	double highMass = 0.8 ;
+	double lowMass = 0.28;
+	double highMass = 0.9 ;    // almost up to f0(980)
 	
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 6.0;
-	double beamLowE   = lowMass;
+	double beamLowE   = 0.139*2;
 	double beamHighE  = 12.0;
 	
 	int runNum = 9001;
@@ -130,7 +131,7 @@ int main( int argc, char* argv[] ){
 	}
 	
 	if( configfile.size() == 0 || outname.size() == 0 ){
-		cout << "No config file or output specificed:  run gen_2pi_primakoff -h for help" << endl;
+		cout << "No config file or output specificed:  run gen_2pi0_primakoff -h for help" << endl;
 		exit(1);
 	}
 	
@@ -147,7 +148,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
 	AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
 	AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
-	AmpToolsInterface::registerAmplitude( TwoPitdist() );	
+	AmpToolsInterface::registerAmplitude( TwoPitdist() );
 	AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
@@ -180,8 +181,14 @@ int main( int argc, char* argv[] ){
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 	
 	// generate over a range of mass -- the daughters are two charged pions
-	float Bgen= 230;   // exponential slope, make it smaller than any slope in the generator.
-	GammaZToXYZ resProd( lowMass, highMass, PiMass, PiMass, type, beamConfigFile , Bgen);
+	// float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
+	// float Bslope= 10.;   // exponential slope,
+	float Bslope= 230;   // exponential slope,
+	// GammaZToXYZ resProd( lowMass, highMass, 0.140, 0.140, type, beamConfigFile , Bslope);
+	// Double_t kMPion = ParticleMass(PiPlus);
+        Double_t kMPi0 = ParticleMass(Pi0);
+	// cout << " GammaZToXYZ: kMPi0=" << kMPi0 << endl;
+	GammaZToXYZ resProd( lowMass, highMass, kMPi0, kMPi0, type, beamConfigFile , Bslope);    // set masses to pi0
 	
 	// seed the distribution with a sum of noninterfering s-wave amplitudes
 	// we can easily compute the PDF for this and divide by that when
@@ -199,15 +206,15 @@ int main( int argc, char* argv[] ){
 	
 	vector< int > pTypes;
 	pTypes.push_back( Gamma );
-	pTypes.push_back( PiPlus );
-	pTypes.push_back( PiMinus );
+	pTypes.push_back( Pi0 );       // PiPlus -> Pi0
+	pTypes.push_back( Pi0 );       // PiMinus -> Pi0
 	pTypes.push_back( Pb208 );     // use lead instead of Sn116 since it is defined in particle list.
 	
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum );
 	ROOTDataWriter rootOut( outname );
 	
-	TFile* diagOut = new TFile( "gen_2pi_primakoff_diagnostic.root", "recreate" );
+	TFile* diagOut = new TFile( "gen_2pi0_primakoff_diagnostic.root", "recreate" );
 	
 	TH1F* mass = new TH1F( "M", "Resonance Mass", 180, lowMass, highMass );
 	TH1F* massW = new TH1F( "M_W", "Weighted Resonance Mass", 180, lowMass, highMass );
@@ -284,7 +291,7 @@ int main( int argc, char* argv[] ){
 					if (isfinite(recoil.M()) && isfinite(p1.M())) {
 					  // check for nan values in vectors
 
-					  // cout << endl << " gen_2pi_primakoff particles " << " Mbeam=" << beam.M() << " Mrecoil=" << recoil.M() << " Mp1=" << p1.M() << endl;
+					  // cout << endl << " gen_2pi0_primakoff particles " << " Mbeam=" << beam.M() << " Mrecoil=" << recoil.M() << " Mp1=" << p1.M() << endl;
 					  // beam.Print(); recoil.Print(); p1.Print(); p2.Print(); resonance.Print();
 			     
 					Double_t phipol=0;    // hardwire angle of photon polarization in lab.
@@ -316,7 +323,7 @@ int main( int argc, char* argv[] ){
 
                                         // double phi = angles.Phi();
 
-					/*cout << endl << " gen_2pi_primakoff " << endl;
+					/*cout << endl << " gen_2pi0_primakoff " << endl;
                                         cout << " Phi=" << Phi << endl;
 					cout << " phi= " << phi << endl;
 					cout << " psi=" << psi << endl;*/

@@ -291,9 +291,14 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 
         }
 
-        if (config->DROP_TRUTH_HITS) {
-            iter->deleteCdcStrawTruthHits();
-        }
       }
+      if (config->DROP_TRUTH_HITS) {
+         iter->deleteCdcStrawTruthHits();
+      }
+   }
+   if (config->DROP_TRUTH_HITS) {
+      hddm_s::CentralDCList cdcs = record->getCentralDCs();
+      if (cdcs.size() > 0)
+         cdcs().deleteCdcTruthPoints();
    }
 }

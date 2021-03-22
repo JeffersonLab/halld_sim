@@ -124,7 +124,12 @@ C.    ------------------------------------------------------------------
       IPART  = IQ(JST+2)
       DO 60 I = 1,3
          VERT(I) = Q(JST+3+I)
-        PVERT(I) = Q(JST+6+I)
+         IF (Q(JST+6+I).NE.Q(JST+6+I)) THEN
+            print *, 'JSTAK track momentum component', i, 'is NaN,',
+     +               'reset to zero!'
+            Q(JST+6+I) = 0
+         ENDIF
+         PVERT(I) = Q(JST+6+I)
    60 CONTINUE
       TOFG   = Q(JST+10)
       SAFETY = Q(JST+11)

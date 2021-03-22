@@ -265,4 +265,9 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
       if (config->DROP_TRUTH_HITS)
          iter->deleteFcalTruthHits();
    }
+   if (config->DROP_TRUTH_HITS) {
+      hddm_s::ForwardEMcalList fcals = record->getForwardEMcals();
+      if (fcals.size() > 0)
+         fcals().deleteFcalTruthShowers();
+   }
 }

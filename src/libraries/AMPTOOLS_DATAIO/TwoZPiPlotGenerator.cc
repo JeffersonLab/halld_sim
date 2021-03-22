@@ -13,17 +13,17 @@ PlotGenerator( results )
   // calls to bookHistogram go here
   
   // bookHistogram( k2PiMass, new Histogram1D( 200, 0., 2.0, "M2pi", "Invariant Mass of #pi^{+} #pi^{-}") );
-  bookHistogram( k2PiMass, new Histogram1D( 200, 0.2, 0.8, "M2pi", "Invariant Mass of #pi^{+} #pi^{-}") );
+  bookHistogram( k2PiMass, new Histogram1D( 30, 0.2, 0.8, "M2pi", "Invariant Mass of #pi#pi") );
   bookHistogram( kPiPCosTheta, new Histogram1D( 50, -1., 1., "cosTheta", "cos( #theta ) of Resonance Production") );
 
   bookHistogram( kPhiPiPlus,  new Histogram1D( 50, -1*PI, PI, "PhiPiPlus",  "#Phi_{#pi_{+}}" ) );
   bookHistogram( kPhiPiMinus, new Histogram1D( 50, -1*PI, PI, "PhiPiMinus", "#Phi_{#pi_{-}}" ) );
-  bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#Phi" ) );
-  bookHistogram( kphi, new Histogram1D( 50, -1*PI, PI, "phi", "#phi" ) );
-  bookHistogram( kPsi, new Histogram1D( 50, -1*PI, PI, "psi", "#psi" ) );
+  bookHistogram( kPhi, new Histogram1D( 25, -1*PI, PI, "Phi", "#Phi" ) );
+  bookHistogram( kphi, new Histogram1D( 25, -1*PI, PI, "phi", "#phi" ) );
+  bookHistogram( kPsi, new Histogram1D( 25, -1*PI, PI, "psi", "#psi" ) );
   // bookHistogram( kt, new Histogram1D( 100, 0, 5, "t", "-t" ) );
   bookHistogram( kt, new Histogram1D( 100, 0, 0.05, "t", "-t" ) );
-  bookHistogram( ktheta_scat, new Histogram1D( 100, 0, 2, "costhe_scat", "#theta_{scat}" ) );
+  bookHistogram( ktheta_scat, new Histogram1D( 40, 0, 2, "costhe_scat", "#theta_{#pi#pi}" ) );
 }
 
 void

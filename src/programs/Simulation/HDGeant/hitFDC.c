@@ -759,6 +759,8 @@ void hitForwardDC (float xin[4], float xout[4],
       u[0] = xinlocal[2];
       u[1] = xinlocal[0]-xwire;
       dradius = fabs(u[1]*cosalpha-u[0]*sinalpha);
+      //printf("fdc truth hit, in u,v=%f,%f out u,v=%f,%f dradius=%f\n", 
+      //       u[0], u[1], xoutlocal[2], xoutlocal[0]-xwire, dradius);
       points->mult = 1;
       int a = thisInputEvent->physicsEvents->in[0].reactions->in[0].vertices->in[0].products->mult;
       points->in[0].primary = (track <= a && stack == 0);
@@ -1207,8 +1209,8 @@ s_ForwardDC_t* pickForwardDC ()
            double t = points->in[point].t;
            int mm = box->fdcChambers->in[m].fdcTruthPoints->mult;
            if (points->in[point].trackID->itrack < 0 ||
-              (m > 0 &&  box->fdcChambers->in[m].fdcTruthPoints
-                                         ->in[mm-1].track == track &&
+              (mm > 0 &&  box->fdcChambers->in[m].fdcTruthPoints
+                                          ->in[mm-1].track == track &&
                fabs(box->fdcChambers->in[m].fdcTruthPoints
                                     ->in[mm-1].t - t) < 0.5))
            {

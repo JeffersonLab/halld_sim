@@ -10,37 +10,36 @@
 #include "barrierFactor.h"
 #include "breakupMomentum.h"
 
+#include "particleType.h"
+
 #include "IUAmpTools/Kinematics.h"
-#include "AMPTOOLS_AMPS/TwoPitdist.h"
+#include "AMPTOOLS_AMPS/TwoPiW_brokenetas.h"
 
 // Class modeled after BreitWigner amplitude function provided for examples with AmpTools.
 // Dependence of swave 2pi cross section on W (mass of 2pi system) Elton 4/17/2017
 // Version for sigma f0(500) production  Elton 9/9/2018
-// Pealed off exponential dependence assuming it factorizes from the W dependence.
+// Simple version for broken etas (3pi0 reconstructed as 2pi0) Elton 5/7/2020
 
-TwoPitdist::TwoPitdist( const vector< string >& args ) :
-UserAmplitude< TwoPitdist >( args )
+TwoPiW_brokenetas::TwoPiW_brokenetas( const vector< string >& args ) :
+UserAmplitude< TwoPiW_brokenetas >( args )
 {
   
-  assert( args.size() == 5 );
-  Bslope = AmpParameter( args[0] );
-  Bgen = AmpParameter( args[1] );
-  mtmax = AmpParameter( args[2] );
-  m_daughters = pair< string, string >( args[3], args[4] );    // specify indices of pions in event
+  assert( args.size() == 4 );
+	m_par1 = AmpParameter( args[0] );
+	m_par2 = AmpParameter( args[1] );
+	m_daughters = pair< string, string >( args[2], args[3] );
   
   // need to register any free parameters so the framework knows about them
-  registerParameter( Bslope );
-  registerParameter( Bgen );
-  registerParameter( mtmax );
+  // for brokenetas, parameters are Gmean and Gsigma of the Gaussian in GeV
+  registerParameter( m_par1 );
+  registerParameter( m_par2 );
   
   // make sure the input variables look reasonable
-  // assert( ( Bgen >= 1 ) && ( Bslope >= Bgen ) );     // Make sure generated value is lower than actual.  
-  assert( ( Bgen >= 1 ) && ( Bslope >= 1 ) );   
-  assert( mtmax > 0);         
+  // assert( ( m_orbitL >= 0 ) && ( m_orbitL <= 4 ) );
 }
 
 complex< GDouble >
-TwoPitdist::calcAmplitude( GDouble** pKin ) const
+TwoPiW_brokenetas::calcAmplitude( GDouble** pKin ) const
 {
   TLorentzVector P1, P2, Ptot, Ptemp, Precoil;
   
@@ -72,29 +71,37 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
     Ptot.Print();*/
   }
   
-  /*GDouble Wpipi  = Ptot.M();
+  Double_t Eg = pKin[0][0];          // incident photon energy
+  GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
-  GDouble mass2 = P2.M();*/
-  GDouble Thetapipi = Ptot.Theta()*180./PI;
+  GDouble mass2 = P2.M();
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
+  // next three lines commented out, unused variables
   GDouble Et = Precoil.E();
   GDouble Mt = Precoil.M();
   GDouble t = -2*Precoil.M()*(Et - Mt);  
-  complex<GDouble> RealOne(1,0);
+
   complex<GDouble> ImagOne(0,1);
-  complex<GDouble> Arel; 
+    complex<GDouble> Aw;
+    GDouble Gmean= m_par1;
+    GDouble Gsigma=m_par2;
+    GDouble ImPart=0;
 
-  Arel = sqrt(exp(Bslope*t)/exp(Bgen*t)) * RealOne;  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
-  if (-t > mtmax) Arel = 0;      // eliminate events at high t with large weights
+    Aw = exp( -(Wpipi-Gmean)*(Wpipi-Gmean)/(2*Gsigma*Gsigma)) + ImPart*ImagOne;
 
-  // if (Thetapipi > 1.5) cout << " TwoPitdist" << " Thetapipi=" << Thetapipi << " Bslope=" << Bslope << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel) << endl; 
-  return( Arel );
+    Aw = isfinite(real(Aw))  && isfinite(imag(Aw))? Aw : 0;   // protect against infitinites
+
+    if (Wpipi < mass1+mass2) Aw = 0;
+    
+    // cout << "TwoPiW_brokenetas: calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " Gmean=" << Gmean << " Gsigma=" << Gsigma << " AwNorm=" << std::norm(Aw) << " AwPhase=" << std::arg(Aw) << endl;
+  
+  return( Aw );
 }
 
 void
-TwoPitdist::updatePar( const AmpParameter& par ){
+TwoPiW_brokenetas::updatePar( const AmpParameter& par ){
  
   // could do expensive calculations here on parameter updates
   
