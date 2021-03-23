@@ -220,26 +220,26 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
 
           // try matching a second line segment to the first at dmax, descending to 0 at dmax+extra
           double extra = 0.33;  //cm
+          double refdmax = 0.65;  // dmax for reference run
 
           if (d > dmin) {
 
-	      if (d <= dmax) {
+	      if (d <= refdmax) {
 		  reference = refp0 + d*refp1;
-                  this_run = thisp0 + d*thisp1;
-
               } else {
-
-  		  double newp1 = -1*(refp0 + dmax*refp1)/extra;
-                  double newp0 =  -1*(dmax+extra)*newp1;
-
+    		  double newp1 = -1*(refp0 + refdmax*refp1)/extra;
+                  double newp0 =  -1*(refdmax+extra)*newp1;
                   reference = newp0 + d*newp1;
+              }
 
-  		  newp1 = -1*(thisp0 + dmax*thisp1)/extra;
-                  newp0 =  -1*(dmax+extra)*newp1;
-
+	      if (d <= dmax) {
+                  this_run = thisp0 + d*thisp1;
+              } else {
+  		  double newp1 = -1*(thisp0 + dmax*thisp1)/extra;
+                  double newp0 =  -1*(dmax+extra)*newp1;
                   this_run = newp0 + d*newp1;
-
 	      }
+
               amplitude = amplitude * this_run/reference;   
           }  
 
