@@ -20,7 +20,7 @@
 Vec_ps_refl::Vec_ps_refl( const vector< string >& args ) :
 UserAmplitude< Vec_ps_refl >( args )
 {
-  assert( args.size() == 11 );
+  //assert( args.size() == 11 );
   
   m_j = atoi( args[0].c_str() ); // resonance spin J
   m_m = atoi( args[1].c_str() ); // spin projection (Lambda)
@@ -40,6 +40,7 @@ UserAmplitude< Vec_ps_refl >( args )
     polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
   }
 
+  m_3pi = false;
   if(args.size() == (11)){
 	  m_3pi = true; // treat 3-pion decay dalitz parameters
 
