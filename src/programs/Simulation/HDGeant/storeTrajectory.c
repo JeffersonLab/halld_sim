@@ -8,10 +8,44 @@ extern s_HDDM_t* thisOutputEvent;
 
 unsigned int Npoints=0;
 unsigned int Maxpoints;
+int last_part_num;
 int last_track_num;
 int last_stack_num;
 int track_id;
+int max_track_id;
+int *parent_id=0;
+int parent_id_size=0;
 s_McTrajectoryPoint_t *traj_points = NULL;
+
+//---------------
+// save_ancestry
+//---------------
+void save_ancestry(int istack)
+{
+   if (istack == 0) {
+      max_track_id = 0;
+      return;
+   }
+   const int growth_increment = 200;
+   if (istack >= parent_id_size) {
+      int *buf = malloc((parent_id_size + growth_increment)*sizeof(int));
+      if (max_track_id > 0) {
+         memcpy(buf, parent_id, max_track_id*sizeof(int));
+         free(parent_id);
+      }
+      parent_id_size += growth_increment;
+      parent_id = buf;
+   }
+   if (istack > max_track_id) {
+      int i;
+      for (i=max_track_id; i < istack; ++i) {
+         parent_id[i] = 0;
+      }
+   }
+   parent_id[istack] = track_id;
+   max_track_id = istack + 1;
+}
+void save_ancestry_(int *istack) { return save_ancestry(*istack); }
 
 /*---------------------
 // cleartrajectories_
@@ -26,9 +60,11 @@ void cleartrajectories_(void)
 		traj_points = (s_McTrajectoryPoint_t*)malloc(Maxpoints*sizeof(s_McTrajectoryPoint_t));
 	}
 	
+	last_part_num = -1;
 	last_track_num = -1;
 	last_stack_num = -1;
 	track_id = 0;
+    save_ancestry(0);
 }
 
 /*---------------------
@@ -47,7 +83,7 @@ void addtrajectorypoint_(float *VECT, float *TOFG, float *DESTEP
 	
 	/* We want to record a unique id for every particle in the event.
 	   The value in ITRA is the primary track's number from which this
-	   particle originated. The value in ISTAK is the stack poisition
+	   particle originated. The value in ISTAK is the stack position
 	   of the current particle (ISTAK==0 means it's the primary).
 	   Because the stack is reused during showers, there is no
 	   combination of ITRA and ISTAK that is guaranteed to be unique
@@ -60,12 +96,13 @@ void addtrajectorypoint_(float *VECT, float *TOFG, float *DESTEP
 	   track point if we're only keeping birth/death info.
 	*/
 	static int point_on_this_track = 0;
-	if(last_stack_num<*ISTAK || last_track_num!=*ITRA){
+	if(last_stack_num<*ISTAK || last_track_num!=*ITRA || last_part_num!=*IPART){
 		track_id++;
 		point_on_this_track=0;
 	}else{
 		point_on_this_track++;
 	}
+	last_part_num = *IPART;
 	last_track_num = *ITRA;
 	last_stack_num = *ISTAK;
 
@@ -133,7 +170,15 @@ void addtrajectorypoint_(float *VECT, float *TOFG, float *DESTEP
 	p->track = track_id;
 	p->radlen = *RADL;
 	p->step = *STEP;
-	p->mech = LMEC[*NMEC-1];
+    if (LMEC[*NMEC-1] > 0) {
+	   p->mech = LMEC[*NMEC-1];
+    }
+    else if (*ISTAK < max_track_id) {
+	   p->mech = -parent_id[*ISTAK];
+    }
+    else {
+	   p->mech = 0;
+   }
 }
 
 /*---------------------
@@ -161,6 +206,3 @@ s_McTrajectory_t* pickMCTrajectory(void)
 	
 	return McTrajectory;
 }
-
-
-

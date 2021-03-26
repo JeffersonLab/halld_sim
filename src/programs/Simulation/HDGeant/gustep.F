@@ -931,6 +931,7 @@ c          interaction, or except if produced in cave upstream of Hall D
               iflgk(i) = 0
            endif
            call GSKING(i)
+           call save_ancestry(IQ(JSTAK+1))
         enddo
       endif
 
