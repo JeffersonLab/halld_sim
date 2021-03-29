@@ -229,7 +229,7 @@ int main( int argc, char* argv[] ){
 	    histname += "_";
 	    histname += amphistname[iamp];
 	  }
-	  cout<<ivar<<" "<<reactionName.Data()<<" "<<iplot<<endl;
+	  cout<<ivar<<" "<<reactionName<<" "<<iplot<<endl;
 	  Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
 /*
 	  TH1* thist = hist->toRoot();
