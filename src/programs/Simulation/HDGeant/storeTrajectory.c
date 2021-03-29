@@ -28,12 +28,12 @@ void save_ancestry(int istack)
    }
    const int growth_increment = 200;
    if (istack >= parent_id_size) {
-      int *buf = malloc((parent_id_size + growth_increment)*sizeof(int));
+      int *buf = malloc((istack + growth_increment)*sizeof(int));
       if (max_track_id > 0) {
          memcpy(buf, parent_id, max_track_id*sizeof(int));
          free(parent_id);
       }
-      parent_id_size += growth_increment;
+      parent_id_size = istack + growth_increment;
       parent_id = buf;
    }
    if (istack > max_track_id) {
@@ -173,12 +173,20 @@ void addtrajectorypoint_(float *VECT, float *TOFG, float *DESTEP
     if (LMEC[*NMEC-1] > 0) {
 	   p->mech = LMEC[*NMEC-1];
     }
-    else if (*ISTAK < max_track_id) {
-	   p->mech = -parent_id[*ISTAK];
+    else if (*ISTAK > 0) {
+       if (*ISTAK < max_track_id)
+          p->mech = -parent_id[*ISTAK];
+       else
+          p->mech = -track_id;
     }
     else {
-	   p->mech = 0;
-   }
+       int istak_of_primary_();
+       int istack = istak_of_primary_();
+       if (istack < max_track_id)
+          p->mech = -parent_id[istack];
+       else
+          p->mech = 0;
+    }
 }
 
 /*---------------------
