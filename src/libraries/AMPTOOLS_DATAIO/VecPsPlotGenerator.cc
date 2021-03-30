@@ -69,7 +69,7 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin ){
 
    TLorentzVector proton_ps = recoil + bach;
    TLorentzVector recoil_ps = proton_ps;
-   for(uint i=6; i<kin->particleList().size(); i++) {
+   for(uint i=5; i<kin->particleList().size(); i++) {
 	recoil += kin->particle(i);
 	recoil_ps += kin->particle(i);
    }
