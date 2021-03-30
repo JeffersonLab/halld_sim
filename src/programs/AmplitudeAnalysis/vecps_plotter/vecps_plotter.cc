@@ -200,7 +200,6 @@ int main( int argc, char* argv[] ){
 	  // set unique histogram name for each plot (could put in directories...)
 	  string histname =  "";
 	  if (ivar == VecPsPlotGenerator::kVecPsMass)  histname += "MVecPs";
-/*
 	  else if (ivar == VecPsPlotGenerator::kCosTheta)  histname += "CosTheta";
 	  else if (ivar == VecPsPlotGenerator::kPhi)  histname += "Phi";
 	  else if (ivar == VecPsPlotGenerator::kCosThetaH)  histname += "CosTheta_H";
@@ -210,7 +209,6 @@ int main( int argc, char* argv[] ){
 	  else if (ivar == VecPsPlotGenerator::kRecoilMass)  histname += "MRecoil";
 	  else if (ivar == VecPsPlotGenerator::kProtonPsMass)  histname += "MProtonPs";
 	  else if (ivar == VecPsPlotGenerator::kRecoilPsMass)  histname += "MRecoilPs";
-	  */
 	  else continue;	  
 
 	  if (iplot == PlotGenerator::kData) histname += "dat";
@@ -229,14 +227,12 @@ int main( int argc, char* argv[] ){
 	    histname += "_";
 	    histname += amphistname[iamp];
 	  }
-	  cout<<ivar<<" "<<reactionName<<" "<<iplot<<endl;
+	  
 	  Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
-/*
 	  TH1* thist = hist->toRoot();
 	  thist->SetName(histname.c_str());
 	  plotfile->cd();
 	  thist->Write();
-*/
 	  
 	}
       }

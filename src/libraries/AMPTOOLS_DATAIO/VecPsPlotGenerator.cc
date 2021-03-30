@@ -1,21 +1,7 @@
-//#include <ctime>
-//#include <stdlib.h>
-//#include <stdio.h>
-
-//#include <cassert>
-//#include <iostream>
-//#include <string>
-//#include <sstream>
-
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
-
-//#include <cmath>
-//#include <complex>
-//#include <vector>
-//#include "TMath.h"
 
 #include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
 #include "IUAmpTools/Histogram1D.h"
@@ -54,7 +40,7 @@ void VecPsPlotGenerator::createHistograms( ) {
 void
 VecPsPlotGenerator::projectEvent( Kinematics* kin ){
 
-   cout << "project event" << endl;
+   //cout << "project event" << endl;
    TLorentzVector beam   = kin->particle( 0 );
    TLorentzVector recoil = kin->particle( 1 );
    TLorentzVector bach = kin->particle( 2 );
