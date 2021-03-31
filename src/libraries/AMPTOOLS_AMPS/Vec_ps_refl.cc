@@ -40,6 +40,7 @@ UserAmplitude< Vec_ps_refl >( args )
     polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
   }
 
+  m_3pi = false;
   if(args.size() == (11)){
 	  m_3pi = true; // treat 3-pion decay dalitz parameters
 

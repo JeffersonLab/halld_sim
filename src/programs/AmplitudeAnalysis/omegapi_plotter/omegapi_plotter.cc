@@ -129,7 +129,7 @@ int main( int argc, char* argv[] ){
   vector<string> amps = plotGen.uniqueAmplitudes();
   cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-  vector<string> amphistname = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "1p", "1m"};
+  vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "0m", "1p", "1m", "2m"};
   vector<string> reflname = {"PosRefl", "NegRefl"};
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
