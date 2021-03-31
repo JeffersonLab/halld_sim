@@ -20,6 +20,7 @@ class cdc_config_t
 	double CDC_DIFFUSION_PAR1,CDC_DIFFUSION_PAR2,CDC_DIFFUSION_PAR3;
 
         vector<double> CDC_GAIN_DOCA_PARS;  // params to model gas deterioration spring 2018
+        vector<double> CDC_GAIN_DOCA_EXT;  // params to model gas deterioration spring 2018
 
 	vector< vector<double> > wire_efficiencies;
 	vector< vector<double> > wire_thresholds;

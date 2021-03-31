@@ -46,11 +46,16 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
 	}
 	
 
- // CDC correction for gain drop from progressive gas deterioration in spring 2018
+      // CDC correction for gain drop from progressive gas deterioration in spring 2018
       jout << "get CDC/gain_doca_correction parameters from CCDB..." << endl;
       if(loop->GetCalib("CDC/gain_doca_correction", CDC_GAIN_DOCA_PARS))
 		jout << "Error loading CDC/gain_doca_correction !" << endl;
 
+
+      // CDC correction for gain drop from progressive gas deterioration in spring 2018
+      jout << "get CDC/gain_doca_corr_ext parameters from CCDB..." << endl;
+      if(loop->GetCalib("CDC/gain_doca_corr_ext", CDC_GAIN_DOCA_EXT))
+		jout << "Error loading CDC/gain_doca_corr_ext !" << endl;
 
 
 
@@ -202,37 +207,64 @@ void CDCSmearer::SmearEvent(hddm_s::HDDM *record)
         double dmax = cdc_config->CDC_GAIN_DOCA_PARS[0];  //hits with doca > dmax are not used for dE/dx in recon
         double dmin = cdc_config->CDC_GAIN_DOCA_PARS[1];  //gain is not suppressed for doca < dmin
 
+        double refp0 = cdc_config->CDC_GAIN_DOCA_PARS[2];  // reference p0
+        double refp1 = cdc_config->CDC_GAIN_DOCA_PARS[3];  // reference p1
+
+        double thisp0 = cdc_config->CDC_GAIN_DOCA_PARS[4];  // p0 for this run
+        double thisp1 = cdc_config->CDC_GAIN_DOCA_PARS[5];  // p1 for this run
+
+        double refdmax = cdc_config->CDC_GAIN_DOCA_EXT[0];  // dmax for reference run
+        double xd = cdc_config->CDC_GAIN_DOCA_EXT[1];  // length of 3rd line segment
+
+
         bool suppress_gain = 0;
         if (dmin < dmax) suppress_gain = 1;   // default values for good-gas runs have dmin=dmax=1.0cm 
 
         if (suppress_gain) { 
 
+          // apply correction for pulse amplitude.  Convert from charge to amplitude later on, after adding pedestal charge smearing 
+
           double reference;
           double this_run;
 
-          // apply correction for pulse amplitude.  Convert from charge to amplitude later on, after adding pedestal charge smearing 
+          // match a third line segment to the second at dmax, descending to 0 at dmax+xd
 
           if (d > dmin) {
-              reference = cdc_config->CDC_GAIN_DOCA_PARS[2] + d*cdc_config->CDC_GAIN_DOCA_PARS[3];
-              this_run = cdc_config->CDC_GAIN_DOCA_PARS[4] + d*cdc_config->CDC_GAIN_DOCA_PARS[5];
+
+	      if (d <= refdmax) {
+		  reference = refp0 + d*refp1;
+              } else {
+    		  double newp1 = -1*(refp0 + refdmax*refp1)/xd;
+                  double newp0 =  -1*(refdmax+xd)*newp1;
+                  reference = newp0 + d*newp1;
+              }
+
+	      if (d <= dmax) {
+                  this_run = thisp0 + d*thisp1;
+              } else {
+  		  double newp1 = -1*(thisp0 + dmax*thisp1)/xd;
+                  double newp0 =  -1*(dmax+xd)*newp1;
+                  this_run = newp0 + d*newp1;
+	      }
+
               amplitude = amplitude * this_run/reference;   
           }  
 
        
-  	  // This is the correction for pulse integral. 
-
+  	  // This is the correction for pulse integral.
+ 
           if (d < dmin) {
 
-             reference    = (cdc_config->CDC_GAIN_DOCA_PARS[2] + cdc_config->CDC_GAIN_DOCA_PARS[3]*dmin) * (dmin - d);
-             reference += (cdc_config->CDC_GAIN_DOCA_PARS[2] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[3]*(dmin+dmax)) * (dmax - dmin);
+             reference    = (refp0 + refp1*dmin) * (dmin - d);
+             reference += (refp0 + 0.5*refp1*(dmin+dmax)) * (dmax - dmin);
 
-             this_run    = (cdc_config->CDC_GAIN_DOCA_PARS[4] + cdc_config->CDC_GAIN_DOCA_PARS[5]*dmin) * (dmin - d);
-             this_run += (cdc_config->CDC_GAIN_DOCA_PARS[4] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[5]*(dmin+dmax)) * (dmax - dmin);
+             this_run    = (thisp0 + thisp1*dmin) * (dmin - d);
+             this_run += (thisp0 + 0.5*thisp1*(dmin+dmax)) * (dmax - dmin);
 
           } else { 
 
-             reference = (cdc_config->CDC_GAIN_DOCA_PARS[2] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[3]*(d+dmax)) * (dmax - d);
-             this_run   = (cdc_config->CDC_GAIN_DOCA_PARS[4] + 0.5*cdc_config->CDC_GAIN_DOCA_PARS[5]*(d+dmax)) * (dmax - d);
+             reference = (refp0 + 0.5*refp1*(d+dmax)) * (dmax - d);
+             this_run   = (thisp0 + 0.5*thisp1*(d+dmax)) * (dmax - d);
 
           }
 
