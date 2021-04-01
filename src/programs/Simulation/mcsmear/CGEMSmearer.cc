@@ -9,7 +9,12 @@ cgem_config_t::cgem_config_t(JEventLoop *loop)
   m_CGEM_FANO_FACTOR = 0.1; // [FIXME]
   m_CGEM_ENERGY_THRES = 0.0; // keV 
   m_CGEM_SPATIAL_RESOLUTION = 100; // um
+  m_CGEM_Z_RESOLUTION=100; // um
   m_CGEM_TIMING_RESOLUTION = 10; // ns
+
+  gPARMS->SetDefaultParameter("MCSMEAR:CGEM_XY_SIGMA",m_CGEM_SPATIAL_RESOLUTION);
+  gPARMS->SetDefaultParameter("MCSMEAR:CGEM_Z_SIGMA",m_CGEM_Z_RESOLUTION);
+
 }
 
 	
@@ -20,7 +25,6 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
 {
    hddm_s::CgemLayerList layers = record->getCgemLayers();
    hddm_s::CgemLayerList::iterator iter;
-   cout <<"events" << endl;
    for (iter = layers.begin(); iter != layers.end(); ++iter) {
      
      // If the element already contains a cdcStrawHit list then delete it.
@@ -58,7 +62,7 @@ void CGEMSmearer::SmearEvent(hddm_s::HDDM *record)
 	 double tsmear = t + gDRandom.SampleGaussian(cgem_config->m_CGEM_TIMING_RESOLUTION);
 	 double xsmear = x + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
 	 double ysmear = y + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
-	 double zsmear = z + gDRandom.SampleGaussian(cgem_config->m_CGEM_SPATIAL_RESOLUTION * 1e-4);
+	 double zsmear = z + gDRandom.SampleGaussian(cgem_config->m_CGEM_Z_RESOLUTION * 1e-4);
 	 // Apply a single block threshold. 
 	 // Scale threshold by gains
 	 if (Esmear >= cgem_config->m_CGEM_ENERGY_THRES){
