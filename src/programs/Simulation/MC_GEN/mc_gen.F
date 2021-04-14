@@ -2326,18 +2326,18 @@ c       sake, to allow decoding of which proton was generated and which was reco
 c     
 c        write(6,*)'There are ',iproton,' protons in this event.',
 c     1       ipmark1,ipmark2
-        if(iproton.eq.2.and.icount.eq.3)then
-           x = ran(iseed)
-           if(x.lt.0.5)then
+c        if(iproton.eq.2.and.icount.eq.3)then
+c           x = ran(iseed)
+c           if(x.lt.0.5)then
 c              write(6,*)'Protons will be swapped'
-              do j = 1,24
-                 plisttemp = plist(j,ipmark1)
-                 plist(j,ipmark1) = plist(j,ipmark2)
-                 plist(j,ipmark2) = plisttemp
-              enddo
-              imechanism = -imechanism !signals proton swapping to HDGEANT
-           endif
-        endif
+c              do j = 1,24
+c                 plisttemp = plist(j,ipmark1)
+c                 plist(j,ipmark1) = plist(j,ipmark2)
+c                 plist(j,ipmark2) = plisttemp
+c              enddo
+c              imechanism = -imechanism !signals proton swapping to HDGEANT
+c           endif
+c        endif
 c
 c       Another special hack to Lambda-anti-Lambda events which have 5  particles in the final state.
 c       Because HDGEANT's HDDM input file wants to "know" the full decay structure of the events,
