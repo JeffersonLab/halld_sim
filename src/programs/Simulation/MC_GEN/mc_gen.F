@@ -177,7 +177,7 @@ c                          of the fact that in bulk we generate 10000 events at 
 c               10-30-20 - Tweak the output to reduce the precision of the vertex information; include decay vertexes;
 c                          enable Cascades to be written out;  add more info to the output file used for GlueX
       
-        parameter (version=12.90) !Version of the program... keep this updated     
+        parameter (version=12.92) !Version of the program... keep this updated     
 c      
 	external ran  !forces the use of local random number generator (see RNDNOR.F)
 	parameter (maxnumpar=65) !Maximum number of particles in the table
