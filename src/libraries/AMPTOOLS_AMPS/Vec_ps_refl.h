@@ -11,6 +11,12 @@
 #include <complex>
 #include <vector>
 
+#ifdef GPU_ACCELERATION
+void GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, 
+	int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble polAngle, GDouble polFraction,
+	 GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta);
+#endif // GPU_ACCELERATION
+
 using std::complex;
 using namespace std;
 
@@ -58,6 +64,14 @@ public:
 
 	void updatePar( const AmpParameter& par );
 	
+#ifdef GPU_ACCELERATION
+
+  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
+
+	bool isGPUEnabled() const { return true; }
+
+#endif // GPU_ACCELERATION
+
 private:
         
 	int m_j;
