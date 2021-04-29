@@ -22,6 +22,11 @@ using namespace std;
 // r=+/-1 indicates real/imaginary part of Vec_ps_refl
 // s=+/-1 multiplies with sqrt(1+/- P_gamma)
 
+#ifdef GPU_ACCELERATION
+void
+GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction );
+#endif
+
 class Kinematics;
 
 class Vec_ps_refl : public UserAmplitude< Vec_ps_refl >
@@ -31,6 +36,7 @@ public:
 	
 	Vec_ps_refl() : UserAmplitude< Vec_ps_refl >() { };
 	Vec_ps_refl( const vector< string >& args );
+	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction );
 	
 	string name() const { return "Vec_ps_refl"; }
     
@@ -57,6 +63,14 @@ public:
 	bool needsUserVarsOnly() const { return true; }
 
 	void updatePar( const AmpParameter& par );
+
+#ifdef GPU_ACCELERATION
+
+	void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
+
+        bool isGPUEnabled() const { return true; }
+
+#endif // GPU_ACCELERATION
 	
 private:
         
