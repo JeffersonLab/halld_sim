@@ -1091,7 +1091,7 @@ def AddAmpTools(env):
 		AMPTOOLS_CPPPATH = "%s" % (AMPTOOLS)
 		AMPTOOLS_LIBPATH = "%s/lib" % (AMPTOOLS)
 		AMPTOOLS_LIBS = 'AmpTools'
-		if os.getenv('CUDA')!=None and os.path.exists('%s/lib/libAmpTools_GPU.a' % AMPTOOLS):
+		if os.getenv('CUDA_INSTALL_PATH')!=None and os.path.exists('%s/lib/libAmpTools_GPU.a' % AMPTOOLS):
 			AMPTOOLS_LIBS = 'AmpTools_GPU'
 			print('Using GPU enabled AMPTOOLS library')
 
