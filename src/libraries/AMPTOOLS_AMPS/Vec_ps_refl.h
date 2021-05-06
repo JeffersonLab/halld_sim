@@ -24,7 +24,7 @@ using namespace std;
 
 #ifdef GPU_ACCELERATION
 void
-GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction );
+GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta );
 #endif
 
 class Kinematics;
@@ -36,7 +36,7 @@ public:
 	
 	Vec_ps_refl() : UserAmplitude< Vec_ps_refl >() { };
 	Vec_ps_refl( const vector< string >& args );
-	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction );
+	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta );
 	
 	string name() const { return "Vec_ps_refl"; }
     
@@ -49,7 +49,7 @@ public:
 	// Use this for indexing a user-defined data array and notifying
 	// the framework of the number of user-defined variables.
 	
-	enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_angle = 4, uv_Pgamma = 5, uv_dalitz_z = 6, uv_dalitz_sin3theta = 7, uv_M4Pi = 8, uv_M3Pi = 9, kNumUserVars };
+	enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_angle = 4, uv_Pgamma = 5, uv_dalitz_z = 6, uv_dalitz_sin3theta = 7, uv_kin = 8, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	// This function needs to be defined -- see comments and discussion

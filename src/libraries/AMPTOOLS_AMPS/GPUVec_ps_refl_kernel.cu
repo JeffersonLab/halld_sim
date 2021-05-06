@@ -10,8 +10,6 @@
 #include "GPUUtils/wignerD.cuh"
 #include "GPUUtils/clebsch.cuh"
 
-// Macro to ease definition of loops
-#define LOOP(INDEX,START,END,INC) for (int INDEX=START;INDEX<=END;INDEX+=INC)
 ////////////////////////////////////////////////////////////////////////////////////////
  __device__ WCUComplex CZero = { 0, 0 };
  __device__ WCUComplex COne  = { 1, 0 };
@@ -20,7 +18,7 @@
  __device__ GDouble DegToRad = PI/180.0;
 ///////////////////////////////////////////////////////////////////////////////
 __global__ void
-GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction )
+GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta )
 {
 	int iEvent = GPU_THIS_EVENT;
 
@@ -32,15 +30,32 @@ GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_
 	GDouble polfrac = GPU_UVARS(5);
 	GDouble dalitz_z = GPU_UVARS(6);
 	GDouble dalitz_sin3theta = GPU_UVARS(7);
-	GDouble M3Pi = GPU_UVARS(8);
-	GDouble M4Pi = GPU_UVARS(9);
+	GDouble kinFactor = GPU_UVARS(8);
 
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	WCUComplex amplitude = CZero;
 
-	GDouble G = G_SQRT( 1 + (2 * dalitz_alpha * dalitz_z) + (2 * dalitz_beta * G_POW(dalitz_z, (double) 3/2) * dalitz_sin3theta) + (2 * dalitz_gamma * G_POW(dalitz_z, (double) 2.0)) + (2 * dalitz_delta * G_POW(dalitz_z, (double) 5/2) * dalitz_sin3theta) );
+	// dalitz parameters for 3-body vector decay
+	GDouble G = 1; // not relevant for 2-body vector decays
+	if(m_3pi) G = G_SQRT(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * G_POW(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * G_POW(dalitz_z,2) + 2 * dalitz_delta * G_POW(dalitz_z,5/2.) * dalitz_sin3theta );
 
+	for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
+		//CPU --> clebschGordan(j1,j2,m1,m2,J,M) || GPU --> clebsch(j1,m1,j2,m2,J,M);
+		GDouble hel_amp = clebsch(m_l, 0, 1, lambda, m_j, lambda);
+		amplitude += Conjugate(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * Conjugate(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
+  	} 
+  
+	GDouble Factor = sqrt(1 + m_s * polfrac);
+	WCUComplex zjm = CZero;
+	WCUComplex rotateY = { G_COS(  -1. * prod_angle ) , G_SIN( -1. * prod_angle ) };
+
+	if (m_r == 1)
+		zjm = (amplitude * rotateY).m_dRe;
+	if (m_r == -1) 
+		zjm = (amplitude * rotateY).m_dIm;
+
+/*
 	for (int lambda = -1; lambda <= 1; lambda++) { //omega helicity
 		GDouble hel_amp = clebsch(m_l, 0, 1, lambda, m_j, lambda);
 		//CPU --> clebschGordan(j1,j2,m1,m2,J,M) || GPU --> clebsch(j1,m1,j2,m2,J,M);
@@ -50,28 +65,26 @@ GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_
 		
 	GDouble Factor = G_SQRT(1 + m_s * polfrac);
 	WCUComplex zjm = CZero;
-	WCUComplex rotateY = { G_COS(prod_angle), -1.*G_SIN(prod_angle) };
+	WCUComplex rotateY = { G_COS(-1.*prod_angle), G_SIN(-1.*prod_angle) };
 	WCUComplex product = amplitude * rotateY;
 	if (m_r == 1)
         	zjm = product.Re();
 	if (m_r == -1)
        		zjm = product.Im();
+*/
 
-	// E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
-	GDouble kinFactor = barrierFactor(M4Pi, m_l, M3Pi, 0.139);
-  	//kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
   	Factor *= kinFactor;	
 
   	pcDevAmp[iEvent] = zjm * Factor;
 }
 
 void
-GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction)
+GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta)
 
 {  
 
   	GPUVec_ps_refl_kernel<<< dimGrid, dimBlock >>>
-    		( GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction);
+    		( GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, m_3pi, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta);
 
 }
 
