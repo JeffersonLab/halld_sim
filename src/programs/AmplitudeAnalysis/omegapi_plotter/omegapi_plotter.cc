@@ -129,7 +129,7 @@ int main( int argc, char* argv[] ){
   vector<string> amps = plotGen.uniqueAmplitudes();
   cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-  vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "0m", "1p", "1m", "2m"};
+  vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "3mp2f", "3mpf", "3m0f", "3mmf", "3mm2f", "0m", "1p", "1m", "2m", "3m"};
   vector<string> reflname = {"PosRefl", "NegRefl"};
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
@@ -282,6 +282,7 @@ int main( int argc, char* argv[] ){
   const int nAmps = amphistname.size();
   vector<string> ampsumPosRefl[nAmps];
   vector<string> ampsumNegRefl[nAmps];
+  vector< pair<string,string> > phaseDiffNames;
 
   for(unsigned int i = 0; i < fullamps.size(); i++){
 
@@ -318,8 +319,20 @@ int main( int argc, char* argv[] ){
 		    }
 	    }
     }
+    
+    // second loop over amplitudes to get phase difference names
+    for(unsigned int j = i+1; j < fullamps.size(); j++){
+
+	    // only keep amplitudes from the same coherent sum (and ignore constrained Real)
+	    if(fullamps[i].find("Real") != std::string::npos) continue;
+	    if(fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos) continue;
+	    if(fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
+	    
+	    phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
+    }
   }
 
+  cout<<"Computing fit fractions"<<endl;
   for(int i = 0; i < nAmps; i++){
     if(ampsumPosRefl[i].empty()) continue;
     outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = "
@@ -328,6 +341,13 @@ int main( int argc, char* argv[] ){
      outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = "
           << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
           << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
+  }
+
+  cout<<"Computing phase differences"<<endl;
+  for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
+	  pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
+	  outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
+
   }
 
   // covariance matrix
