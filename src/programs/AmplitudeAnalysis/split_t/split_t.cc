@@ -20,11 +20,13 @@ using namespace std;
 
 void Usage()
 {
-  cout << "Usage:\n  split_t <infile> <outputBase> <lowT> <highT> <nBins> [maxEvents]\n";
-  cout << "  split_mass <infile> <outputBase> <lowT> <highT> <nBins> -T [tree name]\n\n";
-  cout << "   overwrites the default ROOT tree name (\"kin\") in output and/or input files\n";
-  cout << "   To specify input and output names delimit with \':\' ex. -T inKin:outKin\n";
-  cout << "   Use -t to update existing files with new tree, instead of overwritting.\n";
+  cout << "Usage:\n  split_t <infile> <outputBase> <lowT> <highT> <nBins> [OPTIONS]\n\n";
+  cout << "  Options: \n";
+  cout << "   -M [maxEvents] : Limit total number of events\n";
+  cout << "   -T [treeName]  : Overwrites the default ROOT tree name (\"kin\") in output and/or input files\n";
+  cout << "                    To specify input and output names delimit with \':\' ex. -T inKin:outKin\n";
+  cout << "   -t [treeName]  : Update existing files with new tree, instead of overwriting.\n";
+  cout << "   -e             : Use a logarithmic binning (cannot have lowT = 0).\n";
   exit(1);
 }
 
@@ -54,6 +56,8 @@ int main( int argc, char* argv[] ){
 
   bool recreate=true;
 
+  bool exponential=false;
+
   if( argc < 6 ) Usage();
   
   string outBase( argv[2] );
@@ -65,7 +69,7 @@ int main( int argc, char* argv[] ){
   // A somewhat convoluted way to allow tree name specification
   // via "-t [name]" in the arg. list after the standard args
   if( argc > 6 ) {
-    for(int i=6; i<=7 && i<argc ; ++i){
+    for(int i=6; i<argc ; ++i){
       string arg=argv[i];
       if (arg == "-t"){
 	if ((i+1 == argc) || (argv[i+1][0] == '-')) Usage();
@@ -79,9 +83,16 @@ int main( int argc, char* argv[] ){
 	  treeNames = GetTreeNames(argv[++i]);
 	  recreate=true;
 	}
-      }else
-	if(i==6) maxEvents = atoi( arg.c_str() );
-	else Usage();
+      }else if (arg == "-M"){
+	if ((i+1 == argc) || (argv[i+1][0] == '-')) Usage();
+	else{
+	  maxEvents = atoi( argv[++i] );
+	}
+      }else if (arg == "-e"){
+	if (lowT == 0) Usage();
+	else exponential = true;
+      }
+      else Usage();
     }
   }
 
@@ -96,7 +107,12 @@ int main( int argc, char* argv[] ){
   enum { kMaxBins = 1000 };
   assert( numBins < kMaxBins );
   
-  double step = ( highT - lowT ) / numBins;
+  double step;
+  if (exponential)
+    step = ( TMath::Log10(highT) - TMath::Log10(lowT) ) / numBins;
+  else
+    step = ( highT - lowT ) / numBins;
+
   int events[numBins];
   double Tsum[numBins];
   double TsumSq[numBins+1];
@@ -128,7 +144,11 @@ int main( int argc, char* argv[] ){
 
     double t = -1 * (Recoil - Target).M2();
     
-    int bin = static_cast< int >( floor( ( t - lowT ) / step ) );
+    int bin;
+    if (exponential)
+      bin = static_cast< int >( floor( ( TMath::Log10(t) - TMath::Log10(lowT) ) / step ) );
+    else
+      bin = static_cast< int >( floor( ( t - lowT ) / step ) );
     if( ( bin < numBins ) && ( bin >= 0 ) ){
       Tsum[bin]+=t;
       TsumSq[bin]+=t*t;
