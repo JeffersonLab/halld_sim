@@ -61,6 +61,8 @@ public:
 	// four-vectors.  It is used to optimize memory usage in GPU
 	// based fits.
 	bool needsUserVarsOnly() const { return true; }
+	
+	bool areUserVarsStatic() const { return true; }
 
 	void updatePar( const AmpParameter& par );
 
