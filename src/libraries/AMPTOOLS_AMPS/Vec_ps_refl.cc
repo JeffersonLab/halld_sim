@@ -124,6 +124,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   TLorentzVector Gammap = beam + target;
 
   // polarization BeamProperties
+  /*
   GDouble Pgamma=polFraction;//fixed beam polarization fraction
   if(polAngle == -1)
 	  Pgamma = 0.;//if beam is amorphous set polarization fraction to 0
@@ -138,9 +139,10 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	  else
 		  Pgamma = polFrac_vs_E->GetBinContent(bin);
   }
+  */
 
   // Calculate decay angles in helicity frame (same for all vectors)
-  vector <double> locthetaphi = getomegapiAngles(polAngle, vec, X, beam, Gammap);
+  vector <double> locthetaphi = getomegapiAngles(0, vec, X, beam, Gammap);
 
   // Calculate vector decay angles (unique for each vector)
   vector <double> locthetaphih;
@@ -153,14 +155,11 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[uv_cosThetaH] = TMath::Cos(locthetaphih[0]);
   userVars[uv_PhiH] = locthetaphih[1];
 
-  userVars[uv_prod_angle] = locthetaphi[2];
+  userVars[uv_prod_Phi] = locthetaphi[2];
 
-  userVars[uv_Pgamma] = Pgamma;
-
-  // E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
-  double kinFactor = barrierFactor(X.M(), m_l, vec.M(), ps.M());
-  //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
-  userVars[uv_kin] = kinFactor;
+  userVars[uv_MX] = X.M();
+  userVars[uv_MVec] = vec.M();
+  userVars[uv_MPs] = ps.M();
 
   return;
 }
@@ -176,11 +175,12 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble Phi = userVars[uv_Phi];
   GDouble cosThetaH = userVars[uv_cosThetaH];
   GDouble PhiH = userVars[uv_PhiH];
-  GDouble prod_angle = userVars[uv_prod_angle];
-  GDouble polfrac = userVars[uv_Pgamma];
+  GDouble prod_angle = userVars[uv_prod_Phi];
   GDouble dalitz_z = userVars[uv_dalitz_z];
   GDouble dalitz_sin3theta = userVars[uv_dalitz_sin3theta];
-  GDouble kinFactor = userVars[uv_kin];
+  GDouble MX = userVars[uv_MX];
+  GDouble MVec = userVars[uv_MVec];
+  GDouble MPs = userVars[uv_MPs];
 
   // dalitz parameters for 3-body vector decay
   GDouble G = 1; // not relevant for 2-body vector decays
@@ -194,14 +194,17 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 	  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
   } 
 
-  GDouble Factor = sqrt(1 + m_s * polfrac);
+  GDouble Factor = sqrt(1 + m_s * polFraction);
   complex< GDouble > zjm = 0;
-  complex< GDouble > rotateY = polar(1., -1.*prod_angle);
+  complex< GDouble > rotateY = polar(1., -1.*(prod_angle - polAngle));
   if (m_r == 1)
 	  zjm = real(amplitude * rotateY);
   if (m_r == -1) 
 	  zjm = imag(amplitude * rotateY);
 
+  // E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
+  double kinFactor = barrierFactor(MX, m_l, MVec, MPs);
+  //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
   Factor *= kinFactor;
 
   return complex< GDouble >( static_cast< GDouble>( Factor ) * zjm );
@@ -219,7 +222,7 @@ void Vec_ps_refl::updatePar( const AmpParameter& par ){
 void
 Vec_ps_refl::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, m_3pi, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta);
+	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, m_3pi, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction );
 
 }
 
