@@ -49,7 +49,7 @@ GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_
   
 	GDouble Factor = sqrt(1 + m_s * polFraction);
 	WCUComplex zjm = CZero;
-	WCUComplex rotateY = { G_COS(  -1. * (prod_angle-polAngle*DegToRad) ) , G_SIN( -1. * (prod_angle-polAngle*DegToRad) ) };
+	WCUComplex rotateY = { G_COS(  -1. * (prod_angle - polAngle*DegToRad) ) , G_SIN( -1. * (prod_angle - polAngle*DegToRad) ) };
 
 	if (m_r == 1)
 		zjm = (amplitude * rotateY).m_dRe;
