@@ -200,7 +200,7 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   if (m_r == 1)
 	  zjm = real(amplitude * rotateY);
   if (m_r == -1) 
-	  zjm = imag(amplitude * rotateY);
+	  zjm = i*imag(amplitude * rotateY);
 
   // E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
   double kinFactor = barrierFactor(MX, m_l, MVec, MPs);
