@@ -56,7 +56,7 @@ int main( int argc, char* argv[] ){
 	string  outname("");
 	string  hddmname("");
 	
-	bool centeredVertex = false;
+	bool centeredVertex = true;
 	bool diag = false;
 	bool genFlat = false;
 	
@@ -132,7 +132,7 @@ int main( int argc, char* argv[] ){
 		if (arg == "-d"){
 			diag = true; }
 		if (arg == "-v"){
-			centeredVertex = true; }
+			centeredVertex = false; }
 		if (arg == "-f"){
 			genFlat = true; }
 		if (arg == "-h"){
@@ -152,7 +152,7 @@ int main( int argc, char* argv[] ){
 			cout << "\t -t    <value>\t Momentum transfer slope [optional]" << endl;
 			cout << "\t -tmin <value>\t Minimum momentum transfer [optional]" << endl;
 			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
-			cout << "\t -v \t\t Set vertex to (0,0,0), i.e. let geant generate vertex distribution [optional]" << endl;
+			cout << "\t -v \t\t Throw vertex distribution in gen_amp, not in hdgeant(4) [not recommended]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
 			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl;
 			exit(1);
