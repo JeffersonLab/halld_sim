@@ -170,9 +170,11 @@ void init_runtime_xml_(void)
                 cout << *xiter << endl;
                 vector<map<string, string> > vals;
                 jcalib->GetCalib(*xiter, vals);
-                string &xml = vals[0].begin()->second;
-                ofstream xmlout(tempdir + xiter->substr(xiter->find("/")));
-                xmlout << xml;
+                for (unsigned int ix = 0; ix < vals.size(); ++ix) {
+                    string &xml = vals[ix].begin()->second;
+                    ofstream xmlout(tempdir + xiter->substr(xiter->find("/")));
+                    xmlout << xml;
+                }
             }
         }
         HDDS_XML = tempdir + "/main_HDDS.xml";

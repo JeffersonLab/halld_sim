@@ -36,6 +36,7 @@ class mcsmear_config_t
 	bool SMEAR_HITS;
 	bool DUMP_RCDB_CONFIG;
 	bool SKIP_READING_RCDB;
+	bool MERGE_TAGGER_HITS;
 
 	//bool SMEAR_BCAL;
 	//bool FDC_ELOSS_OFF;

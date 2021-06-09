@@ -6,6 +6,7 @@
 #include <cstdlib>
 
 #include "TLorentzVector.h"
+#include "particleType.h"
 
 #include "barrierFactor.h"
 #include "breakupMomentum.h"
@@ -17,6 +18,38 @@
 // Dependence of swave 2pi cross section on W (mass of 2pi system)
 // Elton 4/17/2017
 
+Double_t sigma_ggpi0pi0_func (Double_t *x, Double_t *par){
+    
+    // Parameterization for data from Masiske Phys Rev D 41 (1990) 3324.
+    // Returns cross section in units of nb
+    
+    // constants
+    // Double_t const PI = 3.14159;
+    // parin[0] = A;              // parameter 1: normalization
+    // parin[x] = mu;                // parameter 2: mean of Fermi Function. simplify to 2 parameters
+    // parin[1] = kT              // parameter 3: transition parameter
+    
+  Double_t MPI = ParticleMass(Pi0);
+    // Double_t PI=3.14159;
+    
+    Double_t A  = par[0];
+    Double_t mu = 2*MPI;
+    Double_t kT = par[1];
+    Double_t Wpipi = x[0] ;
+    Double_t f;
+    
+    if (Wpipi < 2*MPI) {
+        f = 0.5;
+    }
+    else {
+        f = 1 / (exp((Wpipi-mu)/kT) + 1);	                 // Use Fermi function. Data approx flat out to about 0.8 GeV, ignore beyond that. Data for costhe<0.8
+    }
+    
+    
+    // cout << " Wpipi=" << Wpipi << " A=" << A << " mu=" << mu << " kT=" << kT << " f=" << f << endl;
+    
+    return	2*A*(0.5-f)/0.8;                                     // Convert to nb, assuming isotropic angular distribution of pions. Correct for 80% coverage
+}
 
 Double_t sigma_ggpipi_func (Double_t *x, Double_t *par){
     
@@ -25,7 +58,8 @@ Double_t sigma_ggpipi_func (Double_t *x, Double_t *par){
     
     // constants
     // Double_t const PI = 3.14159;
-    Double_t MPI =0.139570;
+  // Double_t MPI = ParticleMass(Pi0);     // pi0
+  Double_t MPI = ParticleMass(PiPlus);  // pi+
     Double_t W0 = 0.3;
     
     Double_t expon = par[0];
@@ -59,7 +93,7 @@ Double_t ff_func (Double_t *x, Double_t *par){
     
     // constants
     // Double_t alpha = 1/137.;
-    Double_t pi = 3.14159;
+    // Double_t pi = 3.14159;
     Double_t hbarc = 0.19733;                  // GeV*fm
     Double_t q = sqrt(x[0])/hbarc;          // take q to be  in fm^-1. Input variable is positive (-t)
     
@@ -75,14 +109,14 @@ Double_t ff_func (Double_t *x, Double_t *par){
         // cout << "jmax=" << jmax << " j=" << j << " R0=" << R0 << " a0=" << a0 << " sum1=" << sum1 << " sum=" << sum << endl;
     }
     
-    rho0 = (4*pi*R0/3)*( pi*a0*pi*a0  + R0*R0 + 8*pi*a0*a0*a0*sum);
+    rho0 = (4*PI*R0/3)*( PI*a0*PI*a0  + R0*R0 + 8*PI*a0*a0*a0*sum);
     rho0 = 1/rho0;
     
     Double_t f = 0;
     
-    f = (4*pi*pi*rho0*a0*a0*a0)/(q*q*a0*a0*sinh(pi*q*a0)*sinh(pi*q*a0))
-    	* (pi*q*a0 * cosh(pi*q*a0) * sin(q*R0) - q*R0 *cos(q*R0) * sinh(pi*q*a0) )
-    	+ 8*pi*rho0*a0*a0*a0*sum;
+    f = (4*PI*PI*rho0*a0*a0*a0)/(q*q*a0*a0*sinh(PI*q*a0)*sinh(PI*q*a0))
+    	* (PI*q*a0 * cosh(PI*q*a0) * sin(q*R0) - q*R0 *cos(q*R0) * sinh(PI*q*a0) )
+    	+ 8*PI*rho0*a0*a0*a0*sum;
     
     // cout << " q=" << q << " f=" << f << endl;
     return f;
@@ -97,12 +131,12 @@ Double_t sigmat_func (Double_t *x, Double_t *par){
     
     // constants
     Double_t alpha = 1/137.;
-    Double_t pi = 3.14159;
+    // Double_t pi = 3.14159;
     Double_t betapipi = 0.999;      // beta=0.999 (W=0.3), beta=0.997 (W=0.4), beta= 0.986 (W=1.0 GeV)
     // Double_t sigmagg = 1;         // take sigma (gg -> pi+ pi-) = 1 for now
     // Double_t Z = 50;              // Z of Sn, target
     Double_t Z = 82;              // Z of Pb, target
-    Double_t coef = 4*alpha*Z*Z/(pi);
+    Double_t coef = 4*alpha*Z*Z/(PI);
     
     Double_t Wpipi = par[0];
     Double_t Eg = par[1];
@@ -164,8 +198,8 @@ Double_t sigmat_func (Double_t *x, Double_t *par){
         f = 0;
     }
     
-    // cout << " t=" << t << " betastar=" << betastar << " gammastar=" << gammastar << " betapipicm=" << betapipicm << " t0=" << t0 << " thepipicm=" << thepipicm << " thepipi=" << thepipi << " f=" << f << endl;
-    // cout << " t=" << t << " FF=" << FF << " f=" << f << endl;
+    // if (f <= 0) cout << " t=" << t << " t0=" << t0 << " betastar=" << betastar << " gammastar=" << gammastar << " betapipicm=" 
+    //   << betapipicm << " FF=" << FF << " f=" << f << endl;
     return	f;
 }
 
@@ -174,18 +208,23 @@ TwoPiWt_primakoff::TwoPiWt_primakoff( const vector< string >& args ) :
 UserAmplitude< TwoPiWt_primakoff >( args )
 {
   
-  assert( args.size() == 5);
+  assert( args.size() == 6);
 	m_par1 = AmpParameter( args[0] );
 	m_par2 = AmpParameter( args[1] );
 	Bgen = AmpParameter( args[2] );
-	m_daughters = pair< string, string >( args[3], args[4] );
+        mtmax = AmpParameter( args[3] );
+	m_daughters = pair< string, string >( args[4], args[5] );
   
   // need to register any free parameters so the framework knows about them
   registerParameter( m_par1 );
   registerParameter( m_par2 );
+  registerParameter( Bgen );
+  registerParameter( mtmax );
   
   // make sure the input variables look reasonable
-  // assert( ( m_orbitL >= 0 ) && ( m_orbitL <= 4 ) );
+  // assert( ( m_orbitL >= 0 ) && ( m_orbitL <= 4 ) );  
+  assert( Bgen >= 1);   
+  assert( mtmax > 0);         
 }
 
 complex< GDouble >
@@ -222,8 +261,10 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
   }
   
   GDouble Wpipi  = Ptot.M();
-  // GDouble mass1 = P1.M();
+  GDouble mass1 = P1.M();
   // GDouble mass2 = P2.M();
+  GDouble Ppipi = Ptot.E() > Wpipi? sqrt(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
+  GDouble Thetapipi = Ptot.Theta()*180./PI;
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
@@ -241,16 +282,21 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
     xin[0] = Wpipi;                // W, 2pi mass
     Double_t Eg = pKin[0][0];          // incident photon energy
     Double_t parin[npar];
-    // parin[0] = 1.29;              // parameter 1: exponent
-    // parin[1] = 0.;                // parameter 2: par2 (spare)
+    // parin[0] A= 9.6;      // pi0 fit to data for costhe<0.8  Marsiske Phys Rev D 41 (1990) 3324
+    // parin[x]  mu= 2*MPI;     // pi0 should go to zero at threshold. Move to function
+    // parin[1] kT= 0.028;      // pi0 transition over about 100 MeV.
+
+    // parin[0] = 1.29;              // charged parameter 1: exponent
+    // parin[1] = 0.;                // charged parameter 2: par2 (spare)
     parin[0] = m_par1;              // parameter 1: exponent
     parin[1] = m_par2;                // parameter 2: par2 (spare)
     // Double_t Wmin=0.2 ;
     // Double_t Wmax=0.8;
 
+
     // cout << " TwoPiWt_primakoff: m_par1=" << m_par1 << " m_par2=" << m_par2 << " Bgen=" << Bgen << endl;
 
-    GDouble sig_ggpipi = sigma_ggpipi_func(xin,parin);
+    GDouble sig_ggpipi = sigma_ggpi0pi0_func(xin,parin);
 
     parin[0] = Wpipi;
     parin[1] = Eg;
@@ -262,13 +308,26 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
     parin[3] = 0.546;  
     xin[0] = -t;             // input positive value of t
     
-    GDouble sigmat = sigmat_func (xin,parin);
+    GDouble xnorm = 0.001;
+    GDouble sigmat = sigmat_func (xin,parin) * xnorm;    // normlize amplitude to about unity
 
-    // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " sig_ggpipi=" << sig_ggpipi << " sigmat=" << sigmat << endl;
+  GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
+  GDouble Thpipi = -t > tpar? (180/PI)*sqrt( (-t-tpar)/(Eg*Ppipi) ): 0;
   
-    complex<GDouble> Csig( sqrt(sigmat*sig_ggpipi/Wpipi/exp(Bgen*t)), 0.0 );    // Return complex double, sqrt (cross section). Divide out generated exponential. 
-  
-  return( Csig  );
+  double epsilon = 1e-7;
+  complex<GDouble> RealOne(1,0);
+  complex<GDouble> ImagOne(0,1);
+  complex<GDouble> Csig;
+
+  double arg = Bgen*t > -100? Bgen*t : -100;   // limit exponential
+  Csig = isfinite(sigmat*sig_ggpipi/Wpipi/exp(arg))? sqrt(sigmat*sig_ggpipi/Wpipi/exp(arg)) * RealOne : 0;    // Return complex double, sqrt (cross section). Divide out exponential
+  if (-t > mtmax) Csig = 0;      // eliminate events at high t with large weights
+
+
+  // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " BGen=" << Bgen << " exp(Bgen*t)=" << exp(Bgen*t) << " m_par1=" << m_par1 << " m_par2=" 
+  //<< m_par2 << " sig_ggpipi=" << sig_ggpipi << " sigmat=" << sigmat << " Thpipi=" << Thpipi << " Thetapipi=" << Thetapipi << " Csig=" << Csig << endl;
+
+    return( Csig + epsilon);   // return non-zero value to protect from likelihood calculation
 }
 
 void

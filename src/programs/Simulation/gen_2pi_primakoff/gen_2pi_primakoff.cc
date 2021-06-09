@@ -18,6 +18,7 @@
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
 #include "AMPTOOLS_AMPS/TwoPitdist.h"
+#include "AMPTOOLS_AMPS/TwoPiNC_tdist.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
@@ -48,12 +49,13 @@ int main( int argc, char* argv[] ){
 	// default upper and lower bounds 
 	// double lowMass = 0.2;
 	// double highMass = 2.0; 
-	double lowMass = 0.28;
-	double highMass = 0.58 ;
+	double PiMass = ParticleMass(PiPlus);
+	double lowMass = 2*PiMass + 0.01;   // slightly higher than actual threshold to avoid zeros.;              
+	double highMass = 0.8 ;
 	
 	double beamMaxE   = 12.0;
 	double beamPeakE  = 6.0;
-	double beamLowE   = 0.139*2;
+	double beamLowE   = lowMass;
 	double beamHighE  = 12.0;
 	
 	int runNum = 9001;
@@ -145,7 +147,8 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
 	AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
 	AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
-	AmpToolsInterface::registerAmplitude( TwoPitdist() );
+	AmpToolsInterface::registerAmplitude( TwoPitdist() );	
+	AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
@@ -177,9 +180,8 @@ int main( int argc, char* argv[] ){
 		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 	
 	// generate over a range of mass -- the daughters are two charged pions
-	float Bslope= 376;   // exponential slope, make it smaller than any slope in the generator.
-	double PiMass = ParticleMass(PiPlus);
-	GammaZToXYZ resProd( lowMass, highMass, PiMass, PiMass, type, beamConfigFile , Bslope);
+	float Bgen= 230;   // exponential slope, make it smaller than any slope in the generator.
+	GammaZToXYZ resProd( lowMass, highMass, PiMass, PiMass, type, beamConfigFile , Bgen);
 	
 	// seed the distribution with a sum of noninterfering s-wave amplitudes
 	// we can easily compute the PDF for this and divide by that when

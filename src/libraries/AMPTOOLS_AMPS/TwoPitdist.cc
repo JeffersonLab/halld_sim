@@ -22,17 +22,21 @@ TwoPitdist::TwoPitdist( const vector< string >& args ) :
 UserAmplitude< TwoPitdist >( args )
 {
   
-  assert( args.size() == 4 );
+  assert( args.size() == 5 );
   Bslope = AmpParameter( args[0] );
   Bgen = AmpParameter( args[1] );
-  m_daughters = pair< string, string >( args[2], args[3] );    // specify indices of pions in event
+  mtmax = AmpParameter( args[2] );
+  m_daughters = pair< string, string >( args[3], args[4] );    // specify indices of pions in event
   
   // need to register any free parameters so the framework knows about them
   registerParameter( Bslope );
   registerParameter( Bgen );
+  registerParameter( mtmax );
   
   // make sure the input variables look reasonable
-  assert( ( Bgen >= 1 ) && ( Bslope >= Bgen ) );     // Make sure generated value is lower than actual.         
+  // assert( ( Bgen >= 1 ) && ( Bslope >= Bgen ) );     // Make sure generated value is lower than actual.  
+  assert( ( Bgen >= 1 ) && ( Bslope >= 1 ) );   
+  assert( mtmax > 0);         
 }
 
 complex< GDouble >
@@ -71,17 +75,21 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
   /*GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
   GDouble mass2 = P2.M();*/
+  GDouble Thetapipi = Ptot.Theta()*180./PI;
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
   GDouble Et = Precoil.E();
   GDouble Mt = Precoil.M();
-  GDouble t = -2*Precoil.M()*(Et - Mt);      
+  GDouble t = -2*Precoil.M()*(Et - Mt);  
+  complex<GDouble> RealOne(1,0);
+  complex<GDouble> ImagOne(0,1);
+  complex<GDouble> Arel; 
 
-    complex<GDouble> Arel(sqrt(exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
-  
+  Arel = sqrt(exp(Bslope*t)/exp(Bgen*t)) * RealOne;  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
+  if (-t > mtmax) Arel = 0;      // eliminate events at high t with large weights
 
-    // cout << " TwoPitdist" << " Bslope=" << Bslope << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel) << endl; 
+  // if (Thetapipi > 1.5) cout << " TwoPitdist" << " Thetapipi=" << Thetapipi << " Bslope=" << Bslope << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel) << endl; 
   return( Arel );
 }
 

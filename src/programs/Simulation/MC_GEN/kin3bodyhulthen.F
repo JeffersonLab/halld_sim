@@ -33,14 +33,16 @@ c               9-04-14 - recover code after disk crash and loss of changes sinc
 c                         April of this year
 c               9-05-14 - Introduce the Hulthen deuteron momentum distribution for recoil
 c               2-27-15 - Put in an optional hack to force a unique value of recoil momentum
-c               8-24-18 - repair code after over three use of dormancy
-c       
+c               8-24-18 - repair code after over three years of dormancy
+c              10-12-20 - fix /monte/ common block and declare "external ran"
+c
 c	P0 - c.m. vector for the whole beam-plus-target system in lab frame
 c	P1,P2,P3 - as input these contain only the masses
 c		   of the three outgoing particles; going out these are the
 c		   vectors for the final state particles in the lab frame. 
 c
 	subroutine kin3bodyhulthen(p0,p1,p2,p3,ierr)
+	external ran
 	logical ifirst
 	real p0(5),p1(5),p2(5),p3(5),p12(5)
 	real p1tmp(5),p2tmp(5),p12tmp(5),beta(3)
@@ -50,7 +52,7 @@ c
 	data hbarc / .197337/ !GeV fm
 	data pmaxgen/0.40/    !GeV/c
 c
-	common/monte/iseed
+	common /monte/ iseed,xflat,xnormal,xbw,ixcount
         common/fermi/prec,qfmass,pfermi,ndynamics
 	common/hulthen/phivaluemax,alphahc,betahc
 c

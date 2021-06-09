@@ -10,6 +10,8 @@
 #include "barrierFactor.h"
 #include "breakupMomentum.h"
 
+#include "particleType.h"
+
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
 
@@ -40,8 +42,8 @@ complex<double> Aw_func (Double_t *x, Double_t *par) {
     
     // S-wave I=0 phase shift as a function of center of mass energy
     
-    Double_t Mpi = 0.13957;
-    Double_t Mk = 0.493677;
+    Double_t Mpi = ParticleMass(Pi0);
+    Double_t Mk = ParticleMass(KPlus);
     Double_t s = W*W;            // center of mass energy ^2
     Double_t s0 = (2*Mk)*(2*Mk);
     
@@ -135,16 +137,15 @@ TwoPiWt_sigma::calcAmplitude( GDouble** pKin ) const
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
   // next three lines commented out, unused variables
-  //  GDouble Et = Precoil.E();
-  //  GDouble Mt = Precoil.M();
-  //  GDouble t = -2*Precoil.M()*(Et - Mt);      
+  GDouble Et = Precoil.E();
+  GDouble Mt = Precoil.M();
+  GDouble t = -2*Precoil.M()*(Et - Mt);  
 
   
     Int_t const npar = 8;
     Double_t xin[1];
     xin[0] = Wpipi;                // W, 2pi mass
-    // next line commented out, unused variable
-    //    Double_t Eg = pKin[0][0];          // incident photon energy
+    Double_t Eg = pKin[0][0];          // incident photon energy
 
     Double_t alpha1Re=0.378129;
     Double_t alpha1Im=0;
@@ -171,10 +172,11 @@ TwoPiWt_sigma::calcAmplitude( GDouble** pKin ) const
     Double_t Bgen=6.0;
 
     Aw = Aw * exp(Bslope*t)/exp(6.0*t);         // Divide out generated exponential. Move to separate amplitude.*/ 
+    Aw = isfinite(real(Aw))  && isfinite(imag(Aw))? Aw : 0;   // protect against infitinites
 
     if (Wpipi < mass1+mass2) Aw = 0;
     
-    // cout << "calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " Aw2=" << std::norm(Aw) << " AwPhase=" << std::arg(Aw) << endl;
+    // cout << "TwoPiWt_sigma: calcAmplitude: 2pi mass=" << Wpipi << " Eg=" << Eg << " t=" << t << " AwNorm=" << std::norm(Aw) << " AwPhase=" << std::arg(Aw) << endl;
   
   return( Aw );
 }

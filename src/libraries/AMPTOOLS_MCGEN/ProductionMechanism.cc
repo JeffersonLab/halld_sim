@@ -27,6 +27,7 @@ m_lastWeight( 1. )
   // kMZ = 108.;      //  mass of Sn116 
   kMZ = 208.*0.931494;      //  use mass of Pb as it is in the particle table
   kMPion = ParticleMass(PiPlus);
+  kMPi0 = ParticleMass(Pi0);
   kMKaon = ParticleMass(KPlus);
   
   isBaryonResonance = false;
@@ -40,6 +41,7 @@ m_lastWeight( 1. )
   case kNeutron: m_recMass = kMneutron; break; //old value: 0.9395
   case kZ: m_recMass = kMZ; break; //default to Sn116/Pb
   case kPion: m_recMass = kMPion; isBaryonResonance = true; break;
+  case kPi0: m_recMass = kMPi0; isBaryonResonance = true; break;
   case kKaon: m_recMass = kMKaon; isBaryonResonance = true; break;
   default:       m_recMass = kMproton; break; //old value: 0.9382
   }
@@ -65,6 +67,11 @@ ProductionMechanism::setGeneratorType( Type type ){
   m_type = type;
 }
 
+void
+ProductionMechanism::setRecoilMass( double recMass ){
+
+	m_recMass = recMass;
+}
 
 TLorentzVector
 ProductionMechanism::produceResonance( const TLorentzVector& beam ){
@@ -141,12 +148,14 @@ ProductionMechanism::produceResonanceZ ( const TLorentzVector& beam){
 	double t, tMaxkin, tMax, resMass, resMomCM;
 	// generate the t-distribution. t is positive here (i.e. should be -t)
 
+
   do {
     resMass = generateMass();
     resMomCM  = cmMomentum( cmEnergy, resMass, m_recMass );
   
     tMaxkin = 4. * beamMomCM * resMomCM;
-    tMax = 0.05;   // restrict max to make more efficient for Primakoff generation
+    tMax = 0.2;   // restrict max to make more efficient for Primakoff generation (about 2. deg at 0.05 GeV-2)
+    // tMax = 1.;   // restrict max to make more efficient for Primakoff generation
     t = random( 0, tMax ); 
   } 
   // while( random( 0., exptMax ) > t*exp(-m_slope*t) );   // Elton 8/19/2016.  t*exp(Bt)

@@ -115,9 +115,7 @@ tof_config_t::tof_config_t(JEventLoop *loop)
 	}
 #endif // DTOFGEOMETRY_VERSION
 
-	cout << "****************************************" << endl;
-	cout << "TOF BARS = " << TOF_NUM_BARS << endl;
-	cout << "****************************************" << endl;
+	cout << "Number of TOF bars per plane = " << TOF_NUM_BARS << endl;
 }
 
 
@@ -163,5 +161,10 @@ void TOFSmearer::SmearEvent(hddm_s::HDDM *record)
       if (config->DROP_TRUTH_HITS) {
          iter->deleteFtofTruthHits();
       }
+   }
+   if (config->DROP_TRUTH_HITS) {
+      hddm_s::ForwardTOFList tofs = record->getForwardTOFs();
+      if (tofs.size() > 0)
+         tofs().deleteFtofTruthPoints();
    }
 }
