@@ -33,7 +33,7 @@ public:
 	
 private:
 	
-        string fileName, histName, particleList;
+        string fileName, histName, histType, particleList;
 	TH2 *hist2D;
 };
 
