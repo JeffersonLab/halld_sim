@@ -85,7 +85,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
    return ati.likelihood();
 }
 
-void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, int numRnd, double maxFraction) {
+void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, int numRnd, double maxFraction) {
    AmpToolsInterface ati( cfgInfo );
    string fitName = cfgInfo->fitName();
 
@@ -125,6 +125,11 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, int numR
 
      ati.finalizeFit(to_string(i));
 
+     if( seedfile.size() != 0 && !fitFailed ){
+	string seedfile_rand = seedfile + Form("_%d.txt", i);
+	ati.fitResults()->writeSeed( seedfile_rand );
+     }
+
      // update best fit
      if( !fitFailed && ati.likelihood() < minLL ) {
         minLL = ati.likelihood();
@@ -137,6 +142,8 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, int numR
     else {
       cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRnd << " RANDOM PRODUCTION PARS = " << minLL << endl;
       gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
+      if( seedfile.size() != 0 )
+	      gSystem->Exec(Form("cp %s_%d.txt %s.txt", seedfile.data(), minFitTag, seedfile.data()));
    }
 }
 
@@ -219,7 +226,7 @@ int main( int argc, char* argv[] ){
    if(numRnd==0){
      runSingleFit(cfgInfo, useMinos, maxIter, seedfile);
    } else {
-     runRndFits(cfgInfo, useMinos, maxIter, numRnd, 0.5);
+     runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5);
    }
 
    return 0;
