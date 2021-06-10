@@ -19,6 +19,7 @@ UserAmplitude< Hist2D >( args )
 
 	cout<<"Opening ROOT file "<<fileName.data()<<endl;
 	cout<<"Model provided in histogram named "<<histName.data()<<endl;
+	cout<<"Histogram type for generator "<<histType.data()<<endl;
 	cout<<"Summing particle indices "<<particleList.data()<<" for invariant mass"<<endl;
 	for(uint i=0; i<particleList.length(); i++) {
 		string num; num += particleList[i];
@@ -37,6 +38,11 @@ UserAmplitude< Hist2D >( args )
 		cout<<"Can't find histogram "<<histName.data()<<" in file "<<fileName.data()<<endl;
 		exit(1);
 	}		
+
+	if(histType != "MassVsEgamma" && histType != "MassVst") {
+		cout<<"Type of 2D histogram is not currently supported, please add necessary kinematics and options to Hist2D amplitude"<<endl;
+		exit(1);
+	}
 
 	// keep in memory after file is closed
         hist2D->SetDirectory(gROOT);
