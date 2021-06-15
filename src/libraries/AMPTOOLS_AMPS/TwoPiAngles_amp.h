@@ -11,10 +11,10 @@
 #include <vector>
 
 #ifdef GPU_ACCELERATION
-#void
-#GPUTwoPiAngles_amp_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
-#                     int j, int m, GDouble bigTheta, GDouble refFact );
-#
+void
+GPUTwoPiAngles_amp_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
+                     int j, int m, GDouble bigTheta, GDouble refFact );
+
 #endif // GPU_ACCELERATION
 
 using std::complex;
@@ -35,11 +35,11 @@ public:
 	complex< GDouble > calcAmplitude( GDouble** pKin ) const;
 	
 #ifdef GPU_ACCELERATION
-#  
-#  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
-#  
-#	bool isGPUEnabled() const { return true; }
-#  
+  
+	//void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
+  
+	bool isGPUEnabled() const { return true; }
+  
 #endif // GPU_ACCELERATION
   
 private:

@@ -195,8 +195,8 @@ void omegapi_amplitude::updatePar( const AmpParameter& par ){
 void
 omegapi_amplitude::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
     
-  GPUomegapi_amplitude_exec( dimGrid, dimBlock, GPU_AMP_ARGS, 
-			  sign, lambda_gamma, spin, parity, spin_proj, l, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction);
+//  GPUomegapi_amplitude_exec( dimGrid, dimBlock, GPU_AMP_ARGS, 
+//			  sign, lambda_gamma, spin, parity, spin_proj, l, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction);
 }
 #endif //GPU_ACCELERATION
 

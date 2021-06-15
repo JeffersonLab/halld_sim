@@ -13,13 +13,14 @@
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/barrierFactor.h"
 
 #include "UTILITIES/BeamProperties.h"
 
 Vec_ps_refl::Vec_ps_refl( const vector< string >& args ) :
 UserAmplitude< Vec_ps_refl >( args )
 {
-  assert( args.size() == 11 );
+  //assert( args.size() == 11 );
   
   m_j = atoi( args[0].c_str() ); // resonance spin J
   m_m = atoi( args[1].c_str() ); // spin projection (Lambda)
@@ -39,6 +40,7 @@ UserAmplitude< Vec_ps_refl >( args )
     polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
   }
 
+  m_3pi = false;
   if(args.size() == (11)){
 	  m_3pi = true; // treat 3-pion decay dalitz parameters
 
@@ -73,35 +75,44 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   // common vector and pseudoscalar P4s
   TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); // 1st after proton
-  TLorentzVector vec; // compute for each final state below 
+  TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
 
   // omega ps proton, omega -> 3pi (6 particles)
   // omega pi- Delta++, omega -> 3pi (7 particles)
-  TLorentzVector pi0(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
-  TLorentzVector pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
-  TLorentzVector pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
-  vec = pi0 + pip + pim;
-
-  ///////////////////////////////////////////// Dalitz Parameters ///////////////////////////////
-  double dalitz_s = (pip+pim).M2(); //s=M2(pip pim)
-  double dalitz_t = (pip+pi0).M2(); //t=M2(pip pi0)
-  double dalitz_u = (pim+pi0).M2(); //u=M2(pim pi0)
-  double m3pi = (2*pip.M())+pi0.M();
-  double dalitz_d = 2*vec.M()*( vec.M() - m3pi);
-  double dalitz_sc = (1/3.)*( vec.M2() - pip.M2() - pim.M2() - pi0.M2());
-  double dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
-  double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
-  double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
-  double dalitz_sin3theta = TMath::Sin(3 *  TMath::ASin( (dalitzy/sqrt(dalitz_z) )) );
-
-  userVars[uv_dalitz_z] = dalitz_z;
-  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
-
-  // omega ps proton, omega -> pi0 g (4 particles)
-  // omega pi- Delta++, omega -> pi0 g (5 particles)
-
-  // phi ps proton, phi -> KK (5 particles)
-  // phi pi- Delta++, phi -> KK (6 particles)
+  if(m_3pi) {
+	  TLorentzVector pi0(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+	  TLorentzVector pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+	  TLorentzVector pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
+	  vec = pi0 + pip + pim;
+	  vec_daught1 = pip;
+	  vec_daught2 = pim;
+	  
+	  ///////////////////////////////////////////// Dalitz Parameters ///////////////////////////////
+	  double dalitz_s = (pip+pim).M2(); //s=M2(pip pim)
+	  double dalitz_t = (pip+pi0).M2(); //t=M2(pip pi0)
+	  double dalitz_u = (pim+pi0).M2(); //u=M2(pim pi0)
+	  double m3pi = (2*pip.M())+pi0.M();
+	  double dalitz_d = 2*vec.M()*( vec.M() - m3pi);
+	  double dalitz_sc = (1/3.)*( vec.M2() - pip.M2() - pim.M2() - pi0.M2());
+	  double dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
+	  double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
+	  double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
+	  double dalitz_sin3theta = TMath::Sin(3 *  TMath::ASin( (dalitzy/sqrt(dalitz_z) )) );
+	  
+	  userVars[uv_dalitz_z] = dalitz_z;
+	  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
+  }
+  else {
+	  // omega ps proton, omega -> pi0 g (4 particles)
+	  // omega pi- Delta++, omega -> pi0 g (5 particles)
+	  
+	  // (vec 2-body) ps proton, vec 2-body -> pipi, KK (5 particles)
+	  // (vec 2-body) pi- Delta++, vec 2-body -> pipi, KK (6 particles)
+	  // (vec 2-body) K+ Lambda, vec 2-body -> Kpi (6 particles)
+	  vec_daught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+	  vec_daught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+	  vec = vec_daught1 + vec_daught2;
+  }
 
   // final meson system P4
   TLorentzVector X = vec + ps;
@@ -112,27 +123,13 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   //Helicity coordinate system
   TLorentzVector Gammap = beam + target;
 
-  // polarization BeamProperties
-  GDouble Pgamma=polFraction;//fixed beam polarization fraction
-  if(polAngle == -1)
-	  Pgamma = 0.;//if beam is amorphous set polarization fraction to 0
-  else if(0) { //polFrac_vs_E!=NULL){
-	  //This part causes seg fault with 34 amplitudes or more with gen_amp and gen_omegapi.
-	  //Not needed for fixed beam pol angle and frac.
-	  int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
-	  
-	  if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
-		  Pgamma = 0.;
-	  }
-	  else
-		  Pgamma = polFrac_vs_E->GetBinContent(bin);
-  }
-
   // Calculate decay angles in helicity frame (same for all vectors)
-  vector <double> locthetaphi = getomegapiAngles(polAngle, vec, X, beam, Gammap);
+  vector <double> locthetaphi = getomegapiAngles(0, vec, X, beam, Gammap);
 
   // Calculate vector decay angles (unique for each vector)
-  vector <double> locthetaphih = getomegapiAngles(pip, vec, X, Gammap, pim);
+  vector <double> locthetaphih;
+  if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
+  else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
 
   userVars[uv_cosTheta] = TMath::Cos(locthetaphi[0]);
   userVars[uv_Phi] = locthetaphi[1];
@@ -140,9 +137,11 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[uv_cosThetaH] = TMath::Cos(locthetaphih[0]);
   userVars[uv_PhiH] = locthetaphih[1];
 
-  userVars[uv_prod_angle] = locthetaphi[2];
+  userVars[uv_prod_Phi] = locthetaphi[2];
 
-  userVars[uv_Pgamma] = Pgamma;
+  userVars[uv_MX] = X.M();
+  userVars[uv_MVec] = vec.M();
+  userVars[uv_MPs] = ps.M();
 
   return;
 }
@@ -158,10 +157,12 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble Phi = userVars[uv_Phi];
   GDouble cosThetaH = userVars[uv_cosThetaH];
   GDouble PhiH = userVars[uv_PhiH];
-  GDouble prod_angle = userVars[uv_prod_angle];
-  GDouble polfrac = userVars[uv_Pgamma];
+  GDouble prod_angle = userVars[uv_prod_Phi];
   GDouble dalitz_z = userVars[uv_dalitz_z];
   GDouble dalitz_sin3theta = userVars[uv_dalitz_sin3theta];
+  GDouble MX = userVars[uv_MX];
+  GDouble MVec = userVars[uv_MVec];
+  GDouble MPs = userVars[uv_MPs];
 
   // dalitz parameters for 3-body vector decay
   GDouble G = 1; // not relevant for 2-body vector decays
@@ -174,16 +175,21 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 	  GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
 	  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
   } 
-  
-  GDouble Factor = sqrt(1 + m_s * polfrac);
-  complex< GDouble > zjlambda = 0;
-  complex< GDouble > rotateY = polar(1., -1.*prod_angle);
-  if (m_r == 1)
-	  zjlambda = real(amplitude * rotateY);
-  if (m_r == -1) 
-	  zjlambda = i*imag(amplitude * rotateY);
 
-  return complex< GDouble >( static_cast< GDouble>( Factor ) * zjlambda );
+  GDouble Factor = sqrt(1 + m_s * polFraction);
+  complex< GDouble > zjm = 0;
+  complex< GDouble > rotateY = polar(1., -1.*(prod_angle - polAngle*TMath::DegToRad()));
+  if (m_r == 1)
+	  zjm = real(amplitude * rotateY);
+  if (m_r == -1) 
+	  zjm = i*imag(amplitude * rotateY);
+
+  // E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
+  double kinFactor = barrierFactor(MX, m_l, MVec, MPs);
+  //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
+  Factor *= kinFactor;
+
+  return complex< GDouble >( static_cast< GDouble>( Factor ) * zjm );
 }
 
 
@@ -191,4 +197,17 @@ void Vec_ps_refl::updatePar( const AmpParameter& par ){
 
   // could do expensive calculations here on parameter updates  
 }
+
+
+#ifdef GPU_ACCELERATION
+
+void
+Vec_ps_refl::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
+
+	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, m_3pi, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction );
+
+}
+
+#endif
+
 

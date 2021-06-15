@@ -1,5 +1,5 @@
-//Generator for b1(1235)->omega pi by A. M. Foda https://github.com/amfodajlab
-//Based on gen_amp by Alex Austregesilo https://github.com/aaust
+//Generator for generic vector-pseudoscalar
+//Based on b1(1235)->omega pi by A. M. Foda https://github.com/amfodajlab and gen_amp by Alex Austregesilo https://github.com/aaust
 #include <iostream>
 #include <fstream>
 #include <complex>
@@ -16,8 +16,6 @@
 #include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
-#include "AMPTOOLS_AMPS/omegapi_amplitude.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
@@ -74,20 +72,6 @@ int main( int argc, char* argv[] ){
 	int nEvents = 10000;
 	int batchSize = 100000;
 	
-	float Mpip=ParticleMass(PiPlus), Mpi0=ParticleMass(Pi0), Momega=0.782;
-
-	//Exprected particle list: 
-	// pi0 omega(pi0 "rho"(pi+ pi-))
-	//  2         3         4   5
-	int par_types_list[]={1,14,7,7,8,9};
-	vector<int> part_types(par_types_list,par_types_list+6);
-
-	float part_masses_list1[]={Mpi0, Momega};
-	vector<double> part_masses1(part_masses_list1,part_masses_list1+2);
-
-	float part_masses_list2[]={Mpip, Mpip, Mpi0};
-	vector<double> part_masses2(part_masses_list2,part_masses_list2+3);
-
 	//parse command line:
 	for (int i = 1; i < argc; i++){
 		
@@ -169,7 +153,7 @@ int main( int argc, char* argv[] ){
 	}
 	
 	if( configfile.size() == 0 || outname.size() == 0 ){
-		cout << "No config file or output specificed:  run gen_omegapi -h for help" << endl;
+		cout << "No config file or output specificed:  run gen_vec_ps -h for help" << endl;
 		exit(1);
 	}
 	
@@ -199,7 +183,7 @@ int main( int argc, char* argv[] ){
 		cout<<"Multiple unstable particles at lower vertex provided"<<endl;
 		exit(1);
 	}
-	
+
 	// use particletype.h to convert reaction particle names (for upper vertex)
 	vector<Particle_t> Particles;
 	// don't include non-nucleon lower vertex decay particles in meson decay
@@ -215,12 +199,13 @@ int main( int argc, char* argv[] ){
 	  Particles.push_back(ParticleEnum(particleName.Data()));
         }
 
+	// set vector masses from particle list
+	vector<double> vectorMasses;
 	vector<double> childMasses;
-	double threshold = 0;
-	if(bwGenLowerVertex.size() == 0) childMasses.push_back(0.135); // b1 -> omega pi0
-	else childMasses.push_back(0.1396); // b1 -> omega pi+/-
-	childMasses.push_back(0.782);
-	threshold = 0.135 + 0.782;
+	for (unsigned int i=2; i<Particles.size(); i++) {
+		if(i==2) childMasses.push_back(ParticleMass(Particles[i]));
+		else vectorMasses.push_back(ParticleMass(Particles[i]));
+	}
 
 	// loop to look for resonance in config file
 	// currently only one at a time is supported 
@@ -230,7 +215,7 @@ int main( int argc, char* argv[] ){
 
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
-	    if ((*it).arguments()[0] == "b1"){
+	    if ((*it).arguments()[0] == "b1" || (*it).arguments()[0] == "K1"){
 	      if ( (*it).arguments().size() != 3 )
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
@@ -244,6 +229,25 @@ int main( int argc, char* argv[] ){
 	if (!foundResonance)
 	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with mass = 1.235, width = 0.142 GeV" << endl; 
 
+	// find vector parameters from config file
+	double vecMass = 0;
+        double vecWidth = 0;
+	double threshold = childMasses[0];
+	bool foundVector = false;
+	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
+          if ((*it).keyword() == "define" && (*it).arguments()[0] == "vector" && (*it).arguments().size() == 3) {
+	    vecMass = atof((*it).arguments()[1].c_str());
+	    vecWidth = atof((*it).arguments()[2].c_str());
+	    childMasses.push_back(vecMass);
+            threshold += vecMass;
+	    foundVector = true;
+	  }
+	}
+	if (!foundVector) {
+	  cout << "ConfigFileParser ERROR: no vector found, cannot continue" << endl;
+	  return 0;
+	}
+
 	// random number initialization (set to 0 by default)
 	TRandom3* gRandom = new TRandom3();
 	gRandom->SetSeed(seed);
@@ -251,8 +255,6 @@ int main( int argc, char* argv[] ){
 	cout << "TRandom3 Seed : " << seed << endl;
 
 	// setup AmpToolsInterface
-	AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
-	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
@@ -295,7 +297,7 @@ int main( int argc, char* argv[] ){
 	GammaPToNPartP resProd = GammaPToNPartP( threshold<lowMass ? lowMass : threshold, highMass, childMasses, ProductionMechanism::kProton, type, slope, lowT, highT, seed, beamConfigFile );
 
 	vector< BreitWignerGenerator > m_bwGen;
-        m_bwGen.push_back( BreitWignerGenerator(0.782, 0.008) );
+        m_bwGen.push_back( BreitWignerGenerator(vecMass, vecWidth) );
 		
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
@@ -323,7 +325,7 @@ int main( int argc, char* argv[] ){
 	ASCIIDataWriter* asciiOut = NULL;
         if( asciiname.size() != 0 ) asciiOut = new ASCIIDataWriter( asciiname );
 
-	TFile* diagOut = new TFile( "gen_omegapi_diagnostic.root", "recreate" );
+	TFile* diagOut = new TFile( "gen_vec_ps_diagnostic.root", "recreate" );
 	ostringstream locStream;
 	ostringstream locIsobarStream;
 	ostringstream locIsobar2Stream;
@@ -373,22 +375,22 @@ int main( int argc, char* argv[] ){
 		
 		cout << "Generating four-vectors..." << endl;
 
-		// decay omega (and Delta++, if generated)
+		// decay vector (and lowerVertex, if generated)
 		ati.clearEvents();
 		int i=0;
 		while( i < batchSize ){
 			
 			double weight = 1.;
 
-			double omega_mass_bw = m_bwGen[0]().first;
-                        if( omega_mass_bw < 0.45 || omega_mass_bw > 0.86 ) continue;
+			double vec_mass_bw = m_bwGen[0]().first;
+                        if( fabs(vec_mass_bw - vecMass) > 2.5*vecWidth ) continue;
 			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
-			vector<double> childMasses_omega_bw;
-              		childMasses_omega_bw.push_back(childMasses[0]);
-        		childMasses_omega_bw.push_back(omega_mass_bw);
+			vector<double> childMasses_vec_bw;
+              		childMasses_vec_bw.push_back(childMasses[0]);
+        		childMasses_vec_bw.push_back(vec_mass_bw);
 			
-			resProd.setChildMasses(childMasses_omega_bw);
+			resProd.setChildMasses(childMasses_vec_bw);
 			resProd.getProductionMechanism().setMassRange( lowMass, highMass );
 
 			// setup lower vertex decay
@@ -405,29 +407,28 @@ int main( int argc, char* argv[] ){
 			  Kinematics* step1 = resProd.generate();
 			  TLorentzVector beam = step1->particle( 0 );
 			  TLorentzVector recoil = step1->particle( 1 );
-			  TLorentzVector bachelor_pi = step1->particle( 2 );
-			  TLorentzVector omega = step1->particle( 3 );
-			  TLorentzVector b1 = bachelor_pi + omega;
+			  TLorentzVector bachelor = step1->particle( 2 );
+			  TLorentzVector vec = step1->particle( 3 );
+			  TLorentzVector vec_ps = bachelor + vec;
 
-			  // decay step for omega
-        		  NBodyPhaseSpaceFactory omega_to_pions = NBodyPhaseSpaceFactory( omega_mass_bw, part_masses2);
-			  vector<TLorentzVector> omega_daughters = omega_to_pions.generateDecay();
-			  
-			  TLorentzVector piplus = omega_daughters[0];//second decay step
-			  TLorentzVector piminus = omega_daughters[1];//second decay step
-			  TLorentzVector omegas_pi0 = omega_daughters[2];//second decay step
+			  // decay step for vector
+        		  NBodyPhaseSpaceFactory vec_to_ps = NBodyPhaseSpaceFactory( vec_mass_bw, vectorMasses);
+			  vector<TLorentzVector> vec_daughters = vec_to_ps.generateDecay();
+			  vector<TLorentzVector> vec_boosted_daughters;
 
-			  omegas_pi0.Boost( omega.BoostVector() );
-			  piplus.Boost( omega.BoostVector() );			  
-			  piminus.Boost( omega.BoostVector() );
+			  for(uint idaught = 0; idaught<vec_daughters.size(); idaught++) {
+				  TLorentzVector vec_boosted_daughter = vec_daughters[idaught];
+				  vec_boosted_daughter.Boost( vec.BoostVector() );
+				  vec_boosted_daughters.push_back(vec_boosted_daughter);
+			  }
 		  
-			  // decay step for Delta++
+			  // decay step for lowerVertex
 			  TLorentzVector nucleon;
 			  vector<TLorentzVector> lowerVertexChild;
 			  if(bwGenLowerVertex.size() == 1) {
 				  NBodyPhaseSpaceFactory lowerVertex_decay = NBodyPhaseSpaceFactory( lowerVertex_mass_bw, massesLowerVertex);
 				  lowerVertexChild = lowerVertex_decay.generateDecay();
-
+				 
 				  // boost to lab frame via recoil kinematics
 				  for(unsigned int j=0; j<lowerVertexChild.size(); j++)
 					  lowerVertexChild[j].Boost( recoil.BoostVector() );
@@ -436,21 +437,21 @@ int main( int argc, char* argv[] ){
 			  else 
 				  nucleon = recoil;
 
+
 			  // store particles in kinematic class
 			  vector< TLorentzVector > allPart;
-			  //same order as config file, omegapi Amplitudes and ReactionFilter
+			  //same order as config file, Vec_ps_refl amplitudes and AmpTools kin Tree
 			  allPart.push_back( beam );
 			  allPart.push_back( nucleon );
-			  allPart.push_back( bachelor_pi );
-			  allPart.push_back( omegas_pi0 );
-			  allPart.push_back( piplus );
-			  allPart.push_back( piminus );
+			  allPart.push_back( bachelor );
+			  for(uint idaught = 0; idaught<vec_boosted_daughters.size(); idaught++) 
+				  allPart.push_back( vec_boosted_daughters[idaught] );
 			  if(bwGenLowerVertex.size() == 1)
 				  for(unsigned int j=1; j<lowerVertexChild.size(); j++)
                                         allPart.push_back(lowerVertexChild[j]);
 
 			  weight *= step1->weight();
-			  Kinematics* kin = new Kinematics( allPart,  weight);
+			  Kinematics* kin = new Kinematics( allPart, weight );
 			  ati.loadEvent( kin, i, batchSize );
 			  delete step1;
 			  delete kin;

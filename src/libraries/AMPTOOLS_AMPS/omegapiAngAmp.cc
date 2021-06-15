@@ -564,12 +564,12 @@ void omegapiAngAmp::updatePar( const AmpParameter& par ){
 void
 omegapiAngAmp::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
     
-  GPUomegapiAngAmp_exec( dimGrid, dimBlock, GPU_AMP_ARGS,
-                            m_1p, m_w_1p, m_n_1p, m_1m, m_w_1m, m_n_1m,
-                            m_0m, m_w_0m, m_n_0m, m_ds_ratio, m_phi0_1p,
-                            m_theta_1p, m_phip_1p, m_phim_1p, m_psi_1p,
-			    m_phi0_1m, m_theta_1m, m_phip_1m, m_phim_1m,
-                            m_psi_1m, m_phi0_0m, m_theta_0m, useCutoff, polAngle, polFraction );
+//  GPUomegapiAngAmp_exec( dimGrid, dimBlock, GPU_AMP_ARGS,
+//                            m_1p, m_w_1p, m_n_1p, m_1m, m_w_1m, m_n_1m,
+//                            m_0m, m_w_0m, m_n_0m, m_ds_ratio, m_phi0_1p,
+//                            m_theta_1p, m_phip_1p, m_phim_1p, m_psi_1p,
+//			    m_phi0_1m, m_theta_1m, m_phip_1m, m_phim_1m,
+//                            m_psi_1m, m_phi0_0m, m_theta_0m, useCutoff, polAngle, polFraction );
 
 }
 #endif //GPU_ACCELERATION

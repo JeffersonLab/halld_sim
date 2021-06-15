@@ -538,11 +538,11 @@ launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
   int Iz_b1 = mIz[perm[2]];
   int Iz_pi = mIz[perm[3]];
 
-  GPUb1piAngAmp_exec(dimGrid, dimBlock, GPU_AMP_ARGS, mpolBeam, mpolFrac,
-		     mJ_X, mPar_X, mL_X, mI_X, mepsilon_R, Iz_b1, Iz_pi,
-		     m_u_rho_1, m_u_rho_3, m_u_omega_1, m_u_omega_3,
-		     m_u_b1_0, m_u_b1_2, mG0_omega, mG0_b1, 
-		     /*m_ORTHOCHECK*/ false);
+//  GPUb1piAngAmp_exec(dimGrid, dimBlock, GPU_AMP_ARGS, mpolBeam, mpolFrac,
+//		     mJ_X, mPar_X, mL_X, mI_X, mepsilon_R, Iz_b1, Iz_pi,
+//		     m_u_rho_1, m_u_rho_3, m_u_omega_1, m_u_omega_3,
+//		     m_u_b1_0, m_u_b1_2, mG0_omega, mG0_b1, 
+//		     /*m_ORTHOCHECK*/ false);
   
 }
 
