@@ -349,6 +349,7 @@ int main( int argc, char* argv[] ){
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
 	TH1F* M_isobar2 = new TH1F( "M_isobar2", locIsobar2Title.c_str(), 200, 0, 2 );
 	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 200, 0, 2 );
+	TH1F* M_recoilW = new TH1F( "M_recoilW", "; Weighted Recoil mass (GeV)", 200, 0, 2 );
 	TH1F* M_p1 = new TH1F( "M_p1", "p1", 200, 0, 2 );
 	TH1F* M_p2 = new TH1F( "M_p2", "p2", 200, 0, 2 );
 	TH1F* M_p3 = new TH1F( "M_p3", "p3", 200, 0, 2 );
@@ -379,6 +380,8 @@ int main( int argc, char* argv[] ){
 		int i=0;
 		while( i < batchSize ){
 			
+			double weight = 1.;
+
 			double vec_mass_bw = m_bwGen[0]().first;
                         if( fabs(vec_mass_bw - vecMass) > 2.5*vecWidth ) continue;
 			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
@@ -396,6 +399,7 @@ int main( int argc, char* argv[] ){
 			if(bwGenLowerVertex.size() == 1) {
 				bwLowerVertex = bwGenLowerVertex[0]();
 				lowerVertex_mass_bw = bwLowerVertex.first;
+				weight *= bwLowerVertex.second;
 				if ( lowerVertex_mass_bw < thresholdLowerVertex || lowerVertex_mass_bw > 2.0) continue;
 				resProd.getProductionMechanism().setRecoilMass( lowerVertex_mass_bw );
 			}
@@ -424,7 +428,7 @@ int main( int argc, char* argv[] ){
 			  if(bwGenLowerVertex.size() == 1) {
 				  NBodyPhaseSpaceFactory lowerVertex_decay = NBodyPhaseSpaceFactory( lowerVertex_mass_bw, massesLowerVertex);
 				  lowerVertexChild = lowerVertex_decay.generateDecay();
-
+				 
 				  // boost to lab frame via recoil kinematics
 				  for(unsigned int j=0; j<lowerVertexChild.size(); j++)
 					  lowerVertexChild[j].Boost( recoil.BoostVector() );
@@ -432,6 +436,7 @@ int main( int argc, char* argv[] ){
 			  }		  
 			  else 
 				  nucleon = recoil;
+
 
 			  // store particles in kinematic class
 			  vector< TLorentzVector > allPart;
@@ -445,7 +450,8 @@ int main( int argc, char* argv[] ){
 				  for(unsigned int j=1; j<lowerVertexChild.size(); j++)
                                         allPart.push_back(lowerVertexChild[j]);
 
-			  Kinematics* kin = new Kinematics( allPart, 1.0 );
+			  weight *= step1->weight();
+			  Kinematics* kin = new Kinematics( allPart, weight );
 			  ati.loadEvent( kin, i, batchSize );
 			  delete step1;
 			  delete kin;
@@ -502,6 +508,7 @@ int main( int argc, char* argv[] ){
 					M_isobar->Fill( isobar.M() );
 					M_isobar2->Fill( isobar2.M() );
 					M_recoil->Fill( recoil.M() );
+					M_recoilW->Fill( recoil.M(), weightedInten );
 					
 					// calculate angular variables
 					TLorentzVector beam = evt->particle ( 0 );
@@ -585,6 +592,7 @@ int main( int argc, char* argv[] ){
 	M_isobar->Write();
 	M_isobar2->Write();
 	M_recoil->Write();
+	M_recoilW->Write();
         M_p1->Write();
         M_p2->Write();
         M_p3->Write();
