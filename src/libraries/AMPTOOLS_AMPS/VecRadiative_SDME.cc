@@ -8,9 +8,8 @@
 #include "TLorentzRotation.h"
 
 #include "IUAmpTools/Kinematics.h"
-#include "GlueXAmp/VecRadiative_SDME.h"
-// #include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
-// #include "UTILITIES/BeamProperties.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
+#include "UTILITIES/BeamProperties.h"
 
 VecRadiative_SDME::VecRadiative_SDME( const vector< string >& args ) :
 UserAmplitude< VecRadiative_SDME >( args )
@@ -47,7 +46,6 @@ UserAmplitude< VecRadiative_SDME >( args )
   
   registerParameter( m_polAngle );
   
-  /*
   if (m_polFraction > 0.0)
     cout << "Fitting with constant polarization" << endl;
   else
@@ -58,10 +56,9 @@ UserAmplitude< VecRadiative_SDME >( args )
     BeamProperties beamProp(beamConfigFile);
     m_polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
   }
-  */
   
-  TFile* f = new TFile( "TPol_201808.root" );
-  m_polFrac_vs_E = (TH1D*)f->Get( "hPol0" );
+  //  TFile* f = new TFile( "TPol_201808.root" );
+  //  m_polFrac_vs_E = (TH1D*)f->Get( "hPol0" );
 }
 
 complex< GDouble >
