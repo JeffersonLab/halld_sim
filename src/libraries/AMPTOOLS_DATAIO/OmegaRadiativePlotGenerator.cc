@@ -120,9 +120,7 @@ OmegaRadiativePlotGenerator::projectEvent( Kinematics* pKin, const string& react
                           beam.Vect().Unit().Dot( polUnitVec.Cross( yHel ) ) );
   
   // get the angles of the radiated photon in the helicity frame:
-  GDouble cosTheta = gamma_omegaRest.Vect().Unit().Dot( zHel );
-  GDouble theta = acos( cosTheta );
-  
+  GDouble cosTheta = gamma_omegaRest.Vect().Unit().Dot( zHel );  
   GDouble cosPhi =  yHel.Dot( zHel.Cross( gamma_omegaRest.Vect() ).Unit() );
   GDouble sinPhi = -xHel.Dot( zHel.Cross( gamma_omegaRest.Vect() ).Unit() );
   GDouble phi = atan2( sinPhi, cosPhi );
