@@ -27,7 +27,7 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
@@ -272,43 +272,53 @@ int main( int argc, char* argv[] ){
 
    if (configfile.size() == 0){
       cout << "No config file specified" << endl;
-      exit(1);
+            exit(1);
    }
 
-   ConfigFileParser parser(configfile);
-   ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
-   cfgInfo->display();
 
-   AmpToolsInterface::registerAmplitude( BreitWigner() );
-   AmpToolsInterface::registerAmplitude( BreitWigner3body() );
-   AmpToolsInterface::registerAmplitude( TwoPSAngles() );
-   AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
-   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
-   AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
-   AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
-   AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
-   AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
-   AmpToolsInterface::registerAmplitude( TwoPitdist() );
-   AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
-   AmpToolsInterface::registerAmplitude( ThreePiAngles() );
-   AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
-   AmpToolsInterface::registerAmplitude( Zlm() );
-   AmpToolsInterface::registerAmplitude( b1piAngAmp() );
-   AmpToolsInterface::registerAmplitude( polCoef() );
-   AmpToolsInterface::registerAmplitude( Uniform() );
-   AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
-   AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
-   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
-   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
-   AmpToolsInterface::registerAmplitude( PhaseOffset() );
-   AmpToolsInterface::registerAmplitude( Piecewise() );
+  ConfigFileParser parser(configfile);
+  ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
+  cfgInfo->display();
 
-   AmpToolsInterface::registerDataReader( ROOTDataReader() );
-   AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
-   AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
-   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
-   AmpToolsInterface::registerDataReader( FSRootDataReader() );
+  AmpToolsInterface::registerAmplitude( BreitWigner() );
+  AmpToolsInterface::registerAmplitude( BreitWigner3body() );
+  AmpToolsInterface::registerAmplitude( TwoPSAngles() );
+  AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
+  AmpToolsInterface::registerAmplitude( TwoPiAngles() );
+  AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
+  AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
+  AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
+  AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+  AmpToolsInterface::registerAmplitude( TwoPiW_brokenetas() );
+  AmpToolsInterface::registerAmplitude( TwoPitdist() );
+  AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
+  AmpToolsInterface::registerAmplitude( TwoPiEtas_tdist() );
+  AmpToolsInterface::registerAmplitude( ThreePiAngles() );
+  AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
+  AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
+  AmpToolsInterface::registerAmplitude( Zlm() );
+  AmpToolsInterface::registerAmplitude( b1piAngAmp() );
+  AmpToolsInterface::registerAmplitude( polCoef() );
+  AmpToolsInterface::registerAmplitude( Uniform() );
+  AmpToolsInterface::registerAmplitude( dblRegge() );
+  AmpToolsInterface::registerAmplitude( dblReggeMod() );
+  AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
+  AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+  
+  AmpToolsInterface::registerDataReader( ROOTDataReader() );
+  AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
+  AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
+  AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() ); 
+ 
+  AmpToolsInterface ati( cfgInfo );
+
+  double likelihood_init =  ati.likelihood();
+  
+  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << likelihood_init << endl;
+  if (!isfinite(likelihood_init)) {
+      cout << "*** fit- infinite Likelihood before minimization EXIT***" << endl;
+      exit(1);
+   }
 
    if(numRnd==0){
       if(scanPar=="")
