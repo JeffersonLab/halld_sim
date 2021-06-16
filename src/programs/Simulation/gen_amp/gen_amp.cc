@@ -22,7 +22,7 @@
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/Lambda1520tdist.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
@@ -277,7 +277,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-	AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+	AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
 	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
 	AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
