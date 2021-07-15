@@ -65,7 +65,10 @@ fdc_config_t::fdc_config_t(JEventLoop *loop)
         	channel_efficiencies.push_back( new_strip_efficiencies[2*chamber] );
 		}
 	}
-	
+
+    FDC_EFFVSDOCA_PAR[0] = 1.003;
+    FDC_EFFVSDOCA_PAR[1] = 1.079e-3;
+    FDC_EFFVSDOCA_PAR[2] = 0.5491;
 }
 
 
@@ -126,6 +129,10 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
 		     if (config->APPLY_EFFICIENCY_CORRECTIONS
              		&& !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyCorrectionFactor(witer)))
              		continue;
+            double doca = titer->getD();
+            if (config->APPLY_EFFICIENCY_CORRECTIONS
+                    && !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyVsDOCA(doca)))
+               continue;
 
             double t = titer->getT();
           	if(config->SMEAR_HITS) {
