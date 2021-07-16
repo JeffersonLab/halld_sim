@@ -3,12 +3,10 @@
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
-//#include "AMPTOOLS_DATAIO/ThreePiPlotGeneratorSchilling.h"
+#include "AMPTOOLS_DATAIO/ThreePiPlotGeneratorSchilling.h"
+#include "AMPTOOLS_AMPS/wignerD.h"
 #include "IUAmpTools/Histogram1D.h"
 #include "IUAmpTools/Kinematics.h"
-
-#include "ThreePiPlotGeneratorSchilling.h"
-#include "GlueXAmp/wignerD.h"
 
 ThreePiPlotGeneratorSchilling::ThreePiPlotGeneratorSchilling( const FitResults& results ) :
 PlotGenerator( results )
