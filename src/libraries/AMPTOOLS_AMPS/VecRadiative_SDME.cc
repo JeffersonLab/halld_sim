@@ -8,8 +8,10 @@
 #include "TLorentzRotation.h"
 
 #include "IUAmpTools/Kinematics.h"
-#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
-#include "UTILITIES/BeamProperties.h"
+//#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
+//#include "UTILITIES/BeamProperties.h"
+
+#include "GlueXAmp/VecRadiative_SDME.h"
 
 VecRadiative_SDME::VecRadiative_SDME( const vector< string >& args ) :
 UserAmplitude< VecRadiative_SDME >( args )
@@ -46,6 +48,7 @@ UserAmplitude< VecRadiative_SDME >( args )
   
   registerParameter( m_polAngle );
   
+
   if (m_polFraction > 0.0)
     cout << "Fitting with constant polarization" << endl;
   else
@@ -56,9 +59,6 @@ UserAmplitude< VecRadiative_SDME >( args )
     BeamProperties beamProp(beamConfigFile);
     m_polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
   }
-  
-  //  TFile* f = new TFile( "TPol_201808.root" );
-  //  m_polFrac_vs_E = (TH1D*)f->Get( "hPol0" );
 }
 
 complex< GDouble >
@@ -107,7 +107,6 @@ VecRadiative_SDME::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   // construct a boost that will take us to the omega rest frame:
   TLorentzRotation omegaRestBoost( -omega.BoostVector() );
   
-  TLorentzVector beam_omegaRest = omegaRestBoost * beam;
   TLorentzVector recoil_omegaRest = omegaRestBoost * recoil;
   TLorentzVector gamma_omegaRest = omegaRestBoost * gamma;
   
