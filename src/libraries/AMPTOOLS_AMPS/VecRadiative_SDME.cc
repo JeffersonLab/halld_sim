@@ -8,10 +8,8 @@
 #include "TLorentzRotation.h"
 
 #include "IUAmpTools/Kinematics.h"
-//#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
-//#include "UTILITIES/BeamProperties.h"
-
-#include "GlueXAmp/VecRadiative_SDME.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
+#include "UTILITIES/BeamProperties.h"
 
 VecRadiative_SDME::VecRadiative_SDME( const vector< string >& args ) :
 UserAmplitude< VecRadiative_SDME >( args )
@@ -48,7 +46,6 @@ UserAmplitude< VecRadiative_SDME >( args )
   
   registerParameter( m_polAngle );
   
-
   if (m_polFraction > 0.0)
     cout << "Fitting with constant polarization" << endl;
   else
