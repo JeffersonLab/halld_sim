@@ -10,13 +10,8 @@
 #include "TFile.h"
 
 #include "IUAmpTools/Kinematics.h"
-//#include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-//#include "AMPTOOLS_AMPS/clebschGordan.h"
-//#include "AMPTOOLS_AMPS/wignerD.h"
-
-#include "ThreePiAnglesSchilling.h"
-
-//#include "UTILITIES/BeamProperties.h"
+#include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
+#include "UTILITIES/BeamProperties.h"
 
 ThreePiAnglesSchilling::ThreePiAnglesSchilling( const vector< string >& args ) :
 UserAmplitude< ThreePiAnglesSchilling >( args )
@@ -53,7 +48,7 @@ UserAmplitude< ThreePiAnglesSchilling >( args )
   registerParameter( m_rho1m12 );
   
   registerParameter( m_polAngle );
-  /*
+  
    if (m_polFraction > 0.0)
    cout << "Fitting with constant polarization" << endl;
    else
@@ -64,10 +59,6 @@ UserAmplitude< ThreePiAnglesSchilling >( args )
    BeamProperties beamProp(beamConfigFile);
    m_polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
    }
-   */
-  
-  TFile* f = new TFile( "TPol_201808.root" );
-  m_polFrac_vs_E = (TH1D*)f->Get( "hPol0" );
 }
 
 complex< GDouble >
