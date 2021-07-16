@@ -18,13 +18,9 @@
 #include "AmpPlotter/PlotterMainWindow.h"
 #include "AmpPlotter/PlotFactory.h"
 
-//#include "AMPTOOLS_DATAIO/ThreePiPlotGeneratorSchilling.h"
-//#include "AMPTOOLS_DATAIO/ROOTDataReader.h"
-//#include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-
-#include "GlueXPlot/ThreePiPlotGeneratorSchilling.h"
-#include "GlueXDataIO/ROOTDataReader.h"
-#include "GlueXAmp/ThreePiAnglesSchilling.h"
+#include "AMPTOOLS_DATAIO/ThreePiPlotGeneratorSchilling.h"
+#include "AMPTOOLS_DATAIO/ROOTDataReader.h"
+#include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 
 typedef ThreePiPlotGeneratorSchilling PlotGen;
 
