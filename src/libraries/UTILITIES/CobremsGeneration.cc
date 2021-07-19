@@ -577,7 +577,8 @@ double CobremsGeneration::Rate_dNcdxdp(double x, double phi)
    fQ2theta2.clear();
    fQ2weight.clear();
    double qzmin = 99;
-   int hmin, kmin, lmin;
+   // next line commented out to suppress warnings
+   //   int hmin, kmin, lmin;
    double sum = 0;
    // can restrict to h=0 for cpu speedup, if crystal alignment is "reasonable"
    for (int h = -4; h <= 4; ++h) {
@@ -634,9 +635,10 @@ double CobremsGeneration::Rate_dNcdxdp(double x, double phi)
 
             if (q[2] < qzmin) {
                qzmin = q[2];
-               hmin = h;
-               kmin = k;
-               lmin = l;
+	       // next three lines commented out to suppress warnings
+               // hmin = h;
+               // kmin = k;
+               // lmin = l;
             }
             double theta2 = (1 - x) * xmax / (x * (1 - xmax) + 1e-99) - 1;
             double betaFF2 = pow(fTargetCrystal.betaFF, 2);
