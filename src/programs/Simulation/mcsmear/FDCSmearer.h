@@ -57,7 +57,7 @@ class fdc_config_t
         const double docad3 = pow(FDC_EFFVSDOCA_PAR[2], 3) + 1e-99;
         double eff = FDC_EFFVSDOCA_PAR[0] - FDC_EFFVSDOCA_PAR[1] *
                      (1 / docad2 - 2 * doca / docad3);
-        return (docad < 0)? 0 : (eff < 0)? 0 : eff;
+        return (docad < 0)? 0 : (eff < 0)? 0 : eff*eff;
 	}
 };
 

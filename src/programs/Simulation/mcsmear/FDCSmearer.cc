@@ -66,9 +66,9 @@ fdc_config_t::fdc_config_t(JEventLoop *loop)
 		}
 	}
 
-    FDC_EFFVSDOCA_PAR[0] = 1.003;
-    FDC_EFFVSDOCA_PAR[1] = 1.079e-3;
-    FDC_EFFVSDOCA_PAR[2] = 0.5491;
+    FDC_EFFVSDOCA_PAR[0] = 0.987;
+    FDC_EFFVSDOCA_PAR[1] = 1.082e-3;
+    FDC_EFFVSDOCA_PAR[2] = 0.547;
 }
 
 
