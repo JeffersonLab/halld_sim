@@ -313,13 +313,22 @@ void BeamProperties::fillFluxFromCCDB() {
 
 	cout<<endl<<"BeamProperties: Using flux from CCDB run "<<mRunNumber<<endl;
 
-	// Parse to get run number
-	string ccdb_home(getenv("JANA_CALIB_URL"));
-	string variation(getenv("JANA_CALIB_CONTEXT"));
-	//cout<<ccdb_home.data()<<" "<<variation.data()<<endl;
+	// Parse environment variables for CCDB setup
+	const char *calib_url = getenv("JANA_CALIB_URL");
+	if(!calib_url) {
+		cout<<"Can't compute flux with undefined JANA_CALIB_URL environment variable"<<endl;
+		exit(101);
+	}
+
+	string variation = "default";
+	const char *variation_env = getenv("JANA_CALIB_CONTEXT");
+	if(variation_env) { // use non-default context if provided 
+		variation = string(variation_env);
+		cout<<"Using CCDB variation = "<<variation.data()<<endl;
+	}
 	
 	// Generate calibration class
-	auto_ptr<ccdb::Calibration> calib(ccdb::CalibrationGenerator::CreateCalibration(ccdb_home, mRunNumber)); //, variation));
+	auto_ptr<ccdb::Calibration> calib(ccdb::CalibrationGenerator::CreateCalibration(string(calib_url), mRunNumber, variation));
 	
 	// Get PS acceptance from CCDB
 	vector< vector<double> > psAccept;
