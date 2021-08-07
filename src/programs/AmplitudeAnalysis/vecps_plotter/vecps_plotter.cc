@@ -20,12 +20,10 @@
 #include "AmpPlotter/PlotterMainWindow.h"
 #include "AmpPlotter/PlotFactory.h"
 
-#include "AMPTOOLS_DATAIO/OmegaPiPlotGenerator.h"
+#include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
-#include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
@@ -34,12 +32,10 @@
 #include "IUAmpTools/ConfigFileParser.h"
 #include "IUAmpTools/ConfigurationInfo.h"
 
-typedef OmegaPiPlotGenerator omegapi_PlotGen;
+typedef VecPsPlotGenerator vecps_PlotGen;
 
 void atiSetup(){
   
-  AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
-  AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
@@ -61,12 +57,12 @@ int main( int argc, char* argv[] ){
 
   if (argc < 2){
     cout << "Usage:" << endl << endl;
-    cout << "\tomegapi_plotter <results file name> -o <output file name>" << endl << endl;
+    cout << "\tvecps_plotter <results file name> -o <output file name>" << endl << endl;
     return 0;
   }
 
   bool showGui = false;
-  string outName = "omegapi_plot.root";
+  string outName = "vecps_plot.root";
   string resultsName(argv[1]);
   for (int i = 2; i < argc; i++){
 
@@ -113,7 +109,7 @@ int main( int argc, char* argv[] ){
   atiSetup();
         cout << "Plotgen results"<< endl;
 
-  omegapi_PlotGen plotGen( results , PlotGenerator::kNoGenMC );
+  vecps_PlotGen plotGen( results , PlotGenerator::kNoGenMC );
   cout << " Initialized ati and PlotGen" << endl;
 
     // ************************
@@ -129,7 +125,7 @@ int main( int argc, char* argv[] ){
   vector<string> amps = plotGen.uniqueAmplitudes();
   cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-  vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "3mp2f", "3mpf", "3m0f", "3mmf", "3mm2f", "0m", "1p", "1m", "2m", "3m"};
+  vector<string> amphistname = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "1p", "1m"};
   vector<string> reflname = {"PosRefl", "NegRefl"};
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
@@ -199,23 +195,22 @@ int main( int argc, char* argv[] ){
 	if (irefl < reflname.size() && iamp < amphistname.size() && iplot == PlotGenerator::kData) continue; // only plot data once
 	
 	// loop over different variables
-	for (unsigned int ivar  = 0; ivar  < OmegaPiPlotGenerator::kNumHists; ivar++){
+	for (unsigned int ivar  = 0; ivar  < VecPsPlotGenerator::kNumHists; ivar++){
 	  
 	  // set unique histogram name for each plot (could put in directories...)
 	  string histname =  "";
-	  if (ivar == OmegaPiPlotGenerator::kOmegaPiMass)  histname += "MOmegaPi";
-	  else if (ivar == OmegaPiPlotGenerator::kCosTheta)  histname += "CosTheta";
-	  else if (ivar == OmegaPiPlotGenerator::kPhi)  histname += "Phi";
-	  else if (ivar == OmegaPiPlotGenerator::kCosThetaH)  histname += "CosTheta_H";
-	  else if (ivar == OmegaPiPlotGenerator::kPhiH)  histname += "Phi_H";
-	  else if (ivar == OmegaPiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
-	  else if (ivar == OmegaPiPlotGenerator::kt)  histname += "t";
-	  else if (ivar == OmegaPiPlotGenerator::kRecoilMass)  histname += "MRecoil";
-	  else if (ivar == OmegaPiPlotGenerator::kProtonPiMass)  histname += "MProtonPi";
-	  else if (ivar == OmegaPiPlotGenerator::kRecoilPiMass)  histname += "MRecoilPi";
-	  
-	  else continue;
-	  
+	  if (ivar == VecPsPlotGenerator::kVecPsMass)  histname += "MVecPs";
+	  else if (ivar == VecPsPlotGenerator::kCosTheta)  histname += "CosTheta";
+	  else if (ivar == VecPsPlotGenerator::kPhi)  histname += "Phi";
+	  else if (ivar == VecPsPlotGenerator::kCosThetaH)  histname += "CosTheta_H";
+	  else if (ivar == VecPsPlotGenerator::kPhiH)  histname += "Phi_H";
+	  else if (ivar == VecPsPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
+	  else if (ivar == VecPsPlotGenerator::kt)  histname += "t";
+	  else if (ivar == VecPsPlotGenerator::kRecoilMass)  histname += "MRecoil";
+	  else if (ivar == VecPsPlotGenerator::kProtonPsMass)  histname += "MProtonPs";
+	  else if (ivar == VecPsPlotGenerator::kRecoilPsMass)  histname += "MRecoilPs";
+	  else continue;	  
+
 	  if (iplot == PlotGenerator::kData) histname += "dat";
 	  if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
 	  if (iplot == PlotGenerator::kAccMC) histname += "acc";
@@ -232,7 +227,7 @@ int main( int argc, char* argv[] ){
 	    histname += "_";
 	    histname += amphistname[iamp];
 	  }
-
+	  
 	  Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
 	  TH1* thist = hist->toRoot();
 	  thist->SetName(histname.c_str());
@@ -252,15 +247,11 @@ int main( int argc, char* argv[] ){
   // parameters to check
   vector< string > pars;
   
-  pars.push_back("dalitz_alpha");
-  pars.push_back("dalitz_beta");
-  //pars.push_back("dalitz_gamma");
-  //pars.push_back("dalitz_delta");
   pars.push_back("dsratio");
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
-  outfile.open( "omegapi_fitPars.txt" );
+  outfile.open( "vecps_fitPars.txt" );
 
   for(unsigned int i = 0; i<pars.size(); i++) {
     double parValue = results.parValue( pars[i] );
@@ -282,7 +273,6 @@ int main( int argc, char* argv[] ){
   const int nAmps = amphistname.size();
   vector<string> ampsumPosRefl[nAmps];
   vector<string> ampsumNegRefl[nAmps];
-  vector< pair<string,string> > phaseDiffNames;
 
   for(unsigned int i = 0; i < fullamps.size(); i++){
 
@@ -319,20 +309,8 @@ int main( int argc, char* argv[] ){
 		    }
 	    }
     }
-    
-    // second loop over amplitudes to get phase difference names
-    for(unsigned int j = i+1; j < fullamps.size(); j++){
-
-	    // only keep amplitudes from the same coherent sum (and ignore constrained Real)
-	    if(fullamps[i].find("Real") != std::string::npos) continue;
-	    if(fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos) continue;
-	    if(fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
-	    
-	    phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
-    }
   }
 
-  cout<<"Computing fit fractions"<<endl;
   for(int i = 0; i < nAmps; i++){
     if(ampsumPosRefl[i].empty()) continue;
     outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = "
@@ -341,13 +319,6 @@ int main( int argc, char* argv[] ){
      outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = "
           << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
           << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
-  }
-
-  cout<<"Computing phase differences"<<endl;
-  for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
-	  pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
-	  outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
-
   }
 
   // covariance matrix
