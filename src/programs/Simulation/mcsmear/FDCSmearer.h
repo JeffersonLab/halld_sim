@@ -19,6 +19,7 @@ class fdc_config_t
 	double FDC_TIME_WINDOW;
 	double FDC_THRESH_KEV;        // fdc anode discriminator threshold
 
+    static bool FDC_EFFVSDOCA;
     double FDC_EFFVSDOCA_PAR[4];
 
 	vector< vector<double > > channel_efficiencies;
@@ -59,7 +60,7 @@ class fdc_config_t
                           pow(pow(FDC_EFFVSDOCA_PAR[2], 2) +
                               pow(FDC_EFFVSDOCA_PAR[3], 2), 2)
                      );
-        return (eff < 0)? 0 : eff*eff;
+        return (!FDC_EFFVSDOCA)? 1 : (eff < 0)? 0 : eff*eff;
 	}
 };
 

@@ -6,6 +6,8 @@ using namespace jana;
 
 #include <sstream>
 
+bool fdc_config_t::FDC_EFFVSDOCA(1);
+
 //-----------
 // fdc_config_t  (constructor)
 //-----------
