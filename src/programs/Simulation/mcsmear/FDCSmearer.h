@@ -52,19 +52,14 @@ class fdc_config_t
 	double GetEfficiencyVsDOCA(double doca) {
         // Introduce a DOCA-dependent efficiency that cuts off the hit efficiency
         // for tracks that cross through the cell at a large distance from the wire.
-#ifdef OLD_FDC_EFFICIENCY_PARAMTERIZATION
-        double docad = FDC_EFFVSDOCA_PAR[2] - doca;
-        double docad2 = docad * docad + 1e-99;
-        const double docad3 = pow(FDC_EFFVSDOCA_PAR[2], 3) + 1e-99;
         double eff = FDC_EFFVSDOCA_PAR[0] - FDC_EFFVSDOCA_PAR[1] *
-                     (1 / docad2 - 2 * doca / docad3);
-        return (docad < 0)? 0 : (eff < 0)? 0 : eff*eff;
-#else
-        double docad = doca - FDC_EFFVSDOCA_PAR[3];
-        double eff = FDC_EFFVSDOCA_PAR[0] - FDC_EFFVSDOCA_PAR[1] *
-                     (1 + tanh(FDC_EFFVSDOCA_PAR[2] * docad));
+                     (1 / (pow(FDC_EFFVSDOCA_PAR[2] - doca, 2) +
+                           pow(FDC_EFFVSDOCA_PAR[3], 2))
+                      - 2 * FDC_EFFVSDOCA_PAR[2] * doca /
+                          pow(pow(FDC_EFFVSDOCA_PAR[2], 2) +
+                              pow(FDC_EFFVSDOCA_PAR[3], 2), 2)
+                     );
         return (eff < 0)? 0 : eff*eff;
-#endif
 	}
 };
 
