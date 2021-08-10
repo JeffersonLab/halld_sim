@@ -227,7 +227,7 @@ int main( int argc, char* argv[] ){
 	  }
 	}
 	if (!foundResonance)
-	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with mass = 1.235, width = 0.142 GeV" << endl; 
+	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with flat mass distribution" << endl; 
 
 	// find vector parameters from config file
 	double vecMass = 0;
@@ -303,7 +303,7 @@ int main( int argc, char* argv[] ){
 	// we can easily compute the PDF for this and divide by that when
 	// doing accept/reject -- improves efficiency if seeds are picked well
 	
-	if( !genFlat ){
+	if( !genFlat && foundResonance){
 		
 		// the lines below should be tailored by the user for the particular desired
 		// set of amplitudes -- doing so will improve efficiency.  Leaving as is
