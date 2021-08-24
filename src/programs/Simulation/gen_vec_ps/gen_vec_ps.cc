@@ -44,16 +44,16 @@ using std::complex;
 using namespace std;
 
 int main( int argc, char* argv[] ){
-  
+
 	string  configfile("");
 	string  outname("");
 	string  hddmname("");
         string  asciiname("");
-	
+
 	bool diag = false;
 	bool genFlat = false;
-	
-	// default upper and lower bounds 
+
+	// default upper and lower bounds
 	double lowMass = 1.0;//To take over threshold with a BW omega mass
 	double highMass = 2.0;
 
@@ -71,16 +71,16 @@ int main( int argc, char* argv[] ){
 
 	int nEvents = 10000;
 	int batchSize = 100000;
-	
+
 	//parse command line:
 	for (int i = 1; i < argc; i++){
-		
+
 		string arg(argv[i]);
-		
-		if (arg == "-c"){  
+
+		if (arg == "-c"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  configfile = argv[++i]; }
-		if (arg == "-o"){  
+		if (arg == "-o"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  outname = argv[++i]; }
 		if (arg == "-hd"){
@@ -95,7 +95,7 @@ int main( int argc, char* argv[] ){
 		if (arg == "-u"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  highMass = atof( argv[++i] ); }
-		if (arg == "-n"){  
+		if (arg == "-n"){
 			if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
 			else  nEvents = atoi( argv[++i] ); }
 		if (arg == "-m"){
@@ -151,12 +151,12 @@ int main( int argc, char* argv[] ){
 			exit(1);
 		}
 	}
-	
+
 	if( configfile.size() == 0 || outname.size() == 0 ){
 		cout << "No config file or output specificed:  run gen_vec_ps -h for help" << endl;
 		exit(1);
 	}
-	
+
 	// open config file and be sure only one reaction is specified
 	ConfigFileParser parser( configfile );
 	ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
@@ -172,7 +172,7 @@ int main( int argc, char* argv[] ){
 	if(lowerVertexKeywords.size() == 1) {
 	  vector<string> keywordArgs = lowerVertexKeywords[0];
 	  bwGenLowerVertex.push_back( BreitWignerGenerator( atof(keywordArgs[0].c_str()), atof(keywordArgs[1].c_str())) );
-	  cout << "Unstable particle at lower vertex: mass = " << keywordArgs[0] << "GeV , width = " << keywordArgs[1] << "GeV" << endl; 
+	  cout << "Unstable particle at lower vertex: mass = " << keywordArgs[0] << "GeV , width = " << keywordArgs[1] << "GeV" << endl;
 	  for(unsigned int j=2; j<keywordArgs.size(); j++) {
 	    ParticlesLowerVertex.push_back(ParticleEnum(keywordArgs[j].c_str()));
 	    massesLowerVertex.push_back(ParticleMass(ParticlesLowerVertex[j-2]));
@@ -190,7 +190,7 @@ int main( int argc, char* argv[] ){
 	unsigned int maxUpperVertexChild = reaction->particleList().size();
         if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
         for (unsigned int i = 0; i < maxUpperVertexChild; i++){
-	  TString particleName = reaction->particleList()[i].c_str(); 
+	  TString particleName = reaction->particleList()[i].c_str();
 	particleName.ReplaceAll("1","");  particleName.ReplaceAll("2",""); // ignore distinguishable particle notation
 	  Particle_t locEnum = ParticleEnum(particleName.Data());
 	  // Beam particle is always photon
@@ -208,7 +208,7 @@ int main( int argc, char* argv[] ){
 	}
 
 	// loop to look for resonance in config file
-	// currently only one at a time is supported 
+	// currently only one at a time is supported
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
 	double resonance[]={1.235, 1.0};
 	bool foundResonance = false;
@@ -220,7 +220,7 @@ int main( int argc, char* argv[] ){
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
 	      resonance[1]=atof((*it).arguments()[2].c_str());
-	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
+	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl;
 	      foundResonance = true;
 	      break;
 	    }
@@ -298,22 +298,21 @@ int main( int argc, char* argv[] ){
 
 	vector< BreitWignerGenerator > m_bwGen;
         m_bwGen.push_back( BreitWignerGenerator(vecMass, vecWidth) );
-		
+
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
 	// doing accept/reject -- improves efficiency if seeds are picked well
 	
 	if( !genFlat && foundResonance){
-		
 		// the lines below should be tailored by the user for the particular desired
 		// set of amplitudes -- doing so will improve efficiency.  Leaving as is
 		// won't make MC incorrect, it just won't be as fast as it could be
-		
+
 		resProd.addResonance( resonance[0], resonance[1],  1.0 );
 	}
-	
+
 	vector< int > pTypes;
-	for (unsigned int i=0; i<Particles.size(); i++)  
+	for (unsigned int i=0; i<Particles.size(); i++)
 	  pTypes.push_back( Particles[i] );
 	for (unsigned int i=1; i<ParticlesLowerVertex.size(); i++)
           pTypes.push_back( ParticlesLowerVertex[i] );
@@ -321,7 +320,7 @@ int main( int argc, char* argv[] ){
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
 	ROOTDataWriter rootOut( outname );
-	
+
 	ASCIIDataWriter* asciiOut = NULL;
         if( asciiname.size() != 0 ) asciiOut = new ASCIIDataWriter( asciiname );
 
@@ -343,7 +342,7 @@ int main( int argc, char* argv[] ){
 	massW->Sumw2();
 	TH1F* intenW = new TH1F( "intenW", "True PDF / Gen. PDF", 1000, 0, 100 );
 	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, lowMass, highMass, 1000, 0, 10 );
-	
+
 	TH1F* t = new TH1F( "t", "-t Distribution", 200, 0, 2 );
 
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
@@ -366,20 +365,20 @@ int main( int argc, char* argv[] ){
 
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
-		
+
 		if( batchSize < 1E4 ){
-			
+
 			cout << "WARNING:  small batches could have batch-to-batch variations\n"
 			     << "          due to different maximum intensities!" << endl;
 		}
-		
+
 		cout << "Generating four-vectors..." << endl;
 
 		// decay vector (and lowerVertex, if generated)
 		ati.clearEvents();
 		int i=0;
 		while( i < batchSize ){
-			
+
 			double weight = 1.;
 
 			double vec_mass_bw = m_bwGen[0]().first;
@@ -389,9 +388,8 @@ int main( int argc, char* argv[] ){
 			vector<double> childMasses_vec_bw;
               		childMasses_vec_bw.push_back(childMasses[0]);
         		childMasses_vec_bw.push_back(vec_mass_bw);
-			
+
 			resProd.setChildMasses(childMasses_vec_bw);
-			resProd.getProductionMechanism().setMassRange( lowMass, highMass );
 
 			// setup lower vertex decay
 			pair< double, double > bwLowerVertex;
@@ -421,20 +419,20 @@ int main( int argc, char* argv[] ){
 				  vec_boosted_daughter.Boost( vec.BoostVector() );
 				  vec_boosted_daughters.push_back(vec_boosted_daughter);
 			  }
-		  
+
 			  // decay step for lowerVertex
 			  TLorentzVector nucleon;
 			  vector<TLorentzVector> lowerVertexChild;
 			  if(bwGenLowerVertex.size() == 1) {
 				  NBodyPhaseSpaceFactory lowerVertex_decay = NBodyPhaseSpaceFactory( lowerVertex_mass_bw, massesLowerVertex);
 				  lowerVertexChild = lowerVertex_decay.generateDecay();
-				 
+
 				  // boost to lab frame via recoil kinematics
 				  for(unsigned int j=0; j<lowerVertexChild.size(); j++)
 					  lowerVertexChild[j].Boost( recoil.BoostVector() );
-				  nucleon = lowerVertexChild[0];	
-			  }		  
-			  else 
+				  nucleon = lowerVertexChild[0];
+			  }
+			  else
 				  nucleon = recoil;
 
 
@@ -444,7 +442,7 @@ int main( int argc, char* argv[] ){
 			  allPart.push_back( beam );
 			  allPart.push_back( nucleon );
 			  allPart.push_back( bachelor );
-			  for(uint idaught = 0; idaught<vec_boosted_daughters.size(); idaught++) 
+			  for(uint idaught = 0; idaught<vec_boosted_daughters.size(); idaught++)
 				  allPart.push_back( vec_boosted_daughters[idaught] );
 			  if(bwGenLowerVertex.size() == 1)
 				  for(unsigned int j=1; j<lowerVertexChild.size(); j++)
@@ -457,16 +455,16 @@ int main( int argc, char* argv[] ){
 			  delete kin;
 			  i++;
     		}
-		
+
 		cout << "Processing events..." << endl;
-		
+
 		// include factor of 1.5 to be safe in case we miss peak -- avoid
 		// intensity calculation of we are generating flat data
 		double maxInten = ( genFlat ? 1 : 1.50* ati.processEvents( reaction->reactionName() ) );
-		
-		
+
+
 		for( int i = 0; i < batchSize; ++i ){
-			
+
 			Kinematics* evt = ati.kinematics( i );
 			TLorentzVector resonance;
 			for (unsigned int i=2; i<Particles.size(); i++)
@@ -475,11 +473,11 @@ int main( int argc, char* argv[] ){
 			TLorentzVector isobar;
 			for (unsigned int i=3; i<Particles.size(); i++)
 			  isobar += evt->particle( i );
-			
+
 			TLorentzVector isobar2;
 			for (unsigned int i=4; i<Particles.size(); i++)
 			  isobar2 += evt->particle( i );
-			
+
 			TLorentzVector recoil = evt->particle( 1 );
                         if(bwGenLowerVertex.size()) {
 				for(unsigned int j=Particles.size(); j<evt->particleList().size(); j++)
@@ -487,21 +485,21 @@ int main( int argc, char* argv[] ){
                         }
 
 			double genWeight = evt->weight();
-			
+
 			// cannot ask for the intensity if we haven't called process events above
-			double weightedInten = ( genFlat ? 1 : ati.intensity( i ) ); 
+			double weightedInten = ( genFlat ? 1 : ati.intensity( i ) );
 			// cout << " i=" << i << "  intensity_i=" << weightedInten << endl;
 
 			if( !diag ){
-				
+
 				// obtain this by looking at the maximum value of intensity * genWeight
 				double rand = gRandom->Uniform() * maxInten;
-				
+
 				if( weightedInten > rand || genFlat ){
 
 					mass->Fill( resonance.M() );
 					massW->Fill( resonance.M(), genWeight );
-					
+
 					intenW->Fill( weightedInten );
 					intenWVsM->Fill( resonance.M(), weightedInten );
 
@@ -509,15 +507,18 @@ int main( int argc, char* argv[] ){
 					M_isobar2->Fill( isobar2.M() );
 					M_recoil->Fill( recoil.M() );
 					M_recoilW->Fill( recoil.M(), weightedInten );
-					
+
 					// calculate angular variables
+          Int_t numparticles = evt->particleList().size();
 					TLorentzVector beam = evt->particle ( 0 );
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector p2 = evt->particle ( 3 );
 					TLorentzVector p3 = evt->particle ( 4 );
-					TLorentzVector p4 = evt->particle ( 5 );
+          TLorentzVector p4;
+          if(numparticles==6)
+            p4 = evt->particle ( 5 );
 					TLorentzVector target(0,0,0,ParticleMass(Proton));
-					
+
 					M_p1->Fill( p1.M() );
 					M_p2->Fill( p2.M() );
 					M_p3->Fill( p3.M() );
@@ -532,7 +533,7 @@ int main( int argc, char* argv[] ){
 					dalitzx = sqrt(3.)*(dalitz_t - dalitz_u)/dalitz_d;
 					dalitzy = 3.*(dalitz_sc - dalitz_s)/dalitz_d;
 					M_dalitz->Fill(dalitzx,dalitzy);
-					
+
 					t->Fill(-1*(recoil-target).M2());
 
                                         TLorentzVector Gammap = beam + target;
@@ -555,12 +556,12 @@ int main( int argc, char* argv[] ){
                                         GDouble psi = phi - Phi;
                                         if(psi < -1*PI) psi += 2*PI;
                                         if(psi > PI) psi -= 2*PI;
-					
+
 					CosTheta_psi->Fill( psi, cosTheta);
-										
+
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
-					
+
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
                                         if( asciiOut ) asciiOut->writeEvent( *evt, pTypes );
 					rootOut.writeEvent( *evt );
@@ -569,22 +570,22 @@ int main( int argc, char* argv[] ){
 				}
 			}
 			else{
-				
+
 				mass->Fill( resonance.M() );
 				massW->Fill( resonance.M(), genWeight );
-				
+
 				intenW->Fill( weightedInten );
 				intenWVsM->Fill( resonance.M(), weightedInten );
-				
+
 				++eventCounter;
 			}
-			
+
 			delete evt;
 		}
-		
+
 		cout << eventCounter << " events were processed." << endl;
 	}
-	
+
 	mass->Write();
 	massW->Write();
 	intenW->Write();
@@ -607,8 +608,8 @@ int main( int argc, char* argv[] ){
 	M_Phi_Prod->Write();
 
 	diagOut->Close();
-	
+
 	if( hddmOut ) delete hddmOut;
-	
+
 	return 0;
 }
