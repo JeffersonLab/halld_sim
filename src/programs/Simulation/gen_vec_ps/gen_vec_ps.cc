@@ -391,7 +391,6 @@ int main( int argc, char* argv[] ){
         		childMasses_vec_bw.push_back(vec_mass_bw);
 
 			resProd.setChildMasses(childMasses_vec_bw);
-			resProd.getProductionMechanism().setMassRange( lowMass, highMass );
 
 			// setup lower vertex decay
 			pair< double, double > bwLowerVertex;
