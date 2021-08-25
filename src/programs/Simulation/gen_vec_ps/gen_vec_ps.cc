@@ -227,7 +227,7 @@ int main( int argc, char* argv[] ){
 	  }
 	}
 	if (!foundResonance)
-	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with flat mass distribution" << endl; 
+	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with flat mass distribution" << endl;
 
 	// find vector parameters from config file
 	double vecMass = 0;
@@ -290,7 +290,7 @@ int main( int argc, char* argv[] ){
 	}
 
 		ProductionMechanism::Type type =
-		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
+		( (genFlat || !foundResonance) ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
@@ -302,7 +302,7 @@ int main( int argc, char* argv[] ){
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
 	// doing accept/reject -- improves efficiency if seeds are picked well
-	
+
 	if( !genFlat && foundResonance){
 		// the lines below should be tailored by the user for the particular desired
 		// set of amplitudes -- doing so will improve efficiency.  Leaving as is
