@@ -227,7 +227,7 @@ int main( int argc, char* argv[] ){
 	  }
 	}
 	if (!foundResonance)
-	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with mass = 1.235, width = 0.142 GeV" << endl;
+	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with flat mass distribution" << endl;
 
 	// find vector parameters from config file
 	double vecMass = 0;
@@ -290,7 +290,7 @@ int main( int argc, char* argv[] ){
 	}
 
 		ProductionMechanism::Type type =
-		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
+		( (genFlat || !foundResonance) ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
@@ -303,8 +303,7 @@ int main( int argc, char* argv[] ){
 	// we can easily compute the PDF for this and divide by that when
 	// doing accept/reject -- improves efficiency if seeds are picked well
 
-	if( !genFlat ){
-
+	if( !genFlat && foundResonance){
 		// the lines below should be tailored by the user for the particular desired
 		// set of amplitudes -- doing so will improve efficiency.  Leaving as is
 		// won't make MC incorrect, it just won't be as fast as it could be
@@ -383,7 +382,21 @@ int main( int argc, char* argv[] ){
 			double weight = 1.;
 
 			double vec_mass_bw = m_bwGen[0]().first;
-                        if( fabs(vec_mass_bw - vecMass) > 2.5*vecWidth ) continue;
+			if( fabs(vec_mass_bw - vecMass) > 2.5*vecWidth )
+				continue;
+			// make sure generated BW is not below threshold of vector->2PS
+			double vecthreshold=0;
+			for(unsigned int m=0; m<vectorMasses.size(); m++){
+				vecthreshold+=vectorMasses[m];
+			}
+			if(vec_mass_bw<vecthreshold)
+				continue;
+
+			// set new production threshold according to generated vector mass
+			threshold = childMasses[0];
+		  threshold += vec_mass_bw;
+			resProd.getProductionMechanism().setMassRange( threshold<lowMass ? lowMass : threshold,highMass );
+
 			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
 			vector<double> childMasses_vec_bw;

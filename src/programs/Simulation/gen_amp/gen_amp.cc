@@ -26,6 +26,7 @@
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/Lambda1520tdist.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/dblRegge.h"
@@ -282,6 +283,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
 	AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
+	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
 	AmpToolsInterface::registerAmplitude( dblRegge() );
