@@ -19,6 +19,9 @@ class fdc_config_t
 	double FDC_TIME_WINDOW;
 	double FDC_THRESH_KEV;        // fdc anode discriminator threshold
 
+    static bool FDC_EFFVSDOCA;
+    double FDC_EFFVSDOCA_PAR[4];
+
 	vector< vector<double > > channel_efficiencies;
 	
 	double GetEfficiencyCorrectionFactor(hddm_s::FdcCathodeStripList::iterator &siter) {
@@ -45,8 +48,20 @@ class fdc_config_t
         //   << " wire = " << witer->getWire() << endl;
 
 		return channel_efficiencies.at(gPlane).at(element-1);
-	}
+    }
 
+	double GetEfficiencyVsDOCA(double doca) {
+        // Introduce a DOCA-dependent efficiency that cuts off the hit efficiency
+        // for tracks that cross through the cell at a large distance from the wire.
+        double eff = FDC_EFFVSDOCA_PAR[0] - FDC_EFFVSDOCA_PAR[1] *
+                     (1 / (pow(FDC_EFFVSDOCA_PAR[2] - doca, 2) +
+                           pow(FDC_EFFVSDOCA_PAR[3], 2))
+                      - 2 * FDC_EFFVSDOCA_PAR[2] * doca /
+                          pow(pow(FDC_EFFVSDOCA_PAR[2], 2) +
+                              pow(FDC_EFFVSDOCA_PAR[3], 2), 2)
+                     );
+        return (!FDC_EFFVSDOCA)? 1 : (eff < 0)? 0 : eff*eff;
+	}
 };
 
 

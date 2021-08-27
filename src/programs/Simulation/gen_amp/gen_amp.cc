@@ -26,6 +26,7 @@
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/Lambda1520tdist.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/dblRegge.h"
@@ -282,6 +283,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
 	AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
+	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
 	AmpToolsInterface::registerAmplitude( dblRegge() );
@@ -409,6 +411,8 @@ int main( int argc, char* argv[] ){
 		int i=0;
                 while( i < batchSize ){
 
+			double weight = 1.;
+
 			Kinematics* kin;
 			if(bwGenLowerVertex.size() == 0) 
 				kin = resProd.generate(); // stable particle at lower vertex
@@ -416,6 +420,8 @@ int main( int argc, char* argv[] ){
 				// unstable particle at lower vertex
 				pair< double, double > bwLowerVertex = bwGenLowerVertex[0]();
 				double lowerVertex_mass_bw = bwLowerVertex.first;
+				weight *= bwLowerVertex.second;
+
 				if ( lowerVertex_mass_bw < thresholdLowerVertex || lowerVertex_mass_bw > 2.0) continue;
 				resProd.getProductionMechanism().setRecoilMass( lowerVertex_mass_bw );
 				
@@ -447,8 +453,9 @@ int main( int argc, char* argv[] ){
 				// loop over lower vertex decay particles
 				for(unsigned int j=1; j<lowerVertexChild.size(); j++) 
 					allPart.push_back(lowerVertexChild[j]);
-				
-				kin = new Kinematics( allPart, 1.0 );
+			
+				weight *= step1->weight();	
+				kin = new Kinematics( allPart, weight );
 				delete step1;				
 			}
 			
