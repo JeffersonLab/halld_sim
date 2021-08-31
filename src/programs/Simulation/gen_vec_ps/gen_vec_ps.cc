@@ -381,9 +381,10 @@ int main( int argc, char* argv[] ){
 
 			double weight = 1.;
 
-			double vec_mass_bw = m_bwGen[0]().first;
-			if( fabs(vec_mass_bw - vecMass) > 2.5*vecWidth )
-				continue;
+			pair< double, double > bwVec = m_bwGen[0]();
+			double vec_mass_bw = bwVec.first;
+			weight *= bwVec.second;
+
 			// make sure generated BW is not below threshold of vector->2PS
 			double vecthreshold=0;
 			for(unsigned int m=0; m<vectorMasses.size(); m++){
@@ -394,7 +395,9 @@ int main( int argc, char* argv[] ){
 
 			// set new production threshold according to generated vector mass
 			threshold = childMasses[0];
-		  threshold += vec_mass_bw;
+		  	threshold += vec_mass_bw;
+			if(highMass<threshold) // no phasespace if highMass < threshold
+				continue;
 			resProd.getProductionMechanism().setMassRange( threshold<lowMass ? lowMass : threshold,highMass );
 
 			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
