@@ -191,7 +191,7 @@ int main( int argc, char* argv[] ){
         if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
         for (unsigned int i = 0; i < maxUpperVertexChild; i++){
 	  TString particleName = reaction->particleList()[i].c_str();
-	particleName.ReplaceAll("1","");  particleName.ReplaceAll("2",""); // ignore distinguishable particle notation
+	  particleName.ReplaceAll("1","");  particleName.ReplaceAll("2",""); // ignore distinguishable particle notation
 	  Particle_t locEnum = ParticleEnum(particleName.Data());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
@@ -523,7 +523,7 @@ int main( int argc, char* argv[] ){
 					M_isobar->Fill( isobar.M() );
 					M_isobar2->Fill( isobar2.M() );
 					M_recoil->Fill( recoil.M() );
-					M_recoilW->Fill( recoil.M(), weightedInten );
+					M_recoilW->Fill( recoil.M(), genWeight );
 
 					// calculate angular variables
           Int_t numparticles = evt->particleList().size();

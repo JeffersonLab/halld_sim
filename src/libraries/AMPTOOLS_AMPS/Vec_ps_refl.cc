@@ -20,7 +20,6 @@
 Vec_ps_refl::Vec_ps_refl( const vector< string >& args ) :
 UserAmplitude< Vec_ps_refl >( args )
 {
-  //assert( args.size() == 11 );
   
   m_j = atoi( args[0].c_str() ); // resonance spin J
   m_m = atoi( args[1].c_str() ); // spin projection (Lambda)
@@ -41,9 +40,9 @@ UserAmplitude< Vec_ps_refl >( args )
   }
 
   m_3pi = false;
-  if(args.size() == (11)){
+  if(args.size() == 11) {
 	  m_3pi = true; // treat 3-pion decay dalitz parameters
-
+	  
 	  //Dalitz Parameters for 3pi decays
 	  dalitz_alpha  = AmpParameter(args[6+1]);
 	  dalitz_beta   = AmpParameter(args[6+2]);
@@ -54,6 +53,25 @@ UserAmplitude< Vec_ps_refl >( args )
 	  registerParameter(dalitz_beta);
 	  registerParameter(dalitz_gamma);
 	  registerParameter(dalitz_delta);
+  }
+
+  // define ordering of pseudoscalar and vector particles in 2-body decay
+  m_ps = 2; // default: pseudoscalar directly after proton, followed by vector daughters
+  m_vec1 = 3; 
+  m_vec2 = 4;
+  m_rad = false; // default 
+  for(uint iarg = 0; iarg < args.size(); iarg++) {
+	  TString argument = args[iarg].c_str();
+	  if(argument.Contains("rad")) {
+		  m_rad = true;
+	  }
+	  if(argument.Contains("vec_index")) {
+		  string indices = args[iarg+1];
+		  m_ps = indices[0]-'0';
+		  m_vec1 = indices[1]-'0';
+		  m_vec2 = indices[2]-'0';
+		  iarg++;
+	  }
   }
 
   // make sure values are reasonable
@@ -74,7 +92,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
 
   // common vector and pseudoscalar P4s
-  TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); // 1st after proton
+  TLorentzVector ps(pKin[m_ps][1], pKin[m_ps][2], pKin[m_ps][3], pKin[m_ps][0]);
   TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
 
   // omega ps proton, omega -> 3pi (6 particles)
@@ -103,14 +121,14 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
   }
   else {
-	  // omega ps proton, omega -> pi0 g (4 particles)
-	  // omega pi- Delta++, omega -> pi0 g (5 particles)
-	  
-	  // (vec 2-body) ps proton, vec 2-body -> pipi, KK (5 particles)
-	  // (vec 2-body) pi- Delta++, vec 2-body -> pipi, KK (6 particles)
-	  // (vec 2-body) K+ Lambda, vec 2-body -> Kpi (6 particles)
-	  vec_daught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
-	  vec_daught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+	  // omega ps proton,   omega -> g pi0 (5 particles)
+	  // omega pi- Delta++, omega -> g pi0 (6 particles)
+
+	  // (vec 2-body) ps proton,       vec 2-body -> pipi, KK (5 particles)
+	  // (vec 2-body) pi- Delta++,     vec 2-body -> pipi, KK (6 particles)
+	  // (vec 2-body) K+ Lambda(1520), vec 2-body -> Kpi (6 particles)
+	  vec_daught1 = TLorentzVector(pKin[m_vec1][1], pKin[m_vec1][2], pKin[m_vec1][3], pKin[m_vec1][0]);
+	  vec_daught2 = TLorentzVector(pKin[m_vec2][1], pKin[m_vec2][2], pKin[m_vec2][3], pKin[m_vec2][0]);
 	  vec = vec_daught1 + vec_daught2;
   }
 
@@ -173,7 +191,20 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 
   for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
 	  GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
-	  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
+	  
+	  // radiative decay
+	  if(m_rad) { 
+		  // sum over radiated photon final state helicity
+		  for (int lambda_gamma = -1; lambda_gamma <= 1; lambda_gamma++) { 
+			  GDouble Lambda_gamma = lambda_gamma;
+			  if(lambda == 0) amplitude +=  Lambda_gamma * conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, lambda_gamma, cosThetaH, PhiH ));
+			  else amplitude += pow(-1, lambda) * conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, lambda_gamma, cosThetaH, PhiH ));
+		  }
+	  }
+	  // hadronic decay
+	  else { 
+		  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
+	  }
   } 
 
   GDouble Factor = sqrt(1 + m_s * polFraction);

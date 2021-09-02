@@ -85,14 +85,23 @@ private:
 	int m_m;
 	int m_l;
 	int m_r;
-	int m_s;
-	int m_3pi;
+	int m_s;	
+
+	// indices for ps and 2-body vector decay
+	int m_ps;
+	int m_vec1;
+	int m_vec2;
 	
+	// flag for 3-body vector decay and dalitz parameters
+	int m_3pi;
 	AmpParameter dalitz_alpha;
 	AmpParameter dalitz_beta;
 	AmpParameter dalitz_gamma;
 	AmpParameter dalitz_delta;
 	
+	// flag for radiative decay
+	int m_rad;
+
 	AmpParameter polAngle;
 	
 	double polFraction;
