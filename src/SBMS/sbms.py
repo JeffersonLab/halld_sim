@@ -684,6 +684,7 @@ def AddSQLite(env):
 	sqlitecpp_home = os.getenv('SQLITECPP_HOME')
 	sqlite_ge_3_19 = version_greater_than_or_equal_to('SQLITE_VERSION', [3, 19, 0])
 	if not sqlite_ge_3_19.defined or (sqlite_ge_3_19.defined and not sqlite_ge_3_19.answer):
+		env.Append(CPPDEFINES={'SQLITE_USE_LEGACY_STRUCT':'ON'})
 	SQLITECPP_CPPPATH = ["%s/include" % (sqlitecpp_home)]
 	env.AppendUnique(CPPPATH = SQLITECPP_CPPPATH)
 	sqlitecpp_ge_2_5 = version_greater_than_or_equal_to('SQLITECPP_VERSION', [2, 5, 0])
