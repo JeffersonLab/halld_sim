@@ -8,8 +8,6 @@
 #include <utility>
 #include <map>
 
-#include "TSystem.h"
-
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
@@ -90,12 +88,12 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
    string fitName = cfgInfo->fitName();
 
    cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
-
+    
    MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
-   fitManager->setMaxIterations(maxIter);  
- 
-   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
+   fitManager->setMaxIterations(maxIter);
 
+   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
+   
    // keep track of best fit (mininum log-likelihood)
    double minLL = 0;
    int minFitTag = -1;
@@ -104,18 +102,18 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
      cout << endl << "###############################" << endl;
      cout << "FIT " << i << " OF " << numRnd << endl;
      cout << endl << "###############################" << endl;
-
+     
      // randomize parameters
      ati.randomizeProductionPars(maxFraction);
      for(size_t ipar=0; ipar<parRangeKeywords.size(); ipar++) {
         ati.randomizeParameter(parRangeKeywords[ipar][0], atof(parRangeKeywords[ipar][1].c_str()), atof(parRangeKeywords[ipar][2].c_str()));
      }
-
+     
      if(useMinos)
         fitManager->minosMinimization();
      else
         fitManager->migradMinimization();
-  
+
      bool fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
 
      if( fitFailed )
@@ -231,6 +229,5 @@ int main( int argc, char* argv[] ){
 
    return 0;
 }
-
 
 
