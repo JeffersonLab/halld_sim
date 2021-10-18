@@ -18,7 +18,7 @@
  __device__ GDouble DegToRad = PI/180.0;
 ///////////////////////////////////////////////////////////////////////////////
 __global__ void
-GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction )
+GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, int m_rad, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction)
 {
 	int iEvent = GPU_THIS_EVENT;
 
@@ -44,7 +44,17 @@ GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_
 	for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
 		//CPU --> clebschGordan(j1,j2,m1,m2,J,M) || GPU --> clebsch(j1,m1,j2,m2,J,M);
 		GDouble hel_amp = clebsch(m_l, 0, 1, lambda, m_j, lambda);
-		amplitude += Conjugate(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * Conjugate(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
+		if(m_rad) {
+			  // sum over radiated photon final state helicity
+		  	  for (int lambda_gamma = -1; lambda_gamma <= 1; lambda_gamma++) { 
+			      	   GDouble Lambda_gamma = lambda_gamma;
+			      	   if(lambda == 0) amplitude +=  Lambda_gamma * Conjugate(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * Conjugate(wignerD( 1, lambda, lambda_gamma, cosThetaH, PhiH ));
+			  	   else amplitude += G_POW(-1, lambda) * Conjugate(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * Conjugate(wignerD( 1, lambda, lambda_gamma, cosThetaH, PhiH ));
+			  }
+		}
+		else {
+			  amplitude += Conjugate(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * Conjugate(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
+		}
   	} 
   
 	GDouble Factor = sqrt(1 + m_s * polFraction);

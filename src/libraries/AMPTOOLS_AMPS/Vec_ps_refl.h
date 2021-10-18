@@ -24,7 +24,7 @@ using namespace std;
 
 #ifdef GPU_ACCELERATION
 void
-GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction );
+GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, int m_rad, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction );
 #endif
 
 class Kinematics;
@@ -36,7 +36,7 @@ public:
 	
 	Vec_ps_refl() : UserAmplitude< Vec_ps_refl >() { };
 	Vec_ps_refl( const vector< string >& args );
-	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction);
+	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, int m_rad, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction);
 	
 	string name() const { return "Vec_ps_refl"; }
     

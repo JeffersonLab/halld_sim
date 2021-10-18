@@ -235,7 +235,7 @@ void Vec_ps_refl::updatePar( const AmpParameter& par ){
 void
 Vec_ps_refl::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, m_3pi, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction );
+	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, m_3pi, m_rad, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction );
 
 }
 
