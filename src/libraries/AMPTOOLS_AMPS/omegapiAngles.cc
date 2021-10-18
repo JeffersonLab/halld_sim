@@ -114,9 +114,9 @@ vector <double> getomegapiAngles(double polAngle, TLorentzVector daughter, TLore
   double theta = Angles.Theta();
   double phi = Angles.Phi();
 
-  //TVector3 eps(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
-  //double Phi = atan2(y.Dot(eps), InverseOfX.Vect().Unit().Dot(eps.Cross(y)));
-  double Phi = z.Phi();
+  // set beam polarization angle to 0 degrees; apply diamond orientation in calcAmplitude
+  TVector3 eps(1.0, 0.0, 0.0); 
+  double Phi = atan2(y.Dot(eps), InverseOfX.Vect().Unit().Dot(eps.Cross(y)));
 
   vector <double> thetaphiPhi{theta, phi, Phi};
     
