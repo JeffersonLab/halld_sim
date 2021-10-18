@@ -8,6 +8,8 @@
 #include <utility>
 #include <map>
 
+#include "TSystem.h"
+
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
