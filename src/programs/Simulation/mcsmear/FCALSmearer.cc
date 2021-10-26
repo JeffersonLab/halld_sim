@@ -254,10 +254,12 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	 }
 	 
 	 double Erange = FCAL_gain * 8.0;
+	 if (E > Erange)
+	   E = Erange;
          // Apply a single block threshold and energy range 
          // Scale threshold by gains
 	 // Scale range by gains
-	 if (Ethreshold <= E && E <= Erange){
+	 if (E >= Ethreshold){
 	   hddm_s::FcalHitList hits = iter->addFcalHits();
 	   hits().setE(E);
 	   hits().setT(t);
