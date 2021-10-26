@@ -225,7 +225,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	   double threshold = fcal_config->FCAL_THRESHOLD;
 	   double threshold_scaling = fcal_config->FCAL_THRESHOLD_SCALING;
 	   Ethreshold=FCAL_gain*integral_peak*MeV_FADC*(threshold*threshold_scaling - pedestal+gDRandom.SampleGaussian(pedestal_rms));
-	   
+	   	   
 	   if(fcal_config->FCAL_ADD_LIGHTGUIDE_HITS) {
 	     hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
 	     hddm_s::FcalTruthLightGuideList::iterator lgiter;
@@ -253,9 +253,11 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	   E *= (1.0 + gDRandom.SampleGaussian(sigma));
 	 }
 	 
-         // Apply a single block threshold. 
+	 double Erange = FCAL_gain * 8.0;
+         // Apply a single block threshold and energy range 
          // Scale threshold by gains
-	 if (E >= Ethreshold){
+	 // Scale range by gains
+	 if (Ethreshold <= E && E <= Erange){
 	   hddm_s::FcalHitList hits = iter->addFcalHits();
 	   hits().setE(E);
 	   hits().setT(t);
