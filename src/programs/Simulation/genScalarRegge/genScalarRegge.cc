@@ -1590,7 +1590,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.7; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
+    double m_Sigma=0.75; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
     width=0.7; // 0.4-0.7 GeV, PDG (2020)
     ReBf500=M_sq_R-M_sq;
@@ -1744,7 +1744,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     }
   }
   if (generate[3]){ // Tensor background
-    double m_T=1.275;	
+    double m_T=1.265; // mass determined empirically	
     double Gamma_T=0.185;
     if (!got_pipi){
       Gamma_T=0.107;
