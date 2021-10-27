@@ -209,6 +209,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	 double sigEstat=fcal_config->FCAL_PHOT_STAT_COEF;
 
          int channelnum = fcalGeom->channel(row, column); 
+	 double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);    
 	 if (row<DFCALGeometry::kBlocksTall&&column<DFCALGeometry::kBlocksWide){
 	   // correct simulation efficiencies 
 	   if (config->APPLY_EFFICIENCY_CORRECTIONS
@@ -217,7 +218,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	   } 
 	 
 	   // Get gain constant per block	      
-	   double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);    
+	   
 	   double pedestal_rms = fcal_config->FCAL_PED_RMS;
 	   double integral_peak = fcal_config->FCAL_INTEGRAL_PEAK;
 	   double MeV_FADC = fcal_config->FCAL_ADC_ASCALE;
