@@ -9,7 +9,7 @@ ctof_config_t::ctof_config_t(JEventLoop *loop)
   TSIGMA = 100.*k_psec;
   PHOTONS_PERMEV = 400.;
   BAR_THRESHOLD    = 0.0;
-  BAR_LENGTH=100.0;
+  BAR_LENGTH=120.0;
   ATTENUATION_LENGTH=150.;
 }
 
