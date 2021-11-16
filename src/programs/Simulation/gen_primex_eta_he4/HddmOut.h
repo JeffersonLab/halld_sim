@@ -17,6 +17,7 @@ using namespace std;
 
 struct tmpEvt_t {
   int nGen;
+  TString str_target;
   double weight;
   TLorentzVector beam;
   TLorentzVector target;
@@ -124,8 +125,19 @@ class HddmOut {
       products->in[0].momentum->E = evt.q1.E();
             
       //PRODUCED Nucleus recoil
-      products->in[1].type = Helium;
-      products->in[1].pdgtype = 1000020040;
+      if (evt.str_target == "He3") {
+	products->in[1].type = Helium;
+	products->in[1].pdgtype = 1000020040;
+      } else if (evt.str_target == "Be9") {
+	products->in[1].type = Be9;
+	products->in[1].pdgtype = 1000040090;
+      } else if (evt.str_target == "Proton") {
+	products->in[1].type = Proton;
+	products->in[1].pdgtype = 2212;
+      } else if (evt.str_target == "Neutron") {
+	products->in[1].type = Neutron;
+	products->in[1].pdgtype = 2112;
+      }
       products->in[1].id = 2;
       products->in[1].parentid = 0;
       products->in[1].mech = 0;
@@ -160,8 +172,21 @@ class HddmOut {
       products->in[1].momentum->E = evt.q2.E();
       
       //PRODUCED Nucleus recoil
-      products->in[2].type = Helium;
-      products->in[2].pdgtype = 1000020040;
+      //products->in[2].type = Helium;
+      //products->in[2].pdgtype = 1000020040;
+      if (evt.str_target == "He3") {
+	products->in[2].type = Helium;
+	products->in[2].pdgtype = 1000020040;
+      } else if (evt.str_target == "Be9") {
+	products->in[2].type = Be9;
+	products->in[2].pdgtype = 1000040090;
+      } else if (evt.str_target == "Proton") {
+	products->in[2].type = Proton;
+	products->in[2].pdgtype = 2212;
+      } else if (evt.str_target == "Neutron") {
+	products->in[2].type = Neutron;
+	products->in[2].pdgtype = 2112;
+      }
       products->in[2].id = 3;
       products->in[2].parentid = 0;
       products->in[2].mech = 0;
@@ -244,8 +269,21 @@ class HddmOut {
       products->in[5].momentum->E = evt.q6.E();
      
       //PRODUCED Nucleus recoil
-      products->in[6].type = Helium;
-      products->in[6].pdgtype = 1000020040;
+      //products->in[6].type = Helium;
+      //products->in[6].pdgtype = 1000020040;
+      if (evt.str_target == "He3") {
+	products->in[6].type = Helium;
+	products->in[6].pdgtype = 1000020040;
+      } else if (evt.str_target == "Be9") {
+	products->in[6].type = Be9;
+	products->in[6].pdgtype = 1000040090;
+      } else if (evt.str_target == "Proton") {
+	products->in[6].type = Proton;
+	products->in[6].pdgtype = 2212;
+      } else if (evt.str_target == "Neutron") {
+	products->in[6].type = Neutron;
+	products->in[6].pdgtype = 2112;
+      }
       products->in[6].id = 7;
       products->in[6].parentid = 0;
       products->in[6].mech = 0;

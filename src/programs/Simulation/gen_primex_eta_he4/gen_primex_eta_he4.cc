@@ -52,6 +52,9 @@ using namespace std;
 #define pi0_TYPE 7
 #define gamma_TYPE 1
 #define Helium_TYPE 47
+#define Be9_TYPE 64
+#define Proton_TYPE 14
+#define Neutron_TYPE 13
 
 int main( int argc, char* argv[] ){
   
@@ -66,10 +69,12 @@ int main( int argc, char* argv[] ){
   double beamLowE   = 3.0;
   double beamHighE  = 12.0;
   const double M_He4 = 3.727379378;
+  const double M_Be9 = 8.39479;
+  const double M_p = 0.93827208816;
+  const double M_n = 0.93956542052;
   const double M_eta = 0.54730;
   const double M_pi0 = 1.3957018e-01;
   const double M_gamma = 0.0;
-  TLorentzVector Target_4Vec(0, 0, 0, M_He4);
   
   int runNum = 9001;
   int seed = 0;
@@ -173,9 +178,21 @@ int main( int argc, char* argv[] ){
   TString m_rfile = ReadFile->GetConfigName("rfile"); 
   TString m_histo = ReadFile->GetConfigName("histo"); 
   TString m_decay = ReadFile->GetConfigName("decay"); 
+  TString m_target = ReadFile->GetConfigName("target"); 
+  TString m_Fermi_file = ReadFile->GetConfigName("Fermi_file"); 
   cout << "rfile " << m_rfile << endl;
   cout << "histo " << m_histo << endl;
   cout << "decay " << m_decay << endl;
+  cout << "target " << m_target << endl;
+  cout << "Fermi_file " << m_Fermi_file << endl;
+
+  double M_target = M_He4;
+  if (m_target == "He4") M_target = M_He4;
+  if (m_target == "Be9") M_target = M_Be9;
+  if (m_target == "Proton") M_target = M_p;
+  if (m_target == "Neutron") M_target = M_n;
+  TLorentzVector Target_4Vec(0, 0, 0, M_target);
+
   // Load eta-meson differential cross-section based on Ilya Larin's calculation, see the *.F program in this directory 
   TFile * ifile = new TFile(m_rfile);
   TH2F * h_dxs = (TH2F *) ifile->Get(m_histo);
@@ -188,6 +205,7 @@ int main( int argc, char* argv[] ){
   
   // Create decayGen
   TGenPhaseSpace decayGen;
+  TGenPhaseSpace decayGenTMP;
   
   TFile* diagOut = new TFile( "gen_primex_eta_he4_diagnostic.root", "recreate" );
   TH2F* h_Tkin_eta_vs_egam = new TH2F("Tkin_eta_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{#eta} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 12.0);
@@ -319,7 +337,7 @@ int main( int argc, char* argv[] ){
     double p0 = IS_4Vec.P();
     double E0 = IS_4Vec.E();
     double m2 = M_meson;
-    double m3 = M_He4;
+    double m3 = M_target;
     double a = pow(2.0 * p0 * cos(ThetaLAB), 2) - pow(2.0 * E0, 2);
     double b = 4.0 * pow(E0, 3) - pow(2.0 * p0, 2) * E0 + pow(2.0 * m2, 2) * E0 - pow(2.0 * m3, 2) * E0;
     double c = 2.0 * pow(p0 * E0, 2) - 2.0 * pow(m2 * E0, 2) + 2.0 * pow(m2 * p0, 2) + 2.0 * pow(m3 * E0, 2) - 2.0 * pow(m3 * p0, 2) + 
@@ -376,10 +394,10 @@ int main( int argc, char* argv[] ){
       }
       for (int j = 0; j < 3; j ++) {
 	double mass[] = {M_gamma, M_gamma};
-	if (decayGen.SetDecay(pi0_4Vec[j], 2, mass)) {
-	  decayGen.Generate();
-	  photon_4Vec[0 + 2 * j] = * decayGen.GetDecay(0);
-	  photon_4Vec[1 + 2 * j] = * decayGen.GetDecay(1);
+	if (decayGenTMP.SetDecay(pi0_4Vec[j], 2, mass)) {
+	  decayGenTMP.Generate();
+	  photon_4Vec[0 + 2 * j] = * decayGenTMP.GetDecay(0);
+	  photon_4Vec[1 + 2 * j] = * decayGenTMP.GetDecay(1);
 	}
       }
     }
@@ -400,6 +418,7 @@ int main( int argc, char* argv[] ){
     if (hddmWriter) {
       // ======= HDDM output =========
       tmpEvt_t tmpEvt;
+      tmpEvt.str_target = m_target;
       tmpEvt.beam = InGamma_4Vec;
       tmpEvt.target = Target_4Vec;
       if (m_decay == "pi0->2g") {
@@ -438,7 +457,10 @@ int main( int argc, char* argv[] ){
       (*asciiWriter)<<"1 "<<gamma_TYPE<<" "<<M_gamma<<endl;
       (*asciiWriter)<<"   "<<0<<" "<<photon_4Vec[1].Px()<<" "<<photon_4Vec[1].Py()<<" "<<photon_4Vec[1].Pz()<<" "<<photon_4Vec[1].E()<<endl;			
       // Nucleus recoil
-      (*asciiWriter)<<"2 "<<Helium_TYPE<<" "<<M_He4<<endl;
+      if (m_target == "He4") (*asciiWriter)<<"2 "<<Helium_TYPE<<" "<<M_He4<<endl;
+      if (m_target == "Be4") (*asciiWriter)<<"2 "<<Be9_TYPE<<" "<<M_Be9<<endl;
+      if (m_target == "Proton") (*asciiWriter)<<"2 "<<Proton_TYPE<<" "<<M_p<<endl;
+      if (m_target == "Neutron") (*asciiWriter)<<"2 "<<Neutron_TYPE<<" "<<M_n<<endl;
       (*asciiWriter)<<"   "<<1<<" "<<He4_LAB_4Vec.Px()<<" "<<He4_LAB_4Vec.Py()<<" "<<He4_LAB_4Vec.Pz()<<" "<<He4_LAB_4Vec.E()<<endl;			
     }
     
