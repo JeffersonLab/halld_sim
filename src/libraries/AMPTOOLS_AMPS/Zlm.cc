@@ -16,25 +16,36 @@
 Zlm::Zlm( const vector< string >& args ) :
    UserAmplitude< Zlm >( args )
 {
-   assert( args.size() == 6 || args.size() == 7 );
+   assert( args.size() == 4 || args.size() == 6 || args.size() == 8 );
 
    m_j = atoi( args[0].c_str() );
    m_m = atoi( args[1].c_str() );
    m_r = atoi( args[2].c_str() );
    m_s = atoi( args[3].c_str() );
 
-   if(args.size() == 6) {
+   // Three possibilities to initialize this amplitude:
+   // (with <J>: total spin, <m>: spin projection, <r>: +1/-1 for real/imaginary part; <s>: +1/-1 sign in P_gamma term)
+   //
+   // 1: four arguments, polarization information must be included in beam photon four vector
+   //    Usage: amplitude <reaction>::<sum>::<ampName> Zlm <J> <m> <r> <s>
+   if(args.size() == 4) {
+      m_polInTree = true;
+   
+   // 2: six arguments, polarization fixed per amplitude and passed as flag
+   //    Usage: amplitude <reaction>::<sum>::<ampName> Zlm <J> <m> <r> <s> <polAngle> <polFraction>
+   } else if(args.size() == 6) {
       m_polInTree = false;
       m_polAngle = atof( args[4].c_str() );
       m_polFraction = atof( args[5].c_str() );
-
-      if( m_polFraction == 0 ){
-         TFile* f = new TFile( args[5].c_str() );
-         m_polFrac_vs_E = (TH1D*)f->Get( args[6].c_str() );
-         assert( m_polFrac_vs_E != NULL );
-      }
-   }else if(args.size() == 4)
-      m_polInTree = true;
+   
+   // 3: eight arguments, read polarization from histogram <hist> in file <rootFile>
+   //    Usage: amplitude <reaction>::<sum>::<ampName> Zlm <J> <m> <r> <s> 0. <polFraction> <rootFile> <hist>
+   } else if(args.size() == 8) {
+      m_polInTree = false;
+      TFile* f = new TFile( args[6].c_str() );
+      m_polFrac_vs_E = (TH1D*)f->Get( args[7].c_str() );
+      assert( m_polFrac_vs_E != NULL );
+   }
 
    // make sure values are reasonable
    assert( abs( m_m ) <= m_j );
