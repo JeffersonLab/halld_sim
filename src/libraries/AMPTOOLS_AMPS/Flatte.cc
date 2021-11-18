@@ -7,6 +7,17 @@
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
 
+// Flatte-type amplitude based on:
+//   S.M. Flatte," Coupled-channel analysis of the pi eta and KKbar systems near KKbar threshold"
+//   PLB 63 1976
+//
+//   <g1> and <g2> are the couplings of a resonance with mass <mass> decaying to <id_daughter1> and <id_daughter2>. 
+//   Masses of the daughter particles for both relevant channels must be supplied (<chan1mass1>, ...) and finally the 
+//   channel to be used for calculation is defined by <channel>, which can take values 1 or 2.
+//   
+//   Usage:
+//   amplitude <reaction>::<sum>::<ampName> Flatte <mass> <g1> <g2> <id_daughter1> <id_daughter2> <chan1mass1> <chan1mass2> <chan2mass1> <chan2mass2> <channel>
+
 using namespace std;
 
 Flatte::Flatte( const vector< string >& args ) :
