@@ -237,7 +237,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          double value = minVal + i*stepSize;
          parMgr->setAmpParameter( parScan, value );
 
-         cfgInfo->setFitName(fitName + "_scan_" + to_string(i));
+         cfgInfo->setFitName( fitName + "_scan" );
 
          if(useMinos)
             fitManager->minosMinimization();
@@ -253,7 +253,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
 
          if( seedfile.size() != 0 && !fitFailed ){
-            string seedfile_scan = seedfile + Form("_scan_%d.txt", i);
+            string seedfile_scan = seedfile + Form("_scan_%d.dat", i);
             ati.fitResults()->writeSeed( seedfile_scan );
          }
          ati.finalizeFit(to_string(i));
