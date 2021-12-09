@@ -32,7 +32,7 @@ c
 c
       subroutine gphad(mode,ethresh)
       implicit none
-      save
+c      save
 c
 c /geant321/ commons
 c
