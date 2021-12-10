@@ -43,7 +43,7 @@ class Flatte : public UserAmplitude< Flatte >{
 
       void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
 
-      bool isGPUEnabled() const { return true; }
+      bool isGPUEnabled() const { return false; }
 
 #endif // GPU_ACCELERATION
 
