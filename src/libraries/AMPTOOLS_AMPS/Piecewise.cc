@@ -37,25 +37,12 @@ UserAmplitude< Piecewise >( args )
      string nameRe = "pcwsBin_" + to_string(i) + "Re" + m_suffix;
      string nameIm = "pcwsBin_" + to_string(i) + "Im" + m_suffix;
 
-	// USING std::vectors
      m_paramsRe.push_back( AmpParameter( args[(2*i)+6] ) );
      m_paramsRe[i].setName( nameRe );
      m_paramsIm.push_back( AmpParameter( args[(2*i+1)+6] ) );
      m_paramsIm[i].setName( nameIm );
-//     registerParameter( m_paramsRe[i] );
-//     registerParameter( m_paramsIm[i] );
-
-	// USING arrays
-//     m_paramsRe[i].setName( nameRe );
-//     m_paramsRe[i] = AmpParameter( args[(2*i)+5] );
-//     m_paramsIm[i].setName( nameIm );
-//     m_paramsIm[i] = AmpParameter( args[(2*i+1)+5] );
-//     registerParameter( m_paramsRe[i] );
-//     registerParameter( m_paramsIm[i] );
-     
-//     cout << m_params.back().name() << endl;
-//     cout << m_params[i] << endl;
   }
+
   for(int i=0; i<m_nBins; i++) {
      registerParameter( m_paramsRe[i] );
      registerParameter( m_paramsIm[i] );
