@@ -29,6 +29,7 @@
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/PhaseOffset.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -43,6 +44,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+  AmpToolsInterface::registerAmplitude( PhaseOffset() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
@@ -257,6 +259,7 @@ int main( int argc, char* argv[] ){
   //pars.push_back("dalitz_gamma");
   //pars.push_back("dalitz_delta");
   pars.push_back("dsratio");
+  pars.push_back("dphase");
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
