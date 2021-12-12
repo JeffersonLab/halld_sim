@@ -17,8 +17,7 @@ using namespace std;
 class Kinematics;
 
 #ifdef GPU_ACCELERATION
-void GPUPhaseOffset_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO);
-
+void GPUPhaseOffset_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble phase);
 #endif
 
 
@@ -36,8 +35,8 @@ public:
   complex< GDouble > calcAmplitude( GDouble** pKin ) const;
       
 #ifdef GPU_ACCELERATION
-  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const{
-    GPUPhaseOffset_exec(dimGrid, dimBlock, GPU_AMP_ARGS);
+  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO) const{
+    GPUPhaseOffset_exec(dimGrid, dimBlock, GPU_AMP_ARGS, m_phase);
   };
   
   bool isGPUEnabled() const { return true; }
