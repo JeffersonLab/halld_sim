@@ -29,6 +29,7 @@
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/Piecewise.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -43,6 +44,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+  AmpToolsInterface::registerAmplitude( Piecewise() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
@@ -267,7 +269,8 @@ int main( int argc, char* argv[] ){
     double parError = results.parError( pars[i] );
     outfile << parValue << "\t" << parError << "\t" << endl;
   }
-
+ 
+#if 1
   outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
   vector<string> fullamps = plotGen.fullAmplitudes();
   for (unsigned int i = 0; i < fullamps.size(); i++){
@@ -353,6 +356,7 @@ int main( int argc, char* argv[] ){
   // covariance matrix
   vector< vector< double > > covMatrix;
   covMatrix = results.errorMatrix();
+#endif 
 
     // ************************
     // start the GUI

@@ -18,15 +18,14 @@ Piecewise::Piecewise( const vector< string >& args ) :
 UserAmplitude< Piecewise >( args )
 {
   
-  assert( args.size() == ( (2*atoi(args[2].c_str()) ) +6) );
+  assert( args.size() == uint( (2*atoi(args[2].c_str()) ) +5) );
 
   m_massMin   = atof( args[0].c_str() );
   m_massMax   = atof( args[1].c_str() );
   m_nBins     = atoi( args[2].c_str() );
-  m_daughter1 = atoi( args[3].c_str() );
-  m_daughter2 = atoi( args[4].c_str() );
+  m_daughters = string( args[3] );
 
-  m_suffix = args[5];
+  m_suffix = args[4];
 
   one = complex<GDouble>(1,0);
   zero = complex<GDouble>(0,0);
@@ -38,9 +37,9 @@ UserAmplitude< Piecewise >( args )
      string nameIm = "pcwsBin_" + to_string(i) + "Im" + m_suffix;
 
 	// USING std::vectors
-     m_paramsRe.push_back( AmpParameter( args[(2*i)+6] ) );
+     m_paramsRe.push_back( AmpParameter( args[(2*i)+5] ) );
      m_paramsRe[i].setName( nameRe );
-     m_paramsIm.push_back( AmpParameter( args[(2*i+1)+6] ) );
+     m_paramsIm.push_back( AmpParameter( args[(2*i+1)+5] ) );
      m_paramsIm[i].setName( nameIm );
 //     registerParameter( m_paramsRe[i] );
 //     registerParameter( m_paramsIm[i] );
@@ -62,17 +61,21 @@ UserAmplitude< Piecewise >( args )
   }
 }
 
-complex< GDouble >
-Piecewise::calcAmplitude( GDouble** pKin ) const
-{
-  TLorentzVector P1, P2;
-  
-  P1.SetPxPyPzE( pKin[m_daughter1][1], pKin[m_daughter1][2],
-                      pKin[m_daughter1][3], pKin[m_daughter1][0] );
-  P2.SetPxPyPzE( pKin[m_daughter2][1], pKin[m_daughter2][2],
-                      pKin[m_daughter2][3], pKin[m_daughter2][0] );
+void
+Piecewise::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
-  GDouble mass = (P1+P2).M();
+  TLorentzVector Ptot, Ptemp;
+  
+  for( unsigned int i = 0; i < m_daughters.size(); ++i ){
+    
+    string num; num += m_daughters[i];
+    int index = atoi(num.c_str());
+    Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
+                      pKin[index][3], pKin[index][0] );
+    Ptot += Ptemp;
+  }
+  
+  GDouble mass  = Ptot.M();
 
   int tempBin = 0;
 
@@ -81,8 +84,14 @@ Piecewise::calcAmplitude( GDouble** pKin ) const
        tempBin = i;
   }
   
-  return (complex<double>(m_paramsRe[tempBin],m_paramsIm[tempBin]));
- 
+  userVars[uv_imassbin] = tempBin;
+}
+
+complex< GDouble >
+Piecewise::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
+{
+	int tempBin = userVars[uv_imassbin];
+	return (complex<double>(m_paramsRe[tempBin],m_paramsIm[tempBin]));
 }
 
 void
@@ -93,10 +102,7 @@ Piecewise::updatePar( const AmpParameter& par ){
 }
 
 void Piecewise::init(){
-//  for(int i=0; i<m_nBins; i++) {
-//     registerParameter( m_paramsRe[i] );
-//     registerParameter( m_paramsIm[i] );
-//  }
+
 }
 
 //#ifdef GPU_ACCELERATION

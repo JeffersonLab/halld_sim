@@ -39,6 +39,7 @@
 #include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/Piecewise.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -217,6 +218,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( dblRegge() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+   AmpToolsInterface::registerAmplitude( Piecewise() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
