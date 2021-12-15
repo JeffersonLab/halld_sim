@@ -12,7 +12,7 @@
 #include <vector>
 
 #ifdef GPU_ACCELERATION
-void GPUPiecewise_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO );
+void GPUPiecewise_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* paramsRe, GDouble* paramsIm, int nBins );
 #endif // GPU_ACCELERATION
 
 using std::complex;
@@ -77,8 +77,6 @@ private:
   float m_massMin, m_massMax;
   int m_nBins;
   string m_daughters; 
-  complex<GDouble> one;
-  complex<GDouble> zero;
 
   vector<AmpParameter> m_paramsRe;
   vector<AmpParameter> m_paramsIm;

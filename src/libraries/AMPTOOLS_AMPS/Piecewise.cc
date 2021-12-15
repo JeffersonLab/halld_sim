@@ -27,9 +27,6 @@ UserAmplitude< Piecewise >( args )
 
   m_suffix = args[4];
 
-  one = complex<GDouble>(1,0);
-  zero = complex<GDouble>(0,0);
-
   m_width = (double)(m_massMax-m_massMin)/m_nBins;
 
   for(int i=0; i<m_nBins; i++) {
@@ -59,6 +56,9 @@ UserAmplitude< Piecewise >( args )
      registerParameter( m_paramsRe[i] );
      registerParameter( m_paramsIm[i] );
   }
+
+  //cudaMalloc(&m_paramsReGPU,sizeof(GDouble)*m_paramsRe.size());
+  //cudaMalloc(&m_paramsImGPU,sizeof(GDouble)*m_paramsIm.size());
 }
 
 void
@@ -105,19 +105,18 @@ void Piecewise::init(){
 
 }
 
-//#ifdef GPU_ACCELERATION
-//void
-//Piecewise::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
-//  
-//  // use integers to endcode the string of daughters -- one index in each
-//  // decimal place
-//  
-//  int daught1 = atoi( m_daughters.first.c_str() );
-//  int daught2 = atoi( m_daughters.second.c_str() );
-//  
-//  GPUBreitWigner_exec( dimGrid,  dimBlock, GPU_AMP_ARGS, 
-//                       m_mass0, m_width0, m_orbitL, daught1, daught2 );
-//
-//}
-//#endif //GPU_ACCELERATION
+#ifdef GPU_ACCELERATION
+void
+Piecewise::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
+  
+	GDouble a[m_nBins];
+	GDouble b[m_nBins];
+	for(int i=0; i<m_nBins; i++){
+		a[i] = m_paramsRe[i];
+		b[i] = m_paramsIm[i];
+	}
+	GPUPiecewise_exec( dimGrid,  dimBlock, GPU_AMP_ARGS, a, b, m_nBins);
+
+}
+#endif //GPU_ACCELERATION
 
