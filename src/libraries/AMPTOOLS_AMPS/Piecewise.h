@@ -38,7 +38,6 @@ public:
   complex< GDouble > calcAmplitude( GDouble** pKin ) const;
 	  
   void updatePar( const AmpParameter& par );
-  void init();
     
 //#ifdef GPU_ACCELERATION
 //

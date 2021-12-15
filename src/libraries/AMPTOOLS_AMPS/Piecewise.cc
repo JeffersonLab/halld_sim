@@ -91,13 +91,6 @@ Piecewise::updatePar( const AmpParameter& par ){
   
 }
 
-void Piecewise::init(){
-//  for(int i=0; i<m_nBins; i++) {
-//     registerParameter( m_paramsRe[i] );
-//     registerParameter( m_paramsIm[i] );
-//  }
-}
-
 //#ifdef GPU_ACCELERATION
 //void
 //Piecewise::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
