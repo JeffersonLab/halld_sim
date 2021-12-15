@@ -60,6 +60,7 @@ private:
   double m_width;
   string m_suffix;
   AmpParameter paramTest;
+  bool m_represReIm;
 };
 
 #endif

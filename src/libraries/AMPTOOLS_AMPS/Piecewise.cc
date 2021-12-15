@@ -32,7 +32,7 @@ UserAmplitude< Piecewise >( args )
   else if(args[6] == "MagPhi")
      m_represReIm = false;
   else
-     cout << "ERROR: '" << args[6] << "' is not a defined mode for the Piecewise amplitude! Choose 'ReIm' or 'MagPhi'."
+     cout << "ERROR: '" << args[6] << "' is not a defined mode for the Piecewise amplitude! Choose 'ReIm' or 'MagPhi'." << endl;
   
   m_width = (double)(m_massMax-m_massMin)/m_nBins;
 
