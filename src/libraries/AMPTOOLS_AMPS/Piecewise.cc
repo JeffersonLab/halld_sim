@@ -21,8 +21,7 @@ UserAmplitude< Piecewise >( args )
   m_massMin   = atof( args[0].c_str() );
   m_massMax   = atof( args[1].c_str() );
   m_nBins     = atoi( args[2].c_str() );
-  m_daughter1 = atoi( args[3].c_str() );
-  m_daughter2 = atoi( args[4].c_str() );
+	m_daughters = pair< string, string >( args[3], args[4] );
 
   m_suffix = args[5]; // in case more than one piecewise amplitude is used in the cfg file, this string may contain a suffix to be added to all parameter names
 
@@ -64,14 +63,26 @@ UserAmplitude< Piecewise >( args )
 complex< GDouble >
 Piecewise::calcAmplitude( GDouble** pKin ) const
 {
-  TLorentzVector P1, P2;
+  TLorentzVector Ptemp, Ptot;
   
-  P1.SetPxPyPzE( pKin[m_daughter1][1], pKin[m_daughter1][2],
-                      pKin[m_daughter1][3], pKin[m_daughter1][0] );
-  P2.SetPxPyPzE( pKin[m_daughter2][1], pKin[m_daughter2][2],
-                      pKin[m_daughter2][3], pKin[m_daughter2][0] );
+  for( unsigned int i = 0; i < m_daughters.first.size(); ++i ){
+    string num; num += m_daughters.first[i];
+    int index = atoi(num.c_str());
+    Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
+                      pKin[index][3], pKin[index][0] );
+    Ptot += Ptemp;
+  }
+  
+  for( unsigned int i = 0; i < m_daughters.second.size(); ++i ){
+    string num; num += m_daughters.second[i];
+    int index = atoi(num.c_str());
+    Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
+                      pKin[index][3], pKin[index][0] );
+    Ptot += Ptemp;
+  }
+  
 
-  GDouble mass = (P1+P2).M();
+  GDouble mass = Ptot.M();
 
   int tempBin = 0;
 

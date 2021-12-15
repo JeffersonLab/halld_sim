@@ -50,7 +50,8 @@ public:
 private:
 	
   float m_massMin, m_massMax;
-  int m_daughter1, m_daughter2, m_nBins;
+  int m_nBins;
+  pair< string, string > m_daughters;  
   complex<GDouble> one;
   complex<GDouble> zero;
 
