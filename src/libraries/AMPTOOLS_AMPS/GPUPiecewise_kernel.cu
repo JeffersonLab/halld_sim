@@ -9,7 +9,8 @@ GPUPiecewise_kernel(GPU_AMP_PROTO, GDouble * params1, GDouble * params2, int nBi
 {
 
   int iEvent = GPU_THIS_EVENT;
-  int tempBin = GPU_UVARS(0);
+  //int tempBin = GPU_UVARS(0);
+  long* tempBin = (long*)&(GPU_UVARS(0));
 
   // some thread debugging info
   //unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -18,11 +19,11 @@ GPUPiecewise_kernel(GPU_AMP_PROTO, GDouble * params1, GDouble * params2, int nBi
   //}
 
   if(represReIm) {
-    WCUComplex ans = { params1[tempBin], params2[tempBin] };
+    WCUComplex ans = { params1[*tempBin], params2[*tempBin] };
     pcDevAmp[GPU_THIS_EVENT] = ans;
   }
   else {
-    WCUComplex ans = { params1[tempBin]*cos(params2[tempBin]), params1[tempBin]*sin(params2[tempBin]) };
+    WCUComplex ans = { params1[*tempBin]*cos(params2[*tempBin]), params1[*tempBin]*sin(params2[*tempBin]) };
     pcDevAmp[GPU_THIS_EVENT] = ans;
   }
 }

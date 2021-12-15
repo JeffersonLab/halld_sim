@@ -61,6 +61,7 @@ UserAmplitude< Piecewise >( args )
 complex< GDouble >
 Piecewise::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
+	// convert double back to long for array index
 	long* tempBin = (long*)&(userVars[uv_imassbin]);
 	complex<double> ans(m_params1[*tempBin],m_params2[*tempBin]);
 	if(!m_represReIm)
@@ -91,7 +92,9 @@ Piecewise::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
        tempBin = i;
   }
   
-  userVars[uv_imassbin] = *((double*)&tempBin);
+  // from Matt: use the memory allocated to a double type user variable to write the bin index as a long int
+  userVars[uv_imassbin] = *((double*)&tempBin); 
+
 }
 
 void
