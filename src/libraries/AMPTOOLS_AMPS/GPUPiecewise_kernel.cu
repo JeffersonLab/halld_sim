@@ -9,7 +9,6 @@ GPUPiecewise_kernel(GPU_AMP_PROTO, GDouble * params1, GDouble * params2, int nBi
 {
 
   int iEvent = GPU_THIS_EVENT;
-  //int tempBin = GPU_UVARS(0);
   long* tempBin = (long*)&(GPU_UVARS(0));
 
   // some thread debugging info
