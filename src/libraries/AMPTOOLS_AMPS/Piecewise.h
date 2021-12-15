@@ -55,10 +55,8 @@ private:
   complex<GDouble> one;
   complex<GDouble> zero;
 
-  vector<AmpParameter> m_paramsRe;
-  vector<AmpParameter> m_paramsIm;
-//  AmpParameter m_paramsRe[50];
-//  AmpParameter m_paramsIm[50];
+  vector<AmpParameter> m_params1;
+  vector<AmpParameter> m_params2;
   double m_width;
   string m_suffix;
   AmpParameter paramTest;

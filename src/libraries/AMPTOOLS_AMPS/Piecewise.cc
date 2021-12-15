@@ -1,5 +1,3 @@
-
-
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -18,7 +16,7 @@ Piecewise::Piecewise( const vector< string >& args ) :
 UserAmplitude< Piecewise >( args )
 {
   
-  assert( args.size() == ( (2*atoi(args[2].c_str()) ) +6) );
+  assert( args.size() == ( (2*atoi(args[2].c_str()) ) + 7 ) );
 
   m_massMin   = atof( args[0].c_str() );
   m_massMax   = atof( args[1].c_str() );
@@ -26,26 +24,40 @@ UserAmplitude< Piecewise >( args )
   m_daughter1 = atoi( args[3].c_str() );
   m_daughter2 = atoi( args[4].c_str() );
 
-  m_suffix = args[5];
+  m_suffix = args[5]; // in case more than one piecewise amplitude is used in the cfg file, this string may contain a suffix to be added to all parameter names
 
-  one = complex<GDouble>(1,0);
-  zero = complex<GDouble>(0,0);
-
+  // switch between representation of complex parameters in Re/Im format and Mag/Phi format
+  if(args[6] == "ReIm")
+    m_represReIm = true;
+  else if(args[6] == "MagPhi")
+     m_represReIm = false;
+  else
+     cout << "ERROR: '" << args[6] << "' is not a defined mode for the Piecewise amplitude! Choose 'ReIm' or 'MagPhi'."
+  
   m_width = (double)(m_massMax-m_massMin)/m_nBins;
 
   for(int i=0; i<m_nBins; i++) {
-     string nameRe = "pcwsBin_" + to_string(i) + "Re" + m_suffix;
-     string nameIm = "pcwsBin_" + to_string(i) + "Im" + m_suffix;
+     string name1, name2;
 
-     m_paramsRe.push_back( AmpParameter( args[(2*i)+6] ) );
-     m_paramsRe[i].setName( nameRe );
-     m_paramsIm.push_back( AmpParameter( args[(2*i+1)+6] ) );
-     m_paramsIm[i].setName( nameIm );
+     if(m_represReIm) {
+        name1 = "pcwsBin_" + to_string(i) + "Re" + m_suffix;
+        name2 = "pcwsBin_" + to_string(i) + "Im" + m_suffix;
+     } else {
+        name1 = "pcwsBin_" + to_string(i) + "Mag" + m_suffix;
+        name2 = "pcwsBin_" + to_string(i) + "Phi" + m_suffix;
+     }
+
+
+
+     m_params1.push_back( AmpParameter( args[(2*i)+7] ) );
+     m_params1[i].setName( name1 );
+     m_params2.push_back( AmpParameter( args[(2*i+1)+7] ) );
+     m_params2[i].setName( name2 );
   }
 
   for(int i=0; i<m_nBins; i++) {
-     registerParameter( m_paramsRe[i] );
-     registerParameter( m_paramsIm[i] );
+     registerParameter( m_params1[i] );
+     registerParameter( m_params2[i] );
   }
 }
 
@@ -68,7 +80,7 @@ Piecewise::calcAmplitude( GDouble** pKin ) const
        tempBin = i;
   }
   
-  return (complex<double>(m_paramsRe[tempBin],m_paramsIm[tempBin]));
+  return (complex<double>(m_params1[tempBin],m_params2[tempBin]));
  
 }
 
