@@ -16,22 +16,22 @@ Piecewise::Piecewise( const vector< string >& args ) :
 UserAmplitude< Piecewise >( args )
 {
   
-  assert( args.size() == ( (2*atoi(args[2].c_str()) ) + 7 ) );
+  assert( args.size() == uint( (2*atoi(args[2].c_str()) ) + 6 ) );
 
   m_massMin   = atof( args[0].c_str() );
   m_massMax   = atof( args[1].c_str() );
   m_nBins     = atoi( args[2].c_str() );
-	m_daughters = pair< string, string >( args[3], args[4] );
+  m_daughters = string( args[3] );
 
-  m_suffix = args[5]; // in case more than one piecewise amplitude is used in the cfg file, this string may contain a suffix to be added to all parameter names
+  m_suffix = args[4]; // in case more than one piecewise amplitude is used in the cfg file, this string may contain a suffix to be added to all parameter names
 
   // switch between representation of complex parameters in Re/Im format and Mag/Phi format
-  if(args[6] == "ReIm")
+  if(args[5] == "ReIm")
     m_represReIm = true;
-  else if(args[6] == "MagPhi")
+  else if(args[5] == "MagPhi")
      m_represReIm = false;
   else
-     cout << "ERROR: '" << args[6] << "' is not a defined mode for the Piecewise amplitude! Choose 'ReIm' or 'MagPhi'." << endl;
+     cout << "ERROR: '" << args[5] << "' is not a defined mode for the Piecewise amplitude! Choose 'ReIm' or 'MagPhi'." << endl;
   
   m_width = (double)(m_massMax-m_massMin)/m_nBins;
 
@@ -46,11 +46,9 @@ UserAmplitude< Piecewise >( args )
         name2 = "pcwsBin_" + to_string(i) + "Phi" + m_suffix;
      }
 
-
-
-     m_params1.push_back( AmpParameter( args[(2*i)+7] ) );
+     m_params1.push_back( AmpParameter( args[(2*i)+6] ) );
      m_params1[i].setName( name1 );
-     m_params2.push_back( AmpParameter( args[(2*i+1)+7] ) );
+     m_params2.push_back( AmpParameter( args[(2*i+1)+6] ) );
      m_params2[i].setName( name2 );
   }
 
@@ -61,38 +59,39 @@ UserAmplitude< Piecewise >( args )
 }
 
 complex< GDouble >
-Piecewise::calcAmplitude( GDouble** pKin ) const
+Piecewise::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
+	long* tempBin = (long*)&(userVars[uv_imassbin]);
+	complex<double> ans(m_params1[*tempBin],m_params2[*tempBin]);
+	if(!m_represReIm)
+		ans = polar(GDouble(m_params1[*tempBin]),GDouble(m_params2[*tempBin]));
+		
+	return ans;
+}
+
+void
+Piecewise::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
+
   TLorentzVector Ptemp, Ptot;
   
-  for( unsigned int i = 0; i < m_daughters.first.size(); ++i ){
-    string num; num += m_daughters.first[i];
+  for( unsigned int i = 0; i < m_daughters.size(); ++i ){
+    string num; num += m_daughters[i];
     int index = atoi(num.c_str());
     Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
                       pKin[index][3], pKin[index][0] );
     Ptot += Ptemp;
   }
-  
-  for( unsigned int i = 0; i < m_daughters.second.size(); ++i ){
-    string num; num += m_daughters.second[i];
-    int index = atoi(num.c_str());
-    Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
-                      pKin[index][3], pKin[index][0] );
-    Ptot += Ptemp;
-  }
-  
 
   GDouble mass = Ptot.M();
 
-  int tempBin = 0;
+  long tempBin = 0;
 
   for(int i=0; i<m_nBins; i++) {
     if(mass>(m_massMin+(i*m_width)) && mass<(m_massMin+((i+1)*m_width)))
        tempBin = i;
   }
   
-  return (complex<double>(m_params1[tempBin],m_params2[tempBin]));
- 
+  userVars[uv_imassbin] = *((double*)&tempBin);
 }
 
 void
@@ -102,19 +101,18 @@ Piecewise::updatePar( const AmpParameter& par ){
   
 }
 
-//#ifdef GPU_ACCELERATION
-//void
-//Piecewise::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
-//  
-//  // use integers to endcode the string of daughters -- one index in each
-//  // decimal place
-//  
-//  int daught1 = atoi( m_daughters.first.c_str() );
-//  int daught2 = atoi( m_daughters.second.c_str() );
-//  
-//  GPUBreitWigner_exec( dimGrid,  dimBlock, GPU_AMP_ARGS, 
-//                       m_mass0, m_width0, m_orbitL, daught1, daught2 );
-//
-//}
-//#endif //GPU_ACCELERATION
+#ifdef GPU_ACCELERATION
+void
+Piecewise::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
+        // convert vector to array for GPU
+        GDouble params1[m_nBins];
+        GDouble params2[m_nBins];
+        for(int i=0; i<m_nBins; i++){
+                params1[i] = m_params1[i];
+                params2[i] = m_params2[i];
+        }
+        GPUPiecewise_exec( dimGrid,  dimBlock, GPU_AMP_ARGS, params1, params2, m_nBins, m_represReIm);
+
+}
+#endif //GPU_ACCELERATION
