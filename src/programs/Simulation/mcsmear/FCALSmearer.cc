@@ -3,7 +3,7 @@
 //-----------
 // fcal_config_t  (constructor)
 //-----------
-fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom) 
+fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom) 
 {
 	// default values
 	FCAL_PHOT_STAT_COEF     = 0.0; // 0.05;
@@ -111,38 +111,60 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, DFCALGeometry *fcalGeom)
         FCAL_TSIGMA = fcalmctimingsmear["FCAL_TSIGMA"];
     }
 
-	// initialize 2D matrix of efficiencies, indexed by (row,column)
-	vector< vector<double > > new_block_efficiencies(DFCALGeometry::kBlocksTall, 
-            vector<double>(DFCALGeometry::kBlocksWide));
-	block_efficiencies = new_block_efficiencies;
 
-	// load efficiencies from CCDB and fill 
-	vector<double> raw_table;
-	if(loop->GetCalib("FCAL/block_mc_efficiency", raw_table)) {
-    	jerr << "Problem loading FCAL/block_mc_efficiency from CCDB!" << endl;
-    } else {
-		for (int channel=0; channel < static_cast<int>(raw_table.size()); channel++) {
+
+    // initialize 2D matrix of efficiencies, indexed by (row,column)
+    vector< vector<double > > new_block_efficiencies(DFCALGeometry::kBlocksTall, 
+						     vector<double>(DFCALGeometry::kBlocksWide));
+    block_efficiencies = new_block_efficiencies;
     
-        	// make sure that we don't try to load info for channels that don't exist
-        	if (channel == fcalGeom->numActiveBlocks())
-            	break;
+    // load efficiencies from CCDB and fill 
+    vector<double> raw_table;
 
-        	int row = fcalGeom->row(channel);
-        	int col = fcalGeom->column(channel);
-
-        	// results from DFCALGeometry should be self consistent, but add in some
-        	// sanity checking just to be sure
-        	if (fcalGeom->isBlockActive(row,col) == false) {
-        		char str[200];
-            	sprintf(str, "Loading FCAL constant for inactive channel!  "
-                	    "row=%d, col=%d", row, col);
-            	throw JException(str);
-        	}
-
-	        block_efficiencies[row][col] = raw_table[channel];
-    	}
+    if(loop->GetCalib("FCAL/block_mc_efficiency", raw_table)) {
+      jerr << "Problem loading FCAL/block_mc_efficiency from CCDB!" << endl;
+    } else {
+      for (int channel=0; channel < static_cast<int>(raw_table.size()); channel++) {
+	int row = fcalGeom->row(channel);
+	int col = fcalGeom->column(channel);
+	block_efficiencies[row][col] = raw_table[channel];
+      }
     }
 
+
+    //   7/27/2020 A.S.  Exclude run-by-run determined bad channels listed in the /FCAL/block_quality table for PrimEx runs, 
+    //                     to make simulation consistent with reconstruction
+    //   Channels efficiency (FCAL/block_mc_efficiency) can be applied after excluding bad channels
+   
+
+    int primex_run = 0;
+
+    if (loop->GetCalib("/PHOTON_BEAM/pair_spectrometer/experiment", primex_run))
+      jerr << "Problem loading /PHOTON_BEAM/pair_spectrometer/experment/run from CCDB!" << endl;
+
+
+    if(primex_run == 1){
+      
+      vector< double > raw_block_qualities;    // we should change this to an int?
+      
+      int BAD_CH = 1;
+      
+      
+      if (loop->GetCalib("/FCAL/block_quality", raw_block_qualities))
+	jout << "/FCAL/block_quality not used for this run" << endl;
+      else {
+	
+	for (int channel=0; channel < static_cast<int>(raw_block_qualities.size()); channel++) {
+	  int row = fcalGeom->row(channel);
+	  int col = fcalGeom->column(channel);
+	  // Exclude bad channels
+	  if(raw_block_qualities[channel] == BAD_CH)
+	    block_efficiencies[row][col] = -1.;  
+	}
+	
+      }
+    } 
+                  
 }
 	
 //-----------
@@ -171,63 +193,88 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
       hddm_s::FcalTruthHitList thits = iter->getFcalTruthHits();
       hddm_s::FcalTruthHitList::iterator titer;
       for (titer = thits.begin(); titer != thits.end(); ++titer) {
+	int row=iter->getRow();
+	int column=iter->getColumn();
+
          // Simulation simulates a grid of blocks for simplicity. 
          // Do not bother smearing inactive blocks. They will be
          // discarded in DEventSourceHDDM.cc while being read in
          // anyway.
-         if (!fcalGeom->isBlockActive(iter->getRow(), iter->getColumn()))
+         if (!fcalGeom->isBlockActive(row, column))
             continue;
-            
-         // correct simulation efficiencies 
-		 if (config->APPLY_EFFICIENCY_CORRECTIONS
-             && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(iter->getRow(), iter->getColumn()))) {
-             continue;
-         } 
 
-         // Get gain constant per block
-         int channelnum = fcalGeom->channel(iter->getRow(), iter->getColumn()); 
-	      
-         double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);    
-		 double pedestal_rms = fcal_config->FCAL_PED_RMS;
-		 double integral_peak = fcal_config->FCAL_INTEGRAL_PEAK;
-		 double MeV_FADC = fcal_config->FCAL_ADC_ASCALE;
-		 double pedestal = fcal_config->FCAL_PEDS.at(channelnum);
-		 double threshold = fcal_config->FCAL_THRESHOLD;
-		 double threshold_scaling = fcal_config->FCAL_THRESHOLD_SCALING;     
-	      
-         double E = titer->getE();
-         if(fcal_config->FCAL_ADD_LIGHTGUIDE_HITS) {
-             hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
-             hddm_s::FcalTruthLightGuideList::iterator lgiter;
-             for (lgiter = lghits.begin(); lgiter != lghits.end(); lgiter++) {
-                 E += lgiter->getE();
-             }
-         }
-         // Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
-         E *= fcal_config->FCAL_MC_ESCALE; 
+	 double E = titer->getE();
+	 double Ethreshold=fcal_config->FCAL_BLOCK_THRESHOLD;
+	 double sigEfloor=fcal_config->FCAL_ENERGY_WIDTH_FLOOR;
+	 double sigEstat=fcal_config->FCAL_PHOT_STAT_COEF;
+	 double Erange = 8.0;
+         
+	 if (row<DFCALGeometry::kBlocksTall&&column<DFCALGeometry::kBlocksWide){
+	   // correct simulation efficiencies 
+	   if (config->APPLY_EFFICIENCY_CORRECTIONS
+	       && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(row, column))) {
+	     continue;
+	   } 
+	 
+	   // Get gain constant per block	      
+	   int channelnum = fcalGeom->channel(row, column); 
+	   double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);      
+	   double pedestal_rms = fcal_config->FCAL_PED_RMS;
+	   double integral_peak = fcal_config->FCAL_INTEGRAL_PEAK;
+	   double MeV_FADC = fcal_config->FCAL_ADC_ASCALE;
+	   double pedestal = fcal_config->FCAL_PEDS.at(channelnum);
+	   double threshold = fcal_config->FCAL_THRESHOLD;
+	   double threshold_scaling = fcal_config->FCAL_THRESHOLD_SCALING;
+	   Ethreshold=FCAL_gain*integral_peak*MeV_FADC*(threshold*threshold_scaling - pedestal+gDRandom.SampleGaussian(pedestal_rms));
+	   Erange *= FCAL_gain;
+	   
+	   if(fcal_config->FCAL_ADD_LIGHTGUIDE_HITS) {
+	     hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
+	     hddm_s::FcalTruthLightGuideList::iterator lgiter;
+	     for (lgiter = lghits.begin(); lgiter != lghits.end(); lgiter++) {
+	       E += lgiter->getE();
+	     }
+	   }
+	   // Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
+	   E *= fcal_config->FCAL_MC_ESCALE;
+	 }
+	 else { // deal with insert
+	   sigEfloor=fcal_config->INSERT_ENERGY_WIDTH_FLOOR;
+	   sigEstat=fcal_config->INSERT_PHOT_STAT_COEF;
+	 }
          
          double t = titer->getT(); 
 
          if(config->SMEAR_HITS) {
-			// Smear the timing and energy of the hit
-			t += gDRandom.SampleGaussian(fcal_config->FCAL_TSIGMA);
-
-			// Energy width has stochastic and floor terms
-			double sigma = sqrt( pow(fcal_config->FCAL_PHOT_STAT_COEF,2)/titer->getE() + pow(fcal_config->FCAL_ENERGY_WIDTH_FLOOR,2));
-			E *= (1.0 + gDRandom.SampleGaussian(sigma));
-		 }
-		 
-         // Apply a single block threshold. 
-         // Scale threshold by gains         
-         	if (E >= FCAL_gain*integral_peak*MeV_FADC*(threshold*threshold_scaling - pedestal+gDRandom.SampleGaussian(pedestal_rms)) ){
-               hddm_s::FcalHitList hits = iter->addFcalHits();
-               hits().setE(E);
-               hits().setT(t);
-         }
-        
+	   // Smear the timing and energy of the hit
+	   t += gDRandom.SampleGaussian(fcal_config->FCAL_TSIGMA);
+	   
+	   // Energy width has stochastic and floor terms
+	   double sigma = sqrt( pow(sigEstat,2)/titer->getE() 
+			     + pow(sigEfloor,2));
+	   E *= (1.0 + gDRandom.SampleGaussian(sigma));
+	 }
+	 	 
+	 if (E > Erange)
+	   E = Erange;
+         
+	 // Apply a single block threshold and energy range 
+         // Scale threshold by gains
+	 // Scale range by gains
+	 if (E >= Ethreshold){
+	   hddm_s::FcalHitList hits = iter->addFcalHits();
+	   hits().setE(E);
+	   hits().setT(t);
+	 }
       }
+      
 
       if (config->DROP_TRUTH_HITS)
          iter->deleteFcalTruthHits();
+   }
+   if (config->DROP_TRUTH_HITS) {
+      hddm_s::ForwardEMcalList fcals = record->getForwardEMcals();
+      if (fcals.size() > 0)
+         fcals().deleteFcalTruthShowers();
    }
 }

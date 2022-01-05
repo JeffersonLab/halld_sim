@@ -94,10 +94,18 @@ TH1D *thrown_dalitzZ;
 TH1D *thrown_Egamma;
 TH2D *thrown_dalitzXY;  
 TH2D *thrown_theta_vs_p;
+TH2D *thrown_theta_vs_p_eta;
 TH1D *cobrems_vs_E;
 
 char input_file_name[250]="eta548.in";
 char output_file_name[250]="eta_gen.hddm";
+
+// Non-default option to generate uniform t-distribution from tmin to tmax
+/// (calculating cross section at fixed t_uniform_eval)
+bool gen_uniform_t=false;
+double t_uniform_eval=-1; // Only used if gen_uniform is true. Currently, 
+float t_min_uniform=0; // takes min(t_min_uniform,t_0) so as to avoid unphysical t_values
+float t_max_uniform=-3; // takes max(t_max_uniform,t_max) so as to avoid unphysical t_values
 
 void Usage(void){
   printf("genEtaRegge: generator for eta production based on Regge trajectory formalism.\n");
@@ -106,12 +114,16 @@ void Usage(void){
   printf("             -O<output.hddm>   (default: eta_gen.hddm)\n");
   printf("             -I<input.in>      (default: eta548.in)\n");
   printf("             -R<run number>    (default: 10000)\n");
+  printf("             -U                (generate uniform t-distribution instead of sloped)\n");
+  printf("             -tmin<val>        (min t value for uniform dist., if -U specified, default=physical min.)\n");
+  printf("             -tmax<val>        (max t value for uniform dist., if -U specified, default=3.0)\n");
   printf("             -h                (Print this message and exit.)\n");
   printf("Coupling constants, photon beam energy range, and eta decay products are\n");
   printf("specified in the <input.in> file.\n");
 
   exit(0);
 }
+
 
 //-----------
 // ParseCommandLineArguments
@@ -124,7 +136,25 @@ void ParseCommandLineArguments(int narg, char* argv[])
   }
   for(int i=1; i<narg; i++){
     char *ptr = argv[i];
-    
+
+	// For command line options -tmin and -tmax
+	if(ptr[0]=='-' && strlen(ptr)>=5) {
+		char *check_str = (char *)"-tmin", *matches=NULL;
+		matches=strstr(ptr,check_str);
+		if(matches) {
+			sscanf(&ptr[5],"%f",&t_min_uniform);
+			t_min_uniform=-abs(t_min_uniform); // Make sure value is negative, no matter what was supplied
+		}
+		
+		check_str = (char *)"-tmax"; matches=NULL;
+		matches=strstr(ptr,check_str);
+		if(matches) {
+			sscanf(&ptr[5],"%f",&t_max_uniform);
+			t_max_uniform=-abs(t_max_uniform); // Make sure value is negative, no matter what was supplied
+		}
+	}
+	
+	// For all other command line options (which are exactly one character long)
     if(ptr[0] == '-'){
       switch(ptr[1]){
       case 'h': Usage(); break;
@@ -145,6 +175,9 @@ void ParseCommandLineArguments(int narg, char* argv[])
 	break;
       case 'd':
 	debug=true;
+	break;
+      case 'U':
+	gen_uniform_t=true;
 	break;
       default:
 	break;
@@ -386,7 +419,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
 // Create some diagnostic histograms
 void CreateHistograms(string beamConfigFile){
 
-  thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,2.0);
+  thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,abs(t_max_uniform));
   thrown_t->SetXTitle("-t [GeV^{2}]");
   thrown_dalitzZ=new TH1D("thrown_dalitzZ","thrown dalitz Z",110,-0.05,1.05);
   thrown_Egamma=new TH1D("thrown_Egamma","Thrown E_{#gamma} distribution",
@@ -398,6 +431,11 @@ void CreateHistograms(string beamConfigFile){
 			       200,0,2.,180,0.,90.);
   thrown_theta_vs_p->SetXTitle("p [GeV/c]");
   thrown_theta_vs_p->SetYTitle("#theta [degrees]");
+  
+  thrown_theta_vs_p_eta=new TH2D("thrown_theta_vs_p_eta","#eta #theta_{LAB} vs. p",
+			       120,0,12.,180,0.,180.);
+  thrown_theta_vs_p_eta->SetXTitle("p [GeV/c]");
+  thrown_theta_vs_p_eta->SetYTitle("#theta [degrees]");
   
   BeamProperties beamProp(beamConfigFile);
   cobrems_vs_E = (TH1D*)beamProp.GetFlux();
@@ -441,6 +479,8 @@ void GraphCrossSection(double &xsec_max){
     t_old=t;
   }
   TGraph *Gxsec=new TGraph(10000,t_array,xsec_array);
+  TString xsec_title = "#eta Cross Section at E_{#gamma}="+to_string(Egamma)+" GeV;-t [GeV^{2}];d#sigma/dt [#mub/GeV^{2}]";
+  Gxsec->SetTitle(xsec_title);
   Gxsec->Write("Cross section");
  
   cout << "Total cross section at " << Egamma << " GeV = "<< sum 
@@ -454,6 +494,7 @@ void GraphCrossSection(double &xsec_max){
 int main(int narg, char *argv[])
 {  
   ParseCommandLineArguments(narg, argv);
+
 
   // open ROOT file
   string rootfilename="eta_gen.root";
@@ -523,6 +564,15 @@ int main(int narg, char *argv[])
   infile >> num_decay_particles;
   infile.ignore(); // ignore the '\n' at the end of this line
 
+  cout << "number of decay particles = " << num_decay_particles << endl;
+
+  if( abs(t_max_uniform)>21. ) { // Max t at GlueX endpoint energy is about 20 GeV^2. Reset value to protect against inefficient accept/reject.
+    t_max_uniform=-21;
+	cout << "tmax provided is larger than physically allowed t at GlueX highest E, resetting to physical max........" << endl;
+  }
+  
+  if(gen_uniform_t) cout << "GENERATING DATA WITH UNIFORM T-DIST FROM " << t_min_uniform << " TO " << t_max_uniform << endl;
+
   bool use_evtgen = false;
 #ifdef HAVE_EVTGEN
   // check to see if we should use EvtGen
@@ -532,9 +582,11 @@ int main(int narg, char *argv[])
   
   // if we don't explicitly define the decay particles in the config file, 
   // then use EvtGen to generate the decays
-  if(num_decay_particles == -1) { 
+  if(num_decay_particles <= 0) { 
   	num_decay_particles = 0;
   	use_evtgen = true;
+
+    cout << "Using EvtGen to decay particles ..." << endl;
 
 	// get the produced particle type
 	getline(infile,comment_line);
@@ -842,8 +894,20 @@ int main(int narg, char *argv[])
       
       sin_theta_over_2=sin(0.5*theta_cm);
       t=t0-4.*p_gamma*p_eta*sin_theta_over_2*sin_theta_over_2;
-      xsec=CrossSection(s,t,p_gamma,p_eta,theta_cm);
-      
+      xsec=CrossSection(s,t,p_gamma,p_eta,theta_cm);	  
+	  
+	  // If generating a sample uniform in t, we need to fix t and re-calculate theta_cm based on it. Others do not depend on t.
+	  if(gen_uniform_t) {
+		  //Cross section at fixed t value (t_tmp)
+		  double t_tmp = t_uniform_eval;
+		  double theta_cm_tmp = 2.*asin(0.5*sqrt( (t0-t_tmp)/(p_gamma*p_eta) ) );
+		  xsec=CrossSection(s,t_tmp,p_gamma,p_eta,theta_cm_tmp);
+		  // Make t uniform, calculate theta_cm based off of it
+		  t=myrand->Uniform(t_max_uniform,  min( float(t0),t_min_uniform) ); // If t_min_uniform provided is unphysical, then use physical t_min.
+		  theta_cm=2.*asin(0.5*sqrt( (t0-t)/(p_gamma*p_eta) ) );
+		  if( std::isnan(theta_cm)==true ) xsec=-1.; // Lazy person's way of skipping unphysical theta_cm. Breaking do/while to accept event will never be satisfied for this case.
+	  }
+
       // Generate a test value for the cross section
       xsec_test=myrand->Uniform(xsec_max);
     }
@@ -871,6 +935,7 @@ int main(int narg, char *argv[])
 
     //proton4.Print();
     thrown_theta_vs_p->Fill(proton4.P(),180./M_PI*proton4.Theta());
+    thrown_theta_vs_p_eta->Fill(eta4.P(),180./M_PI*eta4.Theta());
 
     // Other diagnostic histograms
     thrown_t->Fill(-t);
@@ -888,45 +953,53 @@ int main(int narg, char *argv[])
     vector<secondary_decay_t>secondary_vertices;
 #ifdef HAVE_EVTGEN
     if(use_evtgen) {
-		// Set up the parent particle
-		EvtVector4R pInit(eta4.E(), eta4.X(), eta4.Y(), eta4.Z());
-		parent = EvtParticleFactory::particleFactory(EtaId, pInit);
+        // Set up the parent particle
+        EvtVector4R pInit(eta4.E(), eta4.X(), eta4.Y(), eta4.Z());
+        parent = EvtParticleFactory::particleFactory(EtaId, pInit);
 
-		// Generate the event
-		myGenerator->generateDecay(parent);
-		
-		// Write out resulting particles
-		for(unsigned int i=0; i<parent->getNDaug(); i++) {
-			TLorentzVector vec4v( parent->getDaug(i)->getP4Lab().get(1),
-								  parent->getDaug(i)->getP4Lab().get(2),
-								  parent->getDaug(i)->getP4Lab().get(3),
-								  parent->getDaug(i)->getP4Lab().get(0)   );
-			output_particle_vectors.push_back(vec4v);
-			output_particle_types.push_back(PDGtoPType(parent->getDaug(i)->getPDGId()));
+        if(num_decay_particles == 0) {  
+            // just generate the eta and let the decay be done by an external program like decay_evtgen
+            // this plays better with MCWrapper, apparently...
+            TLorentzVector vec4v( eta4.X(), eta4.Y(), eta4.Z(), eta4.E());
+
+            output_particle_vectors.push_back(vec4v);
+            output_particle_types.push_back(PDGtoPType(parent->getPDGId()));
+        } else {            
+            // Generate the event
+            myGenerator->generateDecay(parent);
+            
+            // Write out resulting particles
+            for(unsigned int i=0; i<parent->getNDaug(); i++) {
+                TLorentzVector vec4v( parent->getDaug(i)->getP4Lab().get(1),
+                                      parent->getDaug(i)->getP4Lab().get(2),
+                                      parent->getDaug(i)->getP4Lab().get(3),
+                                      parent->getDaug(i)->getP4Lab().get(0)   );
+                output_particle_vectors.push_back(vec4v);
+                output_particle_types.push_back(PDGtoPType(parent->getDaug(i)->getPDGId()));
 						
-			// see if any of the particles decay and add info on them
-			// should be mostly pi0's, but we should go recursive...
-			if(parent->getDaug(i)->getNDaug()>0) {
-				output_particle_decays.push_back(true);
-
-				secondary_decay_t secondary_vertex;
-				secondary_vertex.parent_id = i;
-				for(unsigned int j=0; j<parent->getDaug(i)->getNDaug(); j++) {
-					TLorentzVector vec4v( parent->getDaug(i)->getDaug(j)->getP4Lab().get(1),
-										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(2),
-										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(3),
-										  parent->getDaug(i)->getDaug(j)->getP4Lab().get(0)   );
-					secondary_vertex.p4vs.push_back(vec4v);
-					secondary_vertex.ids.push_back(PDGtoPType(parent->getDaug(i)->getDaug(j)->getPDGId()));
-				}
-				secondary_vertices.push_back(secondary_vertex);
-			} else {
-				output_particle_decays.push_back(false);
-			}
-		}
+                // see if any of the particles decay and add info on them
+                // should be mostly pi0's, but we should go recursive...
+                if(parent->getDaug(i)->getNDaug()>0) {
+                    output_particle_decays.push_back(true);
+                    
+                    secondary_decay_t secondary_vertex;
+                    secondary_vertex.parent_id = i;
+                    for(unsigned int j=0; j<parent->getDaug(i)->getNDaug(); j++) {
+                        TLorentzVector vec4v( parent->getDaug(i)->getDaug(j)->getP4Lab().get(1),
+                                              parent->getDaug(i)->getDaug(j)->getP4Lab().get(2),
+                                              parent->getDaug(i)->getDaug(j)->getP4Lab().get(3),
+                                              parent->getDaug(i)->getDaug(j)->getP4Lab().get(0)   );
+                        secondary_vertex.p4vs.push_back(vec4v);
+                        secondary_vertex.ids.push_back(PDGtoPType(parent->getDaug(i)->getDaug(j)->getPDGId()));
+                    }
+                    secondary_vertices.push_back(secondary_vertex);
+                } else {
+                    output_particle_decays.push_back(false);
+                }
+            }
 	
-		parent->deleteTree();
-   
+            parent->deleteTree();
+        }
     } else {   // no evtgen
 #endif //HAVE_EVTGEN
 		// Generate 3-body decay of eta according to phase space
@@ -998,7 +1071,7 @@ int main(int narg, char *argv[])
     // Write Event to HDDM file
     WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,output_particle_decays,secondary_vertices,file);
     
-    if ((i%(Nevents/10))==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
+    if (((10*i)%Nevents)==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }
 
 

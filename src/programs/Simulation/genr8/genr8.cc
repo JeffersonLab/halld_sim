@@ -472,6 +472,12 @@ int main(int argc,char **argv)
   if(Y->nchildren == 0) Y->mass = Y->bookmass;
  
   while(naccepted <max){
+    
+    if(naccepted==0 && ngenerated>10000000)
+    {
+      fprintf(stderr,"No accepted events in 10 Million generated events.  Exiting to avoid probable infinite loop. \n");
+      exit(-1);
+    }
 
     if (Debug) fprintf(stderr,"In main do loop ... %d \n",naccepted);
     struct particleMC_t event_beam, event_target;

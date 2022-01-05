@@ -34,7 +34,7 @@ public:
     
 #ifdef GPU_ACCELERATION
 
-  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
+	//void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
 
 	bool isGPUEnabled() const { return true; }
 
@@ -45,6 +45,7 @@ private:
   AmpParameter m_par1;    // for the moment assume W cross section has 5 parameters
   AmpParameter m_par2;
   AmpParameter Bgen;
+  AmpParameter mtmax;
   
   pair< string, string > m_daughters;  
 };

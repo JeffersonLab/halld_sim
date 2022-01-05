@@ -2,7 +2,7 @@
  *  BeamProperties.cc
  *
  *  Contains histograms for beam properties to be used in event generation and fitting.  Source
- *  of beam properties is from CombremsGeneration, external ROOT file or CCDB (to be implemented). 
+ *  of beam properties is from CombremsGeneration, external ROOT file or CCDB (to be implemented).
  *
  *  Created by Justin Stevens on 12/29/17
  */
@@ -26,7 +26,7 @@ BeamProperties::BeamProperties( TString configFile ) {
 	gDirectory->cd("/");
 	fluxVsEgamma = (TH1D*)gDirectory->Get("BeamProperties_FluxVsEgamma");
 	polFracVsEgamma = (TH1D*)gDirectory->Get("BeamProperties_PolFracVsEgamma");
-	if(!fluxVsEgamma || !polFracVsEgamma) 
+	if(!fluxVsEgamma || !polFracVsEgamma)
 		createHistograms(configFile);
 }
 
@@ -38,24 +38,24 @@ void BeamProperties::createHistograms( TString configFile ) {
 	if(!isParsed) exit(1);
 
 	// Fill flux histogram based on config file
-	if(mIsCCDBFlux) 
+	if(mIsCCDBFlux)
 		fillFluxFromCCDB();
-	else if(mIsROOTFlux) 
+	else if(mIsROOTFlux)
 		fillFluxFromROOT();
 	else {  // default to CobremsGeneration for flux and polarization
-		generateCobrems(); 
+		generateCobrems();
 		if(mIsPolFixed) fillPolFixed();	// allow user to override with fixed polarization, if desired
 		return;
 	}
-	
+
 	// Fill polarization histogram based on config file
-	if (mIsCCDBPol) 
+	if (mIsCCDBPol)
 		fillPolFromCCDB();
 	else if(mIsROOTPol)
 		fillPolFromROOT();
-	else 
-		fillPolFixed();	
-	
+	else
+		fillPolFixed();
+
 	return;
 }
 
@@ -77,11 +77,11 @@ bool BeamProperties::parseConfig(){
 		return false;
 	}
 
-	while(inputFile) { 
-		
+	while(inputFile) {
+
 		string line;
 		getline(inputFile,line);
-		
+
 		// parse the line into words (from AmpTools ConfigFileParser)
 		vector<string> words;
 		string word("");
@@ -97,10 +97,10 @@ bool BeamProperties::parseConfig(){
 				words.push_back(word);
 				word = "";
 			}
-		}	
+		}
 
 		// skip blank or incomplete lines and comments
-		if(words.size() < 2 || words[0][0] == '#') 
+		if(words.size() < 2 || words[0][0] == '#')
 			continue;
 
 		// 1st is variable name and 2nd word is value
@@ -112,7 +112,7 @@ bool BeamProperties::parseConfig(){
 			mBeamParametersMap.insert( std::pair<std::string,double>( words[0].data(), atof(words[1].data()) ));
 		}
 		else if(words[0].find("ROOTFlux") != std::string::npos) {
-			if(words[1].find("ccdb") != std::string::npos) 
+			if(words[1].find("ccdb") != std::string::npos)
 				mIsCCDBFlux = true;
 			else {
 				mIsROOTFlux = true;
@@ -120,14 +120,14 @@ bool BeamProperties::parseConfig(){
 			}
 		}
 		else if(words[0].find("ROOTPol") != std::string::npos) {
-			if(words[1].find("ccdb") != std::string::npos) 
+			if(words[1].find("ccdb") != std::string::npos)
 				mIsCCDBPol = true;
 			else {
 				mIsROOTPol = true;
 				mBeamHistNameMap.insert( std::pair<std::string,std::string>( words[0].data(), words[1].data() ) );
 			}
 		}
-		else 
+		else
 			mBeamParametersMap.insert( std::pair<std::string,double>( words[0].data(), atof(words[1].data()) ));
 	}
 	inputFile.close();
@@ -148,7 +148,7 @@ void BeamProperties::generateCobrems(){
 	defaultParameters.insert( std::pair<std::string,double>( "RadiatorThickness", 50.e-6 ) );
 	defaultParameters.insert( std::pair<std::string,double>( "CollimatorDiameter", 0.005 ) );
 	defaultParameters.insert( std::pair<std::string,double>( "CollimatorDistance", 76.0 ) );
-	
+
 	// check that required parameters are provided
 	const int nParameters = 8;
 	string parameterNames[nParameters] = {"ElectronBeamEnergy", "CoherentPeakEnergy", "PhotonBeamLowEnergy", "PhotonBeamHighEnergy",  "Emittance", "RadiatorThickness", "CollimatorDiameter", "CollimatorDistance"};
@@ -170,7 +170,7 @@ void BeamProperties::generateCobrems(){
 	fluxVsEgamma = new TH1D("BeamProperties_FluxVsEgamma", "Flux vs. E_{#gamma}", nBinsEgamma, Elow, Ehigh);
 	polFracVsEgamma = new TH1D("BeamProperties_PolFracVsEgamma", "Polarization Fraction vs. E_{#gamma}", nBinsEgamma, Elow, Ehigh);
 	TH1D *polFluxVsEgamma   = new TH1D("BeamProperties_PolFluxVsEgamma", "Polarized Flux vs. E_{#gamma}", nBinsEgamma, Elow, Ehigh);
-	
+
 	// Setup cobrems
 	CobremsGeneration cobrems(Emax, Epeak);
 	cobrems.setBeamEmittance(mBeamParametersMap.at("Emittance"));
@@ -178,7 +178,7 @@ void BeamProperties::generateCobrems(){
 	cobrems.setCollimatorDiameter(mBeamParametersMap.at("CollimatorDiameter"));
 	cobrems.setCollimatorDistance(mBeamParametersMap.at("CollimatorDistance"));
 	cobrems.setCollimatedFlag(true);
-	
+
 	// Fill flux
 	cobrems.setPolarizedFlag(0); // 0=total flux
 	for(int i=1; i<=nBinsEgamma; i++){
@@ -198,7 +198,7 @@ void BeamProperties::generateCobrems(){
 		else y = cobrems.Rate_dNcdx(x);
 		polFluxVsEgamma->SetBinContent(i, y);
 	}
-	
+
 	// Polarization fraction from ratio
 	polFracVsEgamma->Divide(polFluxVsEgamma, fluxVsEgamma);
 
@@ -223,7 +223,7 @@ void BeamProperties::fillFluxFromROOT() {
 		cout << "BeamProperties ERROR:  Could not open ROOT flux " << mBeamHistNameMap.at("ROOTFluxFile").data() << ", file doesn't exist" << endl;
 		exit(1);
 	}
-	
+
 	// open histograms and check that they exist
 	if(mBeamHistNameMap.count("ROOTFluxName")) {
 		fluxVsEgamma = (TH1D*)fFlux->Get(mBeamHistNameMap.at("ROOTFluxName").data())->Clone("BeamProperties_FluxVsEgamma");
@@ -236,18 +236,18 @@ void BeamProperties::fillFluxFromROOT() {
 		cout << "BeamProperties ERROR:  ROOT flux " << mBeamHistNameMap.at("ROOTFluxFile").data() << ", histogram doesn't exist" << endl;
 		exit(1);
 	}
-	
+
 	// set energy range for event generation
 	if(!mBeamParametersMap.count("PhotonBeamLowEnergy") || !mBeamParametersMap.count("PhotonBeamHighEnergy")) {
 		cout << "BeamProperties ERROR:  PhotonBeamLowEnergy or PhotonBeamHighEnergy not specified for event generation" << endl;
 		exit(1);
 	}
-	fluxVsEgamma->GetXaxis()->SetRangeUser(mBeamParametersMap.at("PhotonBeamLowEnergy"), mBeamParametersMap.at("PhotonBeamHighEnergy")); 
+	fluxVsEgamma->GetXaxis()->SetRangeUser(mBeamParametersMap.at("PhotonBeamLowEnergy"), mBeamParametersMap.at("PhotonBeamHighEnergy"));
 
 	// keep in memory after file is closed
 	fluxVsEgamma->SetDirectory(gROOT);
 	fFlux->Close();
-	
+
         return;
 }
 
@@ -269,7 +269,7 @@ void BeamProperties::fillPolFromROOT() {
 		cout << "BeamProperties ERROR:  Could not open ROOT polarization " << mBeamHistNameMap.at("ROOTPolFile").data() << ", file doesn't exist" << endl;
 		exit(1);
 	}
-	
+
 	// open histograms and check that they exist
 	if(mBeamHistNameMap.count("ROOTPolName")) {
 		polFracVsEgamma = (TH1D*)fPol->Get(mBeamHistNameMap.at("ROOTPolName").data())->Clone("BeamProperties_PolFracVsEgamma");
@@ -284,8 +284,8 @@ void BeamProperties::fillPolFromROOT() {
 	}
 
 	// check contents of polarization histogram, and remove problematic bins with polarization > 100%
-	for(int i=0; i<polFracVsEgamma->GetNbinsX(); i++) 
-		if(fabs(polFracVsEgamma->GetBinContent(i)) > 1.0) 
+	for(int i=0; i<polFracVsEgamma->GetNbinsX(); i++)
+		if(fabs(polFracVsEgamma->GetBinContent(i)) > 1.0)
 			polFracVsEgamma->SetBinContent(i, 0);
 
 	// keep in memory after file is closed
@@ -296,14 +296,14 @@ void BeamProperties::fillPolFromROOT() {
 }
 
 double BeamProperties::PSAcceptance(double Egamma, double norm, double min, double max) {
-	
+
 	if( (Egamma > 2*min) && (Egamma < min + max)){
 		return norm*(1-2*min/Egamma);
-	} 
+	}
 	else if( Egamma >= min + max){
 		return norm*(2*max/Egamma - 1);
 	}
-	
+
 	return 0.;
 }
 
@@ -313,14 +313,24 @@ void BeamProperties::fillFluxFromCCDB() {
 
 	cout<<endl<<"BeamProperties: Using flux from CCDB run "<<mRunNumber<<endl;
 
-	// Parse to get run number
-	string ccdb_home(getenv("JANA_CALIB_URL"));
-	string variation(getenv("JANA_CALIB_CONTEXT"));
-	//cout<<ccdb_home.data()<<" "<<variation.data()<<endl;
-	
+	// Parse environment variables for CCDB setup
+	const char *calib_url = getenv("JANA_CALIB_URL");
+	if(!calib_url) {
+		cout<<"Can't compute flux with undefined JANA_CALIB_URL environment variable"<<endl;
+		exit(101);
+	}
+
+	string variation = "default";
+	const char *variation_env = getenv("JANA_CALIB_CONTEXT");
+	if(variation_env) { // use non-default context if provided
+		variation = string(variation_env);
+		variation = variation.substr(variation.find('=')+1,variation.find(' ')-variation.find('=')-1); //keep only the actual variation
+		cout<<"Using CCDB variation = "<<variation.data()<<endl;
+	}
+
 	// Generate calibration class
-	auto_ptr<ccdb::Calibration> calib(ccdb::CalibrationGenerator::CreateCalibration(ccdb_home, mRunNumber)); //, variation));
-	
+	auto_ptr<ccdb::Calibration> calib(ccdb::CalibrationGenerator::CreateCalibration(string(calib_url), mRunNumber, variation));
+
 	// Get PS acceptance from CCDB
 	vector< vector<double> > psAccept;
         calib->GetCalib(psAccept, "/PHOTON_BEAM/pair_spectrometer/lumi/PS_accept");
@@ -364,19 +374,24 @@ void BeamProperties::fillFluxFromCCDB() {
 		if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
 		fluxVsEgamma->Fill(energy, flux);
 	}
-	
+
+	if (fluxVsEgamma->Integral() == 0){
+	  cout << "ERROR: Flux in CCDB not available for this energy range!" << endl;
+	  exit(101);
+	}
+
 	return;
 }
 
 // PLACEHOLDER: create histograms for polarization fraction from CCDB for specified run number
 void BeamProperties::fillPolFromCCDB() {
-	
+
 	cout<<endl<<"BeamProperties WARNING:  Polarization from CCDB is not currently implemented.  Event sample with be generated unpolarized (i.e. polarization=0)."<<endl<<endl;
-	
+
 	double polMagnitude = 0.0;
 	polFracVsEgamma = new TH1D("BeamProperties_PolFracVsEgamma", "Polarization Fraction vs. E_{#gamma}", 1, 0., 13.);
 	polFracVsEgamma->SetBinContent(1, polMagnitude);
-	
+
         return;
 }
 
@@ -384,22 +399,22 @@ void BeamProperties::fillPolFromCCDB() {
 void BeamProperties::fillPolFixed() {
 
 	double polMagnitude = 0.0;
-	if(mBeamParametersMap.count("PolarizationMagnitude")) 
-		polMagnitude = mBeamParametersMap.at("PolarizationMagnitude");	
-	
+	if(mBeamParametersMap.count("PolarizationMagnitude"))
+		polMagnitude = mBeamParametersMap.at("PolarizationMagnitude");
+
 	cout<<endl<<"BeamProperties: Using fixed polarization = "<<polMagnitude<<endl;
 
 	polFracVsEgamma = (TH1D*)gDirectory->Get("BeamProperties_PolFracVsEgamma");
 	if(!polFracVsEgamma) polFracVsEgamma = new TH1D("BeamProperties_PolFracVsEgamma", "Polarization Fraction vs. E_{#gamma}", 1, 0., 13.);
 	polFracVsEgamma->SetBinContent(1, polMagnitude);
-	
+
         return;
 }
 
 double BeamProperties::GetPolAngle() {
 	if(mBeamParametersMap.count("PolarizationAngle"))
 		return mBeamParametersMap.at("PolarizationAngle");
-	else 
+	else
 		cout<<endl<<"BeamProperties WARNING: Polarization angle requeseted by generator/fitter but not found in beam configuration file.  Using PolAngle = 0 degrees by default"<<endl<<endl;
 
 	return 0.;

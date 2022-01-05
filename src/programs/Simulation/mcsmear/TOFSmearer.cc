@@ -32,8 +32,10 @@ tof_config_t::tof_config_t(JEventLoop *loop)
      	return;
     }
      	
-    TOF_SIGMA =  tofparms["TOF_SIGMA"];
-    TOF_PHOTONS_PERMEV =  tofparms["TOF_PHOTONS_PERMEV"];
+    TOF_SIGMA =  tofparms.at("TOF_SIGMA");
+    TOF_PHOTONS_PERMEV =  tofparms.at("TOF_PHOTONS_PERMEV");
+    ATTENUATION_LENGTH = tofparms.at("TOF_ATTEN_LENGTH");
+    FULL_BAR_LENGTH = tofparms.at("TOF_PADDLE_LENGTH");
 	
     string locTOFPaddleResolTable = TOFGeom[0]->Get_CCDB_DirectoryName() + "/paddle_resolutions";
 	cout<<"get "<<locTOFPaddleResolTable<<" from calibDB"<<endl;
@@ -113,9 +115,7 @@ tof_config_t::tof_config_t(JEventLoop *loop)
 	}
 #endif // DTOFGEOMETRY_VERSION
 
-	cout << "****************************************" << endl;
-	cout << "TOF BARS = " << TOF_NUM_BARS << endl;
-	cout << "****************************************" << endl;
+	cout << "Number of TOF bars per plane = " << TOF_NUM_BARS << endl;
 }
 
 
@@ -148,6 +148,8 @@ void TOFSmearer::SmearEvent(hddm_s::HDDM *record)
          	 npe += gDRandom.SampleGaussian(sqrt(npe));
           	 NewE = npe/tof_config->TOF_PHOTONS_PERMEV/1000.;
 		 }
+         // Apply an average attenuation correction to set the energy scale
+         NewE *= exp(tof_config->FULL_BAR_LENGTH / 2 / tof_config->ATTENUATION_LENGTH);
          if (NewE > tof_config->TOF_BAR_THRESHOLD) {
             hddm_s::FtofHitList hits = iter->addFtofHits();
             hits().setEnd(titer->getEnd());
@@ -159,5 +161,10 @@ void TOFSmearer::SmearEvent(hddm_s::HDDM *record)
       if (config->DROP_TRUTH_HITS) {
          iter->deleteFtofTruthHits();
       }
+   }
+   if (config->DROP_TRUTH_HITS) {
+      hddm_s::ForwardTOFList tofs = record->getForwardTOFs();
+      if (tofs.size() > 0)
+         tofs().deleteFtofTruthPoints();
    }
 }

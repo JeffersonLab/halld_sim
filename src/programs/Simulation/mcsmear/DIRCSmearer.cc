@@ -77,4 +77,11 @@ void DIRCSmearer::SmearEvent(hddm_s::HDDM *record)
 		hits().setCh(ch);
 	}
 #endif
+    if (config->DROP_TRUTH_HITS) {
+	    hddm_s::DIRCList dircs = record->getDIRCs();
+        if  (dircs.size() > 0) {
+            dircs().deleteDircTruthPmtHits();
+            dircs().deleteDircTruthBarHits();
+        }
+    }
 }

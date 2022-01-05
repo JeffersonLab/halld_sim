@@ -16,8 +16,10 @@
 #include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
+#include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 
@@ -70,7 +72,7 @@ int main( int argc, char* argv[] ){
 	double slope = 6.0;
 
 	int nEvents = 10000;
-	int batchSize = 10000;
+	int batchSize = 100000;
 	
 	float Mpip=ParticleMass(PiPlus), Mpi0=ParticleMass(Pi0), Momega=0.782;
 
@@ -176,45 +178,71 @@ int main( int argc, char* argv[] ){
 	ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
 	assert( cfgInfo->reactionList().size() == 1 );
 	ReactionInfo* reaction = cfgInfo->reactionList()[0];
+
+	// check for unstable particle at lower vertex
+        vector<Particle_t> ParticlesLowerVertex;
+        vector<double> massesLowerVertex;
+        double thresholdLowerVertex = 0;
+        vector< BreitWignerGenerator > bwGenLowerVertex;
+	vector< vector<string> > lowerVertexKeywords = cfgInfo->userKeywordArguments("lowerVertex");
+	if(lowerVertexKeywords.size() == 1) {
+	  vector<string> keywordArgs = lowerVertexKeywords[0];
+	  bwGenLowerVertex.push_back( BreitWignerGenerator( atof(keywordArgs[0].c_str()), atof(keywordArgs[1].c_str())) );
+	  cout << "Unstable particle at lower vertex: mass = " << keywordArgs[0] << "GeV , width = " << keywordArgs[1] << "GeV" << endl; 
+	  for(unsigned int j=2; j<keywordArgs.size(); j++) {
+	    ParticlesLowerVertex.push_back(ParticleEnum(keywordArgs[j].c_str()));
+	    massesLowerVertex.push_back(ParticleMass(ParticlesLowerVertex[j-2]));
+	    thresholdLowerVertex += ParticleMass(ParticlesLowerVertex[j-2]);
+	  }
+	}
+	else if(lowerVertexKeywords.size() > 1) {
+		cout<<"Multiple unstable particles at lower vertex provided"<<endl;
+		exit(1);
+	}
 	
-	// use particletype.h to convert reaction particle names
+	// use particletype.h to convert reaction particle names (for upper vertex)
 	vector<Particle_t> Particles;
-	for (unsigned int i = 0; i < reaction->particleList().size(); i++){
-	  Particle_t locEnum = ParticleEnum(reaction->particleList()[i].c_str());
+	// don't include non-nucleon lower vertex decay particles in meson decay
+	unsigned int maxUpperVertexChild = reaction->particleList().size();
+        if(bwGenLowerVertex.size() == 1) maxUpperVertexChild -= (ParticlesLowerVertex.size()-1);
+        for (unsigned int i = 0; i < maxUpperVertexChild; i++){
+	  TString particleName = reaction->particleList()[i].c_str(); 
+	particleName.ReplaceAll("1","");  particleName.ReplaceAll("2",""); // ignore distinguishable particle notation
+	  Particle_t locEnum = ParticleEnum(particleName.Data());
 	  // Beam particle is always photon
 	  if (locEnum == 0 && i > 0)
-	    cout << "ConfigFileParser WARNING:  unknown particle type \"" << reaction->particleList()[i] << "\"" << endl;
-	  Particles.push_back(ParticleEnum(reaction->particleList()[i].c_str()));
-      }
+	    cout << "ConfigFileParser WARNING:  unknown particle type \"" << particleName.Data() << "\"" << endl;
+	  Particles.push_back(ParticleEnum(particleName.Data()));
+        }
 
 	vector<double> childMasses;
 	double threshold = 0;
-	childMasses.push_back(0.135);
+	if(bwGenLowerVertex.size() == 0) childMasses.push_back(0.135); // b1 -> omega pi0
+	else childMasses.push_back(0.1396); // b1 -> omega pi+/-
 	childMasses.push_back(0.782);
 	threshold = 0.135 + 0.782;
 
 	// loop to look for resonance in config file
 	// currently only one at a time is supported 
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
-	double resonance[]={1.235, 0.142};
+	double resonance[]={1.235, 1.0};
 	bool foundResonance = false;
 
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
 	  if ((*it).keyword() == "define") {
-	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
+	    if ((*it).arguments()[0] == "b1"){
 	      if ( (*it).arguments().size() != 3 )
 		continue;
 	      resonance[0]=atof((*it).arguments()[1].c_str());
 	      resonance[1]=atof((*it).arguments()[2].c_str());
 	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
-	      if((*it).arguments()[0] == "Lambda1520")
 	      foundResonance = true;
 	      break;
 	    }
 	  }
 	}
 	if (!foundResonance)
-	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with mass = 1.235, width = 0.142 GeV" << endl; 
+	  cout << "ConfigFileParser WARNING:  no known resonance found, seed flat mass distribution" << endl; 
 
 	// random number initialization (set to 0 by default)
 	TRandom3* gRandom = new TRandom3();
@@ -223,7 +251,9 @@ int main( int argc, char* argv[] ){
 	cout << "TRandom3 Seed : " << seed << endl;
 
 	// setup AmpToolsInterface
+	AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
 	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
+	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
 
@@ -266,13 +296,12 @@ int main( int argc, char* argv[] ){
 
 	vector< BreitWignerGenerator > m_bwGen;
         m_bwGen.push_back( BreitWignerGenerator(0.782, 0.008) );
-	
 		
 	// seed the distribution with a sum of noninterfering Breit-Wigners
 	// we can easily compute the PDF for this and divide by that when
 	// doing accept/reject -- improves efficiency if seeds are picked well
 	
-	if( !genFlat ){
+	if( !genFlat && foundResonance){
 		
 		// the lines below should be tailored by the user for the particular desired
 		// set of amplitudes -- doing so will improve efficiency.  Leaving as is
@@ -282,9 +311,11 @@ int main( int argc, char* argv[] ){
 	}
 	
 	vector< int > pTypes;
-	for (unsigned int i=0; i<Particles.size(); i++)
+	for (unsigned int i=0; i<Particles.size(); i++)  
 	  pTypes.push_back( Particles[i] );
-	
+	for (unsigned int i=1; i<ParticlesLowerVertex.size(); i++)
+          pTypes.push_back( ParticlesLowerVertex[i] );
+
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
 	ROOTDataWriter rootOut( outname );
@@ -315,12 +346,14 @@ int main( int argc, char* argv[] ){
 
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
 	TH1F* M_isobar2 = new TH1F( "M_isobar2", locIsobar2Title.c_str(), 200, 0, 2 );
+	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 200, 0, 2 );
+	TH1F* M_recoilW = new TH1F( "M_recoilW", "; Weighted Recoil mass (GeV)", 200, 0, 2 );
 	TH1F* M_p1 = new TH1F( "M_p1", "p1", 200, 0, 2 );
 	TH1F* M_p2 = new TH1F( "M_p2", "p2", 200, 0, 2 );
 	TH1F* M_p3 = new TH1F( "M_p3", "p3", 200, 0, 2 );
 	TH1F* M_p4 = new TH1F( "M_p4", "p4", 200, 0, 2 );
 
-        TH2F* M_dalitz = new TH2F( "M_dalitz", "dalitzxy", 200, -5, 5, 200, -5, 5);
+        TH2F* M_dalitz = new TH2F( "M_dalitz", "dalitzxy", 200, -2, 2, 200, -2, 2);
 
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
@@ -339,56 +372,89 @@ int main( int argc, char* argv[] ){
 		}
 		
 		cout << "Generating four-vectors..." << endl;
-		
-		ati.clearEvents();
-		for( int i = 0; i < batchSize; ++i ){
-			
-                        pair< double, double > bw = m_bwGen[0]();
-                        double omega_mass_bw = bw.first;
-                        if ( omega_mass_bw < 0.45 || omega_mass_bw > 0.864) continue;//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
-			vector<double> childMasses;
-              		childMasses.push_back(0.135);
-        		childMasses.push_back(omega_mass_bw);
-                        //double threshold = 0.135 + omega_mass_bw;
+		// decay omega (and Delta++, if generated)
+		ati.clearEvents();
+		int i=0;
+		while( i < batchSize ){
 			
-			resProd.setChildMasses(childMasses);
+			double weight = 1.;
+
+			double omega_mass_bw = m_bwGen[0]().first;
+                        if( omega_mass_bw < 0.45 || omega_mass_bw > 0.86 ) continue;
+			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
+
+			vector<double> childMasses_omega_bw;
+              		childMasses_omega_bw.push_back(childMasses[0]);
+        		childMasses_omega_bw.push_back(omega_mass_bw);
+			
+			resProd.setChildMasses(childMasses_omega_bw);
 			resProd.getProductionMechanism().setMassRange( lowMass, highMass );
+
+			// setup lower vertex decay
+			pair< double, double > bwLowerVertex;
+			double lowerVertex_mass_bw = 0.;
+			if(bwGenLowerVertex.size() == 1) {
+				bwLowerVertex = bwGenLowerVertex[0]();
+				lowerVertex_mass_bw = bwLowerVertex.first;
+				weight *= bwLowerVertex.second;
+				if ( lowerVertex_mass_bw < thresholdLowerVertex || lowerVertex_mass_bw > 2.0) continue;
+				resProd.getProductionMechanism().setRecoilMass( lowerVertex_mass_bw );
+			}
 
 			  Kinematics* step1 = resProd.generate();
 			  TLorentzVector beam = step1->particle( 0 );
-			  TLorentzVector proton = step1->particle( 1 );
-			  TLorentzVector bachelor_pi0 = step1->particle( 2 );
+			  TLorentzVector recoil = step1->particle( 1 );
+			  TLorentzVector bachelor_pi = step1->particle( 2 );
 			  TLorentzVector omega = step1->particle( 3 );
-			  TLorentzVector b1 = bachelor_pi0 + omega;
+			  TLorentzVector b1 = bachelor_pi + omega;
 
-			  //cout << "omega mass =" << omega_mass_bw << endl;
+			  // decay step for omega
         		  NBodyPhaseSpaceFactory omega_to_pions = NBodyPhaseSpaceFactory( omega_mass_bw, part_masses2);
 			  vector<TLorentzVector> omega_daughters = omega_to_pions.generateDecay();
 			  
 			  TLorentzVector piplus = omega_daughters[0];//second decay step
 			  TLorentzVector piminus = omega_daughters[1];//second decay step
 			  TLorentzVector omegas_pi0 = omega_daughters[2];//second decay step
-			  //cout << "second step masses ="<< piplus.M() << ", "<< piminus.M() << ", " << omegas_pi0.M() << endl;
 
 			  omegas_pi0.Boost( omega.BoostVector() );
 			  piplus.Boost( omega.BoostVector() );			  
 			  piminus.Boost( omega.BoostVector() );
 		  
+			  // decay step for Delta++
+			  TLorentzVector nucleon;
+			  vector<TLorentzVector> lowerVertexChild;
+			  if(bwGenLowerVertex.size() == 1) {
+				  NBodyPhaseSpaceFactory lowerVertex_decay = NBodyPhaseSpaceFactory( lowerVertex_mass_bw, massesLowerVertex);
+				  lowerVertexChild = lowerVertex_decay.generateDecay();
+
+				  // boost to lab frame via recoil kinematics
+				  for(unsigned int j=0; j<lowerVertexChild.size(); j++)
+					  lowerVertexChild[j].Boost( recoil.BoostVector() );
+				  nucleon = lowerVertexChild[0];	
+			  }		  
+			  else 
+				  nucleon = recoil;
+
+			  // store particles in kinematic class
 			  vector< TLorentzVector > allPart;
 			  //same order as config file, omegapi Amplitudes and ReactionFilter
 			  allPart.push_back( beam );
-			  allPart.push_back( proton );
-
-			  allPart.push_back( bachelor_pi0 );
+			  allPart.push_back( nucleon );
+			  allPart.push_back( bachelor_pi );
 			  allPart.push_back( omegas_pi0 );
 			  allPart.push_back( piplus );
 			  allPart.push_back( piminus );
+			  if(bwGenLowerVertex.size() == 1)
+				  for(unsigned int j=1; j<lowerVertexChild.size(); j++)
+                                        allPart.push_back(lowerVertexChild[j]);
 
-			  Kinematics* kin = new Kinematics( allPart, 1.0 );
+			  weight *= step1->weight();
+			  Kinematics* kin = new Kinematics( allPart,  weight);
 			  ati.loadEvent( kin, i, batchSize );
 			  delete step1;
 			  delete kin;
+			  i++;
     		}
 		
 		cout << "Processing events..." << endl;
@@ -413,6 +479,12 @@ int main( int argc, char* argv[] ){
 			for (unsigned int i=4; i<Particles.size(); i++)
 			  isobar2 += evt->particle( i );
 			
+			TLorentzVector recoil = evt->particle( 1 );
+                        if(bwGenLowerVertex.size()) {
+				for(unsigned int j=Particles.size(); j<evt->particleList().size(); j++)
+                                        recoil += evt->particle( j );
+                        }
+
 			double genWeight = evt->weight();
 			
 			// cannot ask for the intensity if we haven't called process events above
@@ -434,15 +506,16 @@ int main( int argc, char* argv[] ){
 
 					M_isobar->Fill( isobar.M() );
 					M_isobar2->Fill( isobar2.M() );
+					M_recoil->Fill( recoil.M() );
+					M_recoilW->Fill( recoil.M(), weightedInten );
 					
 					// calculate angular variables
 					TLorentzVector beam = evt->particle ( 0 );
-					TLorentzVector recoil = evt->particle ( 1 );
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector p2 = evt->particle ( 3 );
 					TLorentzVector p3 = evt->particle ( 4 );
 					TLorentzVector p4 = evt->particle ( 5 );
-					TLorentzVector target(0,0,0,recoil[3]);
+					TLorentzVector target(0,0,0,ParticleMass(Proton));
 					
 					M_p1->Fill( p1.M() );
 					M_p2->Fill( p2.M() );
@@ -450,17 +523,16 @@ int main( int argc, char* argv[] ){
 					M_p4->Fill( p4.M() );
 
 					double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc, dalitzx, dalitzy;
-					dalitz_s = (p3+p2).M2();//s=M(pip pi0)
-					dalitz_t = (p4+p2).M2();//s=M(pim pi0)
-					dalitz_u = (p3+p4).M2();//s=M(pip pim)
-					dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*139.57018)+134.9766) );
-					dalitz_sc = (1/3)*( (p2+p3+p4).M2() - ((2*(139.57018*139.57018))+(134.9766*134.9766)) );
-					dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
-					dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
-
+					dalitz_s = (p3+p4).M2();//s=M(pip pim)
+					dalitz_t = (p2+p3).M2();//s=M(pip pi0)
+					dalitz_u = (p2+p4).M2();//s=M(pim pi0)
+					dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*0.13957018)+0.1349766) );
+					dalitz_sc = (1/3.)*( (p2+p3+p4).M2() + ((2*(0.13957018*0.13957018))+(0.1349766*0.1349766)) );
+					dalitzx = sqrt(3.)*(dalitz_t - dalitz_u)/dalitz_d;
+					dalitzy = 3.*(dalitz_sc - dalitz_s)/dalitz_d;
 					M_dalitz->Fill(dalitzx,dalitzy);
 					
-					t->Fill(-1*(evt->particle(1)-target).M2());
+					t->Fill(-1*(recoil-target).M2());
 
                                         TLorentzVector Gammap = beam + target;
                                         vector <double> loccosthetaphi = getomegapiAngles(polAngle, isobar, resonance, beam, Gammap);
@@ -502,7 +574,6 @@ int main( int argc, char* argv[] ){
 				
 				intenW->Fill( weightedInten );
 				intenWVsM->Fill( resonance.M(), weightedInten );
-				TLorentzVector recoil = evt->particle ( 1 );
 				
 				++eventCounter;
 			}
@@ -519,6 +590,8 @@ int main( int argc, char* argv[] ){
 	intenWVsM->Write();
 	M_isobar->Write();
 	M_isobar2->Write();
+	M_recoil->Write();
+	M_recoilW->Write();
         M_p1->Write();
         M_p2->Write();
         M_p3->Write();

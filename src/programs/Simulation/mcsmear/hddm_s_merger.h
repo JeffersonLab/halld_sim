@@ -14,12 +14,16 @@ namespace hddm_s_merger {
    void set_t_shift_ns(double dt_ns);
 
    // hits merging / truncation parameters for the CDC
+   bool get_cdc_merging();
+   void set_cdc_merging(bool merging_status);
    int get_cdc_max_hits();
    void set_cdc_max_hits(int maxhits);
    double get_cdc_integration_window_ns();
    void set_cdc_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the FDC
+   bool get_fdc_merging();
+   void set_fdc_merging(bool merging_status);
    int get_fdc_wires_max_hits();
    void set_fdc_wires_max_hits(int maxhits);
    double get_fdc_wires_min_delta_t_ns();
@@ -30,6 +34,8 @@ namespace hddm_s_merger {
    void set_fdc_strips_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the STC
+   bool get_stc_merging();
+   void set_stc_merging(bool merging_status);
    int get_stc_adc_max_hits();
    void set_stc_adc_max_hits(int maxhits);
    int get_stc_tdc_max_hits();
@@ -40,6 +46,8 @@ namespace hddm_s_merger {
    void set_stc_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the BCAL
+   bool get_bcal_merging();
+   void set_bcal_merging(bool merging_status);
    int get_bcal_adc_max_hits();
    void set_bcal_adc_max_hits(int maxhits);
    int get_bcal_tdc_max_hits();
@@ -54,6 +62,8 @@ namespace hddm_s_merger {
    void set_bcal_tdc_counts_per_ns(double slope);
 
    // hits merging / truncation parameters for the TOF
+   bool get_ftof_merging();
+   void set_ftof_merging(bool merging_status);
    int get_ftof_adc_max_hits();
    void set_ftof_adc_max_hits(int maxhits);
    int get_ftof_tdc_max_hits();
@@ -64,6 +74,8 @@ namespace hddm_s_merger {
    void set_ftof_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the FCAL
+   bool get_fcal_merging();
+   void set_fcal_merging(bool merging_status);
    int get_fcal_max_hits();
    void set_fcal_max_hits(int maxhits);
    double get_fcal_min_delta_t_ns();
@@ -72,6 +84,8 @@ namespace hddm_s_merger {
    void set_fcal_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the CCAL
+   bool get_ccal_merging();
+   void set_ccal_merging(bool merging_status);
    int get_ccal_max_hits();
    void set_ccal_max_hits(int maxhits);
    double get_ccal_min_delta_t_ns();
@@ -80,10 +94,15 @@ namespace hddm_s_merger {
    void set_ccal_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the PS
+   bool get_ps_merging();
+   void set_ps_merging(bool merging_status);
    int get_ps_max_hits();
    void set_ps_max_hits(int maxhits);
    double get_ps_integration_window_ns();
    void set_ps_integration_window_ns(double dt_ns);
+
+   bool get_psc_merging();
+   void set_psc_merging(bool merging_status);
    int get_psc_adc_max_hits();
    void set_psc_adc_max_hits(int maxhits);
    int get_psc_tdc_max_hits();
@@ -94,6 +113,8 @@ namespace hddm_s_merger {
    void set_psc_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the TAGM/TAGH
+   bool get_tag_merging();
+   void set_tag_merging(bool merging_status);
    int get_tag_adc_max_hits();
    void set_tag_adc_max_hits(int maxhits);
    int get_tag_tdc_max_hits();
@@ -104,18 +125,24 @@ namespace hddm_s_merger {
    void set_tag_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the TPOL
+   bool get_tpol_merging();
+   void set_tpol_merging(bool merging_status);
    int get_tpol_max_hits();
    void set_tpol_max_hits(int maxhits);
    double get_tpol_integration_window_ns();
    void set_tpol_integration_window_ns(double dt_ns);
  
    // hits merging / truncation parameters for the FWMPC
+   bool get_fmwpc_merging();
+   void set_fmwpc_merging(bool merging_status);
    int get_fmwpc_max_hits();
    void set_fmwpc_max_hits(int maxhits);
    double get_fmwpc_min_delta_t_ns();
    void set_fmwpc_min_delta_t_ns(double dt_ns);
 
    // hits merging / truncation parameters for the DIRC
+   bool get_dirc_merging();
+   void set_dirc_merging(bool merging_status);
    int get_dirc_max_hits();
    void set_dirc_max_hits(int maxhits);
    double get_dirc_min_delta_t_ns();

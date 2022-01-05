@@ -22,6 +22,7 @@ using namespace std;
 #include <JANA/JGeometryXML.h>
 #include <TRACKING/DMCThrown.h>
 #include <DRandom2.h>
+#include <FDCSmearer.h>
 
 extern char *OUTFILENAME;
 extern std::map<hddm_s::istream*,double> files2merge;
@@ -148,6 +149,14 @@ jerror_t MyProcessor::init(void)
    bzero(&output_file_mutex_last_owner, sizeof(pthread_t));
    bzero(&input_file_mutex_last_owner, sizeof(pthread_t));
    
+   // By default, the empirical fdc DOCA-dependent efficiency
+   // is applied to fdc wire hits in FDCSmearer. This can be
+   // disabled by this commandline option.
+   gPARMS->SetDefaultParameter("FDC:USE_EFFVSDOCA", fdc_config_t::FDC_EFFVSDOCA,
+                          "Turn on/off fdc doca-dependent wire hit efficiency,"
+                          " \"0\"=no efficiency correction,"
+                          " \"1\"=standard efficiency correction (default)");
+
    return NOERROR;
 }
 
@@ -472,7 +481,7 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
    hddm_s::HDDM *record = (hddm_s::HDDM*)event.GetRef();
    if (!record)
       return NOERROR;
-
+ 
    // Handle geometry records
    hddm_s::GeometryList geom = record->getGeometrys();
    if (geom.size() > 0) {
@@ -512,6 +521,9 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
             //pthread_mutex_unlock(&input_file_mutex);
          }
          
+         if(config->MERGE_TAGGER_HITS == false) {
+         	hddm_s_merger::set_tag_merging(false);
+         }
          hddm_s_merger::set_t_shift_ns(0);
          hddm_s::RFsubsystemList RFtimes = record2.getRFsubsystems();
          hddm_s::RFsubsystemList::iterator RFiter;
