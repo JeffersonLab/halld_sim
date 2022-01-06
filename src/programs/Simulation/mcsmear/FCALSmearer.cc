@@ -207,8 +207,8 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	 double Ethreshold=fcal_config->FCAL_BLOCK_THRESHOLD;
 	 double sigEfloor=fcal_config->FCAL_ENERGY_WIDTH_FLOOR;
 	 double sigEstat=fcal_config->FCAL_PHOT_STAT_COEF;
-
-         int channelnum = fcalGeom->channel(row, column); 
+	 double Erange = 8.0;
+         
 	 if (row<DFCALGeometry::kBlocksTall&&column<DFCALGeometry::kBlocksWide){
 	   // correct simulation efficiencies 
 	   if (config->APPLY_EFFICIENCY_CORRECTIONS
@@ -217,7 +217,8 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	   } 
 	 
 	   // Get gain constant per block	      
-	   double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);    
+	   int channelnum = fcalGeom->channel(row, column); 
+	   double FCAL_gain = fcal_config->FCAL_GAINS.at(channelnum);      
 	   double pedestal_rms = fcal_config->FCAL_PED_RMS;
 	   double integral_peak = fcal_config->FCAL_INTEGRAL_PEAK;
 	   double MeV_FADC = fcal_config->FCAL_ADC_ASCALE;
@@ -225,6 +226,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	   double threshold = fcal_config->FCAL_THRESHOLD;
 	   double threshold_scaling = fcal_config->FCAL_THRESHOLD_SCALING;
 	   Ethreshold=FCAL_gain*integral_peak*MeV_FADC*(threshold*threshold_scaling - pedestal+gDRandom.SampleGaussian(pedestal_rms));
+	   Erange *= FCAL_gain;
 	   
 	   if(fcal_config->FCAL_ADD_LIGHTGUIDE_HITS) {
 	     hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
@@ -252,15 +254,20 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 			     + pow(sigEfloor,2));
 	   E *= (1.0 + gDRandom.SampleGaussian(sigma));
 	 }
-	 
-         // Apply a single block threshold. 
+	 	 
+	 if (E > Erange)
+	   E = Erange;
+         
+	 // Apply a single block threshold and energy range 
          // Scale threshold by gains
+	 // Scale range by gains
 	 if (E >= Ethreshold){
 	   hddm_s::FcalHitList hits = iter->addFcalHits();
 	   hits().setE(E);
 	   hits().setT(t);
 	 }
       }
+      
 
       if (config->DROP_TRUTH_HITS)
          iter->deleteFcalTruthHits();
