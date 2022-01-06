@@ -25,6 +25,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 
@@ -37,6 +38,7 @@ typedef VecPsPlotGenerator vecps_PlotGen;
 void atiSetup(){
   
   AmpToolsInterface::registerAmplitude( BreitWigner() );
+  AmpToolsInterface::registerAmplitude( BreitWigner3body() );
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 
@@ -245,9 +247,8 @@ int main( int argc, char* argv[] ){
   cout << "Checking Parameters" << endl;
   
   // parameters to check
-  vector< string > pars;
-  
-  pars.push_back("dsratio");
+  vector< string > pars; 
+  //pars.push_back("dsratio");
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;

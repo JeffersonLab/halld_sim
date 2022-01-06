@@ -19,6 +19,7 @@
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
@@ -257,6 +258,7 @@ int main( int argc, char* argv[] ){
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
+	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
         AmpToolsInterface::registerAmplitude( Uniform() );
 
 
@@ -383,6 +385,8 @@ int main( int argc, char* argv[] ){
 
 			pair< double, double > bwVec = m_bwGen[0]();
 			double vec_mass_bw = bwVec.first;
+			if( fabs(vec_mass_bw - vecMass) > 5*vecWidth )
+			        continue;
 			weight *= bwVec.second;
 
 			// make sure generated BW is not below threshold of vector->2PS

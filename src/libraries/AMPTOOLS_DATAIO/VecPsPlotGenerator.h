@@ -28,7 +28,7 @@ public:
 private:
   
   void createHistograms( );
- 
+  int m_3pi; 
 };
 
 #endif
