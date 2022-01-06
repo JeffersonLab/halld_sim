@@ -66,6 +66,7 @@ int main( int argc, char* argv[] ){
   }
 
   bool showGui = false;
+  bool makePlots = false;
   string outName = "omegapi_plot.root";
   string resultsName(argv[1]);
   for (int i = 2; i < argc; i++){
@@ -77,6 +78,9 @@ int main( int argc, char* argv[] ){
     }
     if (arg == "-o"){
       outName = argv[++i];
+    }
+    if (arg == "-p"){
+      makePlots = true;
     }
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
@@ -106,6 +110,11 @@ int main( int argc, char* argv[] ){
     exit( 1 );
   }
    cout << "Fit results loaded" << endl;
+
+   vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "3mp2f", "3mpf", "3m0f", "3mmf", "3mm2f", "0m", "1p", "1m", "2m", "3m"};
+  vector<string> reflname = {"PosRefl", "NegRefl"};
+
+if( makePlots ) {
     // ************************
     // set up the plot generator
     // ************************
@@ -113,7 +122,7 @@ int main( int argc, char* argv[] ){
   atiSetup();
         cout << "Plotgen results"<< endl;
 
-  omegapi_PlotGen plotGen( results , PlotGenerator::kNoGenMC );
+  omegapi_PlotGen plotGen( results , PlotGenerator::kNoGenMC ); // slow step to load ROOT trees...
   cout << " Initialized ati and PlotGen" << endl;
 
     // ************************
@@ -128,9 +137,6 @@ int main( int argc, char* argv[] ){
   vector<string> sums = plotGen.uniqueSums();
   vector<string> amps = plotGen.uniqueAmplitudes();
   cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
-
-  vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "3mp2f", "3mpf", "3m0f", "3mmf", "3mm2f", "0m", "1p", "1m", "2m", "3m"};
-  vector<string> reflname = {"PosRefl", "NegRefl"};
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
   for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
@@ -245,6 +251,7 @@ int main( int argc, char* argv[] ){
   }
 
   plotfile->Close();
+}
 
   // model parameters
   cout << "Checking Parameters" << endl;
@@ -256,7 +263,7 @@ int main( int argc, char* argv[] ){
   pars.push_back("dalitz_beta");
   //pars.push_back("dalitz_gamma");
   //pars.push_back("dalitz_delta");
-  pars.push_back("dsratio");
+  //pars.push_back("dsratio");
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
@@ -269,8 +276,9 @@ int main( int argc, char* argv[] ){
   }
 
   outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
-  vector<string> fullamps = plotGen.fullAmplitudes();
+  vector<string> fullamps = results.ampList(); //plotGen.fullAmplitudes();
   for (unsigned int i = 0; i < fullamps.size(); i++){
+    //cout<<fullamps[i].data()<<endl;
     vector<string> useamp;  useamp.push_back(fullamps[i]);
     outfile << "FIT FRACTION " << fullamps[i] << " = "
          << results.intensity(useamp).first /
@@ -350,6 +358,98 @@ int main( int argc, char* argv[] ){
 
   }
 
+  ///////////////////////////////////////////////////////////////////////////////
+  // collect ensemble of fit results (random starting parameters or bootstrap) //
+  ///////////////////////////////////////////////////////////////////////////////
+
+  cout << "Writing file with ensemble of ";
+
+  // loop over ensemble of results
+  int maxFits = 25;
+  const int nFullAmps = fullamps.size();
+  const int nPhaseDiff = phaseDiffNames.size();
+  vector<double> likelihood;
+  vector<double> fitFraction[nFullAmps], fitFractionError[nFullAmps];
+  vector<double> fitFractionCoherentPosRefl[nAmps], fitFractionCoherentPosReflError[nFullAmps];
+  vector<double> fitFractionCoherentNegRefl[nAmps], fitFractionCoherentNegReflError[nFullAmps];
+  vector<double> phaseDiff[nPhaseDiff], phaseDiffError[nPhaseDiff];
+  for(int i=0; i<maxFits; i++){
+	  TString resultName = resultsName; resultName.ReplaceAll(".fit", Form("_%d.fit", i));
+	  FitResults result(resultName.Data());
+	  
+	  // check if fits 
+	  if( !result.valid() ) continue;
+	  if( result.lastMinuitCommandStatus() != 0) continue; 
+
+	  likelihood.push_back(result.likelihood());
+	  for (unsigned int i = 0; i < fullamps.size(); i++){
+		  vector<string> useamp;  useamp.push_back(fullamps[i]);
+		  
+		  fitFraction[i].push_back( result.intensity(useamp).first / result.intensity().first );
+		  fitFractionError[i].push_back( result.intensity(useamp).second / result.intensity().first );	  
+	  }
+
+	  for(int i = 0; i < nAmps; i++){
+		  if(ampsumPosRefl[i].empty()) continue;
+		  fitFractionCoherentPosRefl[i].push_back(result.intensity(ampsumPosRefl[i]).first / result.intensity().first);
+		  fitFractionCoherentPosReflError[i].push_back(result.intensity(ampsumPosRefl[i]).second / result.intensity().first);
+		  fitFractionCoherentNegRefl[i].push_back(result.intensity(ampsumNegRefl[i]).first / result.intensity().first);
+		  fitFractionCoherentNegReflError[i].push_back(result.intensity(ampsumNegRefl[i]).second / result.intensity().first);	  
+	  }
+
+	  for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
+		  pair <double, double> phase = result.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
+		  phaseDiff[i].push_back(phase.first);
+		  phaseDiffError[i].push_back(phase.second);	  
+	  }
+  }
+
+  cout << likelihood.size() << endl;
+
+  // file for writing parameters
+  ofstream outfile_ensemble;
+  outfile_ensemble.open( "omegapi_ensemble.txt" );
+
+  outfile_ensemble << "TOTAL EVENTS = " << results.intensity().first << ", " << results.intensity().second << endl;
+  outfile_ensemble << "LIKELIHOOD     ";
+  for(size_t j=0; j<likelihood.size(); j++) outfile_ensemble << ", " << std::setprecision(12) << likelihood[j];
+  outfile_ensemble << endl;
+
+  for (unsigned int i = 0; i < fullamps.size(); i++){
+	  vector<string> useamp;  useamp.push_back(fullamps[i]);
+	  outfile_ensemble << "FIT FRACTION     " << fullamps[i] << " ";
+	  for(size_t j=0; j<fitFraction[i].size(); j++) outfile_ensemble << ", " << fitFraction[i][j];
+	  outfile_ensemble << endl;
+	  outfile_ensemble << "FIT FRACTION ERR " << fullamps[i] << " ";
+	  for(size_t j=0; j<fitFractionError[i].size(); j++) outfile_ensemble << ", " << fitFractionError[i][j];
+	  outfile_ensemble << endl;
+  }
+  
+  for(int i = 0; i < nAmps; i++){
+	  if(ampsumPosRefl[i].empty()) continue;
+	  outfile_ensemble << "FIT FRACTION (coherent sum) PosRefl     " << amphistname[i] << " ";
+	  for(size_t j=0; j<fitFractionCoherentPosRefl[i].size(); j++) outfile_ensemble << ", " << fitFractionCoherentPosRefl[i][j];
+	  outfile_ensemble << endl;
+	  outfile_ensemble << "FIT FRACTION (coherent sum) PosRefl ERR " << amphistname[i] << " ";
+	  for(size_t j=0; j<fitFractionCoherentPosReflError[i].size(); j++) outfile_ensemble << ", " << fitFractionCoherentPosReflError[i][j];
+	  outfile_ensemble << endl;
+	  outfile_ensemble << "FIT FRACTION (coherent sum) NegRefl     " << amphistname[i] << " ";
+	  for(size_t j=0; j<fitFractionCoherentNegRefl[i].size(); j++) outfile_ensemble << ", " << fitFractionCoherentNegRefl[i][j];
+	  outfile_ensemble << endl;
+	  outfile_ensemble << "FIT FRACTION (coherent sum) NegRefl ERR " << amphistname[i] << " ";
+	  for(size_t j=0; j<fitFractionCoherentNegReflError[i].size(); j++) outfile_ensemble << ", " << fitFractionCoherentNegReflError[i][j];
+	  outfile_ensemble <<endl;
+  }
+
+  for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
+	  outfile_ensemble << "PHASE DIFF     " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " "; 
+	  for(size_t j=0; j<phaseDiff[i].size(); j++) outfile_ensemble << ", " << phaseDiff[i][j];
+	  outfile_ensemble << endl;
+	  outfile_ensemble << "PHASE DIFF ERR " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " "; 
+	  for(size_t j=0; j<phaseDiffError[i].size(); j++) outfile_ensemble << ", " << phaseDiffError[i][j];
+	  outfile_ensemble << endl;
+  }
+
   // covariance matrix
   vector< vector< double > > covMatrix;
   covMatrix = results.errorMatrix();
@@ -357,8 +457,8 @@ int main( int argc, char* argv[] ){
     // ************************
     // start the GUI
     // ************************
-
-  if(showGui) {
+  /*
+  if(makePlots && showGui) {
 
 	  cout << ">> Plot generator ready, starting GUI..." << endl;
 	  
@@ -383,6 +483,7 @@ int main( int argc, char* argv[] ){
 	  app.Run();
      cout << " App running" << endl;
   }
+  */
     
   return 0;
 
