@@ -92,7 +92,7 @@ static thread_local int    fmwpc_max_hits(1);
 static thread_local double fmwpc_min_delta_t_ns(400.);
 
 static thread_local bool   enable_dirc_merging(true);
-static thread_local int    dirc_max_hits(1000);
+static thread_local int    dirc_max_hits(5000);
 static thread_local double dirc_min_delta_t_ns(100.);
 
 extern const mcsmear_config_t *mcsmear_config;
@@ -527,7 +527,7 @@ namespace hddm_s_merger {
       enable_dirc_merging = merging_status;
    }
 
-  int get_dirc_max_hits() {
+   int get_dirc_max_hits() {
       return dirc_max_hits;
    }
 
@@ -2084,16 +2084,7 @@ hddm_s::DircPmtHitList &operator+=(hddm_s::DircPmtHitList &dst,
       }
       double dt = dirc_min_delta_t_ns;
 
-/*
       // merge DIRCPmtHits from two sources
-      if (iord == dst.size() || dst(iord).getCh() != ch)
-      {
-         dst.add(1, (iord < dst.size())? iord : -1);
-         dst(iord).setCh(ch);
-	 dst(iord).setT(t);
-      }
-*/
-
       if (iord > 0 && t - dst(iord - 1).getT() < dt && ch == dst(iord - 1).getCh()) {
 	 // simulated hit came first, ignore noise hit
 	 //cout<<"DIRC simulated hit first on ch="<<ch<<endl;
@@ -2197,6 +2188,12 @@ void hddm_s_merger::truncate_hits(hddm_s::HDDM &record) {
    hddm_s::FmwpcChamberList::iterator ichamber;
    for (ichamber = chambers.begin(); ichamber != chambers.end(); ++ichamber) {
       truncate_fmwpc_hits(ichamber->getFmwpcHits());
+   }
+
+   hddm_s::DIRCList dirc = record.getDIRCs();
+   hddm_s::DIRCList::iterator ichannel;
+   for (ichannel = dirc.begin(); ichannel != dirc.end(); ++ichannel) {
+      truncate_dirc_hits(ichannel->getDircPmtHits());
    }
 }
 
@@ -2442,3 +2439,11 @@ void hddm_s_merger::truncate_fmwpc_hits(hddm_s::FmwpcHitList &hits) {
    }
 }
 
+void hddm_s_merger::truncate_dirc_hits(hddm_s::DircPmtHitList &hits) {
+   if (hits.size() > dirc_max_hits) {
+#if VERBOSE_TRUNCATION
+      printf("found %d dirc hits, truncating to %d\n", hits.size(), dirc_max_hits);
+#endif
+      hits.del(-1, dirc_max_hits);
+   }
+}
