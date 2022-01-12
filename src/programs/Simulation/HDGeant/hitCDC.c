@@ -118,8 +118,6 @@ void AddCDCCluster(s_CdcStrawTruthHits_t* hits, int ipart, int track, int n_p,
    transformCoord(xyzcluster,"local",x,"global");
    gufld_db_(x,B);
    Bmag=sqrt(B[0]*B[0]+B[1]*B[1]+B[2]*B[2]);
-   float d2=dradius*dradius;
-   float d3=dradius*d2;  
    int i=(int)(dradius/0.01); 
    float my_t,my_t_err;
    // Check for closeness to boundaries of the drift table
