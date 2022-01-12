@@ -28,8 +28,6 @@
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 #include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
-#include "AMPTOOLS_AMPS/Piecewise.h"
-#include "AMPTOOLS_AMPS/PiecewiseMagPhase.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
@@ -164,7 +162,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
             minVal = atof(parScanKeywords[ipar][1].c_str());
             maxVal = atof(parScanKeywords[ipar][2].c_str());
             stepSize = atof(parScanKeywords[ipar][3].c_str());
-            steps = trunc((maxVal-minVal)/stepSize);
+            steps = trunc((maxVal-minVal)/stepSize)+1;
             break;
          } else
             cout << "Skipping configuration to scan " << parScanKeywords[ipar][0] << "since scanning of " << parScan << " was requested..." << endl;
@@ -199,13 +197,12 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          return;
       }
 
-      cout << "parameter not fixed - fixing now." << endl;
-      (**parItr).setFixed(true);
-
+      // set and fix parameter for scan
       double value = minVal + i*stepSize;
       parMgr->setAmpParameter( parScan, value );
+      parMgr->setAmpFixed( parScan );
 
-      cfgInfo->setFitName(fitName + "_scan_" + to_string(i));
+      cfgInfo->setFitName(fitName + "_scan");
 
       if(useMinos)
          fitManager->minosMinimization();
@@ -296,8 +293,6 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
    AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
    AmpToolsInterface::registerAmplitude( Zlm() );
-   AmpToolsInterface::registerAmplitude( Piecewise() );
-   AmpToolsInterface::registerAmplitude( PiecewiseMagPhase() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
    AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );
