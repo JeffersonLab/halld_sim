@@ -656,11 +656,13 @@ double CobremsGeneration::Rate_dNcdxdp(double x, double phi)
 
 #if COBREMS_GENERATOR_VERBOSITY > 1
    if (qzmin < 99) {
+#else
+   if (false) {
+#endif
       std::cout << hmin << "," << kmin << "," << lmin
                 << " is the best plane at x=" << x
                 << std::endl;
    }
-#endif
 
    return sum;
 }
