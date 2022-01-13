@@ -234,9 +234,8 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
 	 // set and fix parameter for scan
          double value = minVal + i*stepSize;
          parMgr->setAmpParameter( parScan, value );
-	 parMgr->setAmpFixed( parScan );
 
-         cfgInfo->setFitName(fitName + "_scan_");
+         cfgInfo->setFitName(fitName + "_scan");
 
          if(useMinos)
             fitManager->minosMinimization();
