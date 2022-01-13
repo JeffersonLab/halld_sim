@@ -28,6 +28,7 @@
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 #include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
+#include "AMPTOOLS_AMPS/Flatte.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/PiecewiseMagPhase.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
@@ -341,6 +342,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
    AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
    AmpToolsInterface::registerAmplitude( Zlm() );
+   AmpToolsInterface::registerAmplitude( Flatte() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( PiecewiseMagPhase() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
