@@ -148,8 +148,8 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
 }
 
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, string parScan) {
-   double minVal, maxVal, stepSize;
-   int steps;
+   double minVal=0, maxVal=0, stepSize=0;
+   int steps=0;
 
    vector< vector<string> > parScanKeywords = cfgInfo->userKeywordArguments("parScan");
 
