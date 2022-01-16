@@ -4,7 +4,7 @@
 #include "IUAmpTools/Amplitude.h"
 #include "IUAmpTools/UserAmplitude.h"
 #include "IUAmpTools/AmpParameter.h"
-#include "GPUManager/GPUCustomTypes.h"
+//#include "GPUManager/GPUCustomTypes.h"
 
 #include <utility>
 #include <string>
@@ -12,13 +12,13 @@
 #include <vector>
 #include <iostream>
 
-#ifdef GPU_ACCELERATION
-
-void Flatte_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
-      GDouble m_mass, GDouble m_g1, GDouble m_g2,
-      int m_daughter1, int m_daughter2 );
-
-#endif // GPU_ACCELERATION
+//#ifdef GPU_ACCELERATION
+//
+//void Flatte_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
+//      GDouble m_mass, GDouble m_g1, GDouble m_g2,
+//      int m_daughter1, int m_daughter2 );
+//
+//#endif // GPU_ACCELERATION
 
 using std::complex;
 using namespace std;
@@ -39,13 +39,13 @@ class Flatte : public UserAmplitude< Flatte >{
 
       complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userData ) const;
 
-#ifdef GPU_ACCELERATION
-
-      void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
-
-      bool isGPUEnabled() const { return false; }
-
-#endif // GPU_ACCELERATION
+//#ifdef GPU_ACCELERATION
+//
+//      void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
+//
+//      bool isGPUEnabled() const { return false; }
+//
+//#endif // GPU_ACCELERATION
 
    private:
 

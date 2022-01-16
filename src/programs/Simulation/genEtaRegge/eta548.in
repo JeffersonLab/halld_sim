@@ -11,4 +11,8 @@ cobrems.conf
 
 
 
-   
+#Uncomment lines below to generate uniform distribution of events between tflat_min to tflat_max
+## where uniform distribution xsec is evaluated at xsec(E_gamma,tUnif_min)
+## Lines must start with keyword tflat_min or tflat_max!
+#tflat_min    0.8     # start uniform distribution after this number
+#tflat_max 25 # 25 GeV^2 is good for both eta and eta'. OK to set number above physically allowed tmax.
