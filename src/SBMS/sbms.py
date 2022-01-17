@@ -1092,7 +1092,7 @@ def AddAmpTools(env):
 		print('is not set. Expect to see an error message below....')
 		print('')
 	else:
-		env.AppendUnique(CUDAFLAGS=['-I%s -I%s/src/libraries' % (AMPTOOLS, os.getenv('HALLD_SIM_HOME',os.getcwd()))])
+		env.AppendUnique(CUDAFLAGS=['-I%s -I%s/src/libraries' % (AMPTOOLS, os.getenv('HALLD_AMP_HOME',os.getcwd()))])
 		AddCUDA(env)
 		AMPTOOLS_CPPPATH = "%s" % (AMPTOOLS)
 		AMPTOOLS_LIBPATH = "%s/lib" % (AMPTOOLS)

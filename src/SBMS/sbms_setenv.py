@@ -106,14 +106,14 @@ def mk_setenv_csh(env):
 	str += 'setenv PYTHONPATH ${HALLD_RECON_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
 	str += '\n'
 
-	# HALLD sim
-	str += '# HALLD sim\n'
-	str += 'setenv HALLD_SIM_HOME %s\n' % halld_home
-	str += 'setenv PATH ${HALLD_SIM_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
-	str += 'setenv JANA_PLUGIN_PATH ${HALLD_SIM_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
+	# HALLD amp
+	str += '# HALLD amp\n'
+	str += 'setenv HALLD_AMP_HOME %s\n' % halld_home
+	str += 'setenv PATH ${HALLD_AMP_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
+	str += 'setenv JANA_PLUGIN_PATH ${HALLD_AMP_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
 	# python support
-	str += 'setenv %s ${HALLD_SIM_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
-	str += 'setenv PYTHONPATH ${HALLD_SIM_HOME}/${BMS_OSNAME}/lib/python2:${PYTHONPATH}\n'
+	str += 'setenv %s ${HALLD_AMP_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
+	str += 'setenv PYTHONPATH ${HALLD_AMP_HOME}/${BMS_OSNAME}/lib/python2:${PYTHONPATH}\n'
 	str += '\n'
 
 	# CCDB
@@ -299,14 +299,14 @@ def mk_setenv_bash(env):
 	str += 'export PYTHONPATH=${HALLD_RECON_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
 	str += '\n'
 
-	# HALLD sim
-	str += '# HALLD sim\n'
-	str += 'export HALLD_SIM_HOME=%s\n' % halld_home
-	str += 'export PATH=${HALLD_SIM_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
-	str += 'export JANA_PLUGIN_PATH=${HALLD_SIM_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
+	# HALLD amp
+	str += '# HALLD amp\n'
+	str += 'export HALLD_AMP_HOME=%s\n' % halld_home
+	str += 'export PATH=${HALLD_AMP_HOME}/${BMS_OSNAME}/bin:${PATH}\n'
+	str += 'export JANA_PLUGIN_PATH=${HALLD_AMP_HOME}/${BMS_OSNAME}/plugins:${JANA_PLUGIN_PATH}\n'
 	# python support
-	str += 'export %s=${HALLD_SIM_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
-	str += 'export PYTHONPATH=${HALLD_SIM_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
+	str += 'export %s=${HALLD_AMP_HOME}/${BMS_OSNAME}/lib:${%s}\n' %(LDLPV, LDLPV)
+	str += 'export PYTHONPATH=${HALLD_AMP_HOME}/${BMS_OSNAME}/lib/python:${PYTHONPATH}\n'
 	str += '\n'
 
 	# CCDB

@@ -1,4 +1,0 @@
-PhotonBeamLowEnergy LOWE
-PhotonBeamHighEnergy HIGHE
-ROOTFluxFile FLUXFILE/Run_RUNMIN_RUNMAX_flux.root
-ROOTFluxName FLUXNAME
