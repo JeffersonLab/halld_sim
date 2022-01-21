@@ -94,7 +94,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
 void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, int numRnd, double maxFraction) {
    AmpToolsInterfaceMPI ati( cfgInfo );
 
-   MinuitMinimizationManager* fitManager; 
+   MinuitMinimizationManager* fitManager = NULL; 
    vector< vector<string> > parRangeKeywords;
    double minLH;
    int minFitTag;
@@ -175,8 +175,8 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
 
 
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, string parScan) {
-   double minVal, maxVal, stepSize;
-   int steps;
+   double minVal=0, maxVal=0, stepSize=0;
+   int steps=0;
 
    vector< vector<string> > parScanKeywords = cfgInfo->userKeywordArguments("parScan");
 
@@ -198,8 +198,8 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
 
    AmpToolsInterfaceMPI ati( cfgInfo );
    string fitName;
-   ParameterManager* parMgr;
-   MinuitMinimizationManager* fitManager;
+   ParameterManager* parMgr = NULL;
+   MinuitMinimizationManager* fitManager = NULL;
 
    if(rank_mpi==0) {
       fitName = cfgInfo->fitName();
@@ -350,9 +350,9 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( Flatte() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
-   AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
-   AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
-   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
+   AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
+   AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderWithTCut>() );
+   AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderTEM>() );
 
    if(numRnd==0){
       if(scanPar=="")
