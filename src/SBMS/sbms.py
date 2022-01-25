@@ -669,6 +669,7 @@ def Add_HDF5(env):
 def AddCCDB(env):
 	ccdb_home = os.getenv('CCDB_HOME')
 	if(ccdb_home != None) :
+		AddSQLite(env)
 		env.AppendUnique(CXXFLAGS = ['-DHAVE_CCDB'])
 		CCDB_CPPPATH = "%s/include" % (ccdb_home)
 		CCDB_LIBPATH = "%s/lib" % (ccdb_home)
@@ -703,6 +704,7 @@ def AddSQLite(env):
 		AddSQLite.SQLITE_LINKFLAGS = "-Wl,-rpath=%s/lib" % (sqlite_home)
 		AddLinkFlags(env, AddSQLite.SQLITE_LINKFLAGS)
 	env.AppendUnique(LIBS = 'sqlite3')
+	env.AppendUnique(LIBS = 'fmt')
 
 ##################################
 # RCDB
