@@ -65,7 +65,7 @@ Piecewise::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 	long* tempBin = (long*)&(userVars[uv_imassbin]);
 	complex<double> ans(m_params1[*tempBin],m_params2[*tempBin]);
 	if(!m_represReIm)
-		ans = polar(GDouble(m_params1[*tempBin]),GDouble(m_params2[*tempBin]));
+		ans = polar(fabs(GDouble(m_params1[*tempBin])),GDouble(m_params2[*tempBin]));
 		
 	return ans;
 }
