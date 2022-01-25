@@ -32,10 +32,9 @@ public:
 	
 private:
 
-	double polAngle;
-
-	TH1D *totalFlux_vs_E;
-	TH1D *polFlux_vs_E;
+	GDouble polAngle;
+	GDouble polFraction;
+    bool polInTree;
 	TH1D *polFrac_vs_E;
 };
 

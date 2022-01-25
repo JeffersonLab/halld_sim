@@ -7,8 +7,6 @@
 #include <iostream>
 #include <string>
 #include <sstream>
- #include "UTILITIES/CobremsGeneration.hh"
- #include "UTILITIES/BeamProperties.h"
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
@@ -85,25 +83,12 @@ double hmoment(int alpha, vector<double> vector)
 omegapiAngAmp::omegapiAngAmp( const vector< string >& args ):
   UserAmplitude< omegapiAngAmp >( args )
 {
-	assert( args.size() == 24 || args.size() == 25 );
+	assert( args.size() == 25 );
 	
 	if(args.size() == 25){
 		polAngle  = atof(args[23].c_str() ); // azimuthal angle of the photon polarization vector in the lab measured in degrees.
 		polFraction = AmpParameter( args[24] ); // polarization fraction
 		std::cout << "Fixed polarization fraction =" << polFraction << " and pol.angle= " << polAngle << " degrees." << std::endl;
-	}
-	else if (args.size() == 24){
-		// BeamProperties configuration file
-		TString beamConfigFile = args[23].c_str();
-		BeamProperties beamProp(beamConfigFile);
-		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
-		polAngle = beamProp.GetPolAngle();
-		std::cout << "Polarisation angle of " << polAngle << " from BeamProperties." << std::endl;
-		if(polAngle == -1)
-			std::cout << "This is an amorphous run. Set beam polarisation to 0." << std::endl;
-		for(Int_t i=0; i<polFrac_vs_E->GetXaxis()->GetNbins()+2; i++){
-			//cout << polFrac_vs_E->GetBinContent(i) << endl;
-		}
 	}
 	else
 	assert(0);

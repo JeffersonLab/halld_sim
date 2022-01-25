@@ -7,18 +7,17 @@
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
+#include "TFile.h"
 
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 
-#include "UTILITIES/BeamProperties.h"
-
 Lambda1520Angles::Lambda1520Angles( const vector< string >& args ) :
 UserAmplitude< Lambda1520Angles >( args )
 {
-	assert( args.size() == 11 || args.size() == 10 );
+	assert( args.size() == 9 ||  args.size() == 11 || args.size() == 13 );
 	
 	rho011  = AmpParameter( args[0] );
 	rho031  = AmpParameter( args[1] );
@@ -45,26 +44,27 @@ UserAmplitude< Lambda1520Angles >( args )
 	registerParameter( rho231 );
 	registerParameter( rho23m1 );
 	
-	if(args.size() == 11){
-		polAngle  = atof(args[9].c_str() ); // azimuthal angle of the photon polarization vector in the lab.
-		polFraction = AmpParameter( args[10] ); // fraction of polarization (0-1)
-		std::cout << "Fixed polarisation of " << polFraction << " and angle of " << polAngle << " degrees." << std::endl;
+	if( args.size() == 9 ) {
+		// 1. polarization information must be included in beam photon four vector
+		//    Usage: amplitude <reaction>::<sum>::<ampName>
+
+		polInTree = true;
+	} else if( args.size() == 11 ) {
+		// 2. polarization fixed per amplitude and passed as flag
+		//    Usage: amplitude <reaction>::<sum>::<ampName> <polAngle> <polFraction>
+		polInTree = false;
+		polAngle = atof( args[9].c_str() );
+		polFraction = atof( args[10].c_str() );
+	} else {
+		// 2. polarization fixed per amplitude and passed as flag
+		//    Usage: amplitude <reaction>::<sum>::<ampName> <polAngle> <polFraction=0.> <rootFile> <hist>
+		polInTree = false;
+		polAngle = atof( args[9].c_str() );	
+		polFraction = 0.;
+		TFile* f = new TFile( args[11].c_str() );
+        polFrac_vs_E = (TH1D*)f->Get( args[12].c_str() );
+        assert( polFrac_vs_E != NULL );
 	}
-	else if (args.size() == 10){
-		// BeamProperties configuration file
-		TString beamConfigFile = args[9].c_str();
-		BeamProperties beamProp(beamConfigFile);
-		polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
-		polAngle = beamProp.GetPolAngle();
-		std::cout << "Polarisation angle of " << polAngle << " and degree from BeamProperties." << std::endl;
-		if(polAngle == -1)
-			std::cout << "This is an amorphous run. Set beam polarisation to 0." << std::endl;
-		for(Int_t i=0; i<polFrac_vs_E->GetXaxis()->GetNbins()+2; i++){
-			cout << polFrac_vs_E->GetBinContent(i) << endl;
-		}
-	}
-	else
-		assert(0);
 }
 
 
@@ -72,7 +72,17 @@ complex< GDouble >
 Lambda1520Angles::calcAmplitude( GDouble** pKin ) const {
 	
 	TLorentzVector target ( 0, 0, 0, 0.9382720813);
-	TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
+
+	TLorentzVector beam;
+    TVector3 eps;
+   	if(polInTree) {
+    	beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
+    	eps.SetXYZ(pKin[0][1], pKin[0][2], 0.); // makes default output gen_amp trees readable as well (without transforming)
+   	} else {
+    	beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
+    	eps.SetXYZ(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
+   	}
+
 	TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
 	TLorentzVector p1     ( pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0] ); 
 	TLorentzVector p2     ( pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0] ); 
@@ -101,22 +111,25 @@ Lambda1520Angles::calcAmplitude( GDouble** pKin ) const {
 	
 	GDouble phi = angles.Phi();
 	
-	TVector3 eps(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector in lab
 	GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	Phi = Phi > 0? Phi : Phi + 3.14159;
 	
-	// polarization BeamProperties
-	GDouble Pgamma=polFraction;
-	
-	if(polAngle == -1)
-		Pgamma = 0.;
-	else if(polFrac_vs_E!=NULL){
-		int bin = polFrac_vs_E->GetXaxis()->FindBin(beam.E());
-		if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
-			Pgamma = 0.;
+	// get beam polarization
+	GDouble Pgamma;
+	if(polInTree) {
+		Pgamma = eps.Mag();
+	} else {
+		if(polFraction > 0.) { // for fitting with constant polarization 
+			Pgamma = polFraction;
+		} else{
+			int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+			if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+				Pgamma = 0.;
+			} else 
+				Pgamma = polFrac_vs_E->GetBinContent(bin);
 		}
-		else Pgamma = polFrac_vs_E->GetBinContent(bin);
 	}
+
 	
 	// SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
 	GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosSqTheta) - 2.*TMath::Sqrt(3.)*rho031*cos(phi)*sin2Theta - 2.*TMath::Sqrt(3.)*rho03m1*cos(2.*phi)*sinSqTheta;

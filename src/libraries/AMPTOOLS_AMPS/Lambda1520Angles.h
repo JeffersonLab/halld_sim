@@ -49,6 +49,7 @@ private:
 	GDouble polFraction=0.;
 	GDouble polAngle=-1;
 	TH1D *polFrac_vs_E;
+    bool polInTree;
 
 };
 

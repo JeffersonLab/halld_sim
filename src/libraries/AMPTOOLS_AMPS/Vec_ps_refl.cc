@@ -7,6 +7,7 @@
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
+#include "TFile.h"
 
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
@@ -14,8 +15,6 @@
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/barrierFactor.h"
-
-#include "UTILITIES/BeamProperties.h"
 
 Vec_ps_refl::Vec_ps_refl( const vector< string >& args ) :
 UserAmplitude< Vec_ps_refl >( args )
@@ -33,11 +32,10 @@ UserAmplitude< Vec_ps_refl >( args )
   
   polFraction = atof(args[6].c_str());
   
-  // BeamProperties configuration file
   if (polFraction == 0){
-    TString beamConfigFile = args[6].c_str();
-    BeamProperties beamProp(beamConfigFile);
-    polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+	TFile* f = new TFile( args[11].c_str() );
+	polFrac_vs_E = (TH1D*)f->Get( args[12].c_str() );
+	assert( polFrac_vs_E != NULL );
   }
 
   m_3pi = false;

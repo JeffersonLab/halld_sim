@@ -31,6 +31,8 @@ public:
 private:
 
 	GDouble polAngle;
+	GDouble polFraction;
+    bool polInTree;
 	TH1D *polFrac_vs_E;
 };
 

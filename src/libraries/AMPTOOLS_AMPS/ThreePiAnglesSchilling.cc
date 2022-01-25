@@ -7,18 +7,18 @@
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
+#include "TFile.h"
 
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 
-#include "UTILITIES/BeamProperties.h"
 
 ThreePiAnglesSchilling::ThreePiAnglesSchilling( const vector< string >& args ) :
     UserAmplitude< ThreePiAnglesSchilling >( args )
 {
-    assert( args.size() == 11 );
+	assert( args.size() == 9 ||  args.size() == 11 || args.size() == 13 );
 
     rho000  = AmpParameter( args[0] );
     rho100  = AmpParameter( args[1] );
@@ -32,9 +32,27 @@ ThreePiAnglesSchilling::ThreePiAnglesSchilling( const vector< string >& args ) :
     rho102  = AmpParameter( args[7] );
     rho1m12 = AmpParameter( args[8] );
 
-    polAngle = AmpParameter( args[9] );
+	if( args.size() == 9 ) {
+		// 1. polarization information must be included in beam photon four vector
+		//    Usage: amplitude <reaction>::<sum>::<ampName>
 
-    polFraction = atof(args[10].c_str());
+		polInTree = true;
+	} else if( args.size() == 11 ) {
+		// 2. polarization fixed per amplitude and passed as flag
+		//    Usage: amplitude <reaction>::<sum>::<ampName> <polAngle> <polFraction>
+		polInTree = false;
+		polAngle = atof( args[9].c_str() );
+		polFraction = atof( args[10].c_str() );
+	} else {
+		// 2. polarization fixed per amplitude and passed as flag
+		//    Usage: amplitude <reaction>::<sum>::<ampName> <polAngle> <polFraction=0.> <rootFile> <hist>
+		polInTree = false;
+		polAngle = atof( args[9].c_str() );	
+		polFraction = 0.;
+		TFile* f = new TFile( args[11].c_str() );
+        polFrac_vs_E = (TH1D*)f->Get( args[12].c_str() );
+        assert( polFrac_vs_E != NULL );
+	}
 
     // need to register any free parameters so the framework knows about them
     registerParameter( rho000 );
@@ -49,24 +67,23 @@ ThreePiAnglesSchilling::ThreePiAnglesSchilling( const vector< string >& args ) :
     registerParameter( rho102 );
     registerParameter( rho1m12 );
 
-    registerParameter( polAngle );
-
-    if (polFraction > 0.0)
-      cout << "Fitting with constant polarization" << endl;
-    else
-      {
-	cout << "Fitting with polarization from BeamProperties class" << endl;
-	// BeamProperties configuration file
-	TString beamConfigFile = args[10].c_str();
-	BeamProperties beamProp(beamConfigFile);
-	polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
-      }
+    //registerParameter( polAngle );
 }
 
 complex< GDouble >
-ThreePiAnglesSchilling::calcAmplitude( GDouble** pKin ) const {
+ThreePiAnglesSchilling::calcAmplitude( GDouble** pKin ) const 
+{
 
-    TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
+	TLorentzVector beam;
+    TVector3 eps;
+   	if(polInTree) {
+    	beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
+    	eps.SetXYZ(pKin[0][1], pKin[0][2], 0.); // makes default output gen_amp trees readable as well (without transforming)
+   	} else {
+    	beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
+    	eps.SetXYZ(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
+   	}
+
     TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
     TLorentzVector p1     ( pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0] ); 
     TLorentzVector p2     ( pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0] ); 
@@ -101,21 +118,25 @@ ThreePiAnglesSchilling::calcAmplitude( GDouble** pKin ) const {
 
     GDouble phi = angles.Phi();
 
-    TVector3 eps(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
     GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 
+	// get beam polarization
+	GDouble Pgamma;
+	if(polInTree) {
+		Pgamma = eps.Mag();
+	} else {
+		if(polFraction > 0.) { // for fitting with constant polarization 
+			Pgamma = polFraction;
+		} else{
+			int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+			if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+				Pgamma = 0.;
+			} else 
+				Pgamma = polFrac_vs_E->GetBinContent(bin);
+		}
+	}
+
     // vector meson production from K. Schilling et. al.
-    GDouble Pgamma;
-    if(polFraction > 0.) { // for fitting with constant polarization 
-	    Pgamma = polFraction;
-    }
-    else{
-       int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
-       if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
-          Pgamma = 0.;
-       }
-       else Pgamma = polFrac_vs_E->GetBinContent(bin);
-    }
 
     GDouble W = 0.5*(1. - rho000) + 0.5*(3.*rho000 - 1.)*cosTheta*cosTheta - sqrt(2.)*rho100*sin2Theta*cos(phi) - rho1m10*sinSqTheta*cos(2.*phi);
 

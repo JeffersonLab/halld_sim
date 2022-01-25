@@ -95,7 +95,8 @@ private:
 	
 	AmpParameter polAngle;
 	
-	double polFraction;
+	GDouble polFraction;
+    bool polInTree = false;        // not implemented at the moment
 	TH1D *polFrac_vs_E;
 };
 
