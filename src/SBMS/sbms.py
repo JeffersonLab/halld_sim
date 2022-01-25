@@ -640,6 +640,14 @@ def AddDANA(env):
 	env.PrependUnique(OPTIONAL_PLUGIN_LIBS = DANA_LIBS.split())
 
 ##################################
+# paths for halld_amp
+##################################
+def AddHallDAmpPaths(env):
+	halld_amp_home = os.getenv('HALLD_AMP_HOME', 'halld_amp')
+	env.AppendUnique(CPPPATH = ["%s/%s/include" % (halld_amp_home, env['OSNAME'])])
+	env.AppendUnique(LIBPATH = ["%s/%s/lib" % (halld_amp_home, env['OSNAME'])])
+
+##################################
 # xstream
 ##################################
 def Add_xstream(env):
