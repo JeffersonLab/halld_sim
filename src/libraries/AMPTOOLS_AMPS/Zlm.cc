@@ -39,9 +39,11 @@ Zlm::Zlm( const vector< string >& args ) :
       m_polFraction = atof( args[5].c_str() );
    
    // 3: eight arguments, read polarization from histogram <hist> in file <rootFile>
-   //    Usage: amplitude <reaction>::<sum>::<ampName> Zlm <J> <m> <r> <s> 0. <polFraction> <rootFile> <hist>
+   //    Usage: amplitude <reaction>::<sum>::<ampName> Zlm <J> <m> <r> <s> <polAngle> <polFraction=0.> <rootFile> <hist>
    } else if(args.size() == 8) {
       m_polInTree = false;
+      m_polAngle = atof( args[4].c_str() );
+      m_polFraction = 0.; 
       TFile* f = new TFile( args[6].c_str() );
       m_polFrac_vs_E = (TH1D*)f->Get( args[7].c_str() );
       assert( m_polFrac_vs_E != NULL );
