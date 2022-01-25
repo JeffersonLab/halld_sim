@@ -12,7 +12,8 @@ if os.getenv('AMPTOOLS', 'nada')!='nada':
    
    AMPTOOLS_LIBS = "AMPTOOLS_AMPS AMPTOOLS_DATAIO AMPTOOLS_MCGEN UTILITIES"
    env.AppendUnique(LIBS = AMPTOOLS_LIBS.split())
-   
+
+   sbms.AddHallDAmpPaths(env)   
    sbms.AddUtilities(env)
    sbms.AddHDDM(env)
    sbms.AddROOT(env)

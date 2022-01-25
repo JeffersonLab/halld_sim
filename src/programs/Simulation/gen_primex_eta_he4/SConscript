@@ -31,6 +31,7 @@ if os.getenv('AMPTOOLS', 'nada')!='nada' and os.getenv('CERN', 'nada')!='nada':
    AMPTOOLS_LIBS = "AMPTOOLS_AMPS AMPTOOLS_DATAIO AMPTOOLS_MCGEN UTILITIES"
    env.AppendUnique(LIBS = AMPTOOLS_LIBS.split())
      
+   sbms.AddHallDAmpPaths(env)   
    sbms.AddHDDM(env)
    sbms.AddROOT(env)
    sbms.AddAmpTools(env)
