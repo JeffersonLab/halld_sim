@@ -6,7 +6,7 @@ import os
 Import('env osname')
 
 # Loop over libraries, building each
-subdirs = ['UTILITIES', 'AMPTOOLS_AMPS', 'AMPTOOLS_DATAIO', 'AMPTOOLS_MCGEN']
+subdirs = ['UTILITIES', 'AMPTOOLS_MCGEN']
 
 # only build if EvtGen is installed
 EVTGEN_HOME = os.getenv('EVTGENDIR')
