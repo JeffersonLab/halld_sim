@@ -100,12 +100,12 @@ complex<double> Flatte::breakupMom(mType m, double mDec1, double mDec2) const{
 }
 
 
-#ifdef GPU_ACCELERATION
-void
-Flatte::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
-
-   Flatte_exec( dimGrid,  dimBlock, GPU_AMP_ARGS,
-         m_mass, m_g1, m_g2, m_daughter1, m_daughter2);
-
-}
-#endif //GPU_ACCELERATION
+//#ifdef GPU_ACCELERATION
+//void
+//Flatte::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
+//
+//   Flatte_exec( dimGrid,  dimBlock, GPU_AMP_ARGS,
+//         m_mass, m_g1, m_g2, m_daughter1, m_daughter2);
+//
+//}
+//#endif //GPU_ACCELERATION
