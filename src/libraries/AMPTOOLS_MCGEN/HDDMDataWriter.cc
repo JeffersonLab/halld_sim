@@ -2,7 +2,7 @@
 #include "TLorentzVector.h"
 #include "TRandom3.h"
 
-#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 #include "HDDM/hddm_s.hpp"
 
 HDDMDataWriter::HDDMDataWriter(const string& outFile, int runNumber, int seed)

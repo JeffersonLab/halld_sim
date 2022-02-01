@@ -23,7 +23,7 @@
 #include "UTILITIES/BeamProperties.h"
 
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
-#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 
 #include "AMPTOOLS_AMPS/Compton.h"
 
