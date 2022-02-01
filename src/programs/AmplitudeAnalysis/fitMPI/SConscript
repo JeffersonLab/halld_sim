@@ -25,3 +25,5 @@ if os.getenv('AMPTOOLS', 'nada')!='nada':
 
    env.Append(CXXFLAGS = '-DUSE_MPI')
    print "CXXFLAGS =", env['CXXFLAGS']
+   if os.getenv('CUDA_INSTALL_PATH')!=None and os.path.exists('%s/lib/libAmpTools_GPU_MPI.a' % os.getenv('AMPTOOLS')):
+      env.PrependUnique(LIBS = "AmpTools_GPU_MPI")
