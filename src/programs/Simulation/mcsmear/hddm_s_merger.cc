@@ -1988,25 +1988,25 @@ hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
    for (iter = src.begin(); iter != src.end(); ++iter) {
       double t = iter->getT() + t_shift_ns;
       double dt = fmwpc_min_delta_t_ns;
-      double newDE = iter->getDE();
+      double newQ = iter->getQ();
       while (iord > 0 && dst(iord).getT() > t)
          --iord;
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldDE = dst(iord - 1).getDE();
+         double oldQ = dst(iord - 1).getQ();
          double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / dt;
-         dst(iord - 1).setDE(oldDE + newDE * pulse_fraction);
+         dst(iord - 1).setQ(oldQ + newQ * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
-         double oldDE = dst(iord).getDE();
+         double oldQ = dst(iord).getQ();
          double pulse_fraction = 1 - (dst(iord).getT() - t) / dt;
-         dst(iord).setDE(newDE + oldDE * pulse_fraction);
+         dst(iord).setQ(newQ + oldQ * pulse_fraction);
          dst(iord).setT(t);
       }
       else {
          dst.add(1, (iord < dst.size())? iord : -1);
-         dst(iord).setDE(newDE);
+         dst(iord).setQ(newQ);
          dst(iord).setT(t);
       }
    }
