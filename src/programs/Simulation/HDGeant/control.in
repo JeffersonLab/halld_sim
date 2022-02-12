@@ -8,10 +8,12 @@ c by which of the following three "cards" are present below.
 c    1. Input from Monte Carlo generator (card INFILE)
 c    2. Built-in coherent bremsstrahlung source (card BEAM)
 c    3. Built-in single-track event generator (card KINE)
-c The order of the list is significant, that is if INFILE is present then the
-c BEAM and KINE cards are ignored, otherwise if BEAM is present then KINE is
-c ignored.  For example, the 3-card sequence:
-c     INFILE 'phi-1680.hddm'
+c The order of the list is significant, that is, if INFILE is present then the
+c event source is the input file, or else if BEAM is present then the internal
+c photon beam generator is selected, otherwise the internal particle gun is
+c activated to produce single-track events as specified by the KINE card.
+c For example, the 3-card sequence:
+c     INFILE 'phi-1679.hddm'
 c     SKIP 25
 c     TRIG 100
 c instructs HDGeant to open ./phi-1680.hddm, skip the first 25 events and then
@@ -176,8 +178,9 @@ c type insert the Geant particle type code plus 100 (eg. 101=gamma,
 c 103=electron, 107=pi0, 108=pi+, 109=pi-, 114=proton).  If you use
 c the particle code but do not add 100 then theta,phi are ignored
 c and the particle direction is generated randomly over 4pi sr.
-c For a listing of the Geant particle types, see the following URL.
-c http://wwwasdoc.web.cern.ch/wwwasdoc/geant_html3/node72.html
+c For a listing of the Geant particle types, see the CONS300 section of
+c the GEANT User's Guide at the following URL.
+c     http://cds.cern.ch/record/1082634
 c The meaning of the arguments to KINE are as follows.
 c  - particle = GEANT particle type of primary track + 100
 c  - momentum = initial track momentum, central value (GeV/c)
