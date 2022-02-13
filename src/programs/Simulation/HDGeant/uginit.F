@@ -198,9 +198,9 @@
       data beamEpeak/0/
       data beamEmin/0/
       data radColDist/76.0/
-      data colDiam/0.0034/
-      data beamEmit/1e-8/
-      data radThick/20e-6/
+      data colDiam/0.005/
+      data beamEmit/2e-9/
+      data radThick/50e-6/
       data spotRMS/0/
       data spotX/0/
       data spotY/0/
@@ -385,6 +385,18 @@ c        endif
  9010     format('GUKINE ERROR - Could not open output stream ',20a4)
           stop
         endif
+      endif
+*
+*             Get beam properties from ccdb if needed
+*
+      if (beamE0.eq.0) then
+         beamE0 = get_endpoint_energy();
+         beamEpeak = get_peak_energy();
+         beamEmin = beamE0 * 0.25;
+         print *, 'reading photon beam properties from ccdb:',
+     +            'endpoint=', beamE0, 'GeV,',
+     +            'peak=', beamEpeak, 'GeV,',
+     +            'min=', beamEmin, 'GeV'
       endif
 *
 *             Assign the beam parameters
