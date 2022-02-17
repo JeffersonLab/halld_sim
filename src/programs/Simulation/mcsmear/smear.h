@@ -30,7 +30,7 @@ using namespace jana;
 #include <TPOLSmearer.h>
 #include <FMWPCSmearer.h>
 #include <CTOFSmearer.h>
-
+#include <GEMTRDSmearer.h>
 
 
 class Smear

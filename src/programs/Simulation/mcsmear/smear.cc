@@ -48,6 +48,7 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 		smearers[SYS_CCAL]  = static_cast<Smearer*>(new CCALSmearer(loop,config));
 		smearers[SYS_FMWPC] = static_cast<Smearer*>(new FMWPCSmearer(loop,config));
 		smearers[SYS_CTOF] = static_cast<Smearer*>(new CTOFSmearer(loop,config));
+		smearers[SYS_GEMTRD] = static_cast<Smearer*>(new GEMTRDSmearer(loop,config));
 		
 	} else {
 		// Parse string of system names
@@ -72,6 +73,7 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 				case SYS_CCAL:   smearers[the_detector] = static_cast<Smearer*>(new CCALSmearer(loop,config));  break;
 				case SYS_FMWPC:  smearers[the_detector] = static_cast<Smearer*>(new FMWPCSmearer(loop,config));  break;
 				case SYS_CTOF:  smearers[the_detector] = static_cast<Smearer*>(new CTOFSmearer(loop,config));  break;
+			case SYS_GEMTRD:  smearers[the_detector] = static_cast<Smearer*>(new GEMTRDSmearer(loop,config));  break;
                 default:  break;   // don't smear any other detectors
 			}
 		}
