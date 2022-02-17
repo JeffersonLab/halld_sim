@@ -8,13 +8,14 @@
 class fmwpc_config_t 
 {
   public:
-	fmwpc_config_t(JEventLoop *loop);
+  fmwpc_config_t(JEventLoop *loop);
+  
+  // FMWPC resolutions and threshold
+  double FMWPC_TSIGMA;
+  double FMWPC_ASIGMA;
+  double FMWPC_THRESHOLD;
 
-	// FMWPC resolutions and threshold
-	double FMWPC_TSIGMA;
-	double FMWPC_ASIGMA;
-	double FMWPC_THRESHOLD;
-
+  double FMWPC_INTEGRAL_TO_AMPLITUDE;
 };
 
 
@@ -38,3 +39,4 @@ class FMWPCSmearer : public Smearer
 
 
 #endif // _FMWPCSMEARER_H_
+
