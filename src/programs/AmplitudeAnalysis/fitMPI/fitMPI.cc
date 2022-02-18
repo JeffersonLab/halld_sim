@@ -55,7 +55,7 @@ using namespace std;
 int rank_mpi;
 int size;
 
-double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile) {
+double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, double precision) {
    AmpToolsInterfaceMPI ati( cfgInfo );
    bool fitFailed = true;
    double lh = 1e7;
@@ -65,6 +65,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
 
       MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
       fitManager->setMaxIterations(maxIter);
+      if(precision>0) fitManager->setPrecision(precision);
 
       if( useMinos )
          fitManager->minosMinimization();
@@ -92,7 +93,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
    return lh;
 }
 
-void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, int numRnd, double maxFraction) {
+void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, int numRnd, double maxFraction, double precision) {
    AmpToolsInterfaceMPI ati( cfgInfo );
 
    MinuitMinimizationManager* fitManager = NULL; 
@@ -108,6 +109,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
 
       fitManager = ati.minuitMinimizationManager();
       fitManager->setMaxIterations(maxIter);
+      if(precision>0) fitManager->setPrecision(precision);
 
       parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
@@ -126,10 +128,10 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          cout << endl << "###############################" << endl;
 
          // randomize parameters
-         ati.randomizeProductionPars(maxFraction);
          for(size_t ipar=0; ipar<parRangeKeywords.size(); ipar++) {
             ati.randomizeParameter(parRangeKeywords[ipar][0], atof(parRangeKeywords[ipar][1].c_str()), atof(parRangeKeywords[ipar][2].c_str()));
          }
+	 ati.randomizeProductionPars(maxFraction);
 
          if(useMinos)
             fitManager->minosMinimization();
@@ -175,7 +177,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
 }
 
 
-void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, string parScan) {
+void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, string parScan, double precision) {
    double minVal=0, maxVal=0, stepSize=0;
    int steps=0;
 
@@ -209,6 +211,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
       parMgr = ati.parameterManager();
       fitManager = ati.minuitMinimizationManager();
       fitManager->setMaxIterations(maxIter);
+      if(precision>0) fitManager->setPrecision(precision);
    }
 
    for(int i=0; i<steps; i++) {
@@ -272,6 +275,7 @@ int main( int argc, char* argv[] ){
    // set default parameters
 
    bool useMinos = false;
+   double precision = -1;
 
    string configfile;
    string seedfile;
@@ -301,6 +305,9 @@ int main( int argc, char* argv[] ){
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
+      if (arg == "-e"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  precision = atof(argv[++i]); }
       if (arg == "-h"){
          if(rank_mpi==0) {
             cout << endl << " Usage for: " << argv[0] << endl << endl;
@@ -310,6 +317,7 @@ int main( int argc, char* argv[] ){
             cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
             cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
             cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
+	    cout << "   -e <int>\t\t\t MIGRAD precision for fit" << endl;
          }
          MPI_Finalize();
          exit(1);
@@ -358,11 +366,11 @@ int main( int argc, char* argv[] ){
 
    if(numRnd==0){
       if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, maxIter, seedfile);
+	 runSingleFit(cfgInfo, useMinos, maxIter, seedfile, precision);
       else
-         runParScan(cfgInfo, useMinos, maxIter, seedfile, scanPar);
+         runParScan(cfgInfo, useMinos, maxIter, seedfile, scanPar, precision);
    } else {
-      runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5);
+      runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5, precision);
    }
 
    return 0;
