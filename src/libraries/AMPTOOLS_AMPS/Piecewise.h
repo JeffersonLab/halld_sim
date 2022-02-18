@@ -73,7 +73,7 @@ public:
   
 private:
 	
-  float m_massMin, m_massMax;
+  double m_massMin, m_massMax;
   int m_nBins;
   string m_daughters;  
   complex<GDouble> one;

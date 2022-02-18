@@ -47,7 +47,7 @@ GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_
 		amplitude += Conjugate(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * Conjugate(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
   	} 
   
-	GDouble Factor = sqrt(1 + m_s * polFraction);
+	GDouble Factor = G_SQRT(1 + m_s * polFraction);
 	WCUComplex zjm = CZero;
 	WCUComplex rotateY = { G_COS(  -1. * (prod_angle - polAngle*DegToRad) ) , G_SIN( -1. * (prod_angle - polAngle*DegToRad) ) };
 

@@ -22,7 +22,7 @@ GPUPiecewise_kernel(GPU_AMP_PROTO, GDouble * params1, GDouble * params2, int nBi
     pcDevAmp[GPU_THIS_EVENT] = ans;
   }
   else {
-    WCUComplex ans = { params1[*tempBin]*cos(params2[*tempBin]), params1[*tempBin]*sin(params2[*tempBin]) };
+    WCUComplex ans = { params1[*tempBin]*G_COS(params2[*tempBin]), params1[*tempBin]*G_SIN(params2[*tempBin]) };
     pcDevAmp[GPU_THIS_EVENT] = ans;
   }
 }

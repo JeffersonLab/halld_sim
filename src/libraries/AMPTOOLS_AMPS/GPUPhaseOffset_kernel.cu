@@ -9,7 +9,7 @@ __global__ void
 GPUPhaseOffset_kernel(GPU_AMP_PROTO, GDouble phase)
 {
 
-  WCUComplex ans = {cos(phase), sin(phase)};  
+  WCUComplex ans = {G_COS(phase), G_SIN(phase)};  
   pcDevAmp[GPU_THIS_EVENT] = ans;
 
 }
