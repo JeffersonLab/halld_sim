@@ -14,8 +14,6 @@ class fmwpc_config_t
   double FMWPC_TSIGMA;
   double FMWPC_ASIGMA;
   double FMWPC_THRESHOLD;
-
-  double FMWPC_INTEGRAL_TO_AMPLITUDE;
 };
 
 

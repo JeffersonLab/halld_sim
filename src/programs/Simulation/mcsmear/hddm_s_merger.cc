@@ -1988,25 +1988,33 @@ hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
    for (iter = src.begin(); iter != src.end(); ++iter) {
       double t = iter->getT() + t_shift_ns;
       double dt = fmwpc_min_delta_t_ns;
-      double newQ = iter->getQ();
+      hddm_s::FmwpcHitQList &charges=iter->getFmwpcHitQs();
+      double newQ = (charges.size()) ? charges.begin()->getQ() : 0.;
       while (iord > 0 && dst(iord).getT() > t)
          --iord;
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldQ = dst(iord - 1).getQ();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / dt;
-         dst(iord - 1).setQ(oldQ + newQ * pulse_fraction);
+	hddm_s::FmwpcHitQList &oldcharges=dst(iord-1).getFmwpcHitQs();
+	if (oldcharges.size()){
+	  double oldQ = oldcharges.begin()->getQ();
+	  double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / dt;
+	  oldcharges.begin()->setQ(oldQ + newQ * pulse_fraction);
+	}
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
-         double oldQ = dst(iord).getQ();
-         double pulse_fraction = 1 - (dst(iord).getT() - t) / dt;
-         dst(iord).setQ(newQ + oldQ * pulse_fraction);
-         dst(iord).setT(t);
+	hddm_s::FmwpcHitQList &oldcharges=dst(iord).getFmwpcHitQs();
+	if (oldcharges.size()){
+	  double oldQ = oldcharges.begin()->getQ();
+	  double pulse_fraction = 1 - (dst(iord).getT() - t) / dt;
+	  oldcharges.begin()->setQ(newQ + oldQ * pulse_fraction);
+	}
+	dst(iord).setT(t);
       }
       else {
          dst.add(1, (iord < dst.size())? iord : -1);
-         dst(iord).setQ(newQ);
+	 hddm_s::FmwpcHitQList newcharge=dst(iord).addFmwpcHitQs(1);
+         newcharge(0).setQ(newQ);
          dst(iord).setT(t);
       }
    }
