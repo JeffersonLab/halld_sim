@@ -21,6 +21,7 @@
 #include "AMPTOOLS_DATAIO/TwoPiPlotGenerator.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
+#include "AMPTOOLS_AMPS/TwoPiAnglesFast.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 
 typedef TwoPiPlotGenerator PlotGen;
@@ -28,6 +29,7 @@ typedef TwoPiPlotGenerator PlotGen;
 void atiSetup(){
   
   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
+  AmpToolsInterface::registerAmplitude( TwoPiAnglesFast() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
 }
