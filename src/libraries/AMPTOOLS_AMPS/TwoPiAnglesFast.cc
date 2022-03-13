@@ -75,7 +75,7 @@ TwoPiAnglesFast::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
   GDouble sin2Theta = userVars[kSin2Theta];  
   GDouble cosTheta = userVars[kCosTheta];
   GDouble phi = userVars[kPhi];
-  GDouble bigPhi = userVars[kBigPhi];
+  GDouble bigPhi = polAngle*0.017453293 + userVars[kBigPhi]; // rotate Phi (in rad)
   GDouble Pgamma = userVars[kPgamma];
   
  // vector meson production from K. Schilling et. al.
@@ -120,7 +120,7 @@ TwoPiAnglesFast::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[kSin2Theta]  = sin(2.*angles.Theta());
   userVars[kPhi] = angles.Phi();
 
-  TVector3 eps(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
+  TVector3 eps(1.0, 0.0, 0.0); // reference beam polarization vector at 0 degrees
   userVars[kBigPhi] = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	
   // vector meson production from K. Schilling et. al.
