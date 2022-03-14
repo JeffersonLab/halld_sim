@@ -145,7 +145,8 @@ TwoPiAnglesFast::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) c
   GPUTwoPiAnglesFast_exec( dimGrid, dimBlock, GPU_AMP_ARGS,
 			   rho000, rho100, rho1m10,
 			   rho111, rho001, rho101,
-			   rho1m11, rho102, rho1m12 );
+			   rho1m11, rho102, rho1m12,
+			   polAngle );
 }
 
 #endif //GPU_ACCELERATION

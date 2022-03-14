@@ -16,7 +16,8 @@ void
 GPUTwoPiAnglesFast_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
 			 GDouble rho000, GDouble rho100, GDouble rho1m10,
 			 GDouble rho111, GDouble rho001, GDouble rho101,
-			 GDouble rho1m11, GDouble rho102, GDouble rho1m12 );
+			 GDouble rho1m11, GDouble rho102, GDouble rho1m12,
+			 GDouble polAngle );
 
 #endif // GPU_ACCELERATION
 

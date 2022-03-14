@@ -9,7 +9,7 @@ __global__ void
 GPUTwoPiAnglesFast_kernel( GPU_AMP_PROTO, GDouble rho000, GDouble rho100,
                         GDouble rho1m10, GDouble rho111, GDouble rho001,
 		        GDouble rho101, GDouble rho1m11, GDouble rho102,
-		        GDouble rho1m12 ){
+		        GDouble rho1m12, GDouble polAngle ){
 
   int iEvent = GPU_THIS_EVENT;
 
@@ -21,7 +21,7 @@ GPUTwoPiAnglesFast_kernel( GPU_AMP_PROTO, GDouble rho000, GDouble rho100,
   GDouble cosTheta = GPU_UVARS(1);
   GDouble sinSqTheta = GPU_UVARS(2);
   GDouble sin2Theta = GPU_UVARS(3);
-  GDouble bigPhi = GPU_UVARS(4);
+  GDouble bigPhi = polAngle*0.017453293 + GPU_UVARS(4);
   GDouble phi = GPU_UVARS(5);
 
   GDouble W = 0.5*(1. - rho000) + 0.5*(3.*rho000 - 1.)*cosTheta*cosTheta - sqrt(2.)*rho100*sin2Theta*cos(phi) - rho1m10*sinSqTheta*cos(2.*phi);
@@ -42,10 +42,11 @@ void
 GPUTwoPiAnglesFast_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, 
                   GDouble rho000, GDouble rho100, GDouble rho1m10,
 		  GDouble rho111, GDouble rho001, GDouble rho101,
-		  GDouble rho1m11, GDouble rho102, GDouble rho1m12)
+		  GDouble rho1m11, GDouble rho102, GDouble rho1m12,
+		  GDouble polAngle )
 {  
 
   GPUTwoPiAnglesFast_kernel<<< dimGrid, dimBlock >>>
     ( GPU_AMP_ARGS, rho000, rho100, rho1m10, rho111, rho001,
-      rho101, rho1m11, rho102, rho1m12 );
+      rho101, rho1m11, rho102, rho1m12, polAngle );
 }
