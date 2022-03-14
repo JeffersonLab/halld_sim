@@ -6,7 +6,7 @@
 
 
 __global__ void
-GPUTwoPiAnglesFast_kernel( GPU_AMP_PROTO, GDouble rho000, GDouble rho100,
+GPUTwoPiAngles_kernel( GPU_AMP_PROTO, GDouble rho000, GDouble rho100,
                         GDouble rho1m10, GDouble rho111, GDouble rho001,
 		        GDouble rho101, GDouble rho1m11, GDouble rho102,
 		        GDouble rho1m12, GDouble polAngle ){
@@ -39,14 +39,14 @@ GPUTwoPiAnglesFast_kernel( GPU_AMP_PROTO, GDouble rho000, GDouble rho100,
 
 
 void
-GPUTwoPiAnglesFast_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, 
+GPUTwoPiAngles_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, 
                   GDouble rho000, GDouble rho100, GDouble rho1m10,
 		  GDouble rho111, GDouble rho001, GDouble rho101,
 		  GDouble rho1m11, GDouble rho102, GDouble rho1m12,
 		  GDouble polAngle )
 {  
 
-  GPUTwoPiAnglesFast_kernel<<< dimGrid, dimBlock >>>
+  GPUTwoPiAngles_kernel<<< dimGrid, dimBlock >>>
     ( GPU_AMP_ARGS, rho000, rho100, rho1m10, rho111, rho001,
       rho101, rho1m11, rho102, rho1m12, polAngle );
 }

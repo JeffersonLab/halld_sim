@@ -16,7 +16,6 @@
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesFast.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_amp.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
@@ -285,7 +284,6 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPSAngles() );
    AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
    AmpToolsInterface::registerAmplitude( TwoPiAngles() );
-   AmpToolsInterface::registerAmplitude( TwoPiAnglesFast() );
    AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
    AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
    AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
