@@ -33,9 +33,10 @@ public:
   string name() const { return "ROOTDataReaderTEM"; }
  
   virtual vector<TLorentzVector> particleList();
-  virtual bool checkEvent();
+  virtual bool checkEvent() const;
   virtual Kinematics* getEvent();
   virtual void resetSource();
+  unsigned int countEvents() const;
 
   /**
    * This function returns a true if the file was open
@@ -49,8 +50,10 @@ private:
 	
   TFile* m_inFile;
   TTree* m_inTree;
-  unsigned int m_eventCounter,m_numEvents;
+  mutable unsigned int m_numEvents;
+  unsigned int m_eventCounter;
   bool m_useWeight, m_RangeSpecified;
+  mutable bool m_eventsCounted;
   double m_tMin,m_tMax, m_EMin,m_EMax, m_MMin,m_MMax;
   
   int m_nPart;

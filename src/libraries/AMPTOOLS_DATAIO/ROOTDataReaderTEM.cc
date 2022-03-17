@@ -17,7 +17,8 @@ using namespace std;
 ROOTDataReaderTEM::ROOTDataReaderTEM( const vector< string >& args ):
    UserDataReader< ROOTDataReaderTEM >( args ),
    m_eventCounter( 0 ),
-   m_useWeight( false )
+   m_useWeight( false ),
+   m_eventsCounted( false )
 {
    assert( args.size() == 8 || args.size() == 7 ); //TEM cuts with and without special tree name
 
@@ -69,23 +70,7 @@ ROOTDataReaderTEM::ROOTDataReaderTEM( const vector< string >& args ):
       m_MMin = atof(args[5].c_str());
       m_MMax = atof(args[6].c_str());
       m_RangeSpecified = true;
-
-      m_numEvents = 0;
-      cout << "*********************************************" << endl;
-      cout << "ROOT Data reader  -t range specified [" << m_tMin << "," << m_tMax << ")" << endl;
-      cout << "ROOT Data reader Beam E range specified [" << m_EMin << "," << m_EMax << ")" << endl;
-      cout << "ROOT Data reader  Inv. Mass range specified [" << m_MMin << "," << m_MMax << ")" << endl;
-      cout << "Total events: " <<  m_inTree->GetEntries() << endl;
-
-      while( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
-
-	 m_inTree->GetEntry( m_eventCounter++ );
-         if(checkEvent()) m_numEvents++;
-
-      }
-      cout << "Number of events kept    = " << m_numEvents << endl;
-      cout << "*********************************************" << endl;
-   }   
+   }
 }
 
 ROOTDataReaderTEM::~ROOTDataReaderTEM()
@@ -103,14 +88,33 @@ void ROOTDataReaderTEM::resetSource()
    m_eventCounter = 0;
 }
 
+unsigned int ROOTDataReaderTEM::countEvents() const
+{
+   cout << "*********************************************" << endl;
+   cout << "ROOT Data reader  -t range specified [" << m_tMin << "," << m_tMax << ")" << endl;
+   cout << "ROOT Data reader Beam E range specified [" << m_EMin << "," << m_EMax << ")" << endl;
+   cout << "ROOT Data reader  Inv. Mass range specified [" << m_MMin << "," << m_MMax << ")" << endl;
+   cout << "Total events: " <<  m_inTree->GetEntries() << endl;
+   
+   int numEvents = 0;
+   unsigned int eventCounter = 0;
+   while( eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){	   
+     m_inTree->GetEntry( eventCounter++ );
+     if(checkEvent()) numEvents++;  
+   }
+   cout << "Number of events kept    = " << numEvents << endl;
+   cout << "*********************************************" << endl;
+  
+   return numEvents;
+}
+
    Kinematics*
 ROOTDataReaderTEM::getEvent()
 {
-
    if (m_RangeSpecified == false){
 
       if( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
-         //  if( m_eventCounter < 10 ){ 
+
          m_inTree->GetEntry( m_eventCounter++ );
          assert( m_nPart < Kinematics::kMaxParticles );
 
@@ -149,7 +153,7 @@ vector<TLorentzVector> ROOTDataReaderTEM::particleList()
 	return locParticleList;
 	}
 
-bool ROOTDataReaderTEM::checkEvent() 
+bool ROOTDataReaderTEM::checkEvent() const
 {
 	assert( m_nPart < Kinematics::kMaxParticles );
 	
@@ -178,5 +182,10 @@ bool ROOTDataReaderTEM::checkEvent()
 
 unsigned int ROOTDataReaderTEM::numEvents() const
 {	
+	// count events if not already done
+	if ( m_RangeSpecified && !m_eventsCounted ) {
+		m_numEvents = static_cast< unsigned int >( countEvents() );
+		m_eventsCounted = true;
+	}
 	return m_numEvents;
 }

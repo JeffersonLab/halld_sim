@@ -12,6 +12,6 @@
 complex< GDouble >
 Uniform::calcAmplitude( GDouble** pKin ) const
 {
-  complex <GDouble> a(1,0);
+  complex <GDouble> a(0.1,0);
   return a;
 }
