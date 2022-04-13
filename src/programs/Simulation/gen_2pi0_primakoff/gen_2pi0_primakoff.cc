@@ -14,7 +14,7 @@
 #include "particleType.h"
 
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
-#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
