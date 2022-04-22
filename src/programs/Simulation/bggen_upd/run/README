@@ -1,0 +1,15 @@
+The directory to start bggen
+
+One has to define the master input file: run_smth.ffr and make symbolica links.
+Example:
+$./config.sh run_pyth.ff
+$ls -l
+-rwxr-xr-x 1 gen halld-2 1397 Apr 22 16:51 config.sh
+lrwxrwxrwx 1 gen halld-2   12 Apr 22 16:48 fort.15 -> run_pyth.ffr
+lrwxrwxrwx 1 gen halld-2   13 Apr 22 16:48 fort.16 -> particles.ffr
+lrwxrwxrwx 1 gen halld-2   17 Apr 22 16:48 fort.17 -> run_mcwrapper.ffr
+-rw-r--r-- 1 gen halld-2 4138 Apr 14 18:02 particles.ffr
+-rw-r--r-- 1 gen halld-2 1057 Apr 17 21:24 pythia.dat
+-rw-r--r-- 1 gen halld-2 8338 Apr 22 16:50 run_jpsi.ffr
+-rw-r--r-- 1 gen halld-2  426 Apr 12 17:01 run_mcwrapper.ffr
+-rw-r--r-- 1 gen halld-2 3038 Apr 22 15:20 run_pyth.ffr
