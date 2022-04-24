@@ -1,6 +1,6 @@
 The directory to start bggen
 
-One has to define the master input file: run_smth.ffr and make symbolica links.
+One has to define the master input file: run_smth.ffr and make symbolic links.
 Example:
 $./config.sh run_pyth.ff
 $ls -l

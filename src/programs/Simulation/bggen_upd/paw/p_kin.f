@@ -2,7 +2,7 @@
 C
 C---      Kinematic variables:
 C
-C        IFL=1 - -t  (target --> -(K1-targ)**2)
+C        IFL=1 - t  (beam -->K1 : (K1-beam)**2)
 C           =2 - cos(th) of K1 in CM of K2 with respect to the K2 direction
 C                K2=0 - in CM
 C
@@ -13,7 +13,7 @@ C
 C
       INTEGER i,j,kf1,kf2
       REAL var,qq,en1,en2,dir(3),p1(5),p2(5),pp1,pp2,px(4),pa(4)
-     +    ,bet(4),ptar(5)
+     +    ,bet(4),ptar(5),pbeam(5)
 C
       P_KIN=-20.
       kf1=0
@@ -43,17 +43,21 @@ C
       ENDDO
       ptar(5)=SQRT(ptar(1)**2+ptar(2)**2+ptar(3)**2)
       ptar(4)=SQRT(ptar(5)**2+AMIN(2)**2)
+      DO j=1,3
+         pbeam(j)=PIN(j,1)
+      ENDDO
+      pbeam(5)=SQRT(pbeam(1)**2+pbeam(2)**2+pbeam(3)**2)
+      pbeam(4)=SQRT(pbeam(5)**2+AMIN(1)**2)
       
       IF(kf1.EQ.0) GO TO 999
       var=-20.
       
       IF(IFL.EQ.1) THEN
 C
-         var=AM(K1)**2+AMIN(2)**2-2.*p1(4)*ptar(4)
+         var=AM(K1)**2+AMIN(1)**2-2.*p1(4)*pbeam(4)
          DO j=1,3
-            var=var+2.*p1(j)*ptar(j)
+            var=var+2.*p1(j)*pbeam(j)
          ENDDO
-         var=-var
 C
       ELSE IF(IFL.EQ.2) THEN
 C

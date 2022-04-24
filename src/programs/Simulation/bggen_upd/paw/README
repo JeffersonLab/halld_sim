@@ -1,0 +1,13 @@
+BGGEN can write out the paw ntuples (see the key WROUT).
+
+Using paw to study the output:
+  $cd paw
+  $ln -s ../run/bggen.nt .  # attach the ntuple you need
+  $paw
+  PAW>exec example_1.kumac  # uses the ntuple name ./bggen.nt
+
+A code to read the output binary file bggen.dat:
+  $cd ../paw/
+  $ make
+  $ ./bgg_read.exe
+

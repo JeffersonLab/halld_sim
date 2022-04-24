@@ -15,6 +15,7 @@ SIMUL     1             # type of simulation =0 - BG, =1 - exclusive (J/psi ...)
 C                        =0 - BG (PYTHIA+low energy reactions) 
 C                        =1 - exclusive binary photoproduction, for example gamma+p-->J/psi+p        
 TRIG      100000        # number of events to simulate
+TRIG      500000        # number of events to simulate
 NPRIEV       100        # number of events to print (after selection, see SELECTEV) 
 RNDMSEQ     0           # random number sequence     integer values
 RUNNO       1           # specify run number
@@ -55,7 +56,7 @@ C ----------------------------------------------
 C
 C ==========================================================================
 C  reac - J/psi: gamma p -> J/psi p 
-C
+C         IDG      KF    PY_dec  mass  width  dec e+ e-     dec_ang.   
 *PARTICLE 183      443    1    3.0969    0.       2   3   0     2   'J/psi'
 C
 REACPART  183 14      # reaction final state j/psi and proton  
@@ -64,11 +65,11 @@ C
 C ----------------------------------------------------
 C               t-dependence 3 energy intervals  (Lubomir)
 C         tmin tmax
-REACTLIM  -11.   0.          # t limits (simulated in narrower ranges depending on the beam energy)
-C          Emax Norm   slope1 slope2 fac2   : dsigma/dt~ Norm*(exp(slope1*t)+exp(slope2*t)*fac2)
-REACTDIS1  9.28  1.    1.52  -0.650 0.00119   # energy range 1
-REACTDIS2 10.36  1.    1.22   0.268 0.033     # energy rnage 2
-REACTDIS3 13.    1.    1.89   0.646 0.149     # energy range 3
+REACTLIM  -11.   0.          # t limits wide enough for the full energy range (simulated in the kinem. allowed limits)
+C          Emax Norm   slope1 slope2 fac2  dipole     : dsigma/dt~ Norm*(exp(slope1*t)+exp(slope2*t)*fac2)/(1+t*dipole)**4
+REACTDIS1  9.28  1.    1.52  -0.650 0.00119  0.  # energy range 1
+REACTDIS2 10.36  1.    1.22   0.268 0.033    0.  # energy range 2
+REACTDIS3 13.    1.    1.89   0.646 0.149    0.  # energy range 3
 C
 C  5 ranges are allowed
 C REACTDIS5 ...

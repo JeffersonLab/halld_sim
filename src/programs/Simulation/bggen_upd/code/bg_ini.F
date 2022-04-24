@@ -290,12 +290,6 @@ C
          NHBEA=INT((EPH_LIM(2)-EPH_LIM(1))/de+0.001)   ! number of bins in the energy tables
       ENDIF
 C
-C---    Beam spectrum
-C
-      IDBEAM=9000
-      CALL COHBEAM_INI(IDBEAM,EELEC,EPEAK,EPH_LIM,ZCOLL,DCOLL,ier)
-      IF(ier.NE.0) GO TO 999
-C
       IFPYTH=0   ! PYTHIA flag
       IDLOWEN=0  ! low energy BG reactions flag
       IDTDIST=0  ! Excl. reaction ID for hist
@@ -328,6 +322,12 @@ C
          CALL REAC_INI(ier)
          IF(ier.NE.0) GO TO 999
       ENDIF
+C
+C---    Beam spectrum
+C
+      IDBEAM=9000
+      CALL COHBEAM_INI(IDBEAM,EELEC,EPEAK,EPH_LIM,ZCOLL,DCOLL,ier)
+      IF(ier.NE.0) GO TO 999
 C
 C---      Rad corrections
 C
