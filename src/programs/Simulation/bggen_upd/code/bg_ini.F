@@ -53,12 +53,21 @@ C
       EPYMIN=3.      ! min energy for PYTHIA
       ELOWMIN=0.15   ! min energy for the low energy generator (GeV)
 C
+      IDBEAM=0
+      NHBEA=0
+      IBEATYP=-1
+      DO i=1,2
+         EHLIM(i)=0.
+      ENDDO
+C
       NBMEXT=0       ! if>0 points/bins in an externaly set beam energy distribution
       IBMEXT=0
+      DO i=1,2
+         EXT_LIM(i)=0.
+      ENDDO
       DO i=1,MXBMPN
          RABMEXT(i)=0.
          ENBMEXT(i)=0.
-         WIBMEXT(i)=0.
       ENDDO
 C
 C---               Standalone exclusive reactions
@@ -184,10 +193,9 @@ C
       CALL FFKEY('SELECTEV'  , KFEVSEL(1) , MXEVSEL,'INTEGER')
       CALL FFKEY('PARTICLE'  , K_PTMP(1)  , 16,'MIXED')
       CALL FFKEY('PYTMOD'    , KPYTMP(1)  ,  8,'MIXED')
-      CALL FFKEY('NBEAMEXT'  , NBMEXT     ,  2,'INTEGER')
+      CALL FFKEY('NBEAMEXT'  , NBMEXT     ,  4,'MIXED')
       CALL FFKEY('RBEAMEXT'  , RABMEXT(1) , MXBMPN,'REAL')
       CALL FFKEY('EBEAMEXT'  , ENBMEXT(1) , MXBMPN,'REAL')
-      CALL FFKEY('WBEAMEXT'  , WIBMEXT(1) , MXBMPN,'REAL')
 C
       CALL FFGO
 C
@@ -253,42 +261,9 @@ C
 C
       CALL RND_INI(IRND_SEQ)  ! random number initialization
 C
-      IF(EPH_LIM(1).LT.ELOWMIN) THEN
-         WRITE(6,1006) ELOWMIN
- 1006    FORMAT('  --- Initialization warning: EPH_LIM(1) is set'
-     +         ,' to ELOWMIN:',F10.4)
-         EPH_LIM(1)=ELOWMIN
-      ENDIF
-C
-      IF(EPH_LIM(1).GT.EPH_LIM(2)) THEN
-         WRITE(6,1008) EPH_LIM
- 1008    FORMAT('  *** Initialization error: energy limits:',2F10.4)
-         GO TO 999
-      ELSE IF(EPH_LIM(1).EQ.EPH_LIM(2)) THEN
-C
-C---      Increase E2 slightly in order to make a valid histogram
-C
-         EPH_LIM(2)=EPH_LIM(1)*1.0001
-C
-      ELSE
-C
-C---       Bremsstrahlung beam: the E0 and Epeak should be cosistent
-C
-         IF(EELEC.LT.EPH_LIM(2)) THEN
-            WRITE(6,1010) EELEC,EPH_LIM(2)
- 1010       FORMAT('  *** Initialization error: Ee<E2:',2F10.4)
-            GO TO 999
-         ENDIF
-C
-         IF(EPEAK.GE.EELEC) THEN
-            WRITE(6,1020) EPEAK,EELEC
- 1020       FORMAT('  *** Initialization error: peak>Ee:',2F10.4)
-            GO TO 999
-         ENDIF
-C
-         de=MIN(0.005,EPH_LIM(2)-EPH_LIM(1))
-         NHBEA=INT((EPH_LIM(2)-EPH_LIM(1))/de+0.001)   ! number of bins in the energy tables
-      ENDIF
+      IDBEAM=9000
+      CALL BEAM_INI(ier)      ! initialize the beam flux (to be multilied by the cross section later)
+      IF(ier.NE.0) GO TO 999
 C
       IFPYTH=0   ! PYTHIA flag
       IDLOWEN=0  ! low energy BG reactions flag
@@ -323,10 +298,9 @@ C
          IF(ier.NE.0) GO TO 999
       ENDIF
 C
-C---    Beam spectrum
+C---    The "effective" spectrum - the beam spectrum times the cross section
 C
-      IDBEAM=9000
-      CALL COHBEAM_INI(IDBEAM,EELEC,EPEAK,EPH_LIM,ZCOLL,DCOLL,ier)
+      CALL BEAM_EFF(ier)
       IF(ier.NE.0) GO TO 999
 C
 C---      Rad corrections

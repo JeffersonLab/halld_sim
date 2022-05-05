@@ -13,11 +13,12 @@ C
       INCLUDE 'bg_reac.inc'
       INCLUDE 'bg_statc.inc'
 C
-      REAL HRNDM1
+      REAL HRNDM1,HXI
       LOGICAL HEXIST
+      EXTERNAL HRNDM1,HXI,HEXIST
 C
-      INTEGER i,j,ip,ier,lout,idnt,lenc(2),nkfsel
-      REAL ebeam
+      INTEGER i,j,ip,ier,lout,idnt,lenc(2),nkfsel,ntry
+      REAL ebeam,de,ecent
       CHARACTER cent(2)*6,centt(2)*12
 C
       REAL ptmp1(4,2),ptmp2(4,MXTRA)   ! auxill. arrays to simplify the HDDM mapping
@@ -38,9 +39,21 @@ C
 C
 C---    Beam energy
 C
-      IF(IDBEAM.EQ.0.OR..NOT.HEXIST(IDBEAM)) GO TO 999
+      IF(IDBEAM.EQ.0.OR..NOT.HEXIST(IDBEAM+1)) GO TO 999
 C
-      ebeam=HRNDM1(IDBEAM)
+      IF(IBEATYP.EQ.0) THEN
+         ebeam=EPH_LIM(1)             !   fixed energy
+      ELSE
+         ntry=0
+ 100     ntry=ntry+1
+         ebeam=HRNDM1(IDBEAM+1)
+         IF(ebeam.LT.EPH_LIM(1).OR.ebeam.GT.EPH_LIM(2)) THEN  ! check the boundaries
+            IF(ntry.LT.1000) GO TO 100
+            WRITE(lout,1000) ebeam,EPH_LIM
+ 1000       FORMAT(' *** ERROR: Beam energy out of range ',3F9.3)
+            GO TO 999
+         ENDIF
+      ENDIF
 C
 C---   Beam/target definitions
 C

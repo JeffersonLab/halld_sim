@@ -1,0 +1,1423 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>The BGGEN simulation program</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
+<meta name="title" content="The BGGEN simulation program"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2022-05-04T23:36-0400"/>
+<meta name="author" content="Eugene Chudakov"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top;  }
+  th.right  { text-align:center;  }
+  th.left   { text-align:center;   }
+  th.center { text-align:center; }
+  td.right  { text-align:right;  }
+  td.left   { text-align:left;   }
+  td.center { text-align:center; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  div.inlinetask {
+    padding:10px;
+    border:2px solid gray;
+    margin:10px;
+    background: #ffffcc;
+  }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+
+<div id="preamble">
+
+</div>
+
+<div id="content">
+<h1 class="title">The BGGEN simulation program</h1>
+
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Introduction</a>
+<ul>
+<li><a href="#sec-1-1">1.1 This manual</a></li>
+<li><a href="#sec-1-2">1.2 Purpose and functionality</a></li>
+<li><a href="#sec-1-3">1.3 Major releases and updates</a></li>
+<li><a href="#sec-1-4">1.4 Installation</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2 Input data and controls</a>
+<ul>
+<li><a href="#sec-2-1">2.1 Input files</a>
+<ul>
+<li><a href="#sec-2-1-1">2.1.1 Particle lists and interface to <i>GEANT</i></a></li>
+<li><a href="#sec-2-1-2">2.1.2 Input for <i>PYTHIA</i></a></li>
+</ul>
+</li>
+<li><a href="#sec-2-2">2.2 Main input file <i>fort.15</i> for setting parameters and controls</a>
+<ul>
+<li><a href="#sec-2-2-1">2.2.1 general controls</a></li>
+<li><a href="#sec-2-2-2">2.2.2 beam and target definitions</a></li>
+<li><a href="#sec-2-2-3">2.2.3 Setting for the minimum bias events simulation: PYTHIA+low energy</a></li>
+<li><a href="#sec-2-2-4">2.2.4 Setting for the binary reaction simulation: here for J/&psi; p</a></li>
+<li><a href="#sec-2-2-5">2.2.5 List of all keys</a></li>
+</ul></li>
+</ul>
+</li>
+<li><a href="#sec-3">3 Physics processes</a>
+<ul>
+<li><a href="#sec-3-1">3.1 <i>PYTHIA</i> results</a></li>
+<li><a href="#sec-3-2">3.2 Low energy reactions</a></li>
+</ul>
+</li>
+<li><a href="#sec-4">4 Debugging tools</a>
+<ul>
+<li><a href="#sec-4-1">4.1 Printout</a>
+<ul>
+<li><a href="#sec-4-1-1">4.1.1 Event printout</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+
+
+</div>
+
+<div id="outline-container-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> This manual</h3>
+<div class="outline-text-3" id="text-1-1">
+
+<p>The origin of this manual is stored in the text file doc/bggen-manual.org. It is readable as is.
+The manual can be converted to html, providing hyperlinks, "rich text" etc:
+</p>
+
+
+<pre class="example">$cd doc
+$emacs bggen-manual.org --batch -f org-export-as-html --kill # older org version &lt;=7
+$emacs bggen-manual.org --batch -f org-html-export-to-html --kill # newer org version
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> Purpose and functionality</h3>
+<div class="outline-text-3" id="text-1-2">
+
+<p>BGGEN simulates photoproduction of hadronic events in a wide energy range. 
+It can do two kinds of simulation:
+</p><ol>
+<li>Simulation of "minimum bias" events, matching the energy dependence of
+    the total photoproduction cross section. It can be used for evaluation 
+    of hadronic backgrounds for GlueX etc. There are two effective
+    energy ranges:
+<ul>
+<li>for the beam energy E<sub>B</sub>&gt;3 GeV <a href="https://arxiv.org/abs/hep-ph/0603175">PYTHIA-6.4</a> is used. 
+</li>
+<li>for E<sub>B</sub>&lt;3 GeV a mixture of 10 dominant exclusive reactions is simulated.
+     The cross section energy dependence and kinematic parameterization
+      are taken from data. A sum of these reactions 
+       nearly saturate the total cross section at the given energy.
+</li>
+<li>switching between these two energy regimes is automatic and depends
+     on the generated beam energy of the event 
+</li>
+</ul>
+
+</li>
+<li>Simulation of an exclusive binary reaction, say &gamma;+p &rarr; J/&psi; + p
+   according to the provided energy and <i>t</i> dependence of the cross section. Decays
+   of the produced particles are also simulated.
+   Radiative corrections to decays can be simulated using the code <i>PHOTOS</i>
+   (<a href="https://inspirehep.net/literature/756345">references therein</a>).
+</li>
+</ol>
+
+
+<p>
+The photon beam spectrum is calculated using the code from R.Jones for 
+the coherent Bremsstrahlung. Alternatively, the beam energy spectrum can be set by the user.
+The effective reaction rate for a given beam energy
+is proportional to the product of the beam spectrum and the cross section of the reactions
+simulated at the given energy. For simulation of "minimum bias events" the full photoproduction
+cross section is used.
+</p>
+<p>
+<i>BGGEN</i> writes out the generated events in the HDDM format which can be used as input for 
+the GlueX GEANT program. It can also write out in different formats allowing to study the
+output very quickly.
+</p>
+<p> 
+The <i>PYTHIA</i> event records are transferred to the output as they are. The "low-energy"
+and binary reactions are simulated in the <i>BGGEN</i> code, which includes simulating
+of the initial kinematics and the particle's decays. 
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> Major releases and updates</h3>
+<div class="outline-text-3" id="text-1-3">
+
+
+<ol>
+<li>2008 Jan: (E.Chudakov) 1-st release of <i>bggen</i> for background (PYTHIA+low energy) simulation
+</li>
+<li>2012: Added functionality to simulate binary reactions (as J/&psi; production). 
+   For historic reasons this upgrade was forked into a clone of <i>bggen</i>, called <i>bggen_jpsi</i>.
+</li>
+<li>2017-2018: (R.Jones) Upgrade of the coherent radiation routine <i>cobrems.F</i>, in <i>bggen</i>.
+   <i>bggen_jpsi</i> was not upgraded.
+</li>
+<li>2019: (S.Dobbs) radiation in decays <i>PHOTOS</i> was added to <i>bggen_jpsi</i> (for J/&psi; decays) 
+</li>
+<li>2022 Apr: (E.Chudakov) revision of the code, combining <i>bggen</i> and <i>bggen_jpsi</i> functionality
+        in a single package, called at the moment <i>bggen_upd</i>, some functionality added, 
+        and some changes to the interface are made.
+<ul>
+<li>Comparison of the results with the old code
+<ul>
+<li>PYTHIA: for identical initial parameters <i>bggen</i> and <i>bggen_upd</i> produced identical events
+       (the first 1000 have been checked)
+</li>
+<li>Low energy processes: also identical events with <i>bggen</i>
+</li>
+<li>J/&psi; production: because of a change in cobrems.F between <i>bggen_jpsi</i> and <i>bggen</i> (<i>bggen_upd</i> uses
+       the more recent version from <i>bggen</i>) the events were not identical. The distribution of the momenta
+       of the final-state particles happen to be the same within the statistical fluctuations.
+</li>
+</ul>
+
+</li>
+<li>The beam spectrum: A new option to set the beam spectrum "by hand" is added.
+</li>
+<li>For the binary reaction 1 + 2 &rarr; 3 + 4, we set 1: &gamma; and 2: <i>proton</i>. The difference
+     with <i>bggen_jpsi</i>:
+<ul>
+<li>The kinematic variable <i>t</i> is defined now as (p<sub>3</sub>-p<sub>1</sub>)<sup>2</sup> (it was (p<sub>3</sub>-p<sub>2</sub>)<sup>2</sup>),
+       Therefore, the particle order is now &gamma; + p &rarr; J/&psi; + p. 
+</li>
+<li>A cascade of decays of the particles 3 and 4  can be simulated.
+</li>
+<li>The <i>t</i> distribution can be set in a complex way - as a sum of two exponential functions, or/and a dipole
+       function, set different in up to 5 beam energy regions.
+</li>
+</ul>
+
+</li>
+<li>For <i>PYTHIA</i>: an option for event selection is added. It allows to
+     write out only the events with some combination of the produced particles, say events with &eta;'.
+</li>
+<li>The interface change:
+<ul>
+<li>Files <i>particle.dat</i> and <i>pythia-geant.map</i> are removed. The data are read in the <i>FFREAD</i> format,
+       from a separate file <i>particle.ffr</i>. The data can be redefined in the main <i>run.ffr</i> - see the examples
+       in the <i>run</i> directory and explanations in this document.
+</li>
+<li>New <i>FFREAD</i> commands added allowing to print out lists of the particle names and features from <i>PYTHIA</i>  
+</li>
+</ul>
+
+</li>
+</ul>
+
+</li>
+</ol>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> Installation</h3>
+<div class="outline-text-3" id="text-1-4">
+
+
+<p>
+In order to compile the code one needs to copy the full GlueX software structure
+(see <a href="https://halldweb.jlab.org/docs/build_scripts_web/">the manual</a>). 
+At JLab the easiest way is to use a computer that mounts <code>/group/halld</code>.
+Let us say you have a directory <code>git</code>. I used the following:
+</p>
+
+
+
+<pre class="example">$ cd git/
+$ git clone https://github.com/JeffersonLab/halld_sim
+$ git clone https://github.com/JeffersonLab/build_scripts
+$ source ./build_scripts/gluex_env_boot_jlab.sh
+$ gxenv
+$ cd halld_sim/halld_sim/src/programs/Simulation/bggen
+$ scons -u install
+</pre>
+
+
+<p>
+This is the top structure:
+</p>
+
+
+
+<pre class="example">$ ls -l
+drwxr-xr-x 3 gen halld-2 4096 Apr  7 22:24 code             # the main source code
+drwxr-xr-x 2 gen halld-2 4096 Apr  8 00:16 doc              # documantation
+-rwxr-xr-x 1 gen halld-2 4429 Mar 16 22:11 fix_warnings.py  # auxiliary for the PYTHIA code cleaning
+-rw-r--r-- 1 gen halld-2   58 Mar 16 22:11 Makefile         #
+drwxr-xr-x 2 gen halld-2 4096 Apr  4 19:54 paw              # for analysis of the ntuple output
+-rw-r--r-- 1 gen halld-2 7922 Apr  1 14:13 README           #
+drwxr-xr-x 2 gen halld-2 4096 Apr  7 21:58 run              # directory to run the program, contains input data
+-rw-r--r-- 1 gen halld-2   77 Mar 16 22:11 SConscript       # 
+drwxr-xr-x 2 gen halld-2 4096 Mar 16 22:11 xsec_table       # auxiliary for calculation \sigma(E) of J/psi 
+</pre>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Input data and controls</h2>
+<div class="outline-text-2" id="text-2">
+
+
+<p>
+The directory <i>run</i> is used to run the program. It contains the input data.
+</p>
+</div>
+
+<div id="outline-container-2-1" class="outline-3">
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> Input files</h3>
+<div class="outline-text-3" id="text-2-1">
+
+
+
+
+<pre class="example">$ ls -l run/
+
+-rwxr-xr-x 1 gen halld-2 1397 Apr 22 16:51 config.sh                        # a script to configure a run
+-rw-r--r-- 1 gen halld-2 4138 Apr 14 18:02 particles.ffr                    # table of particles and IDG --&gt; KF matching
+-rw-r--r-- 1 gen halld-2 1057 Apr 17 21:24 pythia.dat                       # input flags and values for /PYTHIA/
+-rw-r--r-- 1 gen halld-2 1827 May  3 22:53 README                           #
+-rw-r--r-- 1 gen halld-2 9546 Apr 27 09:35 run_jpsi_beamspectr.ffr          # example master file - jpsi production with a user's beam spectrum
+-rw-r--r-- 1 gen halld-2 8672 Apr 27 09:36 run_jpsi.ffr                     # example master file - jpsi production
+-rw-r--r-- 1 gen halld-2  426 Apr 12 17:01 run_mcwrapper.ffr                # auxiliary file with definitions to be changed by MCwrapper
+-rw-r--r-- 1 gen halld-2 5090 Apr 28 16:18 run_pyth_beampoints.ffr          # example master file - BG simulation (PYTHIA etc), a user's beam spectrum
+-rw-r--r-- 1 gen halld-2 3038 May  3 22:49 run_pyth.ffr                     # example master file - BG simulation (PYTHIA etc)
+</pre>
+
+
+<p>
+The <i>*.ffr</i> files are set in the <a href="http://cds.cern.ch/record/2296371/files/ffio.pdf">FFREAD</a> format<sup><a class="footref" name="fnr-.1" href="#fn-.1">1</a></sup>.
+</p>
+<p>
+The main commands for a particular simulation are stored in a master control file. One can clone
+an appropriate file in this directory, edit it and configure a particular computing job. 
+</p>
+
+
+<pre class="example">$ cp run_pyth.ffr run_pyth_my.ffr
+$ emacs run_pyth_my.ffr            # make the needed changes
+$ ./config.sh run_pyth_my.ffr
+$ ls -l
+-rwxr-xr-x 1 gen halld-2 1397 Apr 22 16:51 config.sh
+lrwxrwxrwx 1 gen halld-2   12 May  3 23:31 fort.15 -&gt; run_pyth_my.ffr
+lrwxrwxrwx 1 gen halld-2   13 May  3 23:31 fort.16 -&gt; particles.ffr
+lrwxrwxrwx 1 gen halld-2   17 May  3 23:31 fort.17 -&gt; run_mcwrapper.ffr
+-rw-r--r-- 1 gen halld-2 4138 Apr 14 18:02 particles.ffr
+-rw-r--r-- 1 gen halld-2 1057 Apr 17 21:24 pythia.dat
+-rw-r--r-- 1 gen halld-2 1827 May  3 22:53 README
+-rw-r--r-- 1 gen halld-2 9546 Apr 27 09:35 run_jpsi_beamspectr.ffr       
+-rw-r--r-- 1 gen halld-2 8672 Apr 27 09:36 run_jpsi.ffr                  
+-rw-r--r-- 1 gen halld-2  426 Apr 12 17:01 run_mcwrapper.ffr             
+-rw-r--r-- 1 gen halld-2 5090 Apr 28 16:18 run_pyth_beampoints.ffr       
+-rw-r--r-- 1 gen halld-2 3038 May  3 22:49 run_pyth.ffr                  
+</pre>
+
+
+<p>  
+The other <i>FFREAD</i> input files can be read out using an <i>FFREAD</i> command <i>READ</i> in <i>fort.15</i>.
+They are linked to <i>fort.16</i> and <i>fort.17</i>.
+They should be nearly static.
+</p>
+<p>
+The beginning of a master control file:
+</p>
+
+
+<pre class="example">$ head -16 run_pyth.ffr
+LIST                    #    print the commands while reading
+C ===    INPUT file for BGGEN
+C
+C ---      FFREAD format: 1) a command overwrites the same command above in the file; 
+C                         2) the KEYS should start from the column 1; lines are up to 120 characters
+C                         3) format is flexible, can mix reals and integers; I suggest to use the right type (not 4 for 4.0)
+C                         4) one can fill an array from any position, the rest is not changed, 
+C                                    say "SELECTEV 2=111 -211" fills the positions 2 and 3
+C                         5) # - the rest of the line is ignored   
+C
+READ     16             # read the file with particle definitions 
+C
+C ------------- General controls ---------------
+SIMUL     0             # type of simulation =0 - BG, =1 - exclusive (J/psi ...)         
+C                        =0 - BG (PYTHIA+low energy reactions)              
+C                        =1 - exclusive binary photoproduction, for example gamma+p--&gt;J/psi+p        
+</pre>
+
+
+<p>
+The flag <i>SIMUL=0</i> is set for the background simulation - /PYTHIA/+"low energy"
+</p>
+
+</div>
+
+<div id="outline-container-2-1-1" class="outline-4">
+<h4 id="sec-2-1-1"><span class="section-number-4">2.1.1</span> Particle lists and interface to <i>GEANT</i></h4>
+<div class="outline-text-4" id="text-2-1-1">
+
+<p><i>BGGEN</i> prepares data (event records) for <i>GEANT</i> and uses internally the <i>GEANT3</i> particle <i>ID-s</i>, 
+say <i>IDG=14</i> for protons. At the <i>BGGEN</i> output there are two types of particles:
+</p><ul>
+<li>Particles decayed in <i>PYTHIA</i> or <i>BGGEN</i>. For them <i>BGGEN</i> sets <i>IDG=0</i> for the output. They are not 
+  processed by <i>GEANT</i>
+</li>
+<li>Particles to be tracked in <i>GEANT</i>, which includes possible decays set in <i>GEANT</i> (several decay modes
+  may be included).  
+  They are identified by the proper <i>IDG</i>. These should include:
+<ul>
+<li>particles leaving signals in the detectors
+</li>
+<li>particles with a considerable decay path, as &Lambda;<sup>0</sup>
+</li>
+<li>short living particles not specified in the standard <i>GEANT</i>, for example &eta;' was not set in <i>GEANT3</i>. 
+</li>
+</ul>
+
+</li>
+</ul>
+
+<p><i>PYTHIA</i> is using a standard particle nomenclature  (see a PDG book for explanations), 
+For this identifier a variable name <i>KF</i> is typically used in <i>PYTHIA</i>. For the particles not decayed
+(or not otherwise vanished) in <i>PYTHIA</i> a match between <i>KF</i> and <i>IDG</i> must be set.
+</p>
+<p>
+The <i>GEANT3</i> code sets up 50 particles with IDG from 1 to 50. The list does not contain
+low resonances as &rho; and &Delta;. The particle properties for <i>BGGEN</i> are set in the file <i>particle.ffr</i>.
+Many of these definitions are needed for the proper operation of <i>BGGEN</i>, one
+should leave the <i>IDG &rarr; KF</i> relations, and the masses as they are in this file. 
+</p>
+
+
+<pre class="example">$cat particle.ffr
+C   PYTHIA: PY_dec=0 turns off decays of this particle in PYTHIA (left to GEANT tracking)
+C   Exclusive production (SIMUL&gt;0): decay_prod and decay_angle are used
+C   column# 1        2    3     4        5        6   7   8     9    10
+C          IDG     KF  PY_dec  mass    width     decay_prod decay_angle
+*PARTICLE   1       22    0    0.0       0.       0   0   0     0   'gamma'
+*PARTICLE   2      -11    0    0.000511  0.       0   0   0     0   'e+'
+*PARTICLE   3       11    0    0.000511  0.       0   0   0     0   'e-'
+*PARTICLE   4       12    0    0.0       0.       0   0   0     0   'neutrino'
+*PARTICLE   5      -13    0    0.10566   0.       0   0   0     0   'mu+'
+*PARTICLE   6       13    0    0.10566   0.       0   0   0     0   'mu-'
+*PARTICLE   7      111    0    0.13498   0.       0   0   0     0   'pi0'
+*PARTICLE   8      211    0    0.13957   0.       0   0   0     0   'pi+'
+*PARTICLE   9     -211    0    0.13957   0.       0   0   0     0   'pi-'
+*PARTICLE  10      130    0    0.49761   0.       0   0   0     0   'K0_L'
+*PARTICLE  11      321    0    0.49368   0.       0   0   0     0   'K+'
+*PARTICLE  12     -321    0    0.49368   0.       0   0   0     0   'K-'
+*PARTICLE  13     2112    0    0.93956   0.       0   0   0     0   'neutron'
+*PARTICLE  14     2212    0    0.93827   0.       0   0   0     0   'proton'
+*PARTICLE  15    -2212    0    0.93827   0.       0   0   0     0   'antiproton'
+*PARTICLE  16      310    0    0.49761   0.       0   0   0     0   'K0_S'
+*PARTICLE  17      221    0    0.54786   0.       0   0   0     0   'eta'
+*PARTICLE  18     3122    0    1.11568   0.       0   0   0     0   'Lambda'
+*PARTICLE  19     3222    0    1.18937   0.       0   0   0     0   'Sigma+'
+*PARTICLE  20     3212    0    1.19264   0.       0   0   0     0   'Sigma0'
+*PARTICLE  21     3112    0    1.18937   0.       0   0   0     0   'Sigma+'
+*PARTICLE  22     3322    0    1.31486   0.       0   0   0     0   'Xi0'
+*PARTICLE  23     3312    0    1.32171   0.       0   0   0     0   'Xi-'
+*PARTICLE  24     3334    0    2.252     0.       0   0   0     0   'Omega-'
+*PARTICLE  25    -2112    0    0.93956   0.       0   0   0     0   'antineutron'
+*PARTICLE  26    -3122    0    1.11568   0.       0   0   0     0   'antiLambda'
+*PARTICLE  27    -3112    0    1.18937   0.       0   0   0     0   'antiSigma-'
+*PARTICLE  28    -3212    0    1.19264   0.       0   0   0     0   'antiSigma0'
+*PARTICLE  29    -3222    0    1.18937   0.       0   0   0     0   'antiSigma-'
+*PARTICLE  30    -3322    0    1.31486   0.       0   0   0     0   'antiXi0'
+*PARTICLE  31    -3312    0    1.32171   0.       0   0   0     0   'antiXi+'
+*PARTICLE  32    -3334    0    2.252     0.       0   0   0     0   'antiOmega+'
+*PARTICLE  33      -15    0    1.7768    0.       0   0   0     0   'tau+' 
+*PARTICLE  34       15    0    1.7768    0.       0   0   0     0   'tau-' 
+*PARTICLE  35      411    0    1.8696    0.       0   0   0     0   'D+' 
+*PARTICLE  36     -411    0    1.8696    0.       0   0   0     0   'D-' 
+*PARTICLE  37      421    0    1.8648    0.       0   0   0     0   'D0' 
+*PARTICLE  38     -421    0    1.8648    0.       0   0   0     0   'anti D0' 
+*PARTICLE  39      431    0    1.9685    0.       0   0   0     0   'Ds+' 
+*PARTICLE  40     -431    0    1.9685    0.       0   0   0     0   'Ds-' 
+*PARTICLE  41     4122    0    2.2851    0.       0   0   0     0   'Lambda_c+' 
+*PARTICLE 121      331    1    0.95778   0.       0   0   0     0   'etaprime'
+*PARTICLE 122      223    1    0.78265   0.0085   9   8   7     0   'omega'
+*PARTICLE 123      213    1    0.77526   0.149    8   7   0     1   'rho+'
+*PARTICLE 124      113    1    0.77526   0.149    9   8   0     1   'rho0'
+*PARTICLE 125     -213    1    0.77526   0.149    9   7   0     1   'rho-'
+*PARTICLE 126      333    1    1.0194    0.      11  12   0     0   'phi'
+*PARTICLE 127     2224    1    1.232     0.118   14   8   0     0   'Delta++'
+*PARTICLE 128     2214    1    1.232     0.118   14   7   0     0   'Delta+'
+*PARTICLE 129     2114    1    1.232     0.118   14   9   0     0   'Delta0'
+*PARTICLE 130     1114    1    1.232     0.118   13   9   0     0   'Delta-'
+END
+</pre>
+
+<p>
+The purpose of the flags are:
+</p><ul>
+<li>The flag in column 3 <i>PY_dec=0</i> forbids the decays of this particle in <i>PYTHIA</i> (the are left to <i>GEANT</i>).
+</li>
+<li><i>BGGEN</i> simulates decays for the "low - energy" processes (<i>SIMUL 0</i>) and for binary reactions (<i>SIMUL 1</i>). 
+  The decay flags in the columns 6-8
+  are the <i>IDGs</i> for the decay products (up to 3). Only one decay mode is used. The flag in the column 9:
+<ul>
+<li>=0 - isotropic decays
+</li>
+<li>=1 - &rho; -   type angular distribution: (1-cos<sup>2</sup>&theta;<sub>rest</sub>), in the rest frame of &rho;, where Z is along the &rho; direction   
+</li>
+<li>=2 - J/&psi; - type angular distribution: (1+cos<sup>2</sup>&theta;<sub>rest</sub>)
+</li>
+</ul>
+
+</li>
+</ul>
+
+
+<p>
+In the main input file one can redefine the decay parameters or add new particles, for example:
+</p>
+
+
+
+<pre class="example">*PARTICLE  17      221    0    0.54786   0.       8   9   7     0   'eta'  # eta will decay in bggen and not send to GEANT
+*PARTICLE 183      443    1    3.0969    0.       2   3   0     2   'J/psi'
+</pre>
+
+
+<p>
+After initialization <i>BGGEN</i> prints a table of the locally defined particles:
+</p>
+
+
+<pre class="example">================================================================================
+Particle list locally defined   ID_GEant&lt;33 are also defined in the GEANT3 code
+ID_Geant KF PY_dec N_dec  ID_decays dec_flg     mass     width     name
+  1      22     0    0     0   0   0    0     0.000000   0.0000     gamma           
+  2     -11     0    0     0   0   0    0     0.000511   0.0000     e+              
+  3      11     0    0     0   0   0    0     0.000511   0.0000     e-              
+  4      12     0    0     0   0   0    0     0.000000   0.0000     neutrino        
+  5     -13     0    0     0   0   0    0     0.105660   0.0000     mu+             
+  6      13     0    0     0   0   0    0     0.105660   0.0000     mu-             
+  7     111     0    0     0   0   0    0     0.134980   0.0000     pi0             
+  8     211     0    0     0   0   0    0     0.139570   0.0000     pi+             
+  9    -211     0    0     0   0   0    0     0.139570   0.0000     pi-             
+ 10     130     0    0     0   0   0    0     0.497610   0.0000     K0_L            
+ 11     321     0    0     0   0   0    0     0.493680   0.0000     K+              
+ 12    -321     0    0     0   0   0    0     0.493680   0.0000     K-              
+ 13    2112     0    0     0   0   0    0     0.939560   0.0000     neutron         
+ 14    2212     0    0     0   0   0    0     0.938270   0.0000     proton          
+ 15   -2212     0    0     0   0   0    0     0.938270   0.0000     antiproton      
+ 16     310     0    0     0   0   0    0     0.497610   0.0000     K0_S            
+ 17     221     0    0     0   0   0    0     0.547860   0.0000     eta             
+ 18    3122     0    0     0   0   0    0     1.115680   0.0000     Lambda          
+ 19    3222     0    0     0   0   0    0     1.189370   0.0000     Sigma+          
+ 20    3212     0    0     0   0   0    0     1.192640   0.0000     Sigma0          
+ 21    3112     0    0     0   0   0    0     1.189370   0.0000     Sigma+          
+ 22    3322     0    0     0   0   0    0     1.314860   0.0000     Xi0             
+ 23    3312     0    0     0   0   0    0     1.321710   0.0000     Xi-             
+ 24    3334     0    0     0   0   0    0     2.252000   0.0000     Omega-          
+ 25   -2112     0    0     0   0   0    0     0.939560   0.0000     antineutron     
+ 26   -3122     0    0     0   0   0    0     1.115680   0.0000     antiLambda      
+ 27   -3112     0    0     0   0   0    0     1.189370   0.0000     antiSigma-      
+ 28   -3212     0    0     0   0   0    0     1.192640   0.0000     antiSigma0      
+ 29   -3222     0    0     0   0   0    0     1.189370   0.0000     antiSigma-      
+ 30   -3322     0    0     0   0   0    0     1.314860   0.0000     antiXi0         
+ 31   -3312     0    0     0   0   0    0     1.321710   0.0000     antiXi+         
+ 32   -3334     0    0     0   0   0    0     2.252000   0.0000     antiOmega+      
+121     331     1    0     0   0   0    0     0.957780   0.0000     etaprime        
+122     223     1    3     9   8   7    0     0.782650   0.0085     omega           
+123     213     1    2     8   7   0    1     0.775260   0.1490     rho+            
+124     113     1    2     9   8   0    1     0.775260   0.1490     rho0            
+125    -213     1    2     9   7   0    1     0.775260   0.1490     rho-            
+126     333     1    2    11  12   0    0     1.019400   0.0000     phi             
+127    2224     1    2    14   8   0    0     1.232000   0.1180     Delta++         
+128    2214     1    2    14   7   0    0     1.232000   0.1180     Delta+          
+129    2114     1    2    14   9   0    0     1.232000   0.1180     Delta0          
+130    1114     1    2    13   9   0    0     1.232000   0.1180     Delta-          
+183     443     1    2     2   3   0    2     3.096900   0.0000     J/psi           
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-2-1-2" class="outline-4">
+<h4 id="sec-2-1-2"><span class="section-number-4">2.1.2</span> Input for <i>PYTHIA</i></h4>
+<div class="outline-text-4" id="text-2-1-2">
+
+
+<p>
+<i>PYTHIA</i>, including <i>PITHIA-6.4</i> was tuned for much higher energies,
+We are using a version tuned for the experiment HERMES. HERMES used
+&asymp; 30 GeV electrons, which was considered a low energy for
+<i>PYTHIA</i>.  They made a few small changes in the code and tuned the
+input parameters. We are using their settings stored in the file
+<i>pythia.dat</i>. Similar commands to <i>PYTHIA</i> can be specified
+in the <i>FFREAD</i> format. They are processed after the commands
+in <i>pythia.dat</i>. The later commands can redefine the previous ones. 
+Also, a few commands to <i>PYTHIA</i> are done in the
+<i>bggen</i> code, for the beam and target configuration.  At the
+initialization <i>PYTHIA</i> prints the changes of the parameters with
+respect to defauls:
+</p>
+
+
+<pre class="example">MDCY(102,1)    changed from              1 to              0 no decay of pi0
+MDCY(112,1)    changed from              1 to              0 no decay of Ks_0
+MDCY(109,1)    changed from              1 to              0 no decay of eta
+MDCY(164,1)    changed from              1 to              0 no decay of Lambda_0
+MDCY(169,1)    changed from              1 to              0 no decay of Sigma+
+MDCY(167,1)    changed from              1 to              0 no decay of Sigma0
+MDCY(162,1)    changed from              1 to              0 no decay of Sigma-
+MDCY(174,1)    changed from              1 to              0 no decay of Xi0
+MDCY(172,1)    changed from              1 to              0 no decay of Xi-
+MDCY(176,1)    changed from              1 to              0 no decay of Omega-
+MDCY(15,1)     changed from              1 to              0 no decay of tau
+MDCY(122,1)    changed from              1 to              0 no decay of D+ 
+MDCY(125,1)    changed from              1 to              0 no decay of D0 
+MDCY(128,1)    changed from              1 to              0 no decay of Ds 
+MDCY(181,1)    changed from              1 to              0 no decay of Lambda_c
+msel           changed from              1 to              2 more processes with photon included
+MSTP(13)       changed from              1 to              2 Q2 range defined by PARP(13) - appropriate for photoproduction
+MSTP(20)       changed from              3 to              0 no VMD suppression 
+MSTP(58)       changed from              5 to              4 max number of quark flavors
+MSTP(92)       changed from              3 to              4 a function for splitting into 2 jets
+MSTP(101)      changed from              3 to              1 diffractive system parameter
+MSTP(121)      changed from              0 to              1 wider range of diff. cross sections
+PARP(2)        changed from       10.00000 to        2.54739 the lowest CM energy : Egamma(Lab)=3 GeV
+PARP(18)       changed from        0.40000 to        0.17000 parameter of GVMD with repect to VMD
+PARP(91)       changed from        1.00000 to        0.40000 parameter for beam-remnant treatment
+PARP(93)       changed from        5.00000 to        2.00000 similar to (91)
+PARP(99)       changed from        1.00000 to        0.40000 similar to (91)
+PARP(102)      changed from        0.28000 to        0.50000 min mass of excitatation, in VMD gamma goes to masses of rho etc
+PARP(103)      changed from        1.00000 to        0.50000 similar
+PARP(104)      changed from        0.80000 to        0.30000 min energy above thresholds for some reactions
+PARP(111)      changed from        2.00000 to        0.00000 min invzriant mass of the remnant hadronic system
+PARP(121)      changed from        1.00000 to        2.00000 a factor for the max cross section: see MSTP(121)
+PARP(161)      changed from        2.20000 to        3.00000 coupling of photon to rho 
+PARP(162)      changed from       23.60000 to       24.60000 coupling of photon to omega
+PARP(165)      changed from        0.50000 to        0.47679 a factor taking into account longit. photons
+PARP(166)      changed from        0.00000 to        0.67597 a parameter for rho production obtained by HERMES
+PARJ(1)        changed from        0.10000 to        0.02900 suppression of diquark-antidiq pair compared to q-antiq 
+PARJ(2)        changed from        0.30000 to        0.28300 suppression of s-sbar to u-ubar
+PARJ(3)        changed from        0.40000 to        1.20000 suppression (P(us)Pud))/(P(s)/Pd))
+PARJ(21)       changed from        0.36000 to        0.40000 transv momentum distrib. of primary hadrons 
+PARJ(23)       changed from        0.01000 to        0.03000 also about transv. distributions
+PARJ(41)       changed from        0.30000 to        1.94000 parameters of LUND fragment. function
+PARJ(42)       changed from        0.58000 to        0.54400 parameters of LUND fragment. function
+PARJ(45)       changed from        0.50000 to        1.05000 parameters of LUND fragment. function
+MSTJ(12)       changed from              2 to              1 diquark-antidiq pairs allowed, diquark treated as a unit
+MSTJ(45)       changed from              5 to              4 max flavor in gluon-&gt;q qbar
+MSTU(112)      changed from              5 to              4 number of flavor in alpha_s expression
+MSTU(113)      changed from              3 to              4 min number of flavor in alpha_s expres
+MSTU(114)      changed from              5 to              4 max number of flavors in alpha_s expr.
+CKIN(1)        changed from        2.00000 to        1.00000 min sqrt(s)
+CKIN(66)       changed from       -1.00000 to      100.00000 max space-like virtuality Q^2 of photons (-1 - no upper limit)
+MSTP(171)      changed from              0 to              1 variable beam energy
+MSTP(172)      changed from              2 to              1 possible configurations tried until one is accepted
+PARP(2)        changed from        2.54739 to        2.42000 min sqrt(s) with a 5% margin from the 3 GeV beam limit 
+</pre>
+
+<p>
+An example of commands that can be used in <i>fort.15</i> (up to 500 such lines):
+</p>
+
+
+<pre class="example">*PYTMOD 'PARP(103)=0.45'   # min mass of excitation
+*PYTMOD 'PARP(104)=0.25'   # min energy above threshold
+</pre>
+
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> Main input file <i>fort.15</i> for setting parameters and controls</h3>
+<div class="outline-text-3" id="text-2-2">
+
+<p>The commands can be grouped into several sections:
+</p>
+</div>
+
+<div id="outline-container-2-2-1" class="outline-4">
+<h4 id="sec-2-2-1"><span class="section-number-4">2.2.1</span> general controls</h4>
+<div class="outline-text-4" id="text-2-2-1">
+
+
+
+
+
+<pre class="example">C ------------- General controls ---------------
+SIMUL     0             # type of simulation =0 - BG, =1 - binary, exclusive reactions
+C                        =0 - BG (PYTHIA+low energy reactions) 
+C                        =1 - exclusive binary photoproduction, for example gamma+p--&gt;J/psi+p        
+TRIG     1000000        # number of events to simulate
+NPRIEV       100        # number of events to print (after selection, see SELECTEV) 
+RNDMSEQ     0           # random number sequence     integer values
+RUNNO       2           # specify run number
+C                       
+C -- writing out events
+C        HDDM  simple  ntuple
+WROUT      1      0     0   
+...........
+...........
+C
+READ 17                 # read variables for MCWrapper
+C
+KEYS                    # print all the FF keys
+STOP
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-2-2-2" class="outline-4">
+<h4 id="sec-2-2-2"><span class="section-number-4">2.2.2</span> beam and target definitions</h4>
+<div class="outline-text-4" id="text-2-2-2">
+
+
+<p>
+Settings for the coherent Bremsstrahlung photon beam:
+</p>
+
+
+<pre class="example">C ------------  Beam ---------------------------
+EELEC         11.7      # electron beam energy
+EEMIT          1.E-8    # beam emittance rad m
+EPHLIM   0.15 11.7      # photon beam energy range in GeV
+EPHLIM    6.0 11.7      # photon beam energy range in GeV 
+EPEAK          8.7      # coherent peak energy
+ZCOLLIM     7600.       # distance to the collimator in cm
+DCOLLIM        0.005    # collimator diameter in m
+RADTHICK      50.E-6    # thickness of the radiator in m 
+C ----------------------------------------------
+C
+PARTINIT  1  14         # GEANT types of the interacting particles beam+target : gamma proton
+C
+NBEAMEXT      0         # User-defined beam spectrum - the number of bins/points (=0 - the Bremsstrahlung beam)
+</pre>
+
+
+<p>
+An example of settings for a user-defined beam spectrumis is shown
+below. The spectrum <i>dN/dE</i> is defined in the limits <i>Emin:Emax</i>.
+However, the beam spectrum is simulated in the interval defined by the
+key <i>EPHLIM</i>, which should be fully contained in the <i>Emin:Emax</i>
+interval.
+</p>
+
+
+<pre class="example">C
+C         nbins flg   Emin  Emax         flg=0 - bins of same width
+NBEAMEXT    100  0    8.0   12.0   #  User's beam spectrum setting
+RBEAMEXT  1.4963  1.4888  1.4815  1.4742  1.4670  1.4599  1.4528  1.4458  1.4388  1.4320
+          1.4252  1.4184  1.4118  1.4052  1.3986  1.3921  1.3857  1.3793  1.3730  1.3667
+          1.3605  1.3544  1.3483  1.3423  1.3363  1.3304  1.3245  1.3187  1.3129  1.3072
+          1.3015  1.2959  1.2903  1.2848  1.2793  1.2739  1.2685  1.2632  1.2579  1.2526
+          1.2474  1.2422  1.2371  1.2320  1.2270  1.2220  1.2170  1.2121  1.2072  1.2024
+          1.1976  1.1928  1.1881  1.1834  1.1788  1.1742  1.1696  1.1650  1.1605  1.1561
+          1.1516  1.1472  1.1429  1.1385  1.1342  1.1299  1.1257  1.1215  1.1173  1.1132
+          1.1091  1.1050  1.1009  1.0969  1.0929  1.0889  1.0850  1.0811  1.0772  1.0733
+          1.0695  1.0657  1.0619  1.0582  1.0545  1.0508  1.0471  1.0435  1.0399  1.0363
+          1.0327  1.0292  1.0256  1.0221  1.0187  1.0152  1.0118  1.0084  1.0050  1.0017
+C
+</pre>
+
+<p>
+There are two options:
+</p><ul>
+<li><i>flg=0</i> - the beam spectrum is defined as a histogram with the bin size <i>(Emax-Emin)/nbins</i>
+</li>
+<li><i>flg=1</i> - the beam spectrum <i>dN/dE</i> is defined in an arbitrary sample of <i>nbins</i> points
+            for a specified array of the energy values. In this case the values <i>Emin</i> and <i>Emax</i>
+            are not used. An example of such a setting is shown below.
+</li>
+</ul>
+
+
+
+
+
+<pre class="example">C ------------  Beam ---------------------------
+EELEC         11.9      # electron beam energy
+EEMIT          1.E-8    # beam emittance rad m
+C EPHLIM   0.15 11.7      # photon beam energy range in GeV
+EPHLIM   3.10 11.6      # photon beam energy range in GeV
+C EPEAK          8.7      # coherent peak energy
+C ZCOLLIM     7600.       # distance to the collimator in cm
+C DCOLLIM        0.005    # collimator diameter in m
+C RADTHICK      20.E-6    # thickness of the radiator in m
+C
+C          bins flg   Emin  Emax         flg=0 - bins of same width
+NBEAMEXT    107  1    0.   0.   #  User's beam spectrum setting
+C  --- spectrum dN/dE
+RBEAMEXT  3.9669  3.7209  3.5036  3.3103  3.1373  2.9814  2.8402  2.7119  2.5946  2.4870
+          2.3881  2.2967  2.2120  2.1333  2.0601  1.9917  1.9277  1.8677  1.8113  1.7582
+          1.7082  1.6609  1.6162  1.5947  1.5842  1.5738  1.5635  1.5534  1.5434  1.5335
+          1.5238  1.5142  1.5047  1.4953  1.4861  1.4769  1.4679  1.4590  1.4502  1.4414
+          1.4328  1.4243  1.4159  1.4076  1.3994  1.3913  1.3833  1.3754  1.3675  1.3598
+          1.3521  1.3445  1.3370  1.3296  1.3223  1.3151  1.3079  1.3008  1.2938  1.2869
+          1.2800  1.2732  1.2665  1.2598  1.2533  1.2468  1.2403  1.2339  1.2276  1.2214
+          1.2152  1.2091  1.2030  1.1970  1.1911  1.1852  1.1794  1.1736  1.1679  1.1622
+          1.1566  1.1511  1.1456  1.1401  1.1348  1.1294  1.1241  1.1189  1.1137  1.1085
+          1.1034  1.0984  1.0934  1.0884  1.0835  1.0787  1.0738  1.0690  1.0643  1.0596
+          1.0549  1.0503  1.0458  1.0412  1.0367  1.0323  1.0278
+C  ---  energy values
+EBEAMEXT  3.0250  3.2250  3.4250  3.6250  3.8250  4.0250  4.2250  4.4250  4.6250  4.8250
+          5.0250  5.2250  5.4250  5.6250  5.8250  6.0250  6.2250  6.4250  6.6250  6.8250
+          7.0250  7.2250  7.4250  7.5250  7.5750  7.6250  7.6750  7.7250  7.7750  7.8250
+          7.8750  7.9250  7.9750  8.0250  8.0750  8.1250  8.1750  8.2250  8.2750  8.3250
+          8.3750  8.4250  8.4750  8.5250  8.5750  8.6250  8.6750  8.7250  8.7750  8.8250
+          8.8750  8.9250  8.9750  9.0250  9.0750  9.1250  9.1750  9.2250  9.2750  9.3250
+          9.3750  9.4250  9.4750  9.5250  9.5750  9.6250  9.6750  9.7250  9.7750  9.8250
+          9.8750  9.9250  9.9750 10.0250 10.0750 10.1250 10.1750 10.2250 10.2750 10.3250
+         10.3750 10.4250 10.4750 10.5250 10.5750 10.6250 10.6750 10.7250 10.7750 10.8250
+         10.8750 10.9250 10.9750 11.0250 11.0750 11.1250 11.1750 11.2250 11.2750 11.3250
+         11.3750 11.4250 11.4750 11.5250 11.5750 11.6250 11.6750 
+</pre>
+
+
+<p>
+On the technical side, the beam spectrum is simulated using the <i>HRNDM1</i> function
+of <i>HBOOK</i>, which provides a smooth continuous distribution within the histogram limits.
+The appropriate histogram is filled in the following way:
+</p>
+<ol>
+<li>Bremsstrahlung beam: the limits set by the key <i>EPHLIM</i>, fine binning of about 5~MeV.
+</li>
+<li>User-defined, <i>ifl=0</i>: the limits and number of bins are defined by the key <i>NBEAMEXT</i>. Only the values within <i>EPHLIM</i> limits are accepted (up to 1000 tries).
+</li>
+<li>User-defined, <i>ifl=1</i>. The histogram is booked as in the item 1 and filled using the 3-rd degree polynomial interpolation.
+</li>
+</ol>
+
+
+<p>
+A note: for the beam energy simulation the beam energy spectrum is multiplied by the cross section
+of the process at the given energy. For <i>SIMUL 0</i> it is the full photoproduction cross section,
+for exclusive reactions <i>SIMUL 1</i> the user-defined cross section table is used. 
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2-2-3" class="outline-4">
+<h4 id="sec-2-2-3"><span class="section-number-4">2.2.3</span> Setting for the minimum bias events simulation: PYTHIA+low energy</h4>
+<div class="outline-text-4" id="text-2-2-3">
+
+
+
+
+<pre class="example"> ------------  BG simulation ------------------
+SIMUL        0
+C                       PYTHIA flags are set in a file pythia.dat
+EPYTHMIN     3.         # minimal energy for PYTHIA simulation
+ELOWMIN      0.15       # minimal energy for the low energy processes generator 
+C
+C LISTPYTH    2           # &gt;0 print the PYTHIA particle list at the initialization stage:
+C                         =1 without decays
+C                         =2 with decays of the particles, allowed to decay in PYTHIA 
+C LISTMLIM    6.          #  amlim print only particles with mass&lt;amlim
+C
+C ------------- Event selection ----------------
+C
+C SELECTEV    333         # select events with at least one phi (KF codes used), array(5)
+C                         # SELECTEV 333 221   # would require at least one \phi AND one \eta (up to 5 particles)
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-2-2-4" class="outline-4">
+<h4 id="sec-2-2-4"><span class="section-number-4">2.2.4</span> Setting for the binary reaction simulation: here for J/&psi; p</h4>
+<div class="outline-text-4" id="text-2-2-4">
+
+
+
+
+
+<pre class="example">SIMUL   1
+C ==========================================================================
+C  reac - J/psi: gamma p -&gt; J/psi p 
+C
+*PARTICLE 183      443    1    3.0969    0.       2   3   0     2   'J/psi'
+C
+REACPART  183 14      # reaction final state j/psi and proton  
+RADCORR   183         # radiative corrections for J/psi decay           
+C
+C ----------------------------------------------------
+C               t-dependence 3 energy intervals  (Lubomir)
+REACTLIM  -11.   0.          # t limits wide enough for the full energy range (simulated in the kinem. allowed limits)
+C          Emax Norm   slope1 slope2 fac2  dipole     : dsigma/dt~ Norm*(exp(slope1*t)+exp(slope2*t)*fac2)/(1+t*dipole)**4
+REACTDIS1  9.28  1.    1.52  -0.650 0.00119  0.  # energy range 1       Ebeam&lt;9.28 GeV
+REACTDIS2 10.36  1.    1.22   0.268 0.033    0.  # energy range 2  9.28&lt;Ebeam&lt;10.36 GeV
+REACTDIS3 13.    1.    1.89   0.646 0.149    0.  # energy range 3 10.36&lt;Ebeam&lt;13 GeV
+C  5 ranges can be used
+C REACTDIS5 ...
+C REACTDIS1  13.    1.    1.16     0.  0.0    0.   # example for a single exponential exp(1.16*t)
+C ----------------------------------------------------
+C
+C          Energy dependence of the cross section, nb
+C          Emin     Emax    N points (up to 3000 points)
+REACENER  8.2300   13.0000  500 
+ 0.0508535 0.0610938 0.0699333 0.0778633 0.0851418 0.0919165 0.0983004 0.104362 0.110155 0.115718
+ 0.121088 0.126288 0.131342 0.136269 0.141074 0.145773 0.150385 0.154911 0.159358 0.163734
+ 0.168049 0.172301 0.176504 0.18066 0.184763 0.188831 0.192858 0.196854 0.200811 0.204744
+ 0.208645 0.212519 0.216372 0.220206 0.224011 0.227806 0.23158 0.235336 0.239082 0.242808
+ 0.246524 0.250228 0.253924 0.257614 0.26129 0.264963 0.268626 0.272283 0.275937 0.279586
+ 0.283225 0.286867 0.290506 0.294142 0.297774 0.301412 0.305043 0.308676 0.312307 0.315941
+ 0.319574 0.323215 0.326852 0.330493 0.334142 0.33779 0.341442 0.345096 0.348755 0.352414
+ 0.356085 0.359756 0.363435 0.367123 0.370814 0.374512 0.378211 0.381919 0.385638 0.389355
+ 0.393086 0.396825 0.400565 0.40432 0.408083 0.411851 0.415624 0.419412 0.423203 0.427004
+ 0.430815 0.434633 0.438465 0.442303 0.446153 0.450006 0.453878 0.457751 0.461639 0.465531
+ 0.469444 0.473358 0.477284 0.481226 0.485173 0.489134 0.493101 0.497079 0.501073 0.505075
+ 0.509087 0.513113 0.517152 0.521195 0.525249 0.529327 0.533407 0.537495 0.541598 0.545719
+ 0.549844 0.553983 0.558134 0.5623 0.566477 0.570663 0.574862 0.579069 0.583295 0.587526
+ 0.591776 0.596041 0.600311 0.604591 0.608888 0.613199 0.617519 0.621853 0.626199 0.630559
+ 0.634929 0.639313 0.643712 0.648117 0.652539 0.656976 0.661417 0.665877 0.670351 0.674834
+ 0.679334 0.683847 0.688364 0.6929 0.69745 0.702007 0.706581 0.71117 0.715765 0.72038
+ 0.724999 0.729644 0.734291 0.738954 0.743632 0.748314 0.753016 0.757737 0.762456 0.767189
+ 0.771948 0.776709 0.781491 0.78628 0.791085 0.795892 0.800727 0.805566 0.810418 0.815289
+ 0.820164 0.825056 0.829963 0.834878 0.83981 0.844749 0.849707 0.85467 0.85965 0.864647
+ 0.869645 0.874662 0.879696 0.88474 0.889792 0.894861 0.899935 0.90503 0.910137 0.915257
+ 0.920382 0.925523 0.930677 0.935836 0.941017 0.946205 0.951407 0.95662 0.961849 0.967088
+ 0.97234 0.977606 0.982881 0.988163 0.993466 0.998779 1.0041 1.00943 1.01478 1.02014
+ 1.02551 1.03089 1.03629 1.04169 1.04711 1.05254 1.05797 1.06343 1.06888 1.07437
+ 1.07985 1.08535 1.09086 1.09638 1.10191 1.10745 1.113 1.11858 1.12415 1.12974
+ 1.13534 1.14095 1.14657 1.15221 1.15785 1.16351 1.16918 1.17485 1.18054 1.18624
+ 1.19196 1.19767 1.20341 1.20915 1.21489 1.22066 1.22643 1.23222 1.23801 1.24382
+ 1.24964 1.25546 1.2613 1.26715 1.273 1.27888 1.28475 1.29064 1.29654 1.30245
+ 1.30837 1.3143 1.32024 1.32618 1.33215 1.33812 1.34409 1.35008 1.35609 1.36209
+ 1.36811 1.37413 1.38017 1.38621 1.39227 1.39834 1.40442 1.4105 1.4166 1.4227
+ 1.42881 1.43493 1.44106 1.4472 1.45335 1.45951 1.46568 1.47186 1.47805 1.48424
+ 1.49045 1.49667 1.50287 1.50911 1.51535 1.5216 1.52786 1.53412 1.54041 1.54669
+ 1.55297 1.55927 1.56558 1.57189 1.57821 1.58455 1.59091 1.59726 1.60361 1.60998
+ 1.61635 1.62274 1.62913 1.63553 1.64194 1.64835 1.65477 1.6612 1.66764 1.67409
+ 1.68054 1.687 1.69347 1.69994 1.70643 1.71292 1.71943 1.72594 1.73245 1.73898
+ 1.74551 1.75204 1.75859 1.76513 1.77169 1.77826 1.78484 1.79142 1.79801 1.8046
+ 1.8112 1.8178 1.82443 1.83105 1.83767 1.84432 1.85095 1.85761 1.86427 1.87093
+ 1.87759 1.88427 1.89095 1.89763 1.90434 1.91104 1.91774 1.92446 1.93118 1.93791
+ 1.94463 1.95138 1.95813 1.96488 1.97164 1.9784 1.98517 1.99195 1.99874 2.00552
+ 2.01231 2.01911 2.02592 2.03272 2.03955 2.04637 2.05319 2.06004 2.06686 2.07372
+ 2.08057 2.08743 2.09429 2.10115 2.10803 2.1149 2.12179 2.12868 2.13557 2.14247
+ 2.14936 2.15627 2.16319 2.17012 2.17703 2.18396 2.1909 2.19784 2.20477 2.21173
+ 2.21869 2.22563 2.23261 2.23957 2.24654 2.25353 2.26051 2.26749 2.27448 2.28147
+ 2.28847 2.29547 2.30249 2.30949 2.31652 2.32353 2.33056 2.33759 2.34463 2.35165
+ 2.35871 2.36575 2.3728 2.37986 2.38691 2.39398 2.40105 2.40811 2.4152 2.42227
+ 2.42934 2.43642 2.44352 2.45062 2.45771 2.46481 2.47191 2.47903 2.48614 2.49325
+ 2.50037 2.50749 2.51462 2.52176 2.52888 2.53602 2.54316 2.55031 2.55745 2.56458
+ 2.57174 2.5789 2.58605 2.59323 2.60038 2.60755 2.61472 2.6219 2.62907 2.63625
+ 2.64343 2.65061 2.65782 2.66499 2.67218 2.67937 2.68658 2.6938 2.701 2.7082
+ 2.7154 2.72262 2.72983 2.73706 2.74427 2.75151 2.75873 2.76595 2.77318 2.78043
+ 2.78765 2.7949 2.80213 2.80937 2.81661 2.82385 2.83112 2.83836 2.84561 2.85287
+</pre>
+
+
+<p>
+The beam energy dependence is defined as a table. The <i>t</i>-dependence can be set
+in up to 5 beam energy intervals as a function of five parameters <i>a<sub>1</sub> - a<sub>5</sub></i>:
+</p>
+<p>
+<i>d&sigma;/dt ~ a<sub>1</sub>(e<sup>a<sub>2</sub>t</sup>+e<sup>a<sub>3</sub>t</sup>a<sub>4</sub>)/(1-a<sub>5</sub>t)<sup>4</sup></i>
+</p>
+<p>
+it is a sum of two exponential functions times the dipole function from M.Strikman et al. 
+By the choice of
+the parameters one can set functions from a single exponential, to a double
+exponential, a pure dipole, or any combination. Note that <i>t</i> is negative.
+One can set different function in up to 5 beam energy intervals. In the example above 
+3 intervals are set.
+ For each interval (commands REACTDIS1, REACTDIS2, .. REACTDIS5) the first variable 
+specified the maximum energy <i>E<sub>max</sub></i>. In order to select the right interval for the given
+event the beam energy is compared with this limits sequentially. A command:
+</p>
+
+
+<pre class="example">REACTDIS1  13.    1.    1.16     0.  0.0    0.   # example for a single exponential exp(1.16*t)
+</pre>
+
+<p>
+would set only one energy interval (since <i>E<sub>beam</sub>&lt;13 GeV</i>) and a single exponential 
+function with a slope of 1.16 <i>GeV<sup>-2</sup></i>.
+</p>
+<p>
+A command
+</p>
+
+
+<pre class="example">REACTLIM  -11.   0.          # t limits wide enough for the full energy range (simulated in the kinem. allowed limits)
+</pre>
+
+<p>
+sets a range of the <i>t</i> variable wide enough for all beam energies. 
+Simulation is done in the proper interval for the given beam energy in the event.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2-2-5" class="outline-4">
+<h4 id="sec-2-2-5"><span class="section-number-4">2.2.5</span> List of all keys</h4>
+<div class="outline-text-4" id="text-2-2-5">
+
+
+
+
+
+<pre class="example">|-----------+------------------+------------+---------+------------------+--------------------------------------------------------------|
+| Key       | Variable to fill | # of words | Type    |          Default | Function                                                     |
+|-----------+------------------+------------+---------+------------------+--------------------------------------------------------------|
+| DCOLLIM   | DCOLL            |          1 | REAL    |           0.0050 | Diameter of the collimator, m                                |
+| EBEAMEXT  | ENBMEXT          |       1000 | REAL    |                0 | User-defined beam spectrum: array of values of dN/dE         |
+| EELEC     | EELEC            |          1 | REAL    |              12. | Electron beam energy, GeV                                    |
+| EEMIT     | EEMIT            |          1 | REAL    |            1.E-8 | Beam emittance r * m                                         |
+| ELOWMIN   | ELOWMIN          |          1 | REAL    |             0.15 | Minimal beam energy for low energy background generator, GeV |
+| EPEAK     | EPEAK            |          1 | REAL    |               9. | The edge of the coherent peak, GeV                           |
+| EPHLIM    | EPH_LIM(1)       |          2 | REAL    |         0.15 12. | Photon beam energy range, GeV                                |
+| EPYTHMIN  | EPYMIN           |          1 | REAL    |               3. | Minimal beam energy for PYTHIA                               |
+| LISTPYTH  | LISTPYTH         |          1 | INTEGER |                0 | =1 print PYTHIA particle list, =2 + decay channels           |
+| LISTMLIM  | AMLIST           |          1 | REAL    |               6. | Print particles info if mass&lt;AMLIST                          |
+| NBEAMEXT  | NBMEXT           |          4 | MIXED   |                0 | User-defined beam spectrum: number of bins                   |
+| NPRIEV    | NPRIEV           |          1 | INTEGER |                0 | Number of events to print                                    |
+| *PARTICLE | K_PTMP(1)        |         16 | MIXED   |             16*0 | Particles parameters, used as *PARTICLE                      |
+| PARTINIT  | IPINIT(1)        |          2 | INTEGER |            1  14 | Geant particle IDs for the beam and target                   |
+| *PYTMOD   | KPYMOD(1)        |          8 | MIXED   |            8*' ' | Commands to PYTHIA, as *PYTMOD 'PARP(2)=3.'                  |
+| RADCORR   | IRADCORR(1)      |         10 | INTEGER |                0 | Do rad corrections for decays of particles with KF listed    |
+| RADTHICK  | RADT             |          1 | REAL    |           50.E-6 | Radiator thickness in m                                      |
+| RBEAMEXT  | RABMEXT          |       1000 | REAL    |                0 | User-defined beam spectrum: array of values of the energy    |
+| REACENER  | ELREAC(1)        |       3003 | MIXED   | -1. -1. 0 3000*0 | Binary reaction energy dependence: range, N points, xsection |
+| REACPART  | IPREAC(1)        |          2 | INTEGER |           -1  -1 | Geant particle IDs for the exclusive binary reaction         |
+| REACTDIS1 | TPAREAC(1,1)     |         11 | REAL    |            11*0. | /t/ distr: E_{max}, parameters of the function               |
+| REACTDIS2 | TPAREAC(1,2)     |         11 | REAL    |            11*0. | ... same                                                     |
+| REACTDIS3 | TPAREAC(1,3)     |         11 | REAL    |            11*0. | ... same                                                     |
+| REACTDIS4 | TPAREAC(1,4)     |         11 | REAL    |            11*0. | ... same                                                     |
+| REACTDIS5 | TPAREAC(1,5)     |         11 | REAL    |            11*0. | ... same                                                     |
+| REACTLIM  | TLREAC(1)        |          2 | REAL    |           0.  0. | /t/ range                                                    |
+| RNDMSEQ   | IRND_SEQ         |          1 | INTEGER |                0 | Random number seed (RLUX generator), any integer number      |
+| RUNNO     | RUNNO            |          1 | INTEGER |                2 | Run number - arbitrary                                       |
+| SELECTEV  | KFEVSEL(1)       |          5 | INTEGER |              5*0 | Select events with all non zero KF1 .. KF5 particles         |
+| SIMUL     | ISIMUL           |          1 | INTEGER |                0 | \=0 - /PYTHIA/ + low energy; =1 - binary reaction            |
+| TRIG      | NEVENT           |          1 | INTEGER |                0 | Number of events to simulate                                 |
+| VERTEX    | VERTEX(1)        |          3 | REAL    |             3*0. | Vertex position (not used)                                   |
+| WROUT     | IWROUT(1)        |          3 | INTEGER |          1  0  0 | &gt;0 Write events to HDDM, simple, paw ntuple formats          |
+| ZCOLLIM   | ZCOLL            |          1 | REAL    |            7600. | Distance between the radiator and the collimator, cm         |
+|-----------+------------------+------------+---------+------------------+--------------------------------------------------------------|
+</pre>
+
+
+</div>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Physics processes</h2>
+<div class="outline-text-2" id="text-3">
+
+
+</div>
+
+<div id="outline-container-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> <i>PYTHIA</i> results</h3>
+<div class="outline-text-3" id="text-3-1">
+
+<p>   <i>PYTHIA</i> hadroproduction model has been tuned to high, and recently
+   to very high energies. One should not expect it to give a very
+   realistic production ratio of various final states, and of their
+   kinematic distribution. There are other limitation:
+</p><ul>
+<li>Only the lowest light-quark resonances are included
+</li>
+<li>No polarization effects are considered.
+</li>
+</ul>
+
+
+<p>
+At the end of the job <i>BGGEN</i> prints the statistics of the particles produced
+by <i>PYTHIA</i>. Here is an example of such a record for 100M simulated events
+in an energy range 6 - 11.7 GeV.
+</p>
+
+
+<pre class="example">PYTHIA total multiplicity in simulated events
+     multiplicity          kf   %undecayed   kc   mass    name 
+        79895105            1      0.000      1   0.3300  d               
+        42951710           -1      0.000      1   0.3300  dbar            
+       113196384            2      0.000      2   0.3300  u               
+        44670384           -2      0.000      2   0.3300  ubar            
+         8355361            3      0.000      3   0.5000  s               
+         7150101           -3      0.000      3   0.5000  sbar            
+            2278            4      0.000      4   1.5000  c               
+            1884           -4      0.000      4   1.5000  cbar            
+            3837           11    100.000     11   0.0005  e-              
+            3837          -11    100.000     11   0.0005  e+              
+            2059           13    100.000     13   0.1057  mu-             
+            2059          -13    100.000     13   0.1057  mu+             
+        29397163           21      0.000     21   0.0000  g               
+         3364579           22    100.000     22   0.0000  gamma           
+        96940280           91      0.000     91   0.0000  cluster         
+        72013029           92      0.000     92   0.0000  string          
+       126679960          111    100.000    102   0.1350  pi0             
+        35402098          113      0.000    103   0.7685  rho0            
+         8138760          130    100.000    105   0.4977  K_L0            
+       151821892          211    100.000    106   0.1396  pi+             
+       121765772         -211    100.000    106   0.1396  pi-             
+        23014067          213      0.000    107   0.7669  rho+            
+        19300831         -213      0.000    107   0.7669  rho-            
+        17956151          221    100.000    109   0.5475  eta             
+        22801094          223      0.000    110   0.7819  omega           
+         8143989          310    100.000    112   0.4977  K_S0            
+         9203506          311      0.000    113   0.4977  K0              
+         6270425         -311      0.000    113   0.4977  Kbar0           
+         3907463          313      0.000    114   0.8961  K*0             
+         2666226         -313      0.000    114   0.8961  K*bar0          
+        10633425          321    100.000    116   0.4936  K+              
+         7113697         -321    100.000    116   0.4936  K-              
+         4885706          323      0.000    117   0.8916  K*+             
+         2902766         -323      0.000    117   0.8916  K*-             
+         3103391          331      0.000    119   0.9578  eta'            
+         1188277          333      0.000    120   1.0194  phi             
+               2          421    100.000    125   1.8645  D0              
+            1082         -421    100.000    125   1.8645  Dbar0           
+              91          441      0.000    131   2.9798  eta_c           
+            3090          443      0.000    132   3.0969  J/psi           
+            6064         1114      0.000    151   1.2340  Delta-          
+            7142        -1114      0.000    151   1.2340  Deltabar+       
+        53465281         2101      0.000    152   0.5793  ud_0            
+        17841476         2103      0.000    153   0.7713  ud_1            
+        28241916         2112    100.000    154   0.9396  n0              
+          219729        -2112    100.000    154   0.9396  nbar0           
+         5566033         2114      0.000    155   1.2330  Delta0          
+            8520        -2114      0.000    155   1.2330  Deltabar0       
+        35368292         2203      0.000    156   0.7713  uu_1            
+        65756047         2212    100.000    157   0.9383  p+              
+          235703        -2212    100.000    157   0.9383  pbar-           
+        11640213         2214      0.000    158   1.2320  Delta+          
+            8856        -2214      0.000    158   1.2320  Deltabar-       
+        15943690         2224      0.000    159   1.2310  Delta++         
+            7468        -2224      0.000    159   1.2310  Deltabar--      
+           59060         3112    100.000    162   1.1974  Sigma-          
+           21177        -3112    100.000    162   1.1974  Sigmabar+       
+             709         3114      0.000    163   1.3872  Sigma*-         
+            1016        -3114      0.000    163   1.3872  Sigma*bar+      
+         5024734         3122    100.000    164   1.1157  Lambda0         
+           34864        -3122    100.000    164   1.1157  Lambdabar0      
+          519797         3212    100.000    167   1.1925  Sigma0          
+           26716        -3212    100.000    167   1.1925  Sigmabar0       
+          682105         3214      0.000    168   1.3837  Sigma*0         
+            1203        -3214      0.000    168   1.3837  Sigma*bar0      
+          962052         3222    100.000    169   1.1894  Sigma+          
+           23139        -3222    100.000    169   1.1894  Sigmabar-       
+         1342402         3224      0.000    170   1.3828  Sigma*+         
+            1051        -3224      0.000    170   1.3828  Sigma*bar-      
+             683         3312    100.000    172   1.3213  Xi-             
+            2371        -3312    100.000    172   1.3213  Xibar+          
+              52         3314      0.000    173   1.5350  Xi*-            
+             114        -3314      0.000    173   1.5350  Xi*bar+         
+             629         3322    100.000    174   1.3149  Xi0             
+            2395        -3322    100.000    174   1.3149  Xibar0          
+              73         3324      0.000    175   1.5318  Xi*0            
+             107        -3324      0.000    175   1.5318  Xi*bar0         
+            1186         4122    100.000    181   2.2849  Lambda_c+       
+              27         4212      0.000    185   2.4535  Sigma_c+        
+              57         4214      0.000    186   2.5000  Sigma*_c+       
+              59         4222      0.000    187   2.4529  Sigma_c++       
+             109         4224      0.000    188   2.5000  Sigma*_c++      
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-3-2" class="outline-3">
+<h3 id="sec-3-2"><span class="section-number-3">3.2</span> Low energy reactions</h3>
+<div class="outline-text-3" id="text-3-2">
+
+<p>Below 3 GeV 10 dominant exclusive processes are simulated. The  
+energy dependences of the cross section and the kinematical parameterizations
+are taken from data. For the single pion production differential cross sections, 
+the SAID code from I.Strakovski is used. At the end of a job <i>BGGEN</i>
+prints out the statistics of the simulated reactions:
+</p>
+
+
+<pre class="example">====================================================================================================
+       1000000 events initialy simulated in the full energy range
+        997430 events successfully simulated
+        997430 events selected
+             0 events written out to HDDM
+        997430 events written out to HBOOK NTuple
+        195.47 reference interaction rate, kHz
+ process                      events   fraction   range
+----------------------------------------------------------------------------------------------------
+     0  PYTHIA                  5723     0.6 %   3.00&lt;E&lt; 3.10 GeV 
+----------------------------------------------------------------------------------------------------
+     1  p pi0                 278024    27.9 %   0.15&lt;E&lt; 3.00 GeV 
+     2  n pi+                 368700    37.0 %                    
+     3  p pi+ pi-              41772     4.2 %                    
+     4  p rho0                 31305     3.1 %                    
+     5  Delta++ pi-            86473     8.7 %                    
+     6  p pi0 pi0              21473     2.2 %                    
+     7  n pi+ pi0             101701    10.2 %                    
+     8  p eta                   7425     0.7 %                    
+     9  p pi+ pi- pi0          40720     4.1 %                    
+    10  n pi+ pi+ pi-          14114     1.4 %                    
+----------------------------------------------------------------------------------------------------
+</pre>
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Debugging tools</h2>
+<div class="outline-text-2" id="text-4">
+
+
+
+</div>
+
+<div id="outline-container-4-1" class="outline-3">
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> Printout</h3>
+<div class="outline-text-3" id="text-4-1">
+
+
+</div>
+
+<div id="outline-container-4-1-1" class="outline-4">
+<h4 id="sec-4-1-1"><span class="section-number-4">4.1.1</span> Event printout</h4>
+<div class="outline-text-4" id="text-4-1-1">
+
+
+
+
+<pre class="example">NPRIEV  100
+</pre>
+
+<p>
+the final event record for the first 100 events will be printed. This is an example of
+events form <i>PYTHIA</i>:
+</p>
+
+
+<pre class="example">================================================================================
+Event      2  Process=   0   PYTHIA                          
+          ID        KF                       mass      Px      Py      Pz      name
+beam       1        22                     0.0000      0.000   0.000   9.641   gamma           
+target    14      2212                     0.9383      0.000   0.000   0.000   proton          
+--------------------------------------------------------------------------------
+  #    ID    KS     KF   orig  decays        mass      Px      Py      Pz      name
+  1     0    12     -2      0   5   5      0.3300      0.152  -0.109   1.003   ubar            
+  2     0    11      2      0   5   5      0.3300      0.264   0.078   0.760   u               
+  3     0    12      2      0   7   7      0.3300     -0.152   0.109   7.977   u               
+  4     0    11   2101      0   8   8      0.5793     -0.264  -0.078  -0.098   ud_0            
+  5     0    11     91      1   6   6      0.7088      0.416  -0.031   1.763   cluster         
+  6     0    11    113      5   9  10      0.7785      0.409  -0.031   1.891   rho0            
+  7     0    12      2      3  11  11      0.3246     -0.150   0.107   7.847   u               
+  8     0    11   2101      4  11  11      0.5699     -0.259  -0.077  -0.096   ud_0            
+  9     9     1   -211      6   0   0      0.1396      0.242  -0.378   1.032   pi-             
+ 10     8     1    211      6   0   0      0.1396      0.167   0.347   0.859   pi+             
+ 11     0    11     92      7  12  14      3.4510     -0.409   0.031   7.750   string          
+ 12     0    11    113     11  15  16      0.6630      0.279   0.048   0.558   rho0            
+ 13    17     1    221     11   0   0      0.5475     -0.120   0.085   5.695   eta             
+ 14    14     1   2212     11   0   0      0.9383     -0.568  -0.102   1.497   proton          
+ 15     9     1   -211     12   0   0      0.1396      0.089  -0.192  -0.008   pi-             
+ 16     8     1    211     12   0   0      0.1396      0.190   0.240   0.566   pi+             
+</pre>
+
+<p>
+here:
+</p><ul>
+<li><i>ID=/IDG</i> - <i>GEANT3</i> particle ID
+</li>
+<li><i>KF</i> - universal particle code (<i>PYTHIA</i>, PDG&hellip;)
+</li>
+<li><i>KS</i> - <i>PYTHIA</i> particle final status: =1 - a real final particle, &gt;9 - a particle
+          fragmented, decayed etc,
+          =11 - decayed particle.
+         Onlu the particles with <i>KS=1</i> are transferred for tracking in <i>GEANT</i>.
+</li>
+<li><i>orig</i> - the mother particle number in this list
+</li>
+<li><i>decays</i> - the 1-st and the last numbers of the daughter particles in the list
+             (the numbering is sequential)
+</li>
+</ul>
+
+
+<p>
+Example of locally simulated events (not by <i>PYTHIA</i>):  
+</p>
+
+
+<pre class="example">================================================================================
+Event     10  Process=  -1   Exclusive production J/psi+proton               
+          ID        KF                       mass      Px      Py      Pz      name
+beam       1        22                     0.0000      0.000   0.000  11.303   gamma           
+target    14      2212                     0.9383      0.000   0.000   0.000   proton          
+--------------------------------------------------------------------------------
+  #    ID    KS     KF   orig  decays        mass      Px      Py      Pz      name
+  1     0    10    443      0   3   4      3.0969      0.612  -0.439   9.860   J/psi           
+  2    14     1   2212      0   0   0      0.9383     -0.612   0.439   1.443   proton          
+  3     2     1    -11      1   0   0      0.0005      0.717   0.090   9.792   e+              
+  4     3     1     11      1   0   0      0.0005     -0.105  -0.529   0.068   e-               
+</pre>
+
+
+<div id="footnotes">
+<h2 class="footnotes">Footnotes: </h2>
+<div id="text-footnotes">
+<p class="footnote"><sup><a class="footnum" name="fn-.1" href="#fnr-.1">1</a></sup> <i>FFREAD</i>: The static variables are associated with text keys. The keys are set at 
+the beginning of lines, followed by data (integer or real or character) in a flexible format.
+The same key can be set multiple times in the input file, the data in the later line
+overwrites the earlier lines. The keys started with * are treated differently - 
+the data are treated once the key is read, and can be put into other locations. The next
+similar key will not overwrite the previously set data. The lines are up to 120 characters long.
+Comments can be put after the # sign. "C &hellip;" in the first column is a comment line. It is convenient
+to comment out commands not needed for a particular run.
+</p>
+
+
+
+
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div id="postamble">
+<p class="date">Date: 2022-05-04T23:36-0400</p>
+<p class="author">Author: Eugene Chudakov</p>
+<p class="creator"><a href="http://orgmode.org">Org</a> version 7.9.3f with <a href="http://www.gnu.org/software/emacs/">Emacs</a> version 24</p>
+<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+
+</div>
+</body>
+</html>

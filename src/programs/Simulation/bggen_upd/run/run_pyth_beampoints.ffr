@@ -1,0 +1,88 @@
+LIST                    #    print the commands while reading
+C ===    INPUT file for BGGEN
+C
+C ---      FFREAD format: 1) a command overwrites the same command above in the file; 
+C                         2) the KEYS should start from the column 1; lines are up to 120 characters
+C                         3) format is flexible, can mix reals and integers; I suggest to use the right type (not 4 for 4.0)
+C                         4) one can fill an array from any position, the rest is not changed, 
+C                                    say "SELECTEV 2=111 -211" fills the positions 2 and 3
+C                         5) # - the rest of the line is ignored   
+C
+READ     16             # read the file with particle definitions 
+C
+C ------------- General controls ---------------
+SIMUL     0             # type of simulation =0 - BG, =1 - exclusive (J/psi ...)         
+C                        =0 - BG (PYTHIA+low energy reactions) 
+C                        =1 - exclusive binary photoproduction, for example gamma+p-->J/psi+p        
+TRIG      100000        # number of events to simulate
+TRIG      200000        # number of events to simulate
+NPRIEV       100        # number of events to print (after selection, see SELECTEV) 
+RNDMSEQ     0           # random number sequence     integer values
+RUNNO       1           # specify run number
+C                       We expect 395kHz of hadronic rate at high luminosity
+C -- writing out events
+C        HDDM  simple  ntuple
+WROUT      1      0     1   
+C ----------------------------------------------
+
+
+C ------------  Beam ---------------------------
+EELEC         11.9      # electron beam energy
+EEMIT          1.E-8    # beam emittance rad m
+C EPHLIM   0.15 11.7      # photon beam energy range in GeV
+EPHLIM   3.10 11.6      # photon beam energy range in GeV
+C EPEAK          8.7      # coherent peak energy
+C ZCOLLIM     7600.       # distance to the collimator in cm
+C DCOLLIM        0.005    # collimator diameter in m
+C RADTHICK      20.E-6    # thickness of the radiator in m
+C
+C          bins flg   Emin  Emax         flg=0 - bins of same width
+NBEAMEXT    107  1    0.   0.   #  User's beam spectrum setting
+RBEAMEXT  3.9669  3.7209  3.5036  3.3103  3.1373  2.9814  2.8402  2.7119  2.5946  2.4870
+          2.3881  2.2967  2.2120  2.1333  2.0601  1.9917  1.9277  1.8677  1.8113  1.7582
+          1.7082  1.6609  1.6162  1.5947  1.5842  1.5738  1.5635  1.5534  1.5434  1.5335
+          1.5238  1.5142  1.5047  1.4953  1.4861  1.4769  1.4679  1.4590  1.4502  1.4414
+          1.4328  1.4243  1.4159  1.4076  1.3994  1.3913  1.3833  1.3754  1.3675  1.3598
+          1.3521  1.3445  1.3370  1.3296  1.3223  1.3151  1.3079  1.3008  1.2938  1.2869
+          1.2800  1.2732  1.2665  1.2598  1.2533  1.2468  1.2403  1.2339  1.2276  1.2214
+          1.2152  1.2091  1.2030  1.1970  1.1911  1.1852  1.1794  1.1736  1.1679  1.1622
+          1.1566  1.1511  1.1456  1.1401  1.1348  1.1294  1.1241  1.1189  1.1137  1.1085
+          1.1034  1.0984  1.0934  1.0884  1.0835  1.0787  1.0738  1.0690  1.0643  1.0596
+          1.0549  1.0503  1.0458  1.0412  1.0367  1.0323  1.0278
+C
+EBEAMEXT  3.0250  3.2250  3.4250  3.6250  3.8250  4.0250  4.2250  4.4250  4.6250  4.8250
+          5.0250  5.2250  5.4250  5.6250  5.8250  6.0250  6.2250  6.4250  6.6250  6.8250
+          7.0250  7.2250  7.4250  7.5250  7.5750  7.6250  7.6750  7.7250  7.7750  7.8250
+          7.8750  7.9250  7.9750  8.0250  8.0750  8.1250  8.1750  8.2250  8.2750  8.3250
+          8.3750  8.4250  8.4750  8.5250  8.5750  8.6250  8.6750  8.7250  8.7750  8.8250
+          8.8750  8.9250  8.9750  9.0250  9.0750  9.1250  9.1750  9.2250  9.2750  9.3250
+          9.3750  9.4250  9.4750  9.5250  9.5750  9.6250  9.6750  9.7250  9.7750  9.8250
+          9.8750  9.9250  9.9750 10.0250 10.0750 10.1250 10.1750 10.2250 10.2750 10.3250
+         10.3750 10.4250 10.4750 10.5250 10.5750 10.6250 10.6750 10.7250 10.7750 10.8250
+         10.8750 10.9250 10.9750 11.0250 11.0750 11.1250 11.1750 11.2250 11.2750 11.3250
+         11.3750 11.4250 11.4750 11.5250 11.5750 11.6250 11.6750
+C
+C ----------------------------------------------
+C
+PARTINIT  1  14         # GEANT types of the interacting particles: gamma proton
+C 
+C ------------  BG simulation ------------------
+C                       PYTHIA flags are set in a file pythia.dat
+EPYTHMIN     3.         # minimal energy for PYTHIA simulation
+ELOWMIN      0.15       # minimal energy for the low energy processes generator 
+C
+C LISTPYTH    2           # >0 print the PYTHIA particle list at the initialization stage:
+C                         =1 without decays
+C                         =2 with decays of the particles, which PYTHIA decay is not forbidden by 
+C LISTMLIM    6.          # (F) amlim print only particles with mass<amlim
+C
+C ------------- Event selection ----------------
+C
+C SELECTEV    333         # select events with at least one phi (KF codes are used)
+C ----------------------------------------------
+C
+C
+READ 17                 # read variables for MCWrapper
+C
+KEYS                    # print all the keys
+STOP
