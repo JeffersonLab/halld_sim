@@ -289,6 +289,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
    AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
    AmpToolsInterface::registerAmplitude( TwoPitdist() );
+   AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
    AmpToolsInterface::registerAmplitude( ThreePiAngles() );
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
    AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
