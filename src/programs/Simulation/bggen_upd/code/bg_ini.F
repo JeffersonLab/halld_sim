@@ -98,9 +98,15 @@ C
          ITDRNG(i)=0
       ENDDO
 C
+C---      Particle selection
+C
       DO i=1,MXEVSEL
-         KFEVSEL(i)=0
+         KFEVSEL(i)=0      ! types
       ENDDO
+      PAREVSEL(1)=0.       ! Pmin
+      PAREVSEL(2)=99999.   ! Pmax
+      PAREVSEL(3)=0.       ! theta_min
+      PAREVSEL(4)=180.     ! Theta_max
 C
       DO i=1,MXSTAT
          NEVSTAT(i)=0
@@ -191,6 +197,7 @@ C
       ENDDO
       CALL FFKEY('REACENER'  , ELREAC(1)  , MXPNTR+3,'MIXED')
       CALL FFKEY('SELECTEV'  , KFEVSEL(1) , MXEVSEL,'INTEGER')
+      CALL FFKEY('SELECTKIN' , PAREVSEL(1),  4,'REAL')
       CALL FFKEY('PARTICLE'  , K_PTMP(1)  , 16,'MIXED')
       CALL FFKEY('PYTMOD'    , KPYTMP(1)  ,  8,'MIXED')
       CALL FFKEY('NBEAMEXT'  , NBMEXT     ,  4,'MIXED')

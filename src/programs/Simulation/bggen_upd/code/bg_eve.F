@@ -18,7 +18,7 @@ C
       EXTERNAL HRNDM1,HXI,HEXIST
 C
       INTEGER i,j,ip,ier,lout,idnt,lenc(2),nkfsel,ntry
-      REAL ebeam,de,ecent
+      REAL ebeam,de,ecent,thdg,ptot,pt2
       CHARACTER cent(2)*6,centt(2)*12
 C
       REAL ptmp1(4,2),ptmp2(4,MXTRA)   ! auxill. arrays to simplify the HDDM mapping
@@ -109,10 +109,20 @@ C
          nkfsel=0
          IF(KFEVSEL(i).NE.0) THEN
             DO ip=1,NTRA
-               IF(ITPTRA(3,ip).EQ.KFEVSEL(i)) nkfsel=nkfsel+1 
+              IF(ITPTRA(3,ip).EQ.KFEVSEL(i)) THEN
+                pt2=PTRA(1,ip)**2+PTRA(2,ip)**2
+                ptot=SQRT(pt2+PTRA(3,ip)**2)
+                IF(ptot.GT.0.01) THEN
+                  thdg=ASIN(SQRT(pt2)/ptot)*180./3.1415
+                  IF(ptot.GE.PAREVSEL(1).AND.ptot.LE.PAREVSEL(2).AND.
+     +               thdg.GE.PAREVSEL(3).AND.thdg.LE.PAREVSEL(4)) THEN
+                     nkfsel=nkfsel+1
+                  ENDIF
+                ENDIF
+              ENDIF 
             ENDDO
             IF(nkfsel.EQ.0) THEN
-               ierr=1                ! required particle not found in the record
+               ierr=1           ! required particle not found in the record
                GO TO 999
             ENDIF
          ENDIF

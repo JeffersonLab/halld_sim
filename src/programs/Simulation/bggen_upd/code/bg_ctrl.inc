@@ -17,7 +17,7 @@ C
      +              ,ISIMUL,IPINIT(2)
      +              ,NRADCOR,IRADCORR(MXRADP)
      +              ,IDTDIST
-     +              ,KFEVSEL(MXEVSEL)
+     +              ,KFEVSEL(MXEVSEL),PAREVSEL(4)
       INTEGER   NEVENT    ! number of events to simulate (F)
      +         ,RUNNO     ! run number to use
      +         ,IWROUT    ! (1)>0 - write out the HDDS file (events) (F)
@@ -61,7 +61,5 @@ C                         the value may be adjusted to the bin boundary of IDBEA
      +         ,RATESEC ! reference interation rate (Hz), calculated
      +         ,VERTEX  ! Vertex set in HDDM output file (cm)  n.b. 0,0,0 is the default which means hdgeant will use its default, 0,0,65
      +         ,AMLIST  ! (F) (def=6.) if LISTPYTH>0 - print only particles with mass < AMLIST
+     +         ,PAREVSEL ! (F) _Pmin P_max theta_min theta_max (degrees) of particles to select (see KFEVSEL)
 C
-
-
-

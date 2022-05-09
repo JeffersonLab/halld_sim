@@ -2,7 +2,7 @@
 C
 C--       Event features:
 C       IFL=0 - multiplicity, 0<IFL<5 - 4 momentum of the sum
-C       KTYP=0 - all entries, >0 - GEANT particle type
+C       KTYP=0 - all entries, !=0 - KF (PYTHIA) particle type
 C       P1,P2,TH1,TH2 - momentum and angle limits
 C
       IMPLICIT NONE
@@ -23,8 +23,8 @@ C
       nn=0
 C
       DO ip=1,NP
-         IF(ITYP(1,ip).GT.0) THEN
-            IF(KTYP.EQ.0.OR.KTYP.EQ.ITYP(1,ip)) THEN
+         IF(ITYP(3,ip).NE.0) THEN
+            IF(KTYP.EQ.0.OR.KTYP.EQ.ITYP(3,ip)) THEN
                qq=0.
                DO j=1,3
                   qq=qq+POUT(j,ip)**2

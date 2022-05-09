@@ -43,8 +43,8 @@ C
 C
             IF(EPEAK.GE.EELEC) THEN
                WRITE(6,1020) EPEAK,EELEC
- 1020          FORMAT('  *** Initialization error: peak>Ee:',2F10.4)
-               GO TO 999
+ 1020          FORMAT('  *** Warning: peak>Ee:',2F10.4
+     +              ,' no coherent Bremmstrahlung')
             ENDIF
 C
          ELSE       ! user-defined beam spectrum
