@@ -37,6 +37,10 @@ class FSRootDataReader : public UserDataReader< FSRootDataReader >{
       int m_eventCounter;
       unsigned int m_numParticles;
 
+      double m_EnPB;
+      double m_PxPB;
+      double m_PyPB;
+      double m_PzPB;
       double m_EnP[50];
       double m_PxP[50];
       double m_PyP[50];

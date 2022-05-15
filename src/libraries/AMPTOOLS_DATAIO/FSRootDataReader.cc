@@ -62,6 +62,14 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
       if(args.size()==7)
         cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << " " << args[5] << " " << args[6] << endl;
       if (m_inTree){
+         TString sEnPB = fourMomentumPrefix+"EnPB";
+         TString sPxPB = fourMomentumPrefix+"PxPB";
+         TString sPyPB = fourMomentumPrefix+"PyPB";
+         TString sPzPB = fourMomentumPrefix+"PzPB";
+         m_inTree->SetBranchAddress( sEnPB, &m_EnPB );
+         m_inTree->SetBranchAddress( sPxPB, &m_PxPB );
+         m_inTree->SetBranchAddress( sPyPB, &m_PyPB );
+         m_inTree->SetBranchAddress( sPzPB, &m_PzPB );
          for (unsigned int i = 0; i < m_numParticles; i++){
             TString sI("");  sI += (i+1);
             TString sEnPi = fourMomentumPrefix+"EnP"+sI;
@@ -91,13 +99,10 @@ Kinematics* FSRootDataReader::getEvent(){
    if( m_eventCounter < numEvents() ){
       m_inTree->GetEntry( m_eventCounter++ );
       vector< TLorentzVector > particleList;
+      particleList.push_back( TLorentzVector( m_PxPB, m_PyPB, m_PzPB, m_EnPB ) );
       for (unsigned int i = 0; i < m_numParticles; i++){
          particleList.push_back( TLorentzVector( m_PxP[i], m_PyP[i], m_PzP[i], m_EnP[i] ) );
-         if(m_eventCounter<10)
-           cout << particleList.back().M() << " ";
       }
-      if(m_eventCounter<10)
-        cout << endl;
 //      m_weight = 1.0;
       return new Kinematics( particleList, m_weight );
    }
