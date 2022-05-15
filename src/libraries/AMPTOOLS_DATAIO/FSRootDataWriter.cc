@@ -20,6 +20,10 @@ FSRootDataWriter::FSRootDataWriter( unsigned int numParticles, const string& out
 
    m_numParticles = numParticles;
 
+   m_outTree->Branch( "EnPB", &m_EnPB, "EnPB/D" );
+   m_outTree->Branch( "PxPB", &m_PxPB, "PxPB/D" );
+   m_outTree->Branch( "PyPB", &m_PyPB, "PyPB/D" );
+   m_outTree->Branch( "PzPB", &m_PzPB, "PzPB/D" );
    for (unsigned int i = 0; i < m_numParticles; i++){
       TString sI("");  sI += (i+1);
       TString sEnPi = "EnP"+sI;
@@ -56,11 +60,16 @@ FSRootDataWriter::writeEvent( const Kinematics& kin ){
 
    vector< TLorentzVector > particleList = kin.particleList();
 
+   m_EnPB = particleList[0].E();
+   m_PxPB = particleList[0].Px();
+   m_PyPB = particleList[0].Py();
+   m_PzPB = particleList[0].Pz();
+
    for (unsigned int i = 0; i < m_numParticles; i++){
-      m_EnP[i] = particleList[i].E();
-      m_PxP[i] = particleList[i].Px();
-      m_PyP[i] = particleList[i].Py();
-      m_PzP[i] = particleList[i].Pz();
+      m_EnP[i] = particleList[i+1].E();
+      m_PxP[i] = particleList[i+1].Px();
+      m_PyP[i] = particleList[i+1].Py();
+      m_PzP[i] = particleList[i+1].Pz();
    }
 
    m_s12 = (particleList[0]+particleList[1]).M2();
