@@ -58,6 +58,7 @@ int main( int argc, char* argv[] ){
   
 	string  configfile("");
 	string  outname("");
+	string  outnameFSRoot("gen_out_FSRoot.root");
 	string  hddmname("");
 	
 	bool centeredVertex = true;
@@ -84,8 +85,6 @@ int main( int argc, char* argv[] ){
 	int nEvents = 10000;
 	int batchSize = 10000;
 
-  ROOTDataWriter* rootOut;
-  FSRootDataWriter* rootOutFSRoot;
 	
 	//parse command line:
 	for (int i = 1; i < argc; i++){
@@ -144,12 +143,14 @@ int main( int argc, char* argv[] ){
 		if (arg == "-f"){
 			genFlat = true; }
     if (arg == "-fsroot"){
+			 if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+			 else  outnameFSRoot = argv[++i];
        FSRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
 			cout << "\t -o    <name>\t ROOT file output name" << endl;
-			cout << "\t -fsroot \t Enable output in FSRoot format" << endl;
+			cout << "\t -fsroot <name>\t Enable output in FSRoot format and set output file name" << endl;
 			cout << "\t -hd   <name>\t HDDM file output name [optional]" << endl;
 			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
@@ -375,10 +376,9 @@ int main( int argc, char* argv[] ){
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
   
-  if(FSRootFormat)
-     rootOutFSRoot = new FSRootDataWriter(3,outname);
-  else
-	   rootOut = new ROOTDataWriter(outname);
+
+  FSRootDataWriter rootOutFSRoot(3,outnameFSRoot);
+	ROOTDataWriter rootOut(outname);
 	
 	TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
 	ostringstream locStream;
@@ -575,9 +575,9 @@ int main( int argc, char* argv[] ){
 					
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes, centeredVertex );
           if(FSRootFormat)
-             rootOutFSRoot->writeEvent( *evt );
+             rootOutFSRoot.writeEvent( *evt );
           else
-					   rootOut->writeEvent( *evt );
+					   rootOut.writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
 				}
