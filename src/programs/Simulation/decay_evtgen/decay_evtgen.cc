@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include <map>
 using namespace std;
 
 #include "EvtGen/EvtGen.hh"
@@ -54,6 +55,8 @@ EvtGen *myGenerator = nullptr;
 bool PROCESS_ALL_EVENTS = true;
 int NUM_EVENTS_TO_PROCESS = -1;
 bool GEN_SCHANNEL = false;
+
+map<int,int> PDGTYPE_CONVERSION_MAP;
 
 void InitEvtGen();
 void ParseCommandLineArguments(int narg,char *argv[]);
@@ -193,7 +196,18 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 		else
 			// use the standard particle type as a backup - would be nice
 			// if we didn't have these dependencies!
+			// note that bggen-derived generators tend to have this issue
 			partId = EvtPDL::getId(std::string(EvtGenOutputString(part.type))); 
+						
+		// allow an optional remapping of particle types based on the PDG type, to deal with particles
+		// that are not properly defined in the GlueX framework
+		int current_pdgtype = EvtPDL::getStdHep( partId );
+		if(PDGTYPE_CONVERSION_MAP.find(current_pdgtype) != PDGTYPE_CONVERSION_MAP.end()) {
+			//int oldid = current_pdgtype;
+			partId = EvtPDL::evtIdFromStdHep(PDGTYPE_CONVERSION_MAP[current_pdgtype]);
+			//int newid = EvtPDL::getStdHep( partId );
+		}
+		
 		EvtVector4R pInit(part.momentum.E(), part.momentum.Px(), 
 							part.momentum.Py(), part.momentum.Pz());
 		parent = EvtParticleFactory::particleFactory(partId, pInit);
@@ -350,11 +364,28 @@ int main(int narg, char *argv[])
 }
 
 //-------------------------------
+// ConvertStringInt
+//-------------------------------
+bool ConvertStringInt(string &the_str, int &out_int) 
+{
+	istringstream the_istream(the_str);
+	the_istream >> out_int;
+	if(the_istream.fail())
+		return false;
+
+	return true;
+}
+
+//-------------------------------
 // ParseCommandLineArguments
 //-------------------------------
 void ParseCommandLineArguments(int narg,char *argv[])
 {
   string num_events_str;
+  size_t seperator_index;
+  string argstr;
+  int pdgtype1, pdgtype2;
+  string substr1, substr2;
 
    if (narg < 2) {
       Usage();
@@ -378,6 +409,29 @@ void ParseCommandLineArguments(int narg,char *argv[])
               break;
             case 'S':
               GEN_SCHANNEL = true;
+              break;
+            case 'X':
+              // assume input of the form -XN_M
+              // where N and M are both PDG ID numbers
+              argstr = &ptr[1];
+              seperator_index = argstr.find("_");
+              if(seperator_index == string::npos) {
+              	cerr << " Invalid -X format: " << argstr << endl;
+              } else {
+              	// let's actually try parsing
+              	substr1 = argstr.substr(0,seperator_index);
+              	if(!ConvertStringInt(substr1,pdgtype1)) {
+              		cerr << " Invalid -X format: " << argstr << " - bad type " << substr1 << endl;
+              	} else {
+              		substr2 = argstr.substr(seperator_index+1);
+              		if(!ConvertStringInt(substr2,pdgtype2)) {
+              	 		cerr << " Invalid -X format: " << argstr << " - bad type " << substr2 << endl;
+              	 	} else {
+              	 		cerr << "setting up conversion of type " << pdgtype1 << " to " << pdgtype2 << endl;
+						PDGTYPE_CONVERSION_MAP[pdgtype1] = pdgtype2;          	 
+              	 	}
+              	 }
+              }
               break;
             default:
               cerr << "Unknown option \"" << argv[i] << "\"" << endl;
@@ -423,6 +477,8 @@ void Usage(void)
                "set the file name used for output (default: append \"_decayed\")" << endl;
   cout << "  -u\"user_decay_file_name\"    "
                "set the file name of the user decay file (default: userDecay.dec)" << endl;
+  cout << "  -XM_N                         "
+      "translate particles of PDG ID M to those of ID N.  This option can be specified multiple times" << endl;
   cout << "  -h                        "
                "print this usage statement." << endl;
   cout << endl;
