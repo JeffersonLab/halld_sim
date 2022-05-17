@@ -478,7 +478,7 @@ void Usage(void)
   cout << "  -u\"user_decay_file_name\"    "
                "set the file name of the user decay file (default: userDecay.dec)" << endl;
   cout << "  -XM_N                         "
-      "translate particles of PDG ID M to those of ID N.  Thisoption can be specified multiple times" << endl;
+      "translate particles of PDG ID M to those of ID N.  This option can be specified multiple times" << endl;
   cout << "  -h                        "
                "print this usage statement." << endl;
   cout << endl;
