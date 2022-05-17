@@ -2,11 +2,12 @@
 #define ROOTDATAWRITER
 
 #include "IUAmpTools/Kinematics.h"
+#include "AMPTOOLS_DATAIO/DataWriter.h"
 
 #include "TTree.h"
 #include "TFile.h"
 
-class ROOTDataWriter
+class ROOTDataWriter : public DataWriter
 {
 
 public:

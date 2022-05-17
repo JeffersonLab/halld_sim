@@ -11,7 +11,10 @@
 
 #include "particleType.h"
 
+
+#include "AMPTOOLS_DATAIO/DataWriter.h"
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
+#include "AMPTOOLS_DATAIO/FSRootDataWriter.h"
 #include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
@@ -62,6 +65,7 @@ int main( int argc, char* argv[] ){
 	bool centeredVertex = true;
 	bool diag = false;
 	bool genFlat = false;
+	bool fsRootFormat = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 0.2;
@@ -81,6 +85,7 @@ int main( int argc, char* argv[] ){
 
 	int nEvents = 10000;
 	int batchSize = 10000;
+
 	
 	//parse command line:
 	for (int i = 1; i < argc; i++){
@@ -138,10 +143,13 @@ int main( int argc, char* argv[] ){
 			centeredVertex = false; }
 		if (arg == "-f"){
 			genFlat = true; }
+		if (arg == "-fsroot"){
+		        fsRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
 			cout << "\t -o    <name>\t ROOT file output name" << endl;
+			cout << "\t -fsroot \t Enable output in FSRoot format" << endl;
 			cout << "\t -hd   <name>\t HDDM file output name [optional]" << endl;
 			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
@@ -366,7 +374,12 @@ int main( int argc, char* argv[] ){
 
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
-	ROOTDataWriter rootOut( outname );
+  
+	// the first argument to the FSRootDataWriter is the number of particles *in addition to* the beam
+	// particle, which is typically the first in the list in GlueX reaction definitions
+	DataWriter* rootOut = ( fsRootFormat ?
+				static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
+				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 	
 	TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
 	ostringstream locStream;
@@ -562,7 +575,7 @@ int main( int argc, char* argv[] ){
 					evt->setWeight( 1.0 );
 					
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes, centeredVertex );
-					rootOut.writeEvent( *evt );
+					rootOut->writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
 				}
@@ -602,6 +615,7 @@ int main( int argc, char* argv[] ){
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;
+	delete rootOut;
 	
 	return 0;
 }

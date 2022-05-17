@@ -13,6 +13,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -308,6 +309,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
+   AmpToolsInterface::registerDataReader( FSRootDataReader() );
 
    if(numRnd==0){
       if(scanPar=="")
