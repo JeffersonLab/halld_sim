@@ -59,31 +59,9 @@ void etapiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionNa
      return;
   }
 
-
-//  TLorentzVector P0 = kin->particle(0); //beam
   TLorentzVector P1 = kin->particle(1); //proton
   TLorentzVector P2 = kin->particle(2); //eta
   TLorentzVector P3 = kin->particle(3); //pi0
-
-
-
-//   int nBins = 13;
-//   double lowM = 1.04;
-//   double highM = 1.56;
-//   double width = (double)(highM-lowM)/nBins;
-//
-//   double binCenter[nBins];
-//   for(int i=0; i<nBins; i++) {
-//      binCenter[i] = lowM + width/2. + i*width;
-//
-//      if(fabs((P2+P3).M()-binCenter[i])<0.001) {
-//         cout << i << " " << binCenter[i] << endl;
-//         cout << P0.Px() << " " << P0.Py() << " " << P0.Pz() << " " << P0.E() << endl;
-//         cout << P1.Px() << " " << P1.Py() << " " << P1.Pz() << " " << P1.E() << endl;
-//         cout << P2.Px() << " " << P2.Py() << " " << P2.Pz() << " " << P2.E() << endl;
-//         cout << P3.Px() << " " << P3.Py() << " " << P3.Pz() << " " << P3.E() << endl;
-//      }
-//  }
 
   fillHistogram( khm12, (P1+P2).M() );
   fillHistogram( khm13, (P1+P3).M() );
