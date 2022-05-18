@@ -36,6 +36,7 @@
 #include "AMPTOOLS_AMPS/Hist2D.h"
 #include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
+#include "AMPTOOLS_AMPS/Uniform.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -299,6 +300,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Hist2D() );
 	AmpToolsInterface::registerAmplitude( dblReggeMod() );
 	AmpToolsInterface::registerAmplitude( Flatte() );
+	AmpToolsInterface::registerAmplitude( Uniform() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
