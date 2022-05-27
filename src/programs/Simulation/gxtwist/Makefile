@@ -11,9 +11,14 @@ DIRS += gelhad hdds
 all install clean pristine relink env: $(DIRS) current_dir
 
 $(DIRS):
-	if test ! -d gelhad ; then ln -s $(HALLD_HOME)/src/programs/Simulation/HDGeant/gelhad . ; fi
+	if test ! -d gelhad ; then ln -s ../HDGeant/gelhad . ; fi
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 current_dir:
 	$(MAKE) -f Makefile.bms $(MAKECMDGOALS)
 
+-lHDDM:
+	touch -- $@
+	true
+
+# DO NOT DELETE
