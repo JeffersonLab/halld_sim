@@ -15,6 +15,7 @@ class tagh_config_t
 	double TAGH_FADC_TSIGMA;
 	double TAGH_NPE_PER_GEV;
 
+    std::vector<int> counter_quality;
 };
 
 
