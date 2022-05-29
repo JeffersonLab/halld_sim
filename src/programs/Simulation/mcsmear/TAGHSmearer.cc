@@ -11,9 +11,14 @@ tagh_config_t::tagh_config_t(JEventLoop *loop)
 	TAGH_FADC_TSIGMA = 0.450;   // ns
 	TAGH_NPE_PER_GEV = 5.e5;
 
-    if (loop->GetCalib("/PHOTON_BEAM/hodoscope/counter_quality", counter_quality)) {
+    std::vector<std::map<std::string, double> > quality;
+    if (loop->GetCalib("/PHOTON_BEAM/hodoscope/counter_quality", quality)) {
 	   jout << "/PHOTON_BEAM/hodoscope/counter_quality not used for this run" << endl;
-    } 
+    }
+    for (int i=0; i < (int)quality.size(); ++i) {
+       int id = quality[i]["id"];
+       counter_quality[id] = quality[i]["code"];
+    }
 }
 
 
@@ -29,7 +34,7 @@ void TAGHSmearer::SmearEvent(hddm_s::HDDM *record)
       hddm_s::TaggerTruthHitList thits = iter->getTaggerTruthHits();
       hddm_s::TaggerTruthHitList::iterator titer;
       for (titer = thits.begin(); titer != thits.end(); ++titer) {
-         int counter = *(int*)titer->getAttribute("counter");
+         int counter = *(int*)titer->getAttribute("counterId");
          if (tagh_config->counter_quality[counter] != 1)
             continue;
          // smear the time
