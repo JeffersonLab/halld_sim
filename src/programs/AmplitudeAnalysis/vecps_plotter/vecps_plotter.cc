@@ -148,14 +148,6 @@ int main( int argc, char* argv[] ){
 	
         string locampname = amphistname[iamp];
 	
-	// parse amplitude name for naturality to compute reflectivity 
-	int j = locampname[0]-'0';
-	int parity = 0;
-	if( locampname[1] == 'p' ) parity = +1;
-	else if( locampname[1] == 'm' ) parity = -1;
-	else cout<<"Undefined parity in amplitude"<<endl;
-	int naturality = parity*pow(-1,j);
-
 	// turn on all sums by default
 	for (unsigned int i = 0; i < sums.size(); i++) plotGen.enableSum(i);
 
@@ -166,12 +158,11 @@ int main( int argc, char* argv[] ){
 	    
 	    bool disableSum = false;
 	    if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
-	      if (naturality>0 && irefl==1) disableSum = true;
-	      if (naturality<0 && irefl==0) disableSum = true;
+	      //ImagNegSign & RealPosSign are defined to be the negative reflectivity
+	      disableSum = true;
 	    }
 	    else {
-	      if (naturality>0 && irefl==0) disableSum = true;
-	      if (naturality<0 && irefl==1) disableSum = true;
+	      disableSum = true;
 	    }
 	    
 	    if(disableSum) {
@@ -287,31 +278,25 @@ int main( int argc, char* argv[] ){
 	    if(fullamps[i].find("::" + locampname) == std::string::npos) continue;
 	    //cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
 
-	    // parse amplitude name for naturality to compute reflectivity 
-	    int j = locampname[0]-'0';
-	    int parity = 0;
-	    if( locampname[1] == 'p' ) parity = +1;
-	    else if( locampname[1] == 'm' ) parity = -1;
-	    else cout<<"Undefined parity in amplitude"<<endl;
-	    int naturality = parity*pow(-1,j);	   
- 
-	    // select reflectivity (based on naturality)
+	    // select reflectivity
 	    if(fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
-		    if (naturality>0) {
-			    ampsumPosRefl[iamp].push_back(fullamps[i]);
-		    }
-		    if (naturality<0) {
-			    ampsumNegRefl[iamp].push_back(fullamps[i]);
-		    }
+	      ampsumNegRefl[iamp].push_back(fullamps[i]);
 	    }
 	    else {
-		    if (naturality>0) {
-			    ampsumNegRefl[iamp].push_back(fullamps[i]);
-		    }
-		    if (naturality<0) {
-			    ampsumPosRefl[iamp].push_back(fullamps[i]);
-		    }
+	      ampsumPosRefl[iamp].push_back(fullamps[i]);
 	    }
+    }
+
+    // second loop over amplitudes to get phase difference names
+    for(unsigned int j = i+1; j < fullamps.size(); j++){
+
+      // only keep amplitudes from the same coherent sum (and ignore constrained Real)
+      if(fullamps[i].find("Real") != std::string::npos) continue;
+      if(fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos) continue;
+      if(fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
+	    
+      phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
+
     }
   }
 
@@ -323,6 +308,13 @@ int main( int argc, char* argv[] ){
      outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = "
           << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
           << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
+  }
+
+cout<<"Computing phase differences"<<endl;
+  for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
+	  pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
+	  outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
+
   }
 
   // covariance matrix
@@ -362,4 +354,3 @@ int main( int argc, char* argv[] ){
   return 0;
 
 }
-

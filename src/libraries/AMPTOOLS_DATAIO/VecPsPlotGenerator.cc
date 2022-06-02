@@ -45,23 +45,36 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin ){
    TLorentzVector recoil = kin->particle( 1 );
    TLorentzVector bach = kin->particle( 2 );
 
-   bool m_3pi = false;
+   int m_3pi = 0;
+   // once at start of process, check if 
+   uint nparticles = kin->particleList().size();
+   if(m_3pi==0 && nparticles>5) {
+    	int npi = 0;
+    	for(uint i=3; i<6; i++) 
+    		if(fabs(kin->particle(i).M()-0.135) < 0.055) npi++;
+    	if(npi == 3) m_3pi = 1;
+    	else m_3pi = -1;
+    }
+
+   int min_recoil = 0;
    TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
 
    // omega ps proton, omega -> 3pi (6 particles)
    // omega pi- Delta++, omega -> 3pi (7 particles)
-   if(m_3pi) {
+   if(m_3pi==1) {
           TLorentzVector pi0 = kin->particle( 3 );//omega's pi0
           TLorentzVector pip = kin->particle( 4 );//pi-
           TLorentzVector pim = kin->particle( 5 );//pi+
           vec = pi0 + pip + pim;
           vec_daught1 = pip;
           vec_daught2 = pim;
+	  min_recoil = 6;
    }
    else {
 	  vec_daught1 = kin->particle( 3 );
           vec_daught2 = kin->particle( 4 );
           vec = vec_daught1 + vec_daught2;
+	  min_recoil = 5;
    }
 
    // final meson system P4
@@ -69,7 +82,7 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin ){
 
    TLorentzVector proton_ps = recoil + bach;
    TLorentzVector recoil_ps = proton_ps;
-   for(uint i=5; i<kin->particleList().size(); i++) {
+   for(uint i=min_recoil; i<kin->particleList().size(); i++) {
 	recoil += kin->particle(i);
 	recoil_ps += kin->particle(i);
    }
@@ -111,4 +124,3 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin ){
    fillHistogram( kRecoilPsMass, recoil_ps.M() );
 
 }
-
