@@ -268,7 +268,8 @@ int main( int argc, char* argv[] ){
   const int nAmps = amphistname.size();
   vector<string> ampsumPosRefl[nAmps];
   vector<string> ampsumNegRefl[nAmps];
-
+  vector< pair<string,string> > phaseDiffNames;
+  
   for(unsigned int i = 0; i < fullamps.size(); i++){
 
     // combine amplitudes with names defined above
