@@ -15,6 +15,7 @@ class tagm_config_t
 	double TAGM_FADC_TSIGMA;
 	double TAGM_NPIX_PER_GEV;
 
+    std::map<int, int> fiber_quality;
 };
 
 
