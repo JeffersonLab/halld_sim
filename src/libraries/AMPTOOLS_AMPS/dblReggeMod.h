@@ -26,17 +26,17 @@ public:
         string name() const { return "dblReggeMod"; }
 
         complex< GDouble > calcAmplitude( GDouble** pKin ) const;
-	double CHGM(double A, double B, double X) const;
-	std::complex<double> cgamma(std::complex<double> z,int OPT) const;
+	GDouble CHGM(GDouble A, GDouble B, GDouble X) const;
+	std::complex<GDouble> cgamma(std::complex<GDouble> z,int OPT) const;
 	void updatePar( const AmpParameter& par );
-	std::complex<double> V12(double alp1, double alp2, double eta) const;
-	std::complex<double> DoubleRegge(int tau[2], double s, double si[2], double alp[2]) const;
-	std::complex<double> ampEtaPi0(double par[4], int hel[3],  double inv[5], double mass2[4]) const;
+	std::complex<GDouble> V12(GDouble alp1, GDouble alp2, GDouble eta) const;
+	std::complex<GDouble> DoubleRegge(int tau[2], GDouble s, GDouble si[2], GDouble alp[2]) const;
+	std::complex<GDouble> ampEtaPi0(GDouble par[4], int hel[3],  GDouble inv[5], GDouble mass2[4]) const;
 
 
 private:
 
-//	double polFraction;
+//	GDouble polFraction;
         int j;	
 	int fast;
 	AmpParameter b_eta, b_pi, a_eta, a_pi;
