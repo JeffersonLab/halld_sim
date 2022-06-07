@@ -1118,7 +1118,10 @@ def AddAmpTools(env):
 		CXXFLAGSLIST = ["-DHAVE_AMPTOOLS_MCGEN"]
 		# set to floating point precision if built in AmpTools
 		try:
-			if subprocess.check_output("nm -u --demangle %s/lib/libAmpTools.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
+			if os.getenv('CUDA_INSTALL_PATH')==None:
+				if subprocess.check_output("nm -u --demangle %s/lib/libAmpTools.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
+					CXXFLAGSLIST.append("-DAMPTOOLS_GDOUBLE_FP32")
+			elif subprocess.check_output("nm -u --demangle %s/lib/libAmpTools_GPU.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
 				CXXFLAGSLIST.append("-DAMPTOOLS_GDOUBLE_FP32")
 		except:
 			pass
