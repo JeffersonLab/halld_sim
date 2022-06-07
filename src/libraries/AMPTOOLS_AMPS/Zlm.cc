@@ -70,7 +70,7 @@ Zlm::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
 
    GDouble factor = sqrt(1 + m_s * pGamma);
    GDouble zlm = 0;
-   complex< GDouble > rotateY = polar(1., -1.*bigPhi);
+   complex< GDouble > rotateY = polar((GDouble)1., (GDouble)(-1.*bigPhi));
    if (m_r == 1)
       zlm = real(Y( m_j, m_m, cosTheta, phi ) * rotateY);
    if (m_r == -1)

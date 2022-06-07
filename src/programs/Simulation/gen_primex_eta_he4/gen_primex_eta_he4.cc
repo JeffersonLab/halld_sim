@@ -234,7 +234,7 @@ int main( int argc, char* argv[] ){
     
     // Mass in the centre-of-mass frame
     double sqrt_s = IS_4Vec.M();
-    double s = pow(sqrt_s, 2);
+    //    double s = pow(sqrt_s, 2);
     
     // Histo. creation that will store the calculated diff. xs. vs. LAB polar angle
     int ebeam_bin = h_dxs->GetXaxis()->FindBin(ebeam);
