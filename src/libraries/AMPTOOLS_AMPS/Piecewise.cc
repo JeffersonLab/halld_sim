@@ -62,8 +62,13 @@ complex< GDouble >
 Piecewise::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
 	// convert double back to long for array index
-	long* tempBin = (long*)&(userVars[uv_imassbin]);
-	complex<double> ans(m_params1[*tempBin],m_params2[*tempBin]);
+#ifdef AMPTOOLS_GDOUBLE_FP64
+  long* tempBin = (long*)&(userVars[uv_imassbin]);
+#else
+  int* tempBin = (int*)&(userVars[uv_imassbin]);
+#endif
+  
+	complex<GDouble> ans(m_params1[*tempBin],m_params2[*tempBin]);
 	if(!m_represReIm)
 		ans = polar(fabs(GDouble(m_params1[*tempBin])),GDouble(m_params2[*tempBin]));
 		
@@ -85,15 +90,20 @@ Piecewise::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   GDouble mass = Ptot.M();
 
+  
+#ifdef AMPTOOLS_GDOUBLE_FP64
   long tempBin = 0;
-
+#else
+  int tempBin = 0;
+#endif
+  
   for(int i=0; i<m_nBins; i++) {
     if(mass>(m_massMin+(i*m_width)) && mass<(m_massMin+((i+1)*m_width)))
        tempBin = i;
   }
   
   // from Matt: use the memory allocated to a double type user variable to write the bin index as a long int
-  userVars[uv_imassbin] = *((double*)&tempBin); 
+  userVars[uv_imassbin] = *((GDouble*)&tempBin); 
 
 }
 
