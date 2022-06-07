@@ -29,39 +29,39 @@ dblRegge::calcAmplitude( GDouble** pKin ) const {
 
         TLorentzVector resonance = p1 + p2;
 
-        double aPrime = 0.9;
+        GDouble aPrime = 0.9;
 ///////////
-        double tau1 = -1; //for Neutral case. Will be -1^J otherwise
-        double tau2 = -1;
+        GDouble tau1 = -1; //for Neutral case. Will be -1^J otherwise
+        GDouble tau2 = -1;
 ///////////
         complex< GDouble > Amp1;
         complex< GDouble > Amp2;
         complex<GDouble> TotalAmp;
         complex<GDouble> coeff1 = 0;
         complex<GDouble> coeff2 = 0;
-        double s12 = resonance.M2();
-        double s13 = (p1 + recoil).M2();
-        double s23 =  (p2 + recoil).M2();
-        double t1 = (beam - p1).M2();
-        double t2 = (beam - p2).M2();
-        double s = (recoil + p1 + p2).M2();
-        double u3 = t1 + t2 +s12 - (beam.M2() + p1.M2() + p2.M2());
+        GDouble s12 = resonance.M2();
+        GDouble s13 = (p1 + recoil).M2();
+        GDouble s23 =  (p2 + recoil).M2();
+        GDouble t1 = (beam - p1).M2();
+        GDouble t2 = (beam - p2).M2();
+        GDouble s = (recoil + p1 + p2).M2();
+        GDouble u3 = t1 + t2 +s12 - (beam.M2() + p1.M2() + p2.M2());
 
         complex<GDouble> ui (0,1);
 
 
 //fast eta:
-        double a1 = aPrime*t1 + 0.5;
-        double a2 = aPrime*u3 + 0.5;
+        GDouble a1 = aPrime*t1 + 0.5;
+        GDouble a2 = aPrime*u3 + 0.5;
 
-        complex <GDouble> Xi1 =0.5* (tau1 + exp(-ui*M_PI*a1)) ;
-        complex <GDouble> Xi21 = 0.5*(tau2*tau1 + exp(-ui*M_PI*(a2 - a1)));
-        double V1, V2;
-        complex <GDouble> Xi2 =0.5* (tau2 + exp(-ui*M_PI*a2));
-        complex <GDouble> Xi12 = 0.5*(tau2*tau1 + exp(-ui*M_PI*(a1 - a2)));
+        complex <GDouble> Xi1 = GDouble(0.5)*(tau1 + exp(-ui*GDouble(M_PI)*a1)) ;
+        complex <GDouble> Xi21 = GDouble(0.5)*(tau2*tau1 + exp(-ui*GDouble(M_PI)*(a2 - a1)));
+        GDouble V1, V2;
+        complex <GDouble> Xi2 = GDouble(0.5)*(tau2 + exp(-ui*GDouble(M_PI)*a2));
+        complex <GDouble> Xi12 = GDouble(0.5)*(tau2*tau1 + exp(-ui*GDouble(M_PI)*(a1 - a2)));
 
-        double lambda = 0.5;
-        double lambdaP = 0.5;
+        GDouble lambda = 0.5;
+        GDouble lambdaP = 0.5;
         if(a1==a2 || fast == 2){
                 Amp1 = 0;
         }
@@ -69,10 +69,10 @@ dblRegge::calcAmplitude( GDouble** pKin ) const {
                 V1 = exp(b*t1) / (a1-a2);
                 V2 = exp(b*u3) / (a2 - a1);
 
-                Amp1 = -(TMath::Power(aPrime*s,a1)*TMath::Power(aPrime*s23, a2-a1)*Xi1*Xi21*V1 +  TMath::Power(aPrime*s,a2)*TMath::Power(aPrime*s12, a1-a2)*Xi2*Xi12*V2);
+                Amp1 = -(G_POW(aPrime*s,a1)*G_POW(aPrime*s23, a2-a1)*Xi1*Xi21*V1 +  G_POW(aPrime*s,a2)*G_POW(aPrime*s12, a1-a2)*Xi2*Xi12*V2);
 
 
-                coeff1 = (TMath::Power(-t1, 0.5) / p2.M()) * TMath::Power( (-u3/(4*recoil.M2())), 0.5*abs(lambda - lambdaP) ) ;
+                coeff1 = (G_POW(-t1, 0.5) / p2.M()) * G_POW( (-u3/(4*recoil.M2())), 0.5*abs(lambda - lambdaP) ) ;
         }
 
 //fast pion:
@@ -80,10 +80,10 @@ dblRegge::calcAmplitude( GDouble** pKin ) const {
         a1 = aPrime*t2 + 0.5;
         a2 = aPrime*u3 + 0.5;
 
-        Xi1 =0.5* (tau1 + exp(-ui*M_PI*a1)) ;
-        Xi21 = 0.5*(tau2*tau1 + exp(-ui*M_PI*(a2 - a1)));
-        Xi2 =0.5* (tau2 + exp(-ui*M_PI*a2));
-        Xi12 = 0.5*(tau2*tau1 + exp(-ui*M_PI*(a1 - a2)));
+        Xi1 = GDouble(0.5)*(tau1 + exp(-ui*GDouble(M_PI)*a1)) ;
+        Xi21 = GDouble(0.5)*(tau2*tau1 + exp(-ui*GDouble(M_PI)*(a2 - a1)));
+        Xi2 = GDouble(0.5)*(tau2 + exp(-ui*GDouble(M_PI)*a2));
+        Xi12 = GDouble(0.5)*(tau2*tau1 + exp(-ui*GDouble(M_PI)*(a1 - a2)));
         
         if(a1==a2 || fast == 1){
                 Amp2 = 0;
@@ -91,21 +91,21 @@ dblRegge::calcAmplitude( GDouble** pKin ) const {
         else{
                 V1 = exp(b*t2)/ (a1-a2);
                 V2 = exp(b*u3) / (a2 - a1);
-                Amp2 = -(TMath::Power(aPrime*s,a1)*TMath::Power(aPrime*s13, a2-a1)*Xi1*Xi21*V1 +  TMath::Power(aPrime*s,a2)*TMath::Power(aPrime*s12, a1-a2)*Xi2*Xi12*V2);
+                Amp2 = -(G_POW(aPrime*s,a1)*G_POW(aPrime*s13, a2-a1)*Xi1*Xi21*V1 +  G_POW(aPrime*s,a2)*G_POW(aPrime*s12, a1-a2)*Xi2*Xi12*V2);
 
 
-        coeff2 =  (TMath::Power(-t2, 0.5) / p1.M()) * TMath::Power( (-u3/(4*recoil.M2())), 0.5*abs(lambda - lambdaP) );
+        coeff2 =  (G_POW(-t2, 0.5) / p1.M()) * G_POW( (-u3/(4*recoil.M2())), 0.5*abs(lambda - lambdaP) );
         }
 
         TotalAmp = coeff1*Amp1 + coeff2*Amp2;
          
-        double m1 = p1.M();
-        double m2 = p2.M();
-        double mP = recoil.M();
+        GDouble m1 = p1.M();
+        GDouble m2 = p2.M();
+        GDouble mP = recoil.M();
 
-        double breakupP = TMath::Power( (s*s + TMath::Power(m1, 4) + TMath::Power(m2,4)- 2*(m1*m1*(s + m2*m2) + m2*m2*s )), 0.5) / (2*TMath::Power(s12, 0.5));
+        GDouble breakupP = G_POW( (s*s + G_POW(m1, 4) + G_POW(m2,4)- 2*(m1*m1*(s + m2*m2) + m2*m2*s )), 0.5) / (2*G_POW(s12, 0.5));
 
-        double numericCoeff = TMath::Power(0.125 *TMath::Power((1/(4*M_PI)), 4)* (breakupP /(s*s +mP*mP*mP*mP - 2*s*mP*mP)  ), 0.5);
+        GDouble numericCoeff = G_POW(0.125 *G_POW((1/(4*GDouble(M_PI))), 4)* (breakupP /(s*s +mP*mP*mP*mP - 2*s*mP*mP)  ), 0.5);
 
 
         TotalAmp = TotalAmp*numericCoeff;
