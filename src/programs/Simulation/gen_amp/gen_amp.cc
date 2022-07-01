@@ -32,7 +32,8 @@
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/Hist2D.h"
 #include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
@@ -298,7 +299,8 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Zlm() );
 	AmpToolsInterface::registerAmplitude( dblRegge() );
 	AmpToolsInterface::registerAmplitude( Hist2D() );
-	AmpToolsInterface::registerAmplitude( dblReggeMod() );
+	AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+	AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
 	AmpToolsInterface::registerAmplitude( Flatte() );
 	AmpToolsInterface::registerAmplitude( Uniform() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
