@@ -296,7 +296,6 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
-	AmpToolsInterface::registerAmplitude( dblRegge() );
 	AmpToolsInterface::registerAmplitude( Hist2D() );
 	AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
 	AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
