@@ -35,7 +35,6 @@
 #include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
 #include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/Hist2D.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 
