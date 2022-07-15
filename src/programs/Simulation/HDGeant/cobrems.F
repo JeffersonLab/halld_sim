@@ -61,7 +61,7 @@ C-- PDG formula for radiation length, converted to meters
      +      *( (Z**2)*(log(184.15*Z**(-1/3.))
      +                -(c**2)*(1/(1+c**2) + 0.20206 - 0.0369*(c**2)
      +                        + 0.0083*(c**4) - 0.002*(c**6)))
-     +        + Z*log(1194*Z**(-2/3)))
+     +        + Z*log(1194*Z**(-2/3.)))
 C-- Schiff formula for radiation length, converted to meters
 c     zeta=log(1440*Z**(-2/3.))/log(183*Z**(-1/3.))
 c     radlen=4*nsites*alpha**3*(hbarc/(a*me))**2/a
