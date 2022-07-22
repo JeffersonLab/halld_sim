@@ -34,8 +34,8 @@
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
@@ -297,7 +297,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );
    AmpToolsInterface::registerAmplitude( Uniform() );
-   AmpToolsInterface::registerAmplitude( dblRegge() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
