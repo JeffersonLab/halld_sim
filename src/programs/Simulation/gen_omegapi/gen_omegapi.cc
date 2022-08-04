@@ -17,7 +17,6 @@
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
@@ -252,7 +251,6 @@ int main( int argc, char* argv[] ){
 
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
-	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
