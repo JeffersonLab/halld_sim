@@ -178,7 +178,7 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 
   GDouble Factor = sqrt(1 + m_s * polFraction);
   complex< GDouble > zjm = 0;
-  complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*(prod_angle - polAngle*TMath::DegToRad())) );
+  complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*(prod_angle + polAngle*TMath::DegToRad())) ); // - -> + in prod_angle and polAngle summing
   if (m_r == 1)
 	  zjm = real(amplitude * rotateY);
   if (m_r == -1) 
