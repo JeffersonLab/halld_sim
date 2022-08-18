@@ -27,7 +27,7 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
@@ -338,7 +338,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPitdist() );
    AmpToolsInterface::registerAmplitude( ThreePiAngles() );
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+   AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
    AmpToolsInterface::registerAmplitude( Zlm() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );

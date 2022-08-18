@@ -10,7 +10,7 @@ if os.getenv('AMPTOOLS', 'nada')!='nada' and os.getenv('AMPPLOTTER', 'nada')!='n
 
    env = env.Clone()
 
-   AMPTOOLS_LIBS = "AMPTOOLS_AMPS AMPTOOLS_DATAIO AMPTOOLS_MCGEN UTILITIES"
+   AMPTOOLS_LIBS = "AMPTOOLS_DATAIO AMPTOOLS_AMPS AMPTOOLS_MCGEN UTILITIES"
    env.AppendUnique(LIBS = AMPTOOLS_LIBS.split())
 
    sbms.AddHDDM(env)
