@@ -78,7 +78,11 @@ TwoLeptonAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
   GDouble bigPhi = polAngle * 0.017453293 + userVars[kBigPhi];  // rotate Phi (in rad)
   GDouble Pgamma = userVars[kPgamma];
 
-  // vector meson production from K. Schilling et. al.
+  // Decay angular distribution for J/psi --> e-e+ (spin 1 --> spin 1/2 + spin 1/2).
+  // Unpolarized decay angular distribution for this reaction can be found in:
+  //   Eq. (A6) in A. I. Titov et al., PRC 60, 035205 (1999).
+  // For the linearly polarized photon beam, this can be decomposed as in:
+  //   Eq. (29) in K. Schilling et al., Nuclear Physics B15, 397 (1970).
   GDouble W = 0.5 * (1 + rho000) - 0.5 * (3 * rho000 - 1) * cosTheta * cosTheta + sqrt(2) * rho100 * sin2Theta * cos(phi) + rho1m10 * sinSqTheta * cos(2 * phi);
 
   W -= Pgamma * cos(2 * bigPhi) * (rho111 * (1 + cosTheta * cosTheta) + rho001 * sinSqTheta + sqrt(2) * rho101 * sin2Theta * cos(phi) + rho1m11 * sinSqTheta * cos(2 * phi));
