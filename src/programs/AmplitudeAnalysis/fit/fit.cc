@@ -28,6 +28,7 @@
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 #include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
+#include "AMPTOOLS_AMPS/TwoLeptonAngles.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
@@ -275,40 +276,50 @@ int main( int argc, char* argv[] ){
             exit(1);
    }
 
+   ConfigFileParser parser(configfile);
+   ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
+   cfgInfo->display();
 
-  ConfigFileParser parser(configfile);
-  ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
-  cfgInfo->display();
+   AmpToolsInterface::registerAmplitude( BreitWigner() );
+   AmpToolsInterface::registerAmplitude( BreitWigner3body() );
+   AmpToolsInterface::registerAmplitude( TwoPSAngles() );
+   AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
+   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
+   AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
+   AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
+   AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
+   AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+   AmpToolsInterface::registerAmplitude( TwoPitdist() );
+   AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
+   AmpToolsInterface::registerAmplitude( ThreePiAngles() );
+   AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
+   AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
+   AmpToolsInterface::registerAmplitude( TwoLeptonAngles() );
+   AmpToolsInterface::registerAmplitude( Zlm() );
+   AmpToolsInterface::registerAmplitude( b1piAngAmp() );
+   AmpToolsInterface::registerAmplitude( polCoef() );
+   AmpToolsInterface::registerAmplitude( Uniform() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
+   AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
+   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+   AmpToolsInterface::registerAmplitude( PhaseOffset() );
+   AmpToolsInterface::registerAmplitude( Piecewise() );
 
-  AmpToolsInterface::registerAmplitude( BreitWigner() );
-  AmpToolsInterface::registerAmplitude( BreitWigner3body() );
-  AmpToolsInterface::registerAmplitude( TwoPSAngles() );
-  AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
-  AmpToolsInterface::registerAmplitude( TwoPiAngles() );
-  AmpToolsInterface::registerAmplitude( TwoPiAngles_amp() );
-  AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
-  AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
-  AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
-  AmpToolsInterface::registerAmplitude( TwoPiW_brokenetas() );
-  AmpToolsInterface::registerAmplitude( TwoPitdist() );
-  AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
-  AmpToolsInterface::registerAmplitude( TwoPiEtas_tdist() );
-  AmpToolsInterface::registerAmplitude( ThreePiAngles() );
-  AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-  AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
-  AmpToolsInterface::registerAmplitude( Zlm() );
-  AmpToolsInterface::registerAmplitude( b1piAngAmp() );
-  AmpToolsInterface::registerAmplitude( polCoef() );
-  AmpToolsInterface::registerAmplitude( Uniform() );
-  AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
-  AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
-  AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
-  AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
-  
-  AmpToolsInterface::registerDataReader( ROOTDataReader() );
-  AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
-  AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
-  AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() ); 
+   AmpToolsInterface::registerDataReader( ROOTDataReader() );
+   AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
+   AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
+   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
+   AmpToolsInterface::registerDataReader( FSRootDataReader() );
+
+   if(numRnd==0){
+      if(scanPar=="")
+         runSingleFit(cfgInfo, useMinos, maxIter, seedfile);
+      else
+         runParScan(cfgInfo, useMinos, maxIter, seedfile, scanPar);
+   } else {
+      runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5);
+   }
  
   AmpToolsInterface ati( cfgInfo );
 
