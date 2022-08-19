@@ -28,7 +28,7 @@ const double m_p_sq=m_p*m_p;
 double width=0.;
 
 // Coupling constants 
-//const double g0_sq=0.05*110.5; // GeV^-2
+//const double g0_sq=110.5; // GeV^-2
 const double g_omega_V=15.;
 const double gsq_omega_V=g_omega_V*g_omega_V;
 const double g_rho_V=3.4;
@@ -205,17 +205,17 @@ void GetRhoOmegaInterference(double s,double t,
   
   imaginaryFactor=regge_rho*regge_omega*0.5*(sin_rho-sin_omega
 					 -sin(M_PI*a_rho_omega))
-    +C_n_P*(regge_rho*regge_omega_P*(sin(M_PI*a_rho_omega_P)
+    -C_n_P*(regge_rho*regge_omega_P*(sin(M_PI*a_rho_omega_P)
 				     +sin(M_PI_2*a_omega_P))
 	    +regge_omega*regge_rho_P*(sin(M_PI*a_omega_rho_P)
 				      +sin(M_PI_2*a_rho_P)))
-    +C_n_f2*(regge_rho*regge_omega_f2*(sin(M_PI*a_rho_omega_f2)
+    -C_n_f2*(regge_rho*regge_omega_f2*(sin(M_PI*a_rho_omega_f2)
 				       +sin(M_PI_2*a_omega_f2))
 	     +regge_omega*regge_rho_P*(sin(M_PI*a_omega_rho_f2)
 				       +sin(M_PI_2*a_rho_f2)))
-    +2.*C_n_P_sq*regge_rho_P*regge_omega_P*sin(M_PI_2*a_rho_P_omega_P)
-    +2.*C_n_f2_sq*regge_rho_f2*regge_omega_f2*sin(M_PI_2*a_rho_f2_omega_f2)
-    +2.*C_n_f2_C_n_P*(regge_rho_P*regge_omega_f2*sin(M_PI_2*a_rho_P_omega_f2)
+    -2.*C_n_P_sq*regge_rho_P*regge_omega_P*sin(M_PI_2*a_rho_P_omega_P)
+    -2.*C_n_f2_sq*regge_rho_f2*regge_omega_f2*sin(M_PI_2*a_rho_f2_omega_f2)
+    -2.*C_n_f2_C_n_P*(regge_rho_P*regge_omega_f2*sin(M_PI_2*a_rho_P_omega_f2)
 		      +regge_rho_f2*regge_omega_P*sin(M_PI_2*a_rho_f2_omega_P));
 }
 
@@ -249,7 +249,6 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
   double p_dot_v2=p.Dot(v2);
   double v1sq=v1.M2();
   double v2sq=v2.M2();
-  double v1_dot_v2=v1.Dot(v2);
   double psq=p.M2();
   double b1=q_dot_p*v1sq-q_dot_v1*p_dot_v1;
   double b2=q_dot_p*v2sq-q_dot_v2*p_dot_v2;
@@ -261,8 +260,8 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
   TLorentzVector N2=b2*p1+p1.Dot(c2)*v2+p1.Dot(d2)*p;
   
    // Rho propagators for top exchange
-  double m_rho=0.7685;
-  double Gamma_rho=0.1462;
+  double m_rho=0.77;
+  double Gamma_rho=0.15;
   double m_rhosq_minus_v1sq=m_rho*m_rho-v1sq;
   double m_Gamma_rho_sq=m_rho*m_rho*Gamma_rho*Gamma_rho;
   double Pi_rho_1_sq=1./(m_rhosq_minus_v1sq*m_rhosq_minus_v1sq+m_Gamma_rho_sq);
@@ -500,23 +499,23 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
     double M1_M2=4.*b1*b2 + b1*v2.Dot(c2) + b2*v1.Dot(c1) + b1*p.Dot(d2) 
       + b2*p.Dot(d1) + p.Dot(v1)*d2.Dot(c1) + p.Dot(v2)*d1.Dot(c2)
       + v1.Dot(v2)*c1.Dot(c2) + psq*d1.Dot(d2);
-  
+ 
     double Pi_omega_1_Pi_omega_2
       =2.*(Re_omega_1*Re_omega_2+Im_omega_1*Im_omega_2);
     double Pi_rho_1_Pi_rho_2=2.*(Re_rho_1*Re_rho_2+Im_rho_1*Im_rho_2);
 
     double rho_1_omega_1_interference
       =(Re_rho_1*Re_omega_1+Im_rho_1*Im_omega_1)*realFactor
-      +(Re_rho_1*Im_omega_1-Re_omega_1*Im_rho_1)*imaginaryFactor;
+      -(Re_rho_1*Im_omega_1-Re_omega_1*Im_rho_1)*imaginaryFactor;
     double rho_2_omega_2_interference
       =(Re_rho_2*Re_omega_2+Im_rho_2*Im_omega_2)*realFactor
-      +(Re_rho_2*Im_omega_2-Re_omega_2*Im_rho_2)*imaginaryFactor;
+      -(Re_rho_2*Im_omega_2-Re_omega_2*Im_rho_2)*imaginaryFactor;
     double rho_1_omega_2_interference
       =(Re_rho_1*Re_omega_2+Im_rho_1*Im_omega_2)*realFactor
-      +(Re_rho_1*Im_omega_2-Im_rho_1*Re_omega_2)*imaginaryFactor;
+      -(Re_rho_1*Im_omega_2-Im_rho_1*Re_omega_2)*imaginaryFactor;
     double rho_2_omega_1_interference
       =(Re_rho_2*Re_omega_1+Im_rho_2*Im_omega_1)*realFactor
-      +(Re_rho_2*Im_omega_1-Im_rho_2*Re_omega_1)*imaginaryFactor;
+      -(Re_rho_2*Im_omega_1-Im_rho_2*Re_omega_1)*imaginaryFactor;
     double rho_12_omega_21_interference=rho_1_omega_2_interference
       +rho_2_omega_1_interference;
     
@@ -842,7 +841,7 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
   double dpx2_plus_dpy2=dpx*dpx+dpy*dpy;
 
   // other constants
-  double m_rho=0.775; // GeV
+  double m_rho=0.77; // GeV
   double m_rho_sq=m_rho*m_rho;
  
   // Coupling constants 
@@ -967,9 +966,9 @@ double TensorBackgroundInterference(TLorentzVector &q /* beam */,
   //} 
 
   // Rho propagator for top exchange for double-exchange diagrams
-  double m_rho=0.7685;
+  double m_rho=0.77;
   double m_rho_sq=m_rho*m_rho;
-  double Gamma_rho=0.1462;
+  double Gamma_rho=0.15;
   double m_rhosq_minus_v1sq=m_rho*m_rho-v1sq;
   double Pi_rho_1_sq=1./(m_rhosq_minus_v1sq*m_rhosq_minus_v1sq
 			 +m_rho*m_rho*Gamma_rho*Gamma_rho);
@@ -1131,7 +1130,7 @@ double TensorBackgroundInterference(TLorentzVector &q /* beam */,
       -4./3.*(kin2_2-Kappa_rho*kin3_2)*regge_rho_sq*g_rho_T*Pi_omega_2_sq
       *Im_B_and_omega_2;
   }
-  double common_fac=zeta*C*sqrt(38./9.*M_PI/2./137.*gT_sq*g0_sq)*gR/(ReB*ReB+ImB*ImB);
+  double common_fac=zeta*C*sqrt(38./9.*M_PI/2./137.*gT_sq*g0_sq)*gR*(ReB*ReB+ImB*ImB);
   
 
   double T=common_fac*(ReT*cos(phase)+ImT*sin(phase));
@@ -1147,7 +1146,7 @@ double TensorScalarInterference(TLorentzVector &q /* beam */,
 				double g_omega_S,double g_rho_S,
 				double gT_sq,double phase){
   //  int two_particles=particle_types[0]+particle_types[1];
-  double m_rho=0.7685;
+  double m_rho=0.77;
   double m_rho_sq=m_rho*m_rho;
 
   // Four vectors
