@@ -18,15 +18,17 @@
 #include "AmpPlotter/PlotterMainWindow.h"
 #include "AmpPlotter/PlotFactory.h"
 
-#include "AMPTOOLS_DATAIO/ThreePiPlotGeneratorSchilling.h"
+#include "AMPTOOLS_DATAIO/TwoLeptonPlotGenerator.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
-#include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
+#include "AMPTOOLS_AMPS/TwoLeptonAngles.h"
+#include "AMPTOOLS_AMPS/BreitWigner.h"
 
-typedef ThreePiPlotGeneratorSchilling PlotGen;
+typedef TwoLeptonPlotGenerator PlotGen;
 
 void atiSetup(){
   
-  AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
+  AmpToolsInterface::registerAmplitude( TwoLeptonAngles() );
+  AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
 }
 
@@ -43,12 +45,12 @@ int main( int argc, char* argv[] ){
 
   if (argc < 2){
     cout << "Usage:" << endl << endl;
-    cout << "\tthreepi_schilling_plotter <results file name> -o <output file name>" << endl << endl;
+    cout << "\ttwolepton_plotter <results file name> -o <output file name>" << endl << endl;
     return 0;
   }
 
   bool showGui = false;
-  string outName = "threepi_schilling_plot.root";
+  string outName = "twolepton_plot.root";
   string resultsName(argv[1]);
   for (int i = 2; i < argc; i++){
 
@@ -80,21 +82,19 @@ int main( int argc, char* argv[] ){
     // load the results and display the configuration info
     // ************************
 
-  cout << "Loading Fit results" << endl;
   FitResults results( resultsName );
   if( !results.valid() ){
     
     cout << "Invalid fit results in file:  " << resultsName << endl;
     exit( 1 );
   }
-   cout << "Fit results loaded" << endl;
+
     // ************************
     // set up the plot generator
     // ************************
 
   atiSetup();
   PlotGen plotGen( results );
-  cout << " Initialized ati and PlotGen" << endl;
 
     // ************************
     // set up an output ROOT file to store histograms
@@ -106,7 +106,7 @@ int main( int argc, char* argv[] ){
   string reactionName = results.reactionList()[0];
   plotGen.enableReaction( reactionName );
   vector<string> sums = plotGen.uniqueSums();
-  cout << "Reaction " << reactionName << " enabled" << endl;
+
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
   for (unsigned int isum = 0; isum <= sums.size(); isum++){
@@ -123,25 +123,33 @@ int main( int argc, char* argv[] ){
       }
     }
 
-   cout << "Looping over input data" << endl;
+
     // loop over data, accMC, and genMC
     for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
       if (isum < sums.size() && iplot == PlotGenerator::kData) continue; // only plot data once
 
       // loop over different variables
-      for (unsigned int ivar  = 0; ivar  < ThreePiPlotGeneratorSchilling::kNumHists; ivar++){
+      for (unsigned int ivar  = 0; ivar  < TwoLeptonPlotGenerator::kNumHists; ivar++){
 
         // set unique histogram name for each plot (could put in directories...)
-        string histname =  plotGen.getHistogram( ivar )->name();
+        string histname =  "";
+        if (ivar == TwoLeptonPlotGenerator::k2LeptonMass)  histname += "M2pi";
+	else if (ivar == TwoLeptonPlotGenerator::kLeptonPCosTheta)  histname += "cosTheta";
+        else if (ivar == TwoLeptonPlotGenerator::kPhi)  histname += "Phi";
+        else if (ivar == TwoLeptonPlotGenerator::kphi)  histname += "phi";
+        else if (ivar == TwoLeptonPlotGenerator::kPsi)  histname += "psi";
+        else if (ivar == TwoLeptonPlotGenerator::kt)  histname += "t";
+        else continue;
 
         if (iplot == PlotGenerator::kData) histname += "dat";
-        if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
         if (iplot == PlotGenerator::kAccMC) histname += "acc";
         if (iplot == PlotGenerator::kGenMC) histname += "gen";
 
         if (isum < sums.size()){
+          //ostringstream sdig;  sdig << (isum + 1);
+          //histname += sdig.str();
 
-          // get name of sum for naming histogram
+	  // get name of sum for naming histogram
           string sumName = sums[isum];
           histname += "_";
           histname += sumName;
@@ -163,7 +171,6 @@ int main( int argc, char* argv[] ){
     // retrieve SDME parameters for plotting and asymmetry
     // ************************
 
-  cout << "Checking Parameters" << endl;
   // parameters to check
   vector< string > pars;
   pars.push_back("rho000");
@@ -180,7 +187,7 @@ int main( int argc, char* argv[] ){
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
-  outfile.open( "threepi_schilling_fitPars.txt" );
+  outfile.open( "twolepton_fitPars.txt" );
 
   for(unsigned int i = 0; i<pars.size(); i++) {
     double parValue = results.parValue( pars[i] );
@@ -227,15 +234,11 @@ int main( int argc, char* argv[] ){
 	  gStyle->SetPalette(1);
 	  gStyle->SetFrameFillColor(10);
 	  gStyle->SetFrameFillStyle(1001);
-   
-     cout << " Initialized App " << endl;     
+	  
 	  PlotFactory factory( plotGen );	
-     cout << " Created Plot Factory " << endl;
 	  PlotterMainWindow mainFrame( gClient->GetRoot(), factory );
-     cout << " Main frame created " << endl;
 	  
 	  app.Run();
-     cout << " App running" << endl;
   }
     
   return 0;
