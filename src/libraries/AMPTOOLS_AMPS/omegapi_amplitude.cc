@@ -115,7 +115,7 @@ omegapi_amplitude::calcUserVars( GDouble** pKin, GDouble* userVars ) const
 	}
 
   //Calculate decay angles in helicity frame
-  vector <double> locthetaphi = getomegapiAngles(polAngle, omega, X, beam, Gammap);
+  vector <double> locthetaphi = getomegapiAngles(0.0, omega, X, beam, Gammap);
 
   vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
 

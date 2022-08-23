@@ -124,6 +124,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   TLorentzVector Gammap = beam + target;
 
   // Calculate decay angles in helicity frame (same for all vectors)
+  // set beam polarization angle to 0 degrees; apply diamond orientation in calcAmplitude
   vector <double> locthetaphi = getomegapiAngles(0, vec, X, beam, Gammap);
 
   // Calculate vector decay angles (unique for each vector)
