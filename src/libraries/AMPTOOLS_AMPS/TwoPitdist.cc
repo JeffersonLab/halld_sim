@@ -74,8 +74,8 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
   
   /*GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
-  GDouble mass2 = P2.M();*/
-  GDouble Thetapipi = Ptot.Theta()*180./PI;
+  GDouble mass2 = P2.M();
+  GDouble Thetapipi = Ptot.Theta()*180./PI;*/
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3

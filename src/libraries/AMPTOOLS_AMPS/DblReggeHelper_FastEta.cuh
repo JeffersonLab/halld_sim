@@ -262,16 +262,16 @@ static __device__ WCUComplex GPU_ampEtaPi0(GDouble par, int hel[3], GDouble inv[
         if(abs(hel[0]*hel[1]*hel[2]) != 1 || hel[0]==0){return zero;}
 
 	GDouble s, s12,s23,t1,u3;
-	GDouble m12, m22, m32, ma2;
+	// GDouble m12, m22, m32, ma2;
 	s   = inv[0];   s12 = inv[1];   s23 = inv[2];   t1  = inv[3];   u3  = inv[4];
-	ma2 = mass2[0]; m12 = mass2[1]; m22 = mass2[2]; m32 = mass2[3];
-	GDouble t2  = -t1+u3-s12+ma2+m12+m22;
-	GDouble s13 = s-s12-s23+m12+m22+m32;
+	// ma2 = mass2[0]; m12 = mass2[1]; m22 = mass2[2]; m32 = mass2[3];
+	// GDouble t2  = -t1+u3-s12+ma2+m12+m22;
+	// GDouble s13 = s-s12-s23+m12+m22+m32;
 
 	// scalar part
 	GDouble app = 0.9;     // slope of Regge trajectories alpha'
 	GDouble alp0eta = app*t1 + 0.5;
-	GDouble alp0pi0 = app*t2 + 0.5;
+	// GDouble alp0pi0 = app*t2 + 0.5;
 	GDouble alp1    = app*u3 + 0.5;
 
 //	int tau[2] = {-1, -1};    // only vector exchange
