@@ -320,25 +320,6 @@ int main( int argc, char* argv[] ){
    } else {
       runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5);
    }
- 
-  AmpToolsInterface ati( cfgInfo );
-
-  double likelihood_init =  ati.likelihood();
-  
-  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << likelihood_init << endl;
-  if (!isfinite(likelihood_init)) {
-    cout << "*** fit- infinite Likelihood before minimization EXIT***" << endl;
-    exit(1);
-  }
-
-  if(numRnd==0){
-    if(scanPar=="")
-      runSingleFit(cfgInfo, useMinos, maxIter, seedfile);
-    else
-      runParScan(cfgInfo, useMinos, maxIter, seedfile, scanPar);
-  } else {
-    runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5);
-  }
 
   return 0;
 }
