@@ -233,7 +233,7 @@ int main( int argc, char* argv[] ){
     TLorentzVector IS_4Vec = InGamma_4Vec + Target_4Vec;
     
     // Mass in the centre-of-mass frame
-    double sqrt_s = IS_4Vec.M();
+    //    double sqrt_s = IS_4Vec.M();
     //    double s = pow(sqrt_s, 2);
     
     // Histo. creation that will store the calculated diff. xs. vs. LAB polar angle

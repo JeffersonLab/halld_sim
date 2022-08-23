@@ -261,10 +261,10 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
   }
   
   GDouble Wpipi  = Ptot.M();
-  GDouble mass1 = P1.M();
+  // GDouble mass1 = P1.M();
   // GDouble mass2 = P2.M();
-  GDouble Ppipi = Ptot.E() > Wpipi? G_SQRT(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
-  GDouble Thetapipi = Ptot.Theta()*180./PI;
+  // GDouble Ppipi = Ptot.E() > Wpipi? G_SQRT(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
+  // GDouble Thetapipi = Ptot.Theta()*180./PI;
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
@@ -311,8 +311,8 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
     GDouble xnorm = 0.001;
     GDouble sigmat = sigmat_func (xin,parin) * xnorm;    // normlize amplitude to about unity
 
-  GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
-  GDouble Thpipi = -t > tpar? (180/PI)*G_SQRT( (-t-tpar)/(Eg*Ppipi) ): 0;
+    // GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
+    // GDouble Thpipi = -t > tpar? (180/PI)*G_SQRT( (-t-tpar)/(Eg*Ppipi) ): 0;
   
   GDouble epsilon = 1e-7;
   complex<GDouble> RealOne(1,0);
