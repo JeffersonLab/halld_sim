@@ -25,16 +25,15 @@
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/Lambda1520tdist.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/Hist2D.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 
@@ -289,16 +288,15 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-	AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+	AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
 	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
 	AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
-	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
-	AmpToolsInterface::registerAmplitude( dblRegge() );
 	AmpToolsInterface::registerAmplitude( Hist2D() );
-	AmpToolsInterface::registerAmplitude( dblReggeMod() );
+	AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+	AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
 	AmpToolsInterface::registerAmplitude( Flatte() );
 	AmpToolsInterface::registerAmplitude( Uniform() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );

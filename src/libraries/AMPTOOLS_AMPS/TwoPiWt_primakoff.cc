@@ -89,13 +89,13 @@ Double_t ff_func (Double_t *x, Double_t *par){
     //
     // Function is a function of q, the three-momentum transfer to the nucleus.
     // Input argument is t
-    // Note that q is the 3-vector momentum, but for low -t, q ~ sqrt(-t).
+    // Note that q is the 3-vector momentum, but for low -t, q ~ G_SQRT(-t).
     
     // constants
     // Double_t alpha = 1/137.;
     // Double_t pi = 3.14159;
     Double_t hbarc = 0.19733;                  // GeV*fm
-    Double_t q = sqrt(x[0])/hbarc;          // take q to be  in fm^-1. Input variable is positive (-t)
+    Double_t q = G_SQRT(x[0])/hbarc;          // take q to be  in fm^-1. Input variable is positive (-t)
     
     Double_t R0  = par[0];  				 // half-density radius
     Double_t a0 = par[1];                    // skin or diffuseness parameter
@@ -115,7 +115,7 @@ Double_t ff_func (Double_t *x, Double_t *par){
     Double_t f = 0;
     
     f = (4*PI*PI*rho0*a0*a0*a0)/(q*q*a0*a0*sinh(PI*q*a0)*sinh(PI*q*a0))
-    	* (PI*q*a0 * cosh(PI*q*a0) * sin(q*R0) - q*R0 *cos(q*R0) * sinh(PI*q*a0) )
+    	* (PI*q*a0 * cosh(PI*q*a0) * G_SIN(q*R0) - q*R0 *G_COS(q*R0) * sinh(PI*q*a0) )
     	+ 8*PI*rho0*a0*a0*a0*sum;
     
     // cout << " q=" << q << " f=" << f << endl;
@@ -163,7 +163,7 @@ Double_t sigmat_func (Double_t *x, Double_t *par){
     Double_t f = 0;
     
     Double_t s = m2*m2 + 2*Eg*m2;
-    Double_t sqrts = s > 0? sqrt(s) : 0;
+    Double_t sqrts = s > 0? G_SQRT(s) : 0;
     if (s < 0) {
         cout << "*** sigma_func: s =" << s << " < 0!" << endl;
         return f;
@@ -174,10 +174,10 @@ Double_t sigmat_func (Double_t *x, Double_t *par){
     Double_t E3cm = (s+m3*m3-m4*m4)/(2*sqrts);
     // Double_t E4cm = (s+m4*m4-m3*m3)/(2*sqrts);
     
-    Double_t p1cm = E1cm*E1cm - m1*m1? sqrt(E1cm*E1cm - m1*m1) : 0;
-    // Double_t p2cm = E2cm*E2cm - m2*m2? sqrt(E2cm*E2cm - m2*m2) : 0;
-    Double_t p3cm = E3cm*E3cm - m3*m3? sqrt(E3cm*E3cm - m3*m3) : 0;
-    // Double_t p4cm = E4cm*E4cm - m4*m4? sqrt(E4cm*E4cm - m4*m4) : 0;
+    Double_t p1cm = E1cm*E1cm - m1*m1? G_SQRT(E1cm*E1cm - m1*m1) : 0;
+    // Double_t p2cm = E2cm*E2cm - m2*m2? G_SQRT(E2cm*E2cm - m2*m2) : 0;
+    Double_t p3cm = E3cm*E3cm - m3*m3? G_SQRT(E3cm*E3cm - m3*m3) : 0;
+    // Double_t p4cm = E4cm*E4cm - m4*m4? G_SQRT(E4cm*E4cm - m4*m4) : 0;
     
     Double_t arg = (m1*m1-m3*m3-m2*m2+m4*m4)/(2*sqrts);
     Double_t t0 = arg*arg - (p1cm - p3cm)*(p1cm - p3cm);
@@ -187,7 +187,7 @@ Double_t sigmat_func (Double_t *x, Double_t *par){
     Double_t gammastar = (Eg + m2)/sqrts;
     Double_t betapipicm = p3cm/E3cm;
     
-    // Double_t thepipicm = t0 -t > 0? sqrt((t0 -t)/(p1cm*p3cm)) : 0;
+    // Double_t thepipicm = t0 -t > 0? G_SQRT((t0 -t)/(p1cm*p3cm)) : 0;
     
     Double_t conv = 1./(gammastar*(1 + betastar/betapipicm));
     
@@ -263,7 +263,7 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
   GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
   // GDouble mass2 = P2.M();
-  GDouble Ppipi = Ptot.E() > Wpipi? sqrt(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
+  GDouble Ppipi = Ptot.E() > Wpipi? G_SQRT(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
   GDouble Thetapipi = Ptot.Theta()*180./PI;
 
   // get momentum transfer
@@ -312,15 +312,15 @@ TwoPiWt_primakoff::calcAmplitude( GDouble** pKin ) const
     GDouble sigmat = sigmat_func (xin,parin) * xnorm;    // normlize amplitude to about unity
 
   GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
-  GDouble Thpipi = -t > tpar? (180/PI)*sqrt( (-t-tpar)/(Eg*Ppipi) ): 0;
+  GDouble Thpipi = -t > tpar? (180/PI)*G_SQRT( (-t-tpar)/(Eg*Ppipi) ): 0;
   
-  double epsilon = 1e-7;
+  GDouble epsilon = 1e-7;
   complex<GDouble> RealOne(1,0);
   complex<GDouble> ImagOne(0,1);
   complex<GDouble> Csig;
 
   double arg = Bgen*t > -100? Bgen*t : -100;   // limit exponential
-  Csig = isfinite(sigmat*sig_ggpipi/Wpipi/exp(arg))? sqrt(sigmat*sig_ggpipi/Wpipi/exp(arg)) * RealOne : 0;    // Return complex double, sqrt (cross section). Divide out exponential
+  Csig = isfinite(sigmat*sig_ggpipi/Wpipi/exp(arg))? G_SQRT(sigmat*sig_ggpipi/Wpipi/exp(arg)) * RealOne : 0;    // Return complex double, sqrt (cross section). Divide out exponential
   if (-t > mtmax) Csig = 0;      // eliminate events at high t with large weights
 
 

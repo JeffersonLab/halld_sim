@@ -62,14 +62,14 @@ TwoPiAngles_amp::calcAmplitude( GDouble** pKin ) const {
                          (p1_res.Vect()).Dot(z) );
 
         GDouble cosTheta = angles.CosTheta();
-        // GDouble sinSqTheta = sin(angles.Theta())*sin(angles.Theta());
-        // GDouble sin2Theta = sin(2.*angles.Theta());
+        // GDouble sinSqTheta = G_SIN(angles.Theta())*G_SIN(angles.Theta());
+        // GDouble sin2Theta = G_SIN(2.*angles.Theta());
         GDouble phi = angles.Phi();
 
 	// TVector3 zlab(0.,0.,1.0);     // z axis in lab
-        TVector3 eps(cos(phipol), sin(phipol), 0.0); // beam polarization vector in lab
+        TVector3 eps(G_COS(phipol), G_SIN(phipol), 0.0); // beam polarization vector in lab
 	// TVector3 eps_perp = zlab.Cross(eps);         // perpendicular to plane defined by eps
-	// GDouble Phi_test = asin((eps_perp.Cross(y)).Mag());        // compute angle between planes. 
+	// GDouble Phi_test = aG_SIN((eps_perp.Cross(y)).Mag());        // compute angle between planes. 
         GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	Phi = Phi > 0? Phi : Phi + 3.14159;
 
@@ -82,38 +82,38 @@ TwoPiAngles_amp::calcAmplitude( GDouble** pKin ) const {
 
 	switch (PhaseFactor) {
         case 0:
-	  prefactor = 0.5*sqrt(1-polFrac)*(cos(Phi) - i*sin(Phi));
+	  prefactor = GDouble(0.5)*G_SQRT(1-polFrac)*(G_COS(Phi) - i*G_SIN(Phi));
 	  Mrho = m_rho;
 	  break;
         case 1:
-	  prefactor = 0.5*sqrt(1+polFrac)*(cos(Phi) - i*sin(Phi));
+	  prefactor = GDouble(0.5)*G_SQRT(1+polFrac)*(G_COS(Phi) - i*G_SIN(Phi));
 	  Mrho = m_rho;
 	  break;
         case 2:
-	  prefactor = 0.5*sqrt(1-polFrac)*(cos(Phi) + i*sin(Phi));
+	  prefactor = GDouble(0.5)*G_SQRT(1-polFrac)*(G_COS(Phi) + i*G_SIN(Phi));
 	  Mrho = m_rho;
 	  break;
         case 3:
-	  prefactor = -0.5*sqrt(1+polFrac)*(cos(Phi) + i*sin(Phi));
+	  prefactor = GDouble(-0.5)*G_SQRT(1+polFrac)*(G_COS(Phi) + i*G_SIN(Phi));
 	  Mrho = m_rho;
           break;
         case 4:
-	  prefactor = 0.5*sqrt(1-polFrac)*(cos(Phi) - i*sin(Phi));
+	  prefactor = GDouble(0.5)*G_SQRT(1-polFrac)*(G_COS(Phi) - i*G_SIN(Phi));
 	  prefactor *= pow(-1,m_rho);
 	  Mrho = -m_rho;
 	  break;
         case 5:
-	  prefactor = 0.5*sqrt(1+polFrac)*(cos(Phi) - i*sin(Phi));
+	  prefactor = GDouble(0.5)*G_SQRT(1+polFrac)*(G_COS(Phi) - i*G_SIN(Phi));
 	  prefactor *= pow(-1,m_rho);
 	  Mrho = -m_rho;
 	  break;
         case 6:
-	  prefactor = 0.5*sqrt(1-polFrac)*(cos(Phi) + i*sin(Phi));
+	  prefactor = GDouble(0.5)*G_SQRT(1-polFrac)*(G_COS(Phi) + i*G_SIN(Phi));
 	  prefactor *= pow(-1,m_rho);
 	  Mrho = -m_rho;
 	  break;
         case 7:
-	  prefactor = -0.5*sqrt(1+polFrac)*(cos(Phi) + i*sin(Phi));
+	  prefactor = GDouble(-0.5)*G_SQRT(1+polFrac)*(G_COS(Phi) + i*G_SIN(Phi));
 	  prefactor *= pow(-1,m_rho);
 	  Mrho = -m_rho;
           break;

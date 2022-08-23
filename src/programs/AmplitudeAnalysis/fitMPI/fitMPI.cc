@@ -27,16 +27,15 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
@@ -339,13 +338,13 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPitdist() );
    AmpToolsInterface::registerAmplitude( ThreePiAngles() );
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+   AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
    AmpToolsInterface::registerAmplitude( Zlm() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
-   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );
    AmpToolsInterface::registerAmplitude( Uniform() );
-   AmpToolsInterface::registerAmplitude( dblRegge() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
    AmpToolsInterface::registerAmplitude( Piecewise() );

@@ -54,15 +54,15 @@ class Flatte : public UserAmplitude< Flatte >{
       AmpParameter m_g2;	
       int m_daughter1;
       int m_daughter2;  
-      double m_mass11;
-      double m_mass12;
-      double m_mass21;
-      double m_mass22;
+      GDouble m_mass11;
+      GDouble m_mass12;
+      GDouble m_mass21;
+      GDouble m_mass22;
       int m_chan;
 
-      complex<double> phaseSpaceFac( double m, double mDec1, double mDec2 ) const;
+      complex<GDouble> phaseSpaceFac( GDouble m, GDouble mDec1, GDouble mDec2 ) const;
       template<typename mType>
-         complex<double> breakupMom( mType m, double mDec1, double mDec2 ) const;
+         complex<GDouble> breakupMom( mType m, GDouble mDec1, GDouble mDec2 ) const;
 
 };
 
