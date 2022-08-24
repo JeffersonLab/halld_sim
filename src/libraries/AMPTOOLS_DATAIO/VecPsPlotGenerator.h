@@ -22,11 +22,12 @@ public:
   VecPsPlotGenerator( const FitResults& results, Option opt);
   VecPsPlotGenerator( const FitResults& results );
   VecPsPlotGenerator( );
-    
-  void projectEvent( Kinematics* kin );
  
 private:
   
+  void projectEvent( Kinematics* kin );
+  void projectEvent( Kinematics* kin, const string& reactionName );
+
   void createHistograms( );
  
 };
