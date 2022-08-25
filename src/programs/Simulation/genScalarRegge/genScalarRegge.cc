@@ -843,59 +843,41 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
   // other constants
   double m_rho=0.77; // GeV
   double m_rho_sq=m_rho*m_rho;
- 
-  // Coupling constants 
-  // double f=1.;  // scale factor to account for normalization of regge factor 
-  // to data?? 
-  //double gT_sq=f*(2./3.)*150.; // GeV^2
-  //if (two_particles==(7+17)){
-  // f=1.; // guess
-    //gT_sq=f*183.675;  // GeV^2
-  //}
-
-  // s scale for regge trajectories
-  double s0=1.;
- 
-  // Regge trajectory for rho
+  
+   // Regge trajectory for rho
   double a_rho=0.55+0.8*t;
   double a_rho_prime=0.8;
-  double regge_rho=pow(s/s0,a_rho-1.)*M_PI*a_rho_prime/(sin(M_PI*a_rho)*TMath::Gamma(a_rho)); // excluding phase factor
-  double regge_rho_sq=regge_rho*regge_rho;
-
-  // Regge trajectory for odderon
-  double a_odderon=1.+0.25*t;
-  double a_odderon_prime=0.25;
-  double regge_odderon=pow(s/s0,a_odderon-1.)*M_PI*a_odderon_prime
-    /(sin(M_PI*a_odderon)*TMath::Gamma(a_odderon)); // excluding phase factor
-  double regge_odderon_sq=regge_odderon*regge_odderon; 
- 
+  double a_rho_P=0.64+0.16*t; // Pomeron
+  double a_rho_f2=0.222+0.404*t;
+  double C_n_P=regge_cuts[1];
+  double C_n_f2=regge_cuts[2];
+  double regge_rho_sq=GetReggeSq(s,t,a_rho,a_rho_prime,a_rho_P,a_rho_f2,C_n_P,
+				 C_n_f2);
   // coupling constant for tensor interaction at rhoNN vertex
   double Kappa_rho=6.1;
 
   // Amplitude
-  double one_minus_dpx_over_m_rho=1.-dpx/m_rho;
-  double one_minus_dpy_over_m_rho=1.-dpy/m_rho;
-  double common_fac=(38./9.)*(M_PI/2.)*(1./137.);
+  double common_fac=(5./9.)*2.*M_PI*(1./137.);
   double vector_coupling
     =2.*dpx2_plus_dpy2/m_rho_sq*p1_dot_dp*(p2_dot_dp/m_rho_sq-1.)
-    +(m_p_sq-p1_dot_p2)*(one_minus_dpx_over_m_rho*one_minus_dpx_over_m_rho
-			 +one_minus_dpy_over_m_rho*one_minus_dpy_over_m_rho);
-  double tensor_coupling
-    =(2.*t-dpx2_plus_dpy2)*(-Kappa_rho
-			    +0.25*Kappa_rho*Kappa_rho*(1.+p1_dot_p2/m_p_sq));
+    +2.*(m_p_sq-p1_dot_p2)*(1.+dpx2_plus_dpy2/m_rho_sq*(t/(2.*m_rho_sq)-1.));
+  double tensor_coupling=(1./4.)*Kappa_rho*Kappa_rho
+    *((2.*t-dpx2_plus_dpy2)*(1.+p1_dot_p2/m_p_sq)
+      +2.*p1_dot_dp*(2.*p2_dot_dp*(1.-dpx2_plus_dpy2/(2.*m_rho_sq))
+		     - dpx2_plus_dpy2*(1.-t/m_rho_sq))
+      );
   double amp_sum=gT_sq*(vector_coupling+tensor_coupling)*regge_rho_sq;
-  double gT_odderon=0.;//5.*f; // need better guess
-  if (two_particles==(7+17)){
-    //gT_odderon=5.; // need better guess
-  }
-  amp_sum+=gT_odderon*gT_odderon*vector_coupling*regge_odderon_sq;
-  amp_sum-=2.*cos(M_PI*(a_odderon-a_rho))*sqrt(gT_sq)*gT_odderon
-    *regge_rho*regge_odderon*(vector_coupling-(2.*t-dpx2_plus_dpy2)*Kappa_rho);
-  double decay_weight=1.; // take care of angular distribution of decay
-  double T=common_fac*amp_sum*decay_weight*gR*gR*(ReB*ReB+ImB*ImB);
+  double T=common_fac*gR*gR*(ReB*ReB+ImB*ImB)*amp_sum;
   
   return T;
 }
+
+/* !!!!!!!!!!
+
+  Interference terms for tensor mesons need to be made consistent with recent
+  changes to tensor cross section code (8/24/22)
+
+ */
 
 double TensorBackgroundInterference(TLorentzVector &q /* beam */,
 				    vector<Particle_t>&particle_types,
@@ -1446,7 +1428,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.75; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
+    double m_Sigma=0.8; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
     width=0.7; // 0.4-0.7 GeV, PDG (2020)
     double BWmassTerm=M_sq_R-M_sq;
@@ -1739,7 +1721,7 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
  
   // Momenta of incoming photon and outgoing S and proton in cm frame
   double p_gamma=(s-m_p_sq)/(2.*Ecm);
-  double M=0.980;
+  double M=1.265;
   double M_sq=M*M; // f0(980)/a0(980)
   double E_S=(s+M_sq-m_p_sq)/(2.*Ecm);
   double p_S=sqrt(E_S*E_S-M_sq);
