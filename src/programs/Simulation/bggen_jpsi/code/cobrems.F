@@ -50,7 +50,7 @@ C-- PDG formula for radiation length, converted to meters
      +      *( (Z**2)*(log(184.15*Z**(-1/3.))
      +                -(c**2)*(1/(1+c**2) + 0.20206 - 0.0369*(c**2)
      +                        + 0.0083*(c**4) - 0.002*(c**6)))
-     +        + Z*log(1194*Z**(-2/3)))
+     +        + Z*log(1194*Z**(-2/3.)))
       radlen=1/radlen
       write(6,*)
       write(6,1000)

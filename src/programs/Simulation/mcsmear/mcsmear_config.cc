@@ -58,7 +58,8 @@ mcsmear_config_t::mcsmear_config_t()
 //-----------
 mcsmear_config_t::~mcsmear_config_t() {
 #ifdef HAVE_RCDB
-	delete rcdb_connection;
+    if (rcdb_connection != NULL)
+	    delete rcdb_connection;
 #endif //HAVE_RCDB
 }
 

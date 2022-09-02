@@ -69,7 +69,7 @@ int main( int argc, char* argv[] ){
   double beamLowE   = 3.0;
   double beamHighE  = 12.0;
   const double M_electron = 0.000511;
-  const double M_gamma = 0.0;
+  //  const double M_gamma = 0.0;
   TLorentzVector Target_4Vec(0, 0, 0, M_electron);
   
   int runNum = 9001;
