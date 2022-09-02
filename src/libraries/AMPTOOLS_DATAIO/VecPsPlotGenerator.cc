@@ -40,28 +40,51 @@ void VecPsPlotGenerator::createHistograms( ) {
 void
 VecPsPlotGenerator::projectEvent( Kinematics* kin ){
 
+  // this function will make this class backwards-compatible with older versions
+  // (v0.10.x and prior) of AmpTools, but will not be able to properly obtain
+  // the polariation plane in the lab when multiple orientations are used
+  projectEvent( kin, "" );
+}
+
+void
+VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
+
    //cout << "project event" << endl;
    TLorentzVector beam   = kin->particle( 0 );
    TLorentzVector recoil = kin->particle( 1 );
    TLorentzVector bach = kin->particle( 2 );
 
-   bool m_3pi = false;
+   bool m_3pi = true;  // vector decays to 3pi by default (omega)
+   int min_recoil = 6; // min particle index for recoil sum
+
+   // check config file for 3pi dalitz parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
+   int nargs  = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0).size();
+   if(nargs == 11) m_3pi = false;
+
    TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
 
-   // omega ps proton, omega -> 3pi (6 particles)
-   // omega pi- Delta++, omega -> 3pi (7 particles)
-   if(m_3pi) {
+   if(m_3pi==1) {
+	  // omega ps proton, omega -> 3pi (6 particles)
+	  // omega pi- Delta++, omega -> 3pi (7 particles)
           TLorentzVector pi0 = kin->particle( 3 );//omega's pi0
           TLorentzVector pip = kin->particle( 4 );//pi-
           TLorentzVector pim = kin->particle( 5 );//pi+
           vec = pi0 + pip + pim;
           vec_daught1 = pip;
           vec_daught2 = pim;
+	  min_recoil = 6;
    }
    else {
+	  // omega ps proton, omega -> pi0 g (4 particles)
+	  // omega pi- Delta++, omega -> pi0 g (5 particles)
+	  
+	  // (vec 2-body) ps proton, vec 2-body -> pipi, KK (5 particles)
+	  // (vec 2-body) pi- Delta++, vec 2-body -> pipi, KK (6 particles)
+	  // (vec 2-body) K+ Lambda, vec 2-body -> Kpi (6 particles)
 	  vec_daught1 = kin->particle( 3 );
           vec_daught2 = kin->particle( 4 );
           vec = vec_daught1 + vec_daught2;
+	  min_recoil = 5;
    }
 
    // final meson system P4
@@ -69,7 +92,8 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin ){
 
    TLorentzVector proton_ps = recoil + bach;
    TLorentzVector recoil_ps = proton_ps;
-   for(uint i=5; i<kin->particleList().size(); i++) {
+   for(uint i=min_recoil; i<kin->particleList().size(); i++) { 
+	// add mesons to recoil system (e.g. Delta or Lambda)
 	recoil += kin->particle(i);
 	recoil_ps += kin->particle(i);
    }
@@ -111,4 +135,3 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin ){
    fillHistogram( kRecoilPsMass, recoil_ps.M() );
 
 }
-

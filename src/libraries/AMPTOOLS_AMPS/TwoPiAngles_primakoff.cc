@@ -58,7 +58,7 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
 	TLorentzVector recoil ( pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0] );
 	TLorentzVector resonance = p1 + p2;
 
-        TVector3 eps(cos(phipol), sin(phipol), 0.0); // beam polarization vector in lab
+        TVector3 eps(G_COS(phipol), G_SIN(phipol), 0.0); // beam polarization vector in lab
 
 	TLorentzRotation resonanceBoost( -resonance.BoostVector() );
 	
@@ -76,8 +76,8 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
 
         GDouble CosTheta = angles.CosTheta();
         GDouble phi = angles.Phi();
-        // GDouble sinSqTheta = sin(angles.Theta())*sin(angles.Theta());
-        // GDouble sin2Theta = sin(2.*angles.Theta());
+        // GDouble sinSqTheta = G_SIN(angles.Theta())*G_SIN(angles.Theta());
+        // GDouble sin2Theta = G_SIN(2.*angles.Theta());
 
         GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 
@@ -97,21 +97,21 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
 	switch (PhaseFactor) {
         case 0:
 	  Mrho = m_rho;
-	  Amp = sqrt(1-polFrac)*(-sin(Phi)* Y( 0, Mrho, CosTheta, phi) );
+	  Amp = G_SQRT(1-polFrac)*(-G_SIN(Phi)* Y( 0, Mrho, CosTheta, phi) );
 	  break;
         case 1:
 	  Mrho = m_rho;
-	  Amp = sqrt(1+polFrac)*(cos(Phi)* Y( 0, Mrho, CosTheta, phi)  );
+	  Amp = G_SQRT(1+polFrac)*(G_COS(Phi)* Y( 0, Mrho, CosTheta, phi)  );
 	  break;
         case 2:
 	  Mrho = m_rho;
 	  factor = exp(-i*Phi)* Y( 1, Mrho, CosTheta, phi);
-	  Amp = sqrt(1-polFrac)* imag(factor);
+	  Amp = G_SQRT(1-polFrac)* imag(factor);
 	  break;
         case 3:
 	  Mrho = m_rho;
 	  factor = exp(-i*Phi)* Y( 1, Mrho, CosTheta, phi);
-	  Amp = sqrt(1+polFrac)* real(factor);
+	  Amp = G_SQRT(1+polFrac)* real(factor);
 	  break;
 	}
 

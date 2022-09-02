@@ -73,7 +73,7 @@ TwoPiEtas_tdist::calcAmplitude( GDouble** pKin ) const
   GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
   // GDouble mass2 = P2.M();
-  GDouble Ppipi = Ptot.E() > Wpipi? sqrt(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
+  GDouble Ppipi = Ptot.E() > Wpipi? G_SQRT(Ptot.E()*Ptot.E() - Wpipi*Wpipi): 0;
 
 
   // get momentum transfer
@@ -84,24 +84,24 @@ TwoPiEtas_tdist::calcAmplitude( GDouble** pKin ) const
   GDouble Eg = Ptot.E();
   GDouble tpar = (mass1*mass1/(2*Eg)) * (mass1*mass1/(2*Eg));
 
-  GDouble Thpipi = -t > tpar? (180/PI)*sqrt( (-t-tpar)/(Eg*Ppipi) ): 0;
+  GDouble Thpipi = -t > tpar? (180/PI)*G_SQRT( (-t-tpar)/(Eg*Ppipi) ): 0;
 
-  // complex<GDouble> Arel(sqrt(exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
-  //  complex<GDouble> Arel(sqrt(-t*exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(-t*exp^Bt)   Add -t factor for pions 
+  // complex<GDouble> Arel(G_SQRT(exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return G_SQRT(exp^Bt) 
+  //  complex<GDouble> Arel(G_SQRT(-t*exp(Bslope*t)/exp(Bgen*t)),0.);  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return G_SQRT(-t*exp^Bt)   Add -t factor for pions 
   
   // Estimate of k2 sinthe / (-t) * F_strong(-t)  . PRC 80 055201 (2009) Eq. 4 and Fig 6.
 
-  // complex<GDouble> Arel( (Eg*Eg/(-t)) * Thpipi * sqrt(exp(-Thpipi*Thpipi/(2*0.45*0.45))) /exp(Bgen*t),0. );   // 1/-t for photon exchange.
+  // complex<GDouble> Arel( (Eg*Eg/(-t)) * Thpipi * G_SQRT(exp(-Thpipi*Thpipi/(2*0.45*0.45))) /exp(Bgen*t),0. );   // 1/-t for photon exchange.
 
   complex<GDouble> Arel;
   complex<GDouble> ImagOne(0,1);
 
 
     Double_t arg = Thpipi*Thpipi/(2*ThetaSigma*ThetaSigma)<100? Thpipi*Thpipi/(2*ThetaSigma*ThetaSigma) : 0;
-    Arel = arg > 0? sqrt(Thpipi) * sqrt(exp(-arg) /exp(Bgen*t)) :0;   // Can Change phase of sigma relative to Primakoff
-    // cout << " arg=" << arg << " num=" << Thpipi * sqrt(exp(-arg)) << " den=" << exp(Bgen*t) << " Re(ImagOne)=" << real(ImagOne) << " imag(ImagOne)=" << imag(ImagOne)  << endl;
+    Arel = arg > 0? G_SQRT(Thpipi) * G_SQRT(exp(-arg) /exp(Bgen*t)) :0;   // Can Change phase of sigma relative to Primakoff
+    // cout << " arg=" << arg << " num=" << Thpipi * G_SQRT(exp(-arg)) << " den=" << exp(Bgen*t) << " Re(ImagOne)=" << real(ImagOne) << " imag(ImagOne)=" << imag(ImagOne)  << endl;
   // Adjust phase for this amplitude relative to other amplitudes
-    Arel = Arel * (cos(Phase*PI/180.) + ImagOne*sin(Phase*PI/180.));
+    Arel = Arel * (G_COS(Phase*PI/180.) + ImagOne*G_SIN(Phase*PI/180.));
 
     // cout << "TwoPiEtas_tdist" << " ThetaSigma=" << ThetaSigma << " Phase=" << Phase << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel)  << " Eg=" << Eg << " tpar=" << tpar << " Wpipi=" << Wpipi << " Ppipi=" << Ppipi << " Thpipi=" << Thpipi << endl; 
   return( Arel );

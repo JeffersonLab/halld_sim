@@ -8,6 +8,15 @@ tagm_config_t::tagm_config_t(JEventLoop *loop) {
 	TAGM_TSIGMA = 0.200;        // ns
 	TAGM_FADC_TSIGMA = 0.350;   // ns
 	TAGM_NPIX_PER_GEV = 1.e5;
+
+    std::vector<std::map<std::string, double> > quality;
+    if (loop->GetCalib("/PHOTON_BEAM/microscope/fiber_quality", quality)) {
+	   jout << "/PHOTON_BEAM/microscope/fiber_quality not used for this run" << endl;
+    }
+    for (int i=0; i < (int)quality.size(); ++i) {
+       int rowcolumn = quality[i]["row"]*1000 + quality[i]["column"];
+       fiber_quality[rowcolumn] = quality[i]["code"];
+    }
 }
 
 //-----------
@@ -22,6 +31,10 @@ void TAGMSmearer::SmearEvent(hddm_s::HDDM *record)
       hddm_s::TaggerTruthHitList thits = iter->getTaggerTruthHits();
       hddm_s::TaggerTruthHitList::iterator titer;
       for (titer = thits.begin(); titer != thits.end(); ++titer) {
+         int column = *(int*)titer->getAttribute("column");
+         int row = *(int*)titer->getAttribute("row");
+         if (tagm_config->fiber_quality[column + row*1000] != 1)
+            continue;
          // smear the time
          double t = titer->getT();
          double tADC = titer->getT();
