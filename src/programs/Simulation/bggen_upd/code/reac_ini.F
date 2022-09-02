@@ -65,9 +65,9 @@ C
  1026    FORMAT(I3,1X,I2,2X,F7.3,3X,10F10.3)
       ENDDO
       IF(ier.NE.0) THEN
-         WRITE(6,1030) IPREAC,TLREAC,ELREAC,NPXREAC
+         WRITE(6,1030) ier,IPREAC,TLREAC,ELREAC,NPXREAC
  1030    FORMAT('  *** Initialization error REAC: :',
-     +                                  4I4,3E11.3,I6)
+     +                                  3I4,4E11.3,I6)
          GO TO 999
       ENDIF
       DO i=1,NPXREAC

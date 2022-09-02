@@ -128,7 +128,8 @@ void hitTagger (float xin[4], float xout[4],
 
    int micro_chan;
    int hodo_chan;
-   double Etag = 0;
+   double Etagm = 0;
+   double Etagh = 0;
    double E = pin[3];
    float ref_time_z_cm = get_reference_plane_();
    double t = xin[3]*1e9-(xin[2]-ref_time_z_cm)/C_CM_PER_NS;
@@ -304,21 +305,21 @@ void hitTagger (float xin[4], float xout[4],
          if ( E < micro_channel_Erange[3*i+1] &&
               E > micro_channel_Erange[3*i+2] )
          {
-            Etag = (micro_channel_Erange[3*i+1] + 
-                    micro_channel_Erange[3*i+2]) / 2;
+            Etagm = (micro_channel_Erange[3*i+1] + 
+                     micro_channel_Erange[3*i+2]) / 2;
             micro_chan = micro_channel_Erange[3*i];
             break;
          }
       }
    }
-   else if (E < hodo_limits_Erange[0] && E > hodo_limits_Erange[1]) {
+   if (E < hodo_limits_Erange[0] && E > hodo_limits_Erange[1]) {
       int i;
       for (i=0; i < hodo_nchannels; ++i) {
          if ( E < hodo_channel_Erange[3*i+1] &&
               E > hodo_channel_Erange[3*i+2] )
          {
-            Etag = (hodo_channel_Erange[3*i+1] +
-                    hodo_channel_Erange[3*i+2]) / 2;
+            Etagh = (hodo_channel_Erange[3*i+1] +
+                     hodo_channel_Erange[3*i+2]) / 2;
             hodo_chan = hodo_channel_Erange[3*i];
             break;
          }
@@ -341,7 +342,7 @@ void hitTagger (float xin[4], float xout[4],
          channels->in[0].taggerTruthHits = hits;
          channels->in[0].column = micro_chan;
          channels->in[0].row = 0;
-         channels->in[0].E = Etag;
+         channels->in[0].E = Etagm;
          channels->mult = 1;
          tag->microChannels = channels;
          microCount++;
@@ -396,7 +397,7 @@ void hitTagger (float xin[4], float xout[4],
          hits->mult = 0;
          channels->in[0].taggerTruthHits = hits;
          channels->in[0].counterId = hodo_chan;
-         channels->in[0].E = Etag;
+         channels->in[0].E = Etagh;
          channels->mult = 1;
          tag->hodoChannels = channels;
          hodoCount++;
