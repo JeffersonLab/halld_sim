@@ -1,0 +1,388 @@
+      SUBROUTINE BG_INI(IERR)
+C
+C---      Initialize the FFREAD and the relevant variables
+C
+      IMPLICIT NONE
+      INTEGER IERR
+C
+      INCLUDE 'bg_ctrl.inc'
+      INCLUDE 'bg_partc.inc'
+      INCLUDE 'bg_reac.inc'
+C
+      INTEGER mxffr,jffr
+      PARAMETER (mxffr=10000)
+      COMMON/CFREAD/ jffr(mxffr)
+C
+      INTEGER ier
+C
+      INTEGER i,j,lun,lout,iost,ip,kd(4),kf,lenc,idgea,ig
+     +       ,nw,lw(10),kw(10)
+      REAL am,wg,de
+      CHARACTER cline*132,cnam*16,cw(10)*16
+C
+      lout=6
+      IERR=1
+C
+      CALL HBOOK_INI
+C
+      NEVENT=0
+      RUNNO=2
+      IWROUT(1)=1
+      IWROUT(2)=0
+      IWROUT(3)=0
+      IRND_SEQ=0
+      NPRIEV=0
+C
+C---     Beam
+C
+      EPH_LIM(1)=0.15
+      EPH_LIM(2)=12.
+      EELEC=12.  ! electron energy
+      EPEAK=9.   ! peak right edge
+      EEMIT=1e-8 ! electron beam emittance (m.rad)
+      RADT=50e-6 ! radiator thickness (m)
+      ZCOLL=7600.    ! Z distance to the collimator (cm)
+      DCOLL=0.0034   ! collimator diameter (m)
+      EPYMIN=3.      ! min energy for PYTHIA
+      ELOWMIN=0.15   ! min energy for the low energy generator (GeV)
+C
+C---               Standalone exclusive reactions
+C
+      ISIMUL=0       ! =0 - regular BG, >0 - exclusive reactions (=1 - J/psi)
+      IPINIT(1)=1    ! beam particle type (GEANT) - photon 
+      IPINIT(2)=14   ! target particle tyoe (GEANT) - proton
+C
+      DO i=1,2
+         IPREAC(i)=-1
+      ENDDO
+      ELREAC(1)=-1.
+      ELREAC(2)=-1.
+      NPXREAC=0
+      DO i=1,MXPNTR
+         XSREAC(i)=0.
+         ESREAC(i)=0.
+      ENDDO
+      TLREAC(1)=0.
+      TLREAC(2)=0.
+      DO i=1,MXTRNG
+         DO j=1,11
+            TPAREAC(j,i)=0.
+         ENDDO
+         ITDRNG(i)=0
+      ENDDO
+C
+      DO i=1,MXRADP
+         IRADCORR(i)=0             ! Rad corrections for decays (=0 - off)
+      ENDDO
+C !!!      IRADINI=0
+C
+      LUNWR(1)=0   ! HDDS file - LUN not used
+      LUNWR(2)=2   ! sequential file
+      LUNWR(3)=3   ! NTUPLE file
+C
+C---    Redefine FFREAD settings
+C
+      CALL FFINIT(mxffr)
+      CALL FFSET('LINP',15)
+      CALL FFSET('LOUT',6)
+      CALL FFSET('SIZE',16)
+      CALL FFSET('LENG',120)
+C
+      CALL FFKEY('TRIG'      , NEVENT     , 1,'INTEGER')
+      CALL FFKEY('RUNNO'     , RUNNO      , 1,'INTEGER')
+      CALL FFKEY('WROUT'     , IWROUT(1)  , 3,'INTEGER')
+      CALL FFKEY('RNDMSEQ'   , IRND_SEQ   , 1,'INTEGER')
+      CALL FFKEY('NPRIEV'    , NPRIEV     , 1,'INTEGER')
+      CALL FFKEY('EPHLIM'    , EPH_LIM(1) , 2,'REAL')
+      CALL FFKEY('EELEC'     , EELEC      , 1,'REAL')
+      CALL FFKEY('EPEAK'     , EPEAK      , 1,'REAL')
+      CALL FFKEY('EEMIT'     , EEMIT      , 1,'REAL')
+      CALL FFKEY('RADTHICK'  , RADT       , 1,'REAL')
+      CALL FFKEY('ZCOLLIM'   , ZCOLL      , 1,'REAL')
+      CALL FFKEY('DCOLLIM'   , DCOLL      , 1,'REAL')      
+      CALL FFKEY('EPYTHMIN'  , EPYMIN     , 1,'REAL')
+      CALL FFKEY('ELOWMIN'   , ELOWMIN    , 1,'REAL')
+      CALL FFKEY('VERTEX'    , VERTEX(1)  , 3,'REAL')
+      CALL FFKEY('SIMUL'     , ISIMUL     , 1,'INTEGER')
+      CALL FFKEY('PARTINIT'  , IPINIT(1)  , 2,'INTEGER')
+      CALL FFKEY('RADCORR'   , IRADCORR(1), MXRADP,'INTEGER')
+      CALL FFKEY('REACPART'  , IPREAC(1)  , 2,'INTEGER')
+      CALL FFKEY('REACTLIM'  , TLREAC(1)  , 2,'REAL')
+      DO i=1,MXTRNG
+         WRITE(cnam,FMT='(''REACTDIS'',I1.1)') i
+         CALL FFKEY(cnam(1:9), TPAREAC(1,i),11,'REAL')
+      ENDDO
+      CALL FFKEY('REACENER'  , ELREAC(1)  , MXPNTR+3,'MIXED')
+C
+      CALL FFGO
+C
+C
+C---   Read the particle masses (GEANT numbering)
+C
+      DO ip=1,MXPART
+         IFLPART(ip)=0
+         AM_PART(ip)=0.
+         WG_PART(ip)=0.
+         ND_PART(ip)=0
+         DO i=1,4
+            KD_PART(i,ip)=0
+         ENDDO
+         CH_PART(ip)='#'
+      ENDDO
+C
+      lun=9
+      OPEN(lun,FILE='particle.dat',STATUS='OLD',IOSTAT=iost
+     +       ,FORM='FORMATTED')
+      IF(iost.NE.0) THEN
+         WRITE(lout,*) ' *** ERROR: Missing file particle.dat'
+         GO TO 999
+      ENDIF
+ 10   READ(lun,FMT='(A)',IOSTAT=iost) cline
+      IF(iost.EQ.0) THEN
+C
+         lenc=LEN_TRIM(cline)
+         IF(lenc.GT.7.AND.cline(1:1).NE.'*'.AND.cline(1:1).NE.'C') THEN
+            i=INDEX(cline(1:lenc),'!')
+            IF(i.GT.0) lenc=i-1
+            IF(lenc.GT.7) THEN
+               CALL WSPLIT(cline(1:lenc),10,nw,cw(1),lw(1),kw(1))  ! split the line into words
+               READ(cline(1:lenc),*) ip,am,wg,kd  
+               cnam='?'
+               IF(nw.GT.7) cnam=cw(nw)   ! read(cline,*)cnam is stopped by a slash in the string       
+C            write(6,*) ip,am,wg,kd
+               IF(ip.GT.0.AND.ip.LE.MXPART) THEN
+                  IFLPART(ip)=1
+                  AM_PART(ip)=am
+                  WG_PART(ip)=wg
+                  DO i=1,4
+                     KD_PART(i,ip)=kd(i)
+                  ENDDO
+                  CH_PART(ip)=cnam
+               ELSE
+                  WRITE(lout,*) ' --- ERROR: Reading file particle.dat ',
+     +              'GEANT index is out of range ',ip 
+               ENDIF
+            ENDIF
+         ENDIF
+C
+         GO TO 10
+C
+      ELSE IF(iost.GT.0) THEN
+         WRITE(lout,*) ' *** ERROR: Reading file particle.dat'
+         GO TO 999
+      ENDIF
+C
+      ier=0
+      DO ip=1,MXPART
+         IF(IFLPART(ip).NE.0) THEN
+            DO i=1,3
+               IF(KD_PART(i,ip).GT.0) THEN
+                  IF(KD_PART(i,ip).LE.MXPART) THEN
+                     IF(IFLPART(KD_PART(i,ip)).NE.0) THEN
+                        ND_PART(ip)=ND_PART(ip)+1
+                     ELSE
+                        ier=ip
+                     ENDIF   
+                  ELSE
+                     ier=ip
+                  ENDIF
+               ELSE
+                  GO TO 14
+               ENDIF
+            ENDDO
+ 14         IF(ND_PART(ip).GT.0.AND.ND_PART(ip).LT.2) ier=ip
+C            WRITE(6,*) ip,AM_PART(ip),ND_PART(ip),KD_PART(1,ip)            
+         ENDIF
+      ENDDO
+      IF(ier.NE.0) THEN
+         WRITE(lout,*) ' *** ERROR: in particle.dat, ID=',ier
+         GO TO 999
+      ENDIF
+C
+      DO i=1,2
+         ier=1
+         IF(IPINIT(i).GT.0.OR.IPINIT(i).LE.MXPART) THEN
+            IF(IFLPART(IPINIT(i)).NE.0) THEN
+               ier=0
+            ENDIF
+         ENDIF
+         IF(ier.NE.0) THEN
+            WRITE(6,1001) i,IPINIT(i)
+ 1001              FORMAT('  *** Init. error: PARTINIT:',I1,I5,
+     +                                    ' not defined')
+            GO TO 999
+         ENDIF
+      ENDDO
+C
+C---   Read the GEANT<->PYTHIA particle table
+C      
+      DO i=1,MXPGEANT
+         IPLUND(i)=0
+         IDECLUND(i)=0
+      ENDDO
+      DO i=-MXPKC,MXPKC
+         KCGEAN(i)=0
+      ENDDO
+C
+      OPEN(lun,FILE='pythia-geant.map',STATUS='OLD',IOSTAT=iost
+     +       ,FORM='FORMATTED')
+      IF(iost.NE.0) THEN
+         WRITE(lout,*) ' *** ERROR: Missing file pythia-geant.map'
+         GO TO 999
+      ENDIF
+ 15   READ(lun,'(A)',IOSTAT=iost) cline
+      IF(iost.EQ.0) THEN
+C
+         lenc=LEN_TRIM(cline)
+         IF(lenc.GT.3.AND.cline(1:1).NE.'*'.AND.cline(1:1).NE.'C') THEN
+            i=INDEX(cline(1:lenc),'!')
+            IF(i.GT.0) lenc=i-1
+            IF(lenc.GT.3) THEN
+               READ(cline(1:lenc),*) j,kf
+               idgea=ABS(j)
+               IF(idgea.GT.0.AND.idgea.LE.MXPGEANT.AND.kf.NE.0) THEN
+                  IPLUND(idgea) =kf
+                  IF(j.LT.0) IDECLUND(idgea)=1
+               ENDIF
+            ENDIF
+         ENDIF
+C
+         GO TO 15
+C
+      ELSE IF(iost.GT.0) THEN
+         WRITE(lout,*) ' *** ERROR: Reading file pythia-geant.map'
+         GO TO 999
+      ENDIF
+      CLOSE(lun)
+C
+C---      Print particle table
+C
+      WRITE(lout,1000) 
+ 1000 FORMAT(' Particle list ',/,' ID_Geant KF N_dec  ID_decays'
+     +      ,' dec_flg     mass     width     name')
+      DO ig=1,MIN(MXPART,MXPGEANT)
+         IF(IFLPART(ig).GT.0) THEN
+            WRITE(lout,1002) ig,IPLUND(ig),ND_PART(ig)
+     +                ,(KD_PART(i,ig),i=1,4),AM_PART(ig),WG_PART(ig)
+     +                ,CH_PART(ig) 
+ 1002       FORMAT(1X,I3,1X,I7,2X,I2,2X,3I4,3X,I2,3X,F10.6,2X,F7.4,5X
+     +            ,A16)
+         ENDIF
+      ENDDO
+C
+      CALL RND_INI(IRND_SEQ)  ! random number initialization
+C
+      IF(EPH_LIM(1).LT.ELOWMIN) THEN
+         WRITE(6,1006) ELOWMIN
+ 1006    FORMAT('  --- Initialization warning: EPH_LIM(1) is set'
+     +         ,' to ELOWMIN:',F10.4)
+         EPH_LIM(1)=ELOWMIN
+      ENDIF
+C
+      IF(EPH_LIM(1).GT.EPH_LIM(2)) THEN
+         WRITE(6,1008) EPH_LIM
+ 1008    FORMAT('  *** Initialization error: energy limits:',2F10.4)
+         GO TO 999
+      ELSE IF(EPH_LIM(1).EQ.EPH_LIM(2)) THEN
+C
+C---      Increase E2 slightly in order to make a valid histogram
+C
+         EPH_LIM(2)=EPH_LIM(1)*1.0001
+C
+      ELSE
+C
+C---       Bremsstrahlung beam: the E0 and Epeak should be cosistent
+C
+         IF(EELEC.LT.EPH_LIM(2)) THEN
+            WRITE(6,1010) EELEC,EPH_LIM(2)
+ 1010       FORMAT('  *** Initialization error: Ee<E2:',2F10.4)
+            GO TO 999
+         ENDIF
+C
+         IF(EPEAK.GE.EELEC) THEN
+            WRITE(6,1020) EPEAK,EELEC
+ 1020       FORMAT('  *** Initialization error: peak>Ee:',2F10.4)
+            GO TO 999
+         ENDIF
+C
+         de=MIN(0.005,EPH_LIM(2)-EPH_LIM(1))
+         NHBEA=INT((EPH_LIM(2)-EPH_LIM(1))/de+0.001)   ! number of bins in the energy tables
+      ENDIF
+C
+      IFPYTH=0   ! PYTHIA flag
+      IDLOWEN=0  ! low energy BG reactions flag
+      IDTDIST=0  ! Excl. reaction ID for hist
+C
+C---    Check the type of simulation - PYTHIA versus exclusive reactions
+C
+      IF(ISIMUL.EQ.0) THEN  ! BG simulation
+C
+C---   Pythia
+C
+         IF(EPH_LIM(2).GT.EPYMIN) THEN
+            CALL PYTH_INI(ier)
+            IF(ier.NE.0) GO TO 999
+            IFPYTH=1
+         ENDIF
+C
+C---   Low energy processes
+C
+         IF(EPH_LIM(1).LT.EPYMIN) THEN
+            IDLOWEN=10000
+            CALL LOWEN_INI(ier)
+            IF(ier.NE.0) GO TO 999
+         ENDIF
+C
+      ELSE
+C
+C---      Exclusive reactions
+C
+         IDTDIST=8000
+         CALL REAC_INI(ier)
+         IF(ier.NE.0) GO TO 999
+      ENDIF
+C
+C---      Rad corrections
+C
+      NRADCOR=0
+      DO i=1,MXRADP
+         idgea=IRADCORR(i)
+         IF(idgea.LE.0.OR.idgea.GT.MXPGEANT) GO TO 100
+         NRADCOR=NRADCOR+1
+      ENDDO
+ 100  CONTINUE
+      IF(NRADCOR.GT.0) THEN
+         CALL PHOINI            ! Initialize PHOTOS for radiative corrections
+      ENDIF
+C
+C---    Beam spectrum
+C
+      IDBEAM=9000
+      CALL COHBEAM_INI(IDBEAM,EELEC,EPEAK,EPH_LIM,ZCOLL,DCOLL,ier)
+      IF(ier.NE.0) GO TO 999
+C
+C---   Output file for HDDM
+C
+      IF(IWROUT(1).NE.0) THEN
+         CALL OPEN_HDDM_OUTPUT('bggen.hddm')
+      ENDIF
+C
+C---   Sequential output file
+C
+      IF(IWROUT(2).NE.0) THEN
+         OPEN(LUNWR(2),FILE='bggen.dat',STATUS='UNKNOWN'
+     +       ,FORM='UNFORMATTED')
+      ENDIF
+C
+C---   NTUPLE
+C
+      IF(IWROUT(3).NE.0) THEN
+         CALL BG_NTUP_INI(ier)
+         IF(ier.NE.0) GO TO 999
+      ENDIF
+C
+      IERR=0
+ 999  RETURN
+      END
+
+      

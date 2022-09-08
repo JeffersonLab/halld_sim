@@ -1,0 +1,141 @@
+LIST                    #    print the commands while reading
+C ===    INPUT file for BGGEN
+C
+C ---      FFREAD format: 1) a command overwrites the same command above in the file; 
+C                         2) the KEYS should start from the column 1; lines are up to 120 characters
+C                         3) format is flexible, can mix reals and integers; I suggest to use the right type (not 4 for 4.0)
+C                         4) one can fill an array from any position, the rest is not changed, 
+C                                    say "SELECTEV 2=111 -211" fills the positions 2 and 3
+C                         5) # - the rest of the line is ignored   
+C
+READ     16             # read the file with particle definitions 
+C
+C ------------- General controls ---------------
+SIMUL     1             # type of simulation =0 - BG, =1 - exclusive (J/psi ...)         
+C                        =0 - BG (PYTHIA+low energy reactions) 
+C                        =1 - exclusive binary photoproduction, for example gamma+p-->J/psi+p        
+TRIG      100000        # number of events to simulate
+TRIG      100000        # number of events to simulate
+NPRIEV       100        # number of events to print (after selection, see SELECTEV) 
+RNDMSEQ     0           # random number sequence     integer values
+RUNNO       1           # specify run number
+C                       We expect 395kHz of hadronic rate at high luminosity
+C -- writing out events
+C        HDDM  simple  ntuple
+WROUT      1      0     1   
+C ----------------------------------------------
+
+
+C ------------  Beam ---------------------------
+EELEC         11.7      # electron beam energy
+EEMIT          1.E-8    # beam emittance rad m
+EPHLIM   0.15 11.7      # photon beam energy range in GeV
+EPHLIM   8.2  11.7      # photon beam energy range in GeV
+EPEAK          8.7      # coherent peak energy
+ZCOLLIM     7600.       # distance to the collimator in cm
+DCOLLIM        0.005    # collimator diameter in m
+RADTHICK      20.E-6    # thickness of the radiator in m
+C
+C          bins flg   Emin  Emax         flg=0 - bins of same width
+NBEAMEXT      0  0    8.0   12.0   #  User's beam spectrum setting
+RBEAMEXT  10*0.
+C
+C ----------------------------------------------
+C
+PARTINIT  1  14         # GEANT types of the interacting particles: gamma proton
+C 
+C ------------  BG simulation ------------------
+C                       PYTHIA flags are set in a file pythia.dat
+EPYTHMIN     3.         # minimal energy for PYTHIA simulation
+ELOWMIN      0.15       # minimal energy for the low energy processes generator 
+C
+C LISTPYTH    2           # >0 print the PYTHIA particle list at the initialization stage:
+C                         =1 without decays
+C                         =2 with decays of the particles, which PYTHIA decay is not forbidden by 
+C LISTMLIM    6.          # (F) amlim print only particles with mass<amlim
+C
+C ------------- Event selection ----------------
+C
+C SELECTEV    333         # select events with at least one phi (KF codes are used)
+C ----------------------------------------------
+C
+C ==========================================================================
+C  reac - J/psi: gamma p -> J/psi p 
+C         IDG      KF    PY_dec  mass  width  dec e+ e-     dec_ang.   
+*PARTICLE 183      443    1    3.0969    0.       2   3   0     2   'J/psi'
+C
+REACPART  183 14      # reaction final state j/psi and proton  
+C RADCORR   183         # radiative corrections for J/psi decay           
+C
+C ----------------------------------------------------
+C               t-dependence 3 energy intervals  (Lubomir)
+C         tmin tmax
+REACTLIM  -11.   0.          # t limits wide enough for the full energy range (simulated in the kinem. allowed limits)
+C          Emax Norm   slope1 slope2 fac2  dipole     : dsigma/dt~ Norm*(exp(slope1*t)+exp(slope2*t)*fac2)/(1+t*dipole)**4
+REACTDIS1  9.28  1.    1.52  -0.650 0.00119  0.  # energy range 1
+REACTDIS2 10.36  1.    1.22   0.268 0.033    0.  # energy range 2
+REACTDIS3 13.    1.    1.89   0.646 0.149    0.  # energy range 3
+C
+C  5 ranges are allowed
+C REACTDIS5 ...
+C ----------------------------------------------------
+C
+C          Energy dependence of the cross section, nb
+C          Emin     Emax    N points
+REACENER  8.2300   13.0000  500 
+ 0.0508535 0.0610938 0.0699333 0.0778633 0.0851418 0.0919165 0.0983004 0.104362 0.110155 0.115718
+ 0.121088 0.126288 0.131342 0.136269 0.141074 0.145773 0.150385 0.154911 0.159358 0.163734
+ 0.168049 0.172301 0.176504 0.18066 0.184763 0.188831 0.192858 0.196854 0.200811 0.204744
+ 0.208645 0.212519 0.216372 0.220206 0.224011 0.227806 0.23158 0.235336 0.239082 0.242808
+ 0.246524 0.250228 0.253924 0.257614 0.26129 0.264963 0.268626 0.272283 0.275937 0.279586
+ 0.283225 0.286867 0.290506 0.294142 0.297774 0.301412 0.305043 0.308676 0.312307 0.315941
+ 0.319574 0.323215 0.326852 0.330493 0.334142 0.33779 0.341442 0.345096 0.348755 0.352414
+ 0.356085 0.359756 0.363435 0.367123 0.370814 0.374512 0.378211 0.381919 0.385638 0.389355
+ 0.393086 0.396825 0.400565 0.40432 0.408083 0.411851 0.415624 0.419412 0.423203 0.427004
+ 0.430815 0.434633 0.438465 0.442303 0.446153 0.450006 0.453878 0.457751 0.461639 0.465531
+ 0.469444 0.473358 0.477284 0.481226 0.485173 0.489134 0.493101 0.497079 0.501073 0.505075
+ 0.509087 0.513113 0.517152 0.521195 0.525249 0.529327 0.533407 0.537495 0.541598 0.545719
+ 0.549844 0.553983 0.558134 0.5623 0.566477 0.570663 0.574862 0.579069 0.583295 0.587526
+ 0.591776 0.596041 0.600311 0.604591 0.608888 0.613199 0.617519 0.621853 0.626199 0.630559
+ 0.634929 0.639313 0.643712 0.648117 0.652539 0.656976 0.661417 0.665877 0.670351 0.674834
+ 0.679334 0.683847 0.688364 0.6929 0.69745 0.702007 0.706581 0.71117 0.715765 0.72038
+ 0.724999 0.729644 0.734291 0.738954 0.743632 0.748314 0.753016 0.757737 0.762456 0.767189
+ 0.771948 0.776709 0.781491 0.78628 0.791085 0.795892 0.800727 0.805566 0.810418 0.815289
+ 0.820164 0.825056 0.829963 0.834878 0.83981 0.844749 0.849707 0.85467 0.85965 0.864647
+ 0.869645 0.874662 0.879696 0.88474 0.889792 0.894861 0.899935 0.90503 0.910137 0.915257
+ 0.920382 0.925523 0.930677 0.935836 0.941017 0.946205 0.951407 0.95662 0.961849 0.967088
+ 0.97234 0.977606 0.982881 0.988163 0.993466 0.998779 1.0041 1.00943 1.01478 1.02014
+ 1.02551 1.03089 1.03629 1.04169 1.04711 1.05254 1.05797 1.06343 1.06888 1.07437
+ 1.07985 1.08535 1.09086 1.09638 1.10191 1.10745 1.113 1.11858 1.12415 1.12974
+ 1.13534 1.14095 1.14657 1.15221 1.15785 1.16351 1.16918 1.17485 1.18054 1.18624
+ 1.19196 1.19767 1.20341 1.20915 1.21489 1.22066 1.22643 1.23222 1.23801 1.24382
+ 1.24964 1.25546 1.2613 1.26715 1.273 1.27888 1.28475 1.29064 1.29654 1.30245
+ 1.30837 1.3143 1.32024 1.32618 1.33215 1.33812 1.34409 1.35008 1.35609 1.36209
+ 1.36811 1.37413 1.38017 1.38621 1.39227 1.39834 1.40442 1.4105 1.4166 1.4227
+ 1.42881 1.43493 1.44106 1.4472 1.45335 1.45951 1.46568 1.47186 1.47805 1.48424
+ 1.49045 1.49667 1.50287 1.50911 1.51535 1.5216 1.52786 1.53412 1.54041 1.54669
+ 1.55297 1.55927 1.56558 1.57189 1.57821 1.58455 1.59091 1.59726 1.60361 1.60998
+ 1.61635 1.62274 1.62913 1.63553 1.64194 1.64835 1.65477 1.6612 1.66764 1.67409
+ 1.68054 1.687 1.69347 1.69994 1.70643 1.71292 1.71943 1.72594 1.73245 1.73898
+ 1.74551 1.75204 1.75859 1.76513 1.77169 1.77826 1.78484 1.79142 1.79801 1.8046
+ 1.8112 1.8178 1.82443 1.83105 1.83767 1.84432 1.85095 1.85761 1.86427 1.87093
+ 1.87759 1.88427 1.89095 1.89763 1.90434 1.91104 1.91774 1.92446 1.93118 1.93791
+ 1.94463 1.95138 1.95813 1.96488 1.97164 1.9784 1.98517 1.99195 1.99874 2.00552
+ 2.01231 2.01911 2.02592 2.03272 2.03955 2.04637 2.05319 2.06004 2.06686 2.07372
+ 2.08057 2.08743 2.09429 2.10115 2.10803 2.1149 2.12179 2.12868 2.13557 2.14247
+ 2.14936 2.15627 2.16319 2.17012 2.17703 2.18396 2.1909 2.19784 2.20477 2.21173
+ 2.21869 2.22563 2.23261 2.23957 2.24654 2.25353 2.26051 2.26749 2.27448 2.28147
+ 2.28847 2.29547 2.30249 2.30949 2.31652 2.32353 2.33056 2.33759 2.34463 2.35165
+ 2.35871 2.36575 2.3728 2.37986 2.38691 2.39398 2.40105 2.40811 2.4152 2.42227
+ 2.42934 2.43642 2.44352 2.45062 2.45771 2.46481 2.47191 2.47903 2.48614 2.49325
+ 2.50037 2.50749 2.51462 2.52176 2.52888 2.53602 2.54316 2.55031 2.55745 2.56458
+ 2.57174 2.5789 2.58605 2.59323 2.60038 2.60755 2.61472 2.6219 2.62907 2.63625
+ 2.64343 2.65061 2.65782 2.66499 2.67218 2.67937 2.68658 2.6938 2.701 2.7082
+ 2.7154 2.72262 2.72983 2.73706 2.74427 2.75151 2.75873 2.76595 2.77318 2.78043
+ 2.78765 2.7949 2.80213 2.80937 2.81661 2.82385 2.83112 2.83836 2.84561 2.85287
+C  =========================================================
+C
+READ 17                 # read variables for MCWrapper
+C
+KEYS                    # print all the keys
+STOP
