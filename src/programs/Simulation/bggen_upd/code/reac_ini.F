@@ -14,7 +14,12 @@ C
       INTEGER i,j,nb,idt,lout,ier,ir,ntrng,itsng
       REAL e0,e1,e0c,t1,t2,tt,dt,pdfu
 C
-      CHARACTER crng*2,clim*6
+      CHARACTER crng*2,clim*6,cerr(5)*48
+      DATA cerr/' Undefined particle '
+     +         ,' Energy range mismatch with beam '
+     +         ,' Number of points should be >2 '
+     +         ,' Wrong t-range '
+     +         ,' Wrong t-range '/
 C
       IERR=1
       lout=6
@@ -38,7 +43,7 @@ C
       e0c=e0                    ! the current upper limit
       DO ir=1,MXTRNG
          IF(TPAREAC(1,ir).GT.e0c) THEN ! inside the useful energy range
-            IF(TPAREAC(2,ir).GT.0.) THEN ! normaliation constant non zero
+            IF(TPAREAC(2,ir).GT.0.) THEN ! normalization constant non zero
                ITDRNG(ir)=1
                IF(itsng.EQ.0) THEN
                   itsng=ir
@@ -65,9 +70,9 @@ C
  1026    FORMAT(I3,1X,I2,2X,F7.3,3X,10F10.3)
       ENDDO
       IF(ier.NE.0) THEN
-         WRITE(6,1030) IPREAC,TLREAC,ELREAC,NPXREAC
+         WRITE(6,1030) ier,IPREAC,TLREAC,ELREAC,NPXREAC,cerr(ier)
  1030    FORMAT('  *** Initialization error REAC: :',
-     +                                  4I4,3E11.3,I6)
+     +                                  3I4,4E11.3,I6,2X,A48)
          GO TO 999
       ENDIF
       DO i=1,NPXREAC
@@ -84,7 +89,7 @@ C---            A simple single exponential function, no histogram is needed
             TSLREAC=TPAREAC(2,ir)
 C
 C---            A complex function for the t distribution, use HBOOK 
-         ELSEIF(ITDRNG(ir).EQ.1) THEN
+         ELSE IF(ITDRNG(ir).EQ.1) THEN
             idt=IDTDIST+10*ir
             nb=1000
             t1=TLREAC(1)

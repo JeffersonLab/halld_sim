@@ -15,7 +15,7 @@ SIMUL     1             # type of simulation =0 - BG, =1 - exclusive (J/psi ...)
 C                        =0 - BG (PYTHIA+low energy reactions) 
 C                        =1 - exclusive binary photoproduction, for example gamma+p-->J/psi+p        
 TRIG      100000        # number of events to simulate
-TRIG      500000        # number of events to simulate
+TRIG      100000        # number of events to simulate
 NPRIEV       100        # number of events to print (after selection, see SELECTEV) 
 RNDMSEQ     0           # random number sequence     integer values
 RUNNO       1           # specify run number

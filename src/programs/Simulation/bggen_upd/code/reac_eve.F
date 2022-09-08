@@ -133,8 +133,8 @@ C
       epf1=(ecm2+am(1)**2-am(2)**2)/2./ecm
       qq=epf1**2-am(1)**2
       IF(qq.LE.0.) GO TO 999
-      ppf =SQRT(qq)             ! final momentum
-      ppi =SQRT(pcmi(4,2)**2-ami(2)**2) ! initial momentum
+      ppf =SQRT(qq)             ! final momentum in CM
+      ppi =SQRT(pcmi(4,2)**2-ami(2)**2) ! initial momentum in CM
 C
       qq=ami(1)**2+am(1)**2-2.*epf1*pcmi(4,1)
       tmx=qq+2.*ppf*ppi
