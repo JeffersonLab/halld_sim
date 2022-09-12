@@ -36,7 +36,7 @@ C
 C
 C     ------------------------------------------------------------------
 C
-      tslreac=1.2  ! !!!
+C      tslreac=1.2  ! test, commented out
       IERR=1
       NTRA=0
       IF(ISIMUL.LT.1.OR.ISIMUL.GT.1) GO TO 999
