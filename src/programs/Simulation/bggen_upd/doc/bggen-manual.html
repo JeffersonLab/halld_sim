@@ -7,7 +7,7 @@
 <meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
 <meta name="title" content="The BGGEN simulation program"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2022-05-04T23:36-0400"/>
+<meta name="generated" content="2022-09-19T16:33-0400"/>
 <meta name="author" content="Eugene Chudakov"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -316,6 +316,14 @@ of the initial kinematics and the particle's decays.
 </ul>
 
 </li>
+<li>2022 Sept. 19 (E.Chudakov). The non-uniform particle decays in the binary production mode used
+    a non-standard frame - neither the Gottfried-Jackson, nor the Helicity frame. It turned out that
+    a 1+cos<sup>2</sup>&theta; distribution set for J/&psi; in this non-standard frame was reflected to the same distribution 
+    in the Gottfried-Jackson frame. A uniform phase space distribution was not affected. Neither the PYTHIA
+    generator was affected.
+    The code was updated in a way that users may select either the Helicity or Gottfried-Jackson frame 
+    for the angular distribution of 2-body decays.  
+</li>
 </ol>
 
 
@@ -571,11 +579,15 @@ The purpose of the flags are:
   The decay flags in the columns 6-8
   are the <i>IDGs</i> for the decay products (up to 3). Only one decay mode is used. The flag in the column 9:
 <ul>
-<li>=0 - isotropic decays
+<li>= 0 - isotropic decays
 </li>
-<li>=1 - &rho; -   type angular distribution: (1-cos<sup>2</sup>&theta;<sub>rest</sub>), in the rest frame of &rho;, where Z is along the &rho; direction   
+<li>= 1 - &rho; -   type angular distribution: (1-cos<sup>2</sup>&theta;<sub>rest</sub>), in the Gottfried-Jackson frame    
 </li>
-<li>=2 - J/&psi; - type angular distribution: (1+cos<sup>2</sup>&theta;<sub>rest</sub>)
+<li>=-1 - &rho; -   type angular distribution: (1-cos<sup>2</sup>&theta;<sub>rest</sub>), in the Helicity frame    
+</li>
+<li>= 2 - J/&psi; - type angular distribution: (1+cos<sup>2</sup>&theta;<sub>rest</sub>), in the Gottfried-Jackson frame 
+</li>
+<li>=-2 - J/&psi; - type angular distribution: (1+cos<sup>2</sup>&theta;<sub>rest</sub>), in the Helicity frame 
 </li>
 </ul>
 
@@ -583,6 +595,13 @@ The purpose of the flags are:
 </ul>
 
 
+<p>
+A note: Both frames are defined in the rest frame of the particle (say, J/&psi;). In the Gottfried-Jackson frame the Z direction is 
+along the beam momentum in this frame. In the Helicity frame the Z direction is opposite to the recoil direction in this frame.
+In order to get the right angles
+the 4-momenta of the decay product, as of the beam or the recoil, should be boosted to the rest frame of J/&psi;, either directly from
+the Lab frame or from the CM frame of the event.
+</p>
 <p>
 In the main input file one can redefine the decay parameters or add new particles, for example:
 </p>
@@ -1413,7 +1432,7 @@ to comment out commands not needed for a particular run.
 </div>
 
 <div id="postamble">
-<p class="date">Date: 2022-05-04T23:36-0400</p>
+<p class="date">Date: 2022-09-19T16:33-0400</p>
 <p class="author">Author: Eugene Chudakov</p>
 <p class="creator"><a href="http://orgmode.org">Org</a> version 7.9.3f with <a href="http://www.gnu.org/software/emacs/">Emacs</a> version 24</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>

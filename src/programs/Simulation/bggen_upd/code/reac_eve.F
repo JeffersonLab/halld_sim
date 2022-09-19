@@ -29,6 +29,7 @@ C
       PARAMETER (mxoutl=50)
       REAL ami(2),pcmi(4,2),plabi(4,2)
      +     ,am(mxoutl),pcm(4,mxoutl),plab(4,mxoutl),amd(6,mxoutl)
+     +     ,pzfr(4)   ! frame definition vector (helicity or GJ)
       INTEGER idg(mxoutl)        ! Geant ID
      +        ,iamf(mxoutl)      ! >0 if the mass has been defined (to address resonances)
      +        ,itorig(mxoutl)
@@ -36,7 +37,6 @@ C
 C
 C     ------------------------------------------------------------------
 C
-C      tslreac=1.2  ! test, commented out
       IERR=1
       NTRA=0
       IF(ISIMUL.LT.1.OR.ISIMUL.GT.1) GO TO 999
@@ -222,7 +222,16 @@ C         write(6,*) 'ip,idgea,ndec ',ip,idgea,ND_PART(idgea)
          iamf(ip)=1
          IF(ND_PART(idgea).EQ.2) THEN       ! 2-body decay
             ihel=KD_PART(4,idgea)     ! decay angle flag =0 - unoform, =1 - rho-like, =2 - j/psi-like
-            CALL OMDECA2(plab(1,ip),amd(1,ip),ihel,plab(1,np+1))
+            DO j=1,4
+               IF(ihel.EQ.0) THEN
+                  pzfr(j)=0.             ! no Z axis - isotropic decay
+               ELSE IF(ihel.GT.0) THEN
+                  pzfr(j)=plabi(j,1)     ! Z = beam - Gottfried-Jackson frame
+               ELSE
+                  pzfr(j)=plab(j,2)      ! Z = -recoil - Helicity frame
+               ENDIF
+            ENDDO
+            CALL OMDECA2(plab(1,ip),amd(1,ip),ihel,pzfr(1),plab(1,np+1))
          ELSE IF(ND_PART(idgea).EQ.3) THEN
             CALL OMDECA3(plab(1,ip),amd(1,ip),0.,plab(1,np+1))
          ENDIF
