@@ -84,6 +84,13 @@ of the initial kinematics and the particle's decays.
        from a separate file /particle.ffr/. The data can be redefined in the main /run.ffr/ - see the examples
        in the /run/ directory and explanations in this document.
      - New /FFREAD/ commands added allowing to print out lists of the particle names and features from /PYTHIA/  
+6. 2022 Sept. 19 (E.Chudakov). The non-uniform particle decays in the binary production mode used
+    a non-standard frame - neither the Gottfried-Jackson, nor the Helicity frame. It turned out that
+    a 1+cos^{2}\theta distribution set for J/\psi in this non-standard frame was reflected to the same distribution 
+    in the Gottfried-Jackson frame. A uniform phase space distribution was not affected. Neither the PYTHIA
+    generator was affected.
+    The code was updated in a way that users may select either the Helicity or Gottfried-Jackson frame 
+    for the angular distribution of 2-body decays.  
 
 ** Installation
 
@@ -276,9 +283,17 @@ The purpose of the flags are:
 + /BGGEN/ simulates decays for the "low - energy" processes (/SIMUL 0/) and for binary reactions (/SIMUL 1/). 
   The decay flags in the columns 6-8
   are the /IDGs/ for the decay products (up to 3). Only one decay mode is used. The flag in the column 9:
-  - =0 - isotropic decays
-  - =1 - \rho -   type angular distribution: (1-cos^{2}\theta_{rest}), in the rest frame of \rho, where Z is along the \rho direction   
-  - =2 - J/\psi - type angular distribution: (1+cos^{2}\theta_{rest})
+  - = 0 - isotropic decays
+  - = 1 - \rho -   type angular distribution: (1-cos^{2}\theta_{rest}), in the Gottfried-Jackson frame    
+  - =-1 - \rho -   type angular distribution: (1-cos^{2}\theta_{rest}), in the Helicity frame    
+  - = 2 - J/\psi - type angular distribution: (1+cos^{2}\theta_{rest}), in the Gottfried-Jackson frame 
+  - =-2 - J/\psi - type angular distribution: (1+cos^{2}\theta_{rest}), in the Helicity frame 
+
+A note: Both frames are defined in the rest frame of the particle (say, J/\psi). In the Gottfried-Jackson frame the Z direction is 
+along the beam momentum in this frame. In the Helicity frame the Z direction is opposite to the recoil direction in this frame.
+In order to get the right angles
+the 4-momenta of the decay product, as of the beam or the recoil, should be boosted to the rest frame of J/\psi, either directly from
+the Lab frame or from the CM frame of the event.
 
 In the main input file one can redefine the decay parameters or add new particles, for example:
 
