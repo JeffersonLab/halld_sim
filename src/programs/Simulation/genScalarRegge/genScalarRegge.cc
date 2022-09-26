@@ -1402,8 +1402,8 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   double gsq_omega_f500_gamma=(1./9)*gsq_rho_f500_gamma;
   // Coupling constants for a0/f0(980)
   double gsq_rho_S_gamma=0.,gsq_omega_S_gamma=0.;
-  double gsq_rho_f1370_gamma=coupling_constants[2];//0.094;
-  double gsq_omega_f1370_gamma=(1./9.)*gsq_rho_f1370_gamma;
+  double gsq_rho_f1500_gamma=coupling_constants[2];//0.094;
+  double gsq_omega_f1500_gamma=(1./9.)*gsq_rho_f1500_gamma;
   double gsq_rho_a1450_gamma=coupling_constants[2];//0.0054;
   double gsq_omega_a1450_gamma=9.*gsq_rho_a1450_gamma;
   
@@ -1411,7 +1411,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   double ReB=0.,ImB=0,gR=0.;
   double gR_T=0., ImB_T=0., ReB_T=0.;
   double gRf500=0.,ImBf500=0.,ReBf500=0.; 
-  double gRf1370=0.,ImBf1370=0.,ReBf1370=0.;  
+  double gRf1500=0.,ImBf1500=0.,ReBf1500=0.;  
   double gRa1450=0.,ImBa1450=0.,ReBa1450=0.;
   
   // Intialize cross section (will fill in kinematic factors later)
@@ -1419,9 +1419,9 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.75; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
+    double m_Sigma=0.9; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
-    width=0.7; // 0.4-0.7 GeV, PDG (2020)
+    width=0.85; // 0.4-0.7 GeV, PDG (2020)
     double BWmassTerm=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
@@ -1440,34 +1440,33 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     T+=CrossSection(s,t,beam,particle_vectors,gRf500,ReBf500,ImBf500,
 		    gsq_rho_f500_gamma,gsq_omega_f500_gamma);
   }
-  // f0(1370)
+  // f0(1500)
   if (got_pipi && generate[2]){
-    double m_f1370=1.3; // Bugg
-    double M_sq_R=m_f1370*m_f1370; 
-    width=0.23;  // from Bugg
+    double m_f1500=1.506;
+    double M_sq_R=m_f1500*m_f1500; 
+    width=0.112;
     double BWmassTerm=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
     double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
 		   /(4.*M_sq_R));
-    // partial width from Bugg(2007):arxiv.org/pdf/0706.1341.pdf, table 2
-    double partial_width=0.325/3.;
+    double partial_width=0.345/3.;
     double BWwidthTerm=width*sqrt(M_sq);
     
     // Breit-Wigner shape 
     double Bw2=1./(BWmassTerm*BWmassTerm+BWwidthTerm*BWwidthTerm);
-    ReBf1370=Bw2*BWmassTerm;
-    ImBf1370=Bw2*BWwidthTerm;
+    ReBf1500=Bw2*BWmassTerm;
+    ImBf1500=Bw2*BWwidthTerm;
     // Decay constant
-    gRf1370=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
+    gRf1500=sqrt(8.*M_PI*M_sq_R*partial_width/qR);
  
-    T+=CrossSection(s,t,beam,particle_vectors,gRf1370,ReBf1370,ImBf1370,
-		    gsq_rho_f1370_gamma,gsq_omega_f1370_gamma);
+    T+=CrossSection(s,t,beam,particle_vectors,gRf1500,ReBf1500,ImBf1500,
+		    gsq_rho_f1500_gamma,gsq_omega_f1500_gamma);
       
-    // Interference between f0(500) and f0(1370)
+    // Interference between f0(500) and f0(1500)
     if (generate[0]){
-      T+=CrossSection(s,t,beam,particle_vectors,gRf1370,ReBf1370,ImBf1370,
-		      gsq_rho_f1370_gamma,gsq_omega_f1370_gamma,
+      T+=CrossSection(s,t,beam,particle_vectors,gRf1500,ReBf1500,ImBf1500,
+		      gsq_rho_f1500_gamma,gsq_omega_f1500_gamma,
 		      gRf500,ReBf500,ImBf500,
 		      gsq_rho_f500_gamma,gsq_omega_f500_gamma,
 		      phase[0]-phase[2]);
@@ -1529,11 +1528,11 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     GetResonanceParameters(m1,m2,M_sq,my_msq_R,ReB,ImB);
     T+=CrossSection(s,t,beam,particle_vectors,gR,ReB,ImB,gsq_rho_S_gamma,
 		    gsq_omega_S_gamma);
-    // Interference between f0(1370) and f0(980)
+    // Interference between f0(1500) and f0(980)
     if (got_pipi && generate[2]){
       T+=CrossSection(s,t,beam,particle_vectors,gR,ReB,ImB,gsq_rho_S_gamma,
-		      gsq_omega_S_gamma,gRf1370,ReBf1370,ImBf1370,
-		      gsq_rho_f1370_gamma,gsq_omega_f1370_gamma,
+		      gsq_omega_S_gamma,gRf1500,ReBf1500,ImBf1500,
+		      gsq_rho_f1500_gamma,gsq_omega_f1500_gamma,
 		      phase[1]-phase[2]);
     }	
     // Interference between f0(500) and f0(980)
@@ -1566,11 +1565,11 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 				  gRf500,ReBf500,ImBf500,gsq_rho_f500_gamma,
 				  gsq_omega_f500_gamma,phase[0]);
       }  
-      if (generate[2]){ // interference with f0(1370)
+      if (generate[2]){ // interference with f0(1500)
 	T+=BackgroundCrossSection(s,t,beam,particle_types,particle_vectors,
 				  g0_sq,
-				  gRf1370,ReBf1370,ImBf1370,gsq_rho_f1370_gamma,
-				  gsq_omega_f1370_gamma,phase[2]);
+				  gRf1500,ReBf1500,ImBf1500,gsq_rho_f1500_gamma,
+				  gsq_omega_f1500_gamma,phase[2]);
       }
     }
     else{ 
