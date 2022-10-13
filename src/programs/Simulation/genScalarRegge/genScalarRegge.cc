@@ -618,8 +618,8 @@ void GetResonanceParameters(double m1,double m2, double M_sq,double M_sq_R,
   double gK=2.22; 
   double g_m1m2=2.16;
   if (got_pipi){
-    gK=0.556;
-    g_m1m2=1.6;
+    gK=0.556*1.2;
+    g_m1m2=1.6*1.2;
   }
   double gKsq=gK*gK;    
   double g_m1m2_sq=g_m1m2*g_m1m2;
@@ -1421,7 +1421,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   if (got_pipi && generate[0]){
     double m_Sigma=0.9; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
-    width=0.85; // 0.4-0.7 GeV, PDG (2020)
+    width=1.0; // 0.4-0.7 GeV, PDG (2020)
     double BWmassTerm=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
@@ -1498,7 +1498,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   }
   // f0(980)/a0(980)
   if (generate[1]){
-    double my_msq_R=0.9783*0.9783;
+    double my_msq_R=0.9847*0.9847;
     if (got_pipi){ // f0(980)	
       double MRsq_minus_m1sq_m2sq=my_msq_R-m1sq_plus_m2sq;	
       double temp=4.*m1sq*m2sq;
@@ -1711,7 +1711,7 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
  
   // Momenta of incoming photon and outgoing meson in cm frame
   double p_gamma=(s-m_p_sq)/(2.*Ecm);
-  double M=0.980;
+  double M=0.600;
   double M_sq=M*M;
   double E_S=(s+M_sq-m_p_sq)/(2.*Ecm);
   double p_S=sqrt(E_S*E_S-M_sq);
