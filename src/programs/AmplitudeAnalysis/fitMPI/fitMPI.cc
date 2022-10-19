@@ -71,7 +71,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
       else
          fitManager->migradMinimization();
 
-      fitFailed = ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
+      fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
 
       if( fitFailed )
          cout << "ERROR: fit failed use results with caution..." << endl;
@@ -136,7 +136,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          else
             fitManager->migradMinimization();
 
-         fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
 
          if( fitFailed )
             cout << "ERROR: fit failed use results with caution..." << endl;
@@ -243,7 +243,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          else
             fitManager->migradMinimization();
 
-         fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
          curLH = ati.likelihood();
 
          if( fitFailed )
