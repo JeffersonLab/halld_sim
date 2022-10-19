@@ -49,7 +49,7 @@ public:
 	// Use this for indexing a user-defined data array and notifying
 	// the framework of the number of user-defined variables.
 	
-	enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_Phi = 4, uv_dalitz_z = 5, uv_dalitz_sin3theta = 6, uv_MX = 7, uv_MVec = 8, uv_MPs = 9, kNumUserVars };
+	enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_Phi = 4, uv_dalitz_z = 5, uv_dalitz_sin3theta = 6, uv_MX = 7, uv_MVec = 8, uv_MPs = 9, uv_dalitz_phi = 10, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	// This function needs to be defined -- see comments and discussion

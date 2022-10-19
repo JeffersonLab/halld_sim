@@ -215,7 +215,9 @@ int main( int argc, char* argv[] ){
 	  else if (ivar == OmegaPiPlotGenerator::kRecoilMass)  histname += "MRecoil";
 	  else if (ivar == OmegaPiPlotGenerator::kProtonPiMass)  histname += "MProtonPi";
 	  else if (ivar == OmegaPiPlotGenerator::kRecoilPiMass)  histname += "MRecoilPi";
-	  
+	  else if (ivar == OmegaPiPlotGenerator::kLambda)  histname += "Lambda";
+	  else if (ivar == OmegaPiPlotGenerator::kDalitz)  histname += "Dalitz";
+
 	  else continue;
 	  
 	  if (iplot == PlotGenerator::kData) histname += "dat";

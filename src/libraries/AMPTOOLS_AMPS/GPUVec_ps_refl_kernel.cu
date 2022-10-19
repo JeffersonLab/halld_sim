@@ -29,6 +29,7 @@ GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_
 	GDouble prod_angle = GPU_UVARS(4);
 	GDouble dalitz_z = GPU_UVARS(5);
 	GDouble dalitz_sin3theta = GPU_UVARS(6);
+	GDouble dalitz_phi = GPU_UVARS(10);
 	GDouble MX = GPU_UVARS(7);
 	GDouble MVec = GPU_UVARS(8);
 	GDouble MPs = GPU_UVARS(9);
@@ -39,7 +40,7 @@ GPUVec_ps_refl_kernel( GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_
 
 	// dalitz parameters for 3-body vector decay
 	GDouble G = 1; // not relevant for 2-body vector decays
-	if(m_3pi) G = G_SQRT(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * G_POW(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * G_POW(dalitz_z,2) + 2 * dalitz_delta * G_POW(dalitz_z,5/2.) * dalitz_sin3theta );
+	if(m_3pi) G = G_SQRT( G_FABS(dalitz_phi * (1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * G_POW(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * G_POW(dalitz_z,2) + 2 * dalitz_delta * G_POW(dalitz_z,5/2.) * dalitz_sin3theta)) );
 
 	for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
 		//CPU --> clebschGordan(j1,j2,m1,m2,J,M) || GPU --> clebsch(j1,m1,j2,m2,J,M);

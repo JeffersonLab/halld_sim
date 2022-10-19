@@ -49,7 +49,8 @@ void OmegaPiPlotGenerator::createHistograms( ) {
    bookHistogram( kTwoPiMass, new Histogram1D( 100, 0.25, 1.75, "MTwoPi", "Invariant Mass of 2 #pi" ) ); 
    bookHistogram( kProtonPiMass, new Histogram1D( 100, 0.9, 2.9, "MProtonPi", "Invariant Mass of proton and bachelor pion" ) );
    bookHistogram( kRecoilPiMass, new Histogram1D( 100, 0.9, 2.9, "MRecoilPi", "Invariant Mass of recoil and bachelor pion" ) );
-  
+   bookHistogram( kLambda, new Histogram1D( 110, 0.0, 1.1, "Lambda", "#lambda_{#omega}" ) );
+   bookHistogram( kDalitz, new Histogram2D( 100, -2., 2., 100, -2., 2., "Dalitz", "Dalitz XY" ) );
 }
 
 void
@@ -100,8 +101,9 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
    GDouble cosThetaH = TMath::Cos(locthetaphih[0]);
    GDouble PhiH = locthetaphih[1];
    GDouble prod_angle = locthetaphi[2];
+   GDouble lambda = locthetaphih[2];
 
-   //cout << "calls to fillHistogram go here" << endl;
+   // cout << "calls to fillHistogram go here" << endl;
    fillHistogram( kOmegaPiMass, b1_mass );
    fillHistogram( kCosTheta, cosTheta );
    fillHistogram( kPhi, Phi );
@@ -114,5 +116,21 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
    fillHistogram( kProtonPiMass, proton_pi.M() );
    fillHistogram( kRecoilPiMass, recoil_pi.M() );
 
+   // Dalitz variables
+   fillHistogram( kLambda, lambda );
+   
+   double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc, dalitzx, dalitzy;
+   TLorentzVector p2 = omegas_pi;
+   TLorentzVector p3 = rhos_pip;
+   TLorentzVector p4 = rhos_pim;
+   dalitz_s = (p3+p4).M2();//s=M(pip pim)
+   dalitz_t = (p2+p3).M2();//s=M(pip pi0)
+   dalitz_u = (p2+p4).M2();//s=M(pim pi0)
+   dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*0.13957018)+0.1349766) );
+   dalitz_sc = (1/3.)*( (p2+p3+p4).M2() + ((2*(0.13957018*0.13957018))+(0.1349766*0.1349766)) );
+   dalitzx = sqrt(3.)*(dalitz_t - dalitz_u)/dalitz_d;
+   dalitzy = 3.*(dalitz_sc - dalitz_s)/dalitz_d;
+   fillHistogram( kDalitz, dalitzx, dalitzy );
+   
 }
 

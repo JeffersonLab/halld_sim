@@ -98,9 +98,11 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	  double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
 	  double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
 	  double dalitz_sin3theta = TMath::Sin(3 *  TMath::ASin( (dalitzy/sqrt(dalitz_z) )) );
-	  
+	  double dalitz_phi = dalitz_s*dalitz_t*dalitz_u - pi0.M2()*pow(vec.M2() - pi0.M2(), 2.);
+
 	  userVars[uv_dalitz_z] = dalitz_z;
 	  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
+	  userVars[uv_dalitz_phi] = dalitz_phi;
   }
   else {
 	  // omega ps proton, omega -> pi0 g (4 particles)
@@ -161,13 +163,14 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble prod_angle = userVars[uv_prod_Phi];
   GDouble dalitz_z = userVars[uv_dalitz_z];
   GDouble dalitz_sin3theta = userVars[uv_dalitz_sin3theta];
+  GDouble dalitz_phi = userVars[uv_dalitz_phi];
   GDouble MX = userVars[uv_MX];
   GDouble MVec = userVars[uv_MVec];
   GDouble MPs = userVars[uv_MPs];
 
   // dalitz parameters for 3-body vector decay
-  GDouble G = 1; // not relevant for 2-body vector decays
-  if(m_3pi) G = sqrt(1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta );
+  GDouble G = 1; // not relevant for 2-body vector decays 
+  if(m_3pi) G = sqrt( fabs(dalitz_phi * (1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta)) );
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
