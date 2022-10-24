@@ -234,6 +234,9 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
     Csq=2./3.;
     zetasq=1.;
   }
+  else if (two_particles==(17+17)){ // eta eta
+    Csq=4./9.;
+  }
  
   TLorentzVector p1(0,0,0.,ParticleMass(Proton));
   TLorentzVector p2=particles[2];
@@ -476,6 +479,65 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
       b2_bS_sum=(4./3.)*gsq_rho_T*g_rho_S*regge_rho_sq*2.*Re_B_omega_2;
       b2_bS_diff=(4./3.)*gsq_rho_T*g_rho_S*regge_rho_sq*2.*Im_B_omega_2;
     }
+    if (two_particles==(17+17)){ // eta eta
+      a1_aS_sum=g_rho_S*gsq_rho_V_and_T*regge_rho_sq*2.*Re_B_rho_1
+	+ g_omega_V*g_rho_V_and_T*((1./3.)*g_rho_S*(Re_B_omega_1*realFactor
+						    +Im_B_omega_1*imaginaryFactor)
+				   + g_omega_S*(Re_B_rho_1*realFactor
+						- Im_B_rho_1*imaginaryFactor))
+	+ (1./3.)*g_omega_S*gsq_omega_V*regge_omega_sq*2.*Re_B_omega_1;
+      a1_aS_diff=g_rho_S*gsq_rho_V_and_T*regge_rho_sq*2.*Im_B_rho_1
+	+ g_omega_V*g_rho_V_and_T*((1./3.)*g_rho_S*(Im_B_omega_1*realFactor
+						    -Re_B_omega_1*imaginaryFactor)
+				   + g_omega_S*(Im_B_rho_1*realFactor
+						+Re_B_rho_1*imaginaryFactor))
+	+ (1./3.)*g_omega_S*gsq_omega_V*regge_omega_sq*2.*Im_B_omega_1;
+      a2_aS_sum=g_rho_S*gsq_rho_V_and_T*regge_rho_sq*2.*Re_B_rho_2
+	+ g_omega_V*g_rho_V_and_T*((1./3.)*g_rho_S*(Re_B_omega_2*realFactor
+						    +Im_B_omega_2*imaginaryFactor)
+				   + g_omega_S*(Re_B_rho_2*realFactor
+						- Im_B_rho_2*imaginaryFactor))
+	+ (1./3.)*g_omega_S*gsq_omega_V*regge_omega_sq*2.*Re_B_omega_2;
+      a2_aS_diff=g_rho_S*gsq_rho_V_and_T*regge_rho_sq*2.*Im_B_rho_2
+	+ g_omega_V*g_rho_V_and_T*((1./3.)*g_rho_S*(Im_B_omega_2*realFactor
+						    -Re_B_omega_2*imaginaryFactor)
+				   + g_omega_S*(Im_B_rho_2*realFactor
+						+Re_B_rho_2*imaginaryFactor))
+	+ (1./3.)*g_omega_S*gsq_omega_V*regge_omega_sq*2.*Im_B_omega_2;
+    
+      b1_aS_sum=-2.*g_rho_T*(g_rho_S*g_rho_V_and_T*regge_rho_sq*2.*Re_B_rho_1
+			     +g_omega_S*g_omega_V*(Re_B_rho_1*realFactor
+						   -Im_B_rho_1*imaginaryFactor));  
+      b1_aS_diff=-2.*g_rho_T*(g_rho_S*g_rho_V_and_T*regge_rho_sq*2.*Im_B_rho_1
+			      +g_omega_S*g_omega_V*(Im_B_rho_1*realFactor
+						    +Re_B_rho_1*imaginaryFactor));
+      b2_aS_sum=-2.*g_rho_T*(g_rho_S*g_rho_V_and_T*regge_rho_sq*2.*Re_B_rho_2
+			     +g_omega_S*g_omega_V*(Re_B_rho_2*realFactor
+						   -Im_B_rho_2*imaginaryFactor));  
+      b2_aS_diff=-2.*g_rho_T*(g_rho_S*g_rho_V_and_T*regge_rho_sq*2.*Im_B_rho_2
+			      +g_omega_S*g_omega_V*(Im_B_rho_2*realFactor
+						    +Re_B_rho_2*imaginaryFactor));
+      
+      a1_bS_sum=-2.*g_rho_S*g_rho_T*(g_rho_V_and_T*regge_rho_sq*2.*Re_B_rho_1
+				     +(1./3.)*g_omega_V*(Re_B_omega_1*realFactor
+							 +Im_B_omega_1*imaginaryFactor));
+      a1_bS_diff=-2.*g_rho_S*g_rho_T*(g_rho_V_and_T*regge_rho_sq*2.*Im_B_rho_1
+				      +(1./3.)*g_omega_V*(Im_B_omega_1*realFactor
+							  -Re_B_omega_1*imaginaryFactor));
+      a2_bS_sum=-2.*g_rho_S*g_rho_T*(g_rho_V_and_T*regge_rho_sq*2.*Re_B_rho_2
+				     +(1./3.)*g_omega_V*(Re_B_omega_2*realFactor
+							 +Im_B_omega_2*imaginaryFactor));
+      a2_bS_diff=-2.*g_rho_S*g_rho_T*(g_rho_V_and_T*regge_rho_sq*2.*Im_B_rho_2
+				      +(1./3.)*g_omega_V*(Im_B_omega_2*realFactor
+							  -Re_B_omega_2*imaginaryFactor));
+      
+      b1_bS_sum=4.*gsq_rho_T*g_rho_S*regge_rho_sq*2.*Re_B_rho_1;
+      b1_bS_diff=4.*gsq_rho_T*g_rho_S*regge_rho_sq*2.*Im_B_rho_1;
+      b2_bS_sum=4.*gsq_rho_T*g_rho_S*regge_rho_sq*2.*Re_B_rho_2;
+      b2_bS_diff=4.*gsq_rho_T*g_rho_S*regge_rho_sq*2.*Im_B_rho_2;
+
+    }
+
       
     T=kin_a1_aS*(cosphi*a1_aS_sum-sinphi*a1_aS_diff)
       + kin_a2_aS*(cosphi*a2_aS_sum-sinphi*a2_aS_diff)
@@ -586,6 +648,32 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
       b2_a1=-2.*g_rho_T*((1./9.)*g_rho_V_and_T*regge_rho_sq*Pi_rho_1_Pi_omega_2
 		       + (1./3.)*g_omega_V*omega_1_omega_2_interference
 		       );
+    }
+    else if (two_particles==(17+17)){ // eta eta
+      a1_a1=gsq_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq
+      + (1./3.)*g_omega_V*g_rho_V_and_T*rho_1_omega_1_interference
+      + (1./9.)*gsq_omega_V*regge_omega_sq*Pi_omega_1_sq;
+      a2_a2=gsq_rho_V_and_T*regge_rho_sq*Pi_rho_2_sq
+	+ (1./3.)*g_omega_V*g_rho_V_and_T*rho_2_omega_2_interference
+	+ (1./9.)*gsq_omega_V*regge_omega_sq*Pi_omega_2_sq;
+      a1_a2=gsq_rho_V_and_T*regge_rho_sq*Pi_rho_1_Pi_rho_2
+	+ (1./3.)*g_omega_V*g_rho_V_and_T*rho_12_omega_21_interference
+	+ (1./9.)*gsq_omega_V*regge_omega_sq*Pi_omega_1_Pi_omega_2;
+
+      b1_b1=4.*gsq_rho_T*regge_rho_sq*Pi_rho_1_sq; 
+      b2_b2=4.*gsq_rho_T*regge_rho_sq*Pi_rho_2_sq;
+      b1_b2=4.*gsq_rho_T*regge_rho_sq*Pi_omega_1_Pi_omega_2;
+
+      b1_a1=-2.*g_rho_T*(2.*g_rho_V_and_T*regge_rho_sq*Pi_rho_1_sq
+			 +(1./3.)*g_omega_V*rho_1_omega_1_interference);
+      b2_a2=-2.*g_rho_T*(2.*g_rho_V_and_T*regge_rho_sq*Pi_rho_2_sq
+		       +(1./3.)*g_omega_V*rho_2_omega_2_interference);
+      b1_a2=-2.*g_rho_T*(g_rho_V_and_T*regge_rho_sq*Pi_rho_1_Pi_rho_2
+			 + (1./3.)*g_omega_V*rho_1_omega_2_interference
+			 );
+      b2_a1=-2.*g_rho_T*(g_rho_V_and_T*regge_rho_sq*Pi_rho_1_Pi_rho_2
+			 + (1./3.)*g_omega_V*rho_2_omega_1_interference
+			 );
     }
 
     T=(m_p_sq-p1_dot_p2)*(a1_a1*M1_M1 + a1_a2*M1_M2 + a2_a2*M2_M2)
@@ -1388,11 +1476,14 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 		       double coupling_constants[]
 		       ){
   // Decay particles
+  int two_particles=particle_types[0]+particle_types[1];
   double m1=ParticleMass(particle_types[0]);
   double m2=ParticleMass(particle_types[1]);
   double m1_plus_m2=m1+m2;
   double m1_minus_m2=m1-m2;
-  bool got_pipi=(fabs(m1-m2)>0.01)?false:true;
+  bool got_pipi=(two_particles==(7+7))?true:false; 
+  bool got_etaeta=(two_particles==(17+17))?true:false; 
+  bool got_pieta=(two_particles==(7+17))?true:false;
   double m1sq=m1*m1;
   double m2sq=m2*m2;
   double m1sq_plus_m2sq=m1sq+m2sq;
@@ -1419,9 +1510,9 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.9; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
+    double m_Sigma=0.85; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
-    width=1.0; // 0.4-0.7 GeV, PDG (2020)
+    width=0.9; // 0.4-0.7 GeV, PDG (2020)
     double BWmassTerm=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
@@ -1441,7 +1532,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 		    gsq_rho_f500_gamma,gsq_omega_f500_gamma);
   }
   // f0(1500)
-  if (got_pipi && generate[2]){
+  if ((got_pipi||got_etaeta) && generate[2]){
     double m_f1500=1.506;
     double M_sq_R=m_f1500*m_f1500; 
     width=0.112;
@@ -1450,7 +1541,10 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     double temp=4.*m1sq*m2sq;
     double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
 		   /(4.*M_sq_R));
-    double partial_width=0.345/3.;
+    double partial_width=0.345/3.*width;
+    if (got_etaeta){
+      partial_width=0.06*width;
+    }
     double BWwidthTerm=width*sqrt(M_sq);
     
     // Breit-Wigner shape 
@@ -1474,7 +1568,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   }
 
   // a0(1450)
-  if (got_pipi==false && generate[2]){
+  if (got_pieta==true && generate[2]){
     double m_a1450=1.448;// Bugg:arXiv:0808.2706v2,Table 2
     double M_sq_R=m_a1450*m_a1450; 
     width=0.192; // Bugg:arXiv:0808.2706v2,Table 2
@@ -1497,14 +1591,14 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 		    gsq_rho_a1450_gamma,gsq_omega_a1450_gamma);
   }
   // f0(980)/a0(980)
-  if (generate[1]){
+  if (got_etaeta==false && generate[1]){
     double my_msq_R=0.9847*0.9847;
     if (got_pipi){ // f0(980)	
       double MRsq_minus_m1sq_m2sq=my_msq_R-m1sq_plus_m2sq;	
       double temp=4.*m1sq*m2sq;
       double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
 		     /(4.*my_msq_R));
-      double partial_width=0.05; //?? // guess from note in pdg
+      double partial_width=0.05/3.; //?? // guess from note in pdg
       gR=sqrt(8.*M_PI*my_msq_R*partial_width/qR);
       gsq_rho_S_gamma=coupling_constants[1]; // GeV^-2
       gsq_omega_S_gamma=(1./9.)*gsq_rho_S_gamma;
@@ -1543,7 +1637,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 		      phase[0]-phase[1]);
     }	
     // Interference between a0(1450) and a0(980)
-    if (got_pipi==false && generate[2]){
+    if (got_pieta && generate[2]){
       T+=CrossSection(s,t,beam,particle_vectors,gR,ReB,ImB,gsq_rho_S_gamma,
 		      gsq_omega_S_gamma,gRa1450,ReBa1450,ImBa1450,
 		      gsq_rho_a1450_gamma,gsq_omega_a1450_gamma,
@@ -1572,7 +1666,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
 				  gsq_omega_f1500_gamma,phase[2]);
       }
     }
-    else{ 
+    else if (got_pieta){ 
       if (generate[2]){ // interference with a0(1450)
 	T+=BackgroundCrossSection(s,t,beam,particle_types,particle_vectors,
 				  g0_sq,
@@ -1585,7 +1679,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   if (generate[3]){ // Tensor background
     double m_T=1.265; // mass determined empirically	
     double Gamma_T=0.185;
-    if (!got_pipi){
+    if (got_pieta){
       Gamma_T=0.107;
       m_T=1.3183;
     }
@@ -1595,21 +1689,30 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     double MRsq_minus_m1sq_m2sq=M_sq_R_T-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
     double M=sqrt(M_sq);
+    double qR=sqrt((MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp)
+		   /(4.*M_sq_R_T));
     double q_over_qR
       =m_T/M*sqrt((Msq_minus_m1sq_m2sq*Msq_minus_m1sq_m2sq-temp)
 		  /(MRsq_minus_m1sq_m2sq*MRsq_minus_m1sq_m2sq-temp));
     double q_over_qR_5=pow(q_over_qR,5);
     double BWwidthTerm=0.;
-    if (got_pipi){ // f2(1270)  
-      double partial_width=0.85*(1./3.)*M_sq_R_T*q_over_qR_5/M_sq;
-      gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width*q_over_qR);
+    // D-wave decay, to be scaled by the appropriate branching ratio
+    double partial_width=Gamma_T*q_over_qR_5*M_sq_R_T/M_sq;
+    if (got_pipi || got_etaeta){ // f2(1270)    
+      if (got_pipi){ 
+	partial_width*=0.85*(1./3.);
+      }
+      else{
+	partial_width*=4e-3; // from PDG
+      }
+      // From Xie and Oset 2014
       BWwidthTerm=M*Gamma_T*(0.85*q_over_qR_5*M_sq_R_T/M_sq+0.15);
     }
     else { // a2(1320)
-      double partial_width=0.155*M_sq_R_T*q_over_qR_5/M_sq;
-      gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width*q_over_qR);
+      partial_width*=0.145;
       BWwidthTerm=M*Gamma_T*(0.145*q_over_qR_5*M_sq_R_T/M_sq+0.855);
     }
+    gR_T=sqrt(8.*M_PI*M_sq_R_T*partial_width/qR);
     double gT_sq=coupling_constants[3];
       
     // Breit-Wigner shape 
