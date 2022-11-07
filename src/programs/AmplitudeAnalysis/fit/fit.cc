@@ -29,6 +29,7 @@
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
 #include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/TwoLeptonAngles.h"
+#include "AMPTOOLS_AMPS/TwoLeptonAnglesGJ.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
@@ -295,6 +296,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
    AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
    AmpToolsInterface::registerAmplitude( TwoLeptonAngles() );
+   AmpToolsInterface::registerAmplitude( TwoLeptonAnglesGJ() );
    AmpToolsInterface::registerAmplitude( Zlm() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );
