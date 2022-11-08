@@ -41,6 +41,8 @@
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -220,6 +222,9 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          cout << "FIT " << i << " OF " << steps << endl;
          cout << endl << "###############################" << endl;
 
+	 // reinitialize production parameters from seed file
+	 ati.reinitializePars();
+
          // set parameter to be scanned
          vector<ParameterInfo*> parInfoVec = cfgInfo->parameterList();
 
@@ -350,6 +355,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( Flatte() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
+   AmpToolsInterface::registerAmplitude( ComplexCoeff() );
+   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
