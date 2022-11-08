@@ -204,6 +204,8 @@ int main( int argc, char* argv[] ){
 	  else if (ivar == VecPsPlotGenerator::kRecoilMass)  histname += "MRecoil";
 	  else if (ivar == VecPsPlotGenerator::kProtonPsMass)  histname += "MProtonPs";
 	  else if (ivar == VecPsPlotGenerator::kRecoilPsMass)  histname += "MRecoilPs";
+	  else if (ivar == VecPsPlotGenerator::kLambda)  histname += "Lambda";
+	  else if (ivar == VecPsPlotGenerator::kDalitz)  histname += "Dalitz";
 	  else continue;	  
 
 	  if (iplot == PlotGenerator::kData) histname += "dat";
