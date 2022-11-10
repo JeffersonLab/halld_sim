@@ -21,6 +21,9 @@
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/PhaseOffset.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -254,7 +257,9 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
-
+        AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+        AmpToolsInterface::registerAmplitude( PhaseOffset() );
+	AmpToolsInterface::registerAmplitude( ComplexCoeff() );
 
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
