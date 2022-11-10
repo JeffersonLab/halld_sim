@@ -29,7 +29,9 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -43,7 +45,9 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
   AmpToolsInterface::registerAmplitude( PhaseOffset() );
+  AmpToolsInterface::registerAmplitude( ComplexCoeff() );
   AmpToolsInterface::registerAmplitude( Piecewise() );
+  AmpToolsInterface::registerAmplitude( OmegaDalitz() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( FSRootDataReader() );
@@ -206,6 +210,8 @@ int main( int argc, char* argv[] ){
 	  else if (ivar == VecPsPlotGenerator::kRecoilMass)  histname += "MRecoil";
 	  else if (ivar == VecPsPlotGenerator::kProtonPsMass)  histname += "MProtonPs";
 	  else if (ivar == VecPsPlotGenerator::kRecoilPsMass)  histname += "MRecoilPs";
+	  else if (ivar == VecPsPlotGenerator::kLambda)  histname += "Lambda";
+	  else if (ivar == VecPsPlotGenerator::kDalitz)  histname += "Dalitz";
 	  else continue;	  
 
 	  if (iplot == PlotGenerator::kData) histname += "dat";
