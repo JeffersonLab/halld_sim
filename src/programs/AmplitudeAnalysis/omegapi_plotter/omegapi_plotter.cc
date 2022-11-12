@@ -311,13 +311,6 @@ if(makePlots) {
 	    
 	    if(fullamps[i].find("::" + locampname) == std::string::npos) continue;
 	    //cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
-
-	    // parse amplitude name for naturality to compute reflectivity 
-	    int j = locampname[0]-'0';
-	    int parity = 0;
-	    if( locampname[1] == 'p' ) parity = +1;
-	    else if( locampname[1] == 'm' ) parity = -1;
-	    else cout<<"Undefined parity in amplitude"<<endl;
  
 	    // select reflectivity 
 	    if(fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
