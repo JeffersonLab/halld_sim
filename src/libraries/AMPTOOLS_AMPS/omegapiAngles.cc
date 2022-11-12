@@ -80,7 +80,7 @@ vector <double> getomegapiAngles(TLorentzVector daughter, TLorentzVector parent,
 
   // compute omega dalitz decay variable lambda
   TVector3 daughterCross = (daughter_parent.Vect()).Cross(seconddaughter_parent.Vect());
-  double lambda = 4/3. * fabs(daughterCross.Dot(daughterCross)) / TMath::Power((1/9. * parent.M2() - 0.135*0.135), 2.);
+  double lambda = 4/3. * fabs(daughterCross.Dot(daughterCross)) / TMath::Power((1/9. * parent.M2() - daughter.M2()), 2.);
 
   vector <double> thetaphi{theta, phi, lambda};
     
