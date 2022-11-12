@@ -71,7 +71,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
   }
 
   bool fitFailed =
-    ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
+    ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
 
   if( fitFailed ){
     cout << "ERROR: fit failed use results with caution..." << endl;
@@ -120,7 +120,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
     else
       fitManager->migradMinimization();
 
-    bool fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+    bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
 
     if( fitFailed )
       cout << "ERROR: fit failed use results with caution..." << endl;
@@ -215,7 +215,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
     else
       fitManager->migradMinimization();
 
-    bool fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+    bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
 
     if( fitFailed )
       cout << "ERROR: fit failed use results with caution..." << endl;
