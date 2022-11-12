@@ -76,7 +76,8 @@ private:
 	AmpParameter dalitz_beta;
 	AmpParameter dalitz_gamma;
 	AmpParameter dalitz_delta;
-	
+
+	int index_daughter1, index_daughter2, index_daughter3;
 };
 
 #endif
