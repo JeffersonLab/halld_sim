@@ -13,12 +13,12 @@
 #include "particleType.h"
 
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
-#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 
@@ -224,7 +224,7 @@ int main( int argc, char* argv[] ){
 	// loop to look for resonance in config file
 	// currently only one at a time is supported 
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
-	double resonance[]={1.235, 0.142};
+	double resonance[]={1.235, 1.0};
 	bool foundResonance = false;
 
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
@@ -241,7 +241,7 @@ int main( int argc, char* argv[] ){
 	  }
 	}
 	if (!foundResonance)
-	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with mass = 1.235, width = 0.142 GeV" << endl; 
+	  cout << "ConfigFileParser WARNING:  no known resonance found, seed flat mass distribution" << endl; 
 
 	// random number initialization (set to 0 by default)
 	TRandom3* gRandom = new TRandom3();
@@ -251,7 +251,7 @@ int main( int argc, char* argv[] ){
 
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
-	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
+	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
 
@@ -299,7 +299,7 @@ int main( int argc, char* argv[] ){
 	// we can easily compute the PDF for this and divide by that when
 	// doing accept/reject -- improves efficiency if seeds are picked well
 	
-	if( !genFlat ){
+	if( !genFlat && foundResonance){
 		
 		// the lines below should be tailored by the user for the particular desired
 		// set of amplitudes -- doing so will improve efficiency.  Leaving as is
@@ -345,6 +345,7 @@ int main( int argc, char* argv[] ){
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
 	TH1F* M_isobar2 = new TH1F( "M_isobar2", locIsobar2Title.c_str(), 200, 0, 2 );
 	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 200, 0, 2 );
+	TH1F* M_recoilW = new TH1F( "M_recoilW", "; Weighted Recoil mass (GeV)", 200, 0, 2 );
 	TH1F* M_p1 = new TH1F( "M_p1", "p1", 200, 0, 2 );
 	TH1F* M_p2 = new TH1F( "M_p2", "p2", 200, 0, 2 );
 	TH1F* M_p3 = new TH1F( "M_p3", "p3", 200, 0, 2 );
@@ -375,8 +376,10 @@ int main( int argc, char* argv[] ){
 		int i=0;
 		while( i < batchSize ){
 			
+			double weight = 1.;
+
 			double omega_mass_bw = m_bwGen[0]().first;
-                        if( omega_mass_bw < 0.45 || omega_mass_bw > 0.864 ) continue;
+                        if( omega_mass_bw < 0.45 || omega_mass_bw > 0.86 ) continue;
 			//Avoids Tcm < 0 in NBPhaseSpaceFactory and BWgenerator
 
 			vector<double> childMasses_omega_bw;
@@ -392,6 +395,7 @@ int main( int argc, char* argv[] ){
 			if(bwGenLowerVertex.size() == 1) {
 				bwLowerVertex = bwGenLowerVertex[0]();
 				lowerVertex_mass_bw = bwLowerVertex.first;
+				weight *= bwLowerVertex.second;
 				if ( lowerVertex_mass_bw < thresholdLowerVertex || lowerVertex_mass_bw > 2.0) continue;
 				resProd.getProductionMechanism().setRecoilMass( lowerVertex_mass_bw );
 			}
@@ -404,14 +408,12 @@ int main( int argc, char* argv[] ){
 			  TLorentzVector b1 = bachelor_pi + omega;
 
 			  // decay step for omega
-			  //cout << "omega mass =" << omega_mass_bw << endl;
         		  NBodyPhaseSpaceFactory omega_to_pions = NBodyPhaseSpaceFactory( omega_mass_bw, part_masses2);
 			  vector<TLorentzVector> omega_daughters = omega_to_pions.generateDecay();
 			  
 			  TLorentzVector piplus = omega_daughters[0];//second decay step
 			  TLorentzVector piminus = omega_daughters[1];//second decay step
 			  TLorentzVector omegas_pi0 = omega_daughters[2];//second decay step
-			  //cout << "second step masses ="<< piplus.M() << ", "<< piminus.M() << ", " << omegas_pi0.M() << endl;
 
 			  omegas_pi0.Boost( omega.BoostVector() );
 			  piplus.Boost( omega.BoostVector() );			  
@@ -445,7 +447,8 @@ int main( int argc, char* argv[] ){
 				  for(unsigned int j=1; j<lowerVertexChild.size(); j++)
                                         allPart.push_back(lowerVertexChild[j]);
 
-			  Kinematics* kin = new Kinematics( allPart, 1.0 );
+			  weight *= step1->weight();
+			  Kinematics* kin = new Kinematics( allPart,  weight);
 			  ati.loadEvent( kin, i, batchSize );
 			  delete step1;
 			  delete kin;
@@ -502,6 +505,7 @@ int main( int argc, char* argv[] ){
 					M_isobar->Fill( isobar.M() );
 					M_isobar2->Fill( isobar2.M() );
 					M_recoil->Fill( recoil.M() );
+					M_recoilW->Fill( recoil.M(), weightedInten );
 					
 					// calculate angular variables
 					TLorentzVector beam = evt->particle ( 0 );
@@ -585,6 +589,7 @@ int main( int argc, char* argv[] ){
 	M_isobar->Write();
 	M_isobar2->Write();
 	M_recoil->Write();
+	M_recoilW->Write();
         M_p1->Write();
         M_p2->Write();
         M_p3->Write();

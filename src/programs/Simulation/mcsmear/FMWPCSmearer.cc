@@ -5,10 +5,10 @@
 //-----------
 fmwpc_config_t::fmwpc_config_t(JEventLoop *loop) 
 {
-	// default values
-	FMWPC_TSIGMA = 10.0;  // ns
- 	FMWPC_ASIGMA = 0.5E-6;
- 	FMWPC_THRESHOLD = 0.0;
+  // default values
+  FMWPC_TSIGMA = 1.0;  // ns
+  FMWPC_ASIGMA = 0.0; // ???
+  FMWPC_THRESHOLD = 0.0; 
 }
 
 
@@ -25,17 +25,28 @@ void FMWPCSmearer::SmearEvent(hddm_s::HDDM *record)
       hddm_s::FmwpcTruthHitList thits = iter->getFmwpcTruthHits();
       hddm_s::FmwpcTruthHitList::iterator titer;
       for (titer = thits.begin(); titer != thits.end(); ++titer) {
+	hddm_s::FmwpcTruthHitQList &charges=titer->getFmwpcTruthHitQs();
          // smear the time and energy
          double t = titer->getT();
-         double dE = titer->getDE();
+         double q = (charges.size()) ? charges.begin()->getQ() : 0.;
+	 // Approximate drift time
+	 const double v=0.0046; // drift velocity, cm/ns
+	 double d = (charges.size()) ? charges.begin()->getD() : 0.;
+	 double tdrift=d/v;
+	 // Approximate longitudinal diffusion
+	 double D=2.e-6; // cm^2/ns, based on 200 micron/cm for large drift time
+	 double sigma_t=sqrt(2.*D*tdrift)/v;
+	 t += tdrift+gDRandom.SampleGaussian(sigma_t);
          if(config->SMEAR_HITS) {
-         	t += gDRandom.SampleGaussian(fmwpc_config->FMWPC_TSIGMA);
-         	dE += gDRandom.SampleGaussian(fmwpc_config->FMWPC_ASIGMA);
-		 }
-         if (dE > fmwpc_config->FMWPC_THRESHOLD) {
-            hddm_s::FmwpcHitList hits = iter->addFmwpcHits();
-            hits().setT(t);
-            hits().setDE(dE);
+	   t += gDRandom.SampleGaussian(fmwpc_config->FMWPC_TSIGMA);
+	   q += gDRandom.SampleGaussian(fmwpc_config->FMWPC_ASIGMA);
+	 }
+         if (q > fmwpc_config->FMWPC_THRESHOLD) {
+	   hddm_s::FmwpcHitList hits = iter->addFmwpcHits();
+	   hits().setT(t);
+	   hits().setDE(0.); // Not used (SJT 2/28/22)
+	   hddm_s::FmwpcHitQList charges=hits().addFmwpcHitQs(1);
+	   charges(0).setQ(q);
          }
       }
 

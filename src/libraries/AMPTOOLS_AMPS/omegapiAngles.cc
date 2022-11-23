@@ -68,7 +68,12 @@ vector <double> getomegapiAngles(TLorentzVector daughter, TLorentzVector parent,
   TVector3 y = ((InverseOfX_rfunit).Cross(z)).Unit();
   TVector3 x = (y.Cross(z)).Unit();
   
-  TVector3 Angles(normal_parentunit.Dot(x),normal_parentunit.Dot(y),normal_parentunit.Dot(z));
+  // decay vector is normal to decay plane for omega->3pi and one of the ps for vec->ps1+ps2
+  TVector3 decayVector;
+  if(seconddaughter.E() > 0) decayVector = normal_parentunit;
+  else decayVector = daughter_parentunit;
+  
+  TVector3 Angles(decayVector.Dot(x),decayVector.Dot(y),decayVector.Dot(z));
 
   double theta = Angles.Theta();
   double phi = Angles.Phi();
@@ -109,7 +114,7 @@ vector <double> getomegapiAngles(double polAngle, TLorentzVector daughter, TLore
   double theta = Angles.Theta();
   double phi = Angles.Phi();
 
-  TVector3 eps(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
+  TVector3 eps(cos(polAngle), sin(polAngle), 0.0); 
   double Phi = atan2(y.Dot(eps), InverseOfX.Vect().Unit().Dot(eps.Cross(y)));
 
   vector <double> thetaphiPhi{theta, phi, Phi};

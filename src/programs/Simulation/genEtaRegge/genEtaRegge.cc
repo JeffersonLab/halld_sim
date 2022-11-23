@@ -101,11 +101,10 @@ char input_file_name[250]="eta548.in";
 char output_file_name[250]="eta_gen.hddm";
 
 // Non-default option to generate uniform t-distribution from tmin to tmax
-/// (calculating cross section at fixed t_uniform_eval)
+/// (fixed to cross section at tflat_min)
 bool gen_uniform_t=false;
-double t_uniform_eval=-1; // Only used if gen_uniform is true. Currently, 
-float t_min_uniform=0; // takes min(t_min_uniform,t_0) so as to avoid unphysical t_values
-float t_max_uniform=-3; // takes max(t_max_uniform,t_max) so as to avoid unphysical t_values
+float tflat_min=100.; // Physical values are negative. Cross section at larger |t| is equal to cross section at this number (for fixed E_gamma)
+float tflat_max=100.; // Physical values are negative
 
 void Usage(void){
   printf("genEtaRegge: generator for eta production based on Regge trajectory formalism.\n");
@@ -114,9 +113,6 @@ void Usage(void){
   printf("             -O<output.hddm>   (default: eta_gen.hddm)\n");
   printf("             -I<input.in>      (default: eta548.in)\n");
   printf("             -R<run number>    (default: 10000)\n");
-  printf("             -U                (generate uniform t-distribution instead of sloped)\n");
-  printf("             -tmin<val>        (min t value for uniform dist., if -U specified, default=physical min.)\n");
-  printf("             -tmax<val>        (max t value for uniform dist., if -U specified, default=3.0)\n");
   printf("             -h                (Print this message and exit.)\n");
   printf("Coupling constants, photon beam energy range, and eta decay products are\n");
   printf("specified in the <input.in> file.\n");
@@ -136,25 +132,6 @@ void ParseCommandLineArguments(int narg, char* argv[])
   }
   for(int i=1; i<narg; i++){
     char *ptr = argv[i];
-
-	// For command line options -tmin and -tmax
-	if(ptr[0]=='-' && strlen(ptr)>=5) {
-		char *check_str = (char *)"-tmin", *matches=NULL;
-		matches=strstr(ptr,check_str);
-		if(matches) {
-			sscanf(&ptr[5],"%f",&t_min_uniform);
-			t_min_uniform=-abs(t_min_uniform); // Make sure value is negative, no matter what was supplied
-		}
-		
-		check_str = (char *)"-tmax"; matches=NULL;
-		matches=strstr(ptr,check_str);
-		if(matches) {
-			sscanf(&ptr[5],"%f",&t_max_uniform);
-			t_max_uniform=-abs(t_max_uniform); // Make sure value is negative, no matter what was supplied
-		}
-	}
-	
-	// For all other command line options (which are exactly one character long)
     if(ptr[0] == '-'){
       switch(ptr[1]){
       case 'h': Usage(); break;
@@ -175,9 +152,6 @@ void ParseCommandLineArguments(int narg, char* argv[])
 	break;
       case 'd':
 	debug=true;
-	break;
-      case 'U':
-	gen_uniform_t=true;
 	break;
       default:
 	break;
@@ -417,15 +391,14 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
 }
 
 // Create some diagnostic histograms
-void CreateHistograms(string beamConfigFile){
+void CreateHistograms(string beamConfigFile,int num_decay_particles){
 
-  thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,abs(t_max_uniform));
+  if(gen_uniform_t) thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,tflat_max);
+  else              thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,3);
   thrown_t->SetXTitle("-t [GeV^{2}]");
-  thrown_dalitzZ=new TH1D("thrown_dalitzZ","thrown dalitz Z",110,-0.05,1.05);
   thrown_Egamma=new TH1D("thrown_Egamma","Thrown E_{#gamma} distribution",
 			       1000,0,12.);
   thrown_Egamma->SetTitle("E_{#gamma} [GeV]");
-  thrown_dalitzXY=new TH2D("thrown_dalitzXY","Dalitz distribution Y vs X",100,-1.,1.,100,-1.,1);
   
   thrown_theta_vs_p=new TH2D("thrown_theta_vs_p","Proton #theta_{LAB} vs. p",
 			       200,0,2.,180,0.,90.);
@@ -436,6 +409,11 @@ void CreateHistograms(string beamConfigFile){
 			       120,0,12.,180,0.,180.);
   thrown_theta_vs_p_eta->SetXTitle("p [GeV/c]");
   thrown_theta_vs_p_eta->SetYTitle("#theta [degrees]");
+  
+  if(num_decay_particles==3) {
+      thrown_dalitzZ=new TH1D("thrown_dalitzZ","thrown dalitz Z",110,-0.05,1.05);
+      thrown_dalitzXY=new TH2D("thrown_dalitzXY","Dalitz distribution Y vs X",100,-1.,1.,100,-1.,1);
+  }
   
   BeamProperties beamProp(beamConfigFile);
   cobrems_vs_E = (TH1D*)beamProp.GetFlux();
@@ -566,12 +544,7 @@ int main(int narg, char *argv[])
 
   cout << "number of decay particles = " << num_decay_particles << endl;
 
-  if( abs(t_max_uniform)>21. ) { // Max t at GlueX endpoint energy is about 20 GeV^2. Reset value to protect against inefficient accept/reject.
-    t_max_uniform=-21;
-	cout << "tmax provided is larger than physically allowed t at GlueX highest E, resetting to physical max........" << endl;
-  }
   
-  if(gen_uniform_t) cout << "GENERATING DATA WITH UNIFORM T-DIST FROM " << t_min_uniform << " TO " << t_max_uniform << endl;
 
   bool use_evtgen = false;
 #ifdef HAVE_EVTGEN
@@ -700,10 +673,45 @@ int main(int narg, char *argv[])
     }
   }
 
+  // Search for lines in input file starting with "tflat_min" or "tflat_max", if found we reset globals
+  while( !infile.eof() ) {
+    string line   = "";
+    string tflat_string = "";
+    getline(infile,line);
+    if(line.length() < 11) continue;
+    // Yes this code is ugly, but works. I miss python.
+    if(line.substr(0,9) == "tflat_min") {
+        string str_tval="";
+        for(size_t loc_i=9; loc_i<line.length(); loc_i++) {
+            string this_char; this_char += line[loc_i];
+            if(isdigit(line[loc_i]) || this_char=="." ) {
+                str_tval+=line[loc_i];
+            }
+            if(str_tval.length()>0 && this_char==" ") break;
+        }
+        tflat_min = -1*fabs(atof(str_tval.c_str()));
+    }
+    // Yes this code is ugly, but works. I miss python.
+    if(line.substr(0,9) == "tflat_max") {
+        string str_tval="";
+        for(size_t loc_i=9; loc_i<line.length(); loc_i++) {
+            string this_char; this_char += line[loc_i];
+            if(isdigit(line[loc_i]) || this_char=="." ) {
+                str_tval+=line[loc_i];
+            }
+            if(str_tval.length()>0 && this_char==" ") break;
+        }
+        tflat_max = -1*fabs(atof(str_tval.c_str()));
+    }
+  }
+  if(tflat_min<0.&&tflat_max<0.&&tflat_max<tflat_min) gen_uniform_t = true;
+  if(gen_uniform_t) cout << "GENERATING DATA WITH UNIFORM T-DIST FROM " << tflat_min << " TO " << tflat_max << endl;
+  
+
   infile.close();
   
   // Create some diagonistic histographs
-  CreateHistograms(beamConfigFile);
+  CreateHistograms(beamConfigFile,num_decay_particles);
 
   // Make a TGraph of the cross section at a fixed beam energy
   double xsec_max=0.;
@@ -897,13 +905,14 @@ int main(int narg, char *argv[])
       xsec=CrossSection(s,t,p_gamma,p_eta,theta_cm);	  
 	  
 	  // If generating a sample uniform in t, we need to fix t and re-calculate theta_cm based on it. Others do not depend on t.
-	  if(gen_uniform_t) {
-		  //Cross section at fixed t value (t_tmp)
-		  double t_tmp = t_uniform_eval;
+	  if(gen_uniform_t&&t<tflat_min&&t>tflat_max) {
+		  //Cross section at fixed t value (tflat_min)
+		  double t_tmp = tflat_min;
+          // if(t0<t_tmp && t_tmp < 0. ) t_tmp=t0-0.00001; //If tflat_min is unphysically small, use (essentially) t0 instead
 		  double theta_cm_tmp = 2.*asin(0.5*sqrt( (t0-t_tmp)/(p_gamma*p_eta) ) );
 		  xsec=CrossSection(s,t_tmp,p_gamma,p_eta,theta_cm_tmp);
 		  // Make t uniform, calculate theta_cm based off of it
-		  t=myrand->Uniform(t_max_uniform,  min( float(t0),t_min_uniform) ); // If t_min_uniform provided is unphysical, then use physical t_min.
+		  t=myrand->Uniform(tflat_max,  min( float(t0),tflat_min) ); // If t_min_uniform provided is unphysical, then use physical t_min.
 		  theta_cm=2.*asin(0.5*sqrt( (t0-t)/(p_gamma*p_eta) ) );
 		  if( std::isnan(theta_cm)==true ) xsec=-1.; // Lazy person's way of skipping unphysical theta_cm. Breaking do/while to accept event will never be satisfied for this case.
 	  }
@@ -1071,7 +1080,7 @@ int main(int narg, char *argv[])
     // Write Event to HDDM file
     WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,output_particle_decays,secondary_vertices,file);
     
-    if ((i%(Nevents/10))==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
+    if (((10*i)%Nevents)==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }
 
 

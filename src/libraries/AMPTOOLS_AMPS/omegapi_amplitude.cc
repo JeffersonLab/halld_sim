@@ -115,7 +115,7 @@ omegapi_amplitude::calcUserVars( GDouble** pKin, GDouble* userVars ) const
 	}
 
   //Calculate decay angles in helicity frame
-  vector <double> locthetaphi = getomegapiAngles(polAngle, omega, X, beam, Gammap);
+  vector <double> locthetaphi = getomegapiAngles(0.0, omega, X, beam, Gammap);
 
   vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
 
@@ -195,8 +195,8 @@ void omegapi_amplitude::updatePar( const AmpParameter& par ){
 void
 omegapi_amplitude::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
     
-  GPUomegapi_amplitude_exec( dimGrid, dimBlock, GPU_AMP_ARGS, 
-			  sign, lambda_gamma, spin, parity, spin_proj, l, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction);
+//  GPUomegapi_amplitude_exec( dimGrid, dimBlock, GPU_AMP_ARGS, 
+//			  sign, lambda_gamma, spin, parity, spin_proj, l, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction);
 }
 #endif //GPU_ACCELERATION
 

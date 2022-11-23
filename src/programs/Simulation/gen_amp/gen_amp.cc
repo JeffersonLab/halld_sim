@@ -11,8 +11,11 @@
 
 #include "particleType.h"
 
+
+#include "AMPTOOLS_DATAIO/DataWriter.h"
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
-#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_DATAIO/FSRootDataWriter.h"
+#include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -22,13 +25,17 @@
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/Lambda1520tdist.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
+#include "AMPTOOLS_AMPS/Hist2D.h"
+#include "AMPTOOLS_AMPS/Flatte.h"
+#include "AMPTOOLS_AMPS/Uniform.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -55,9 +62,10 @@ int main( int argc, char* argv[] ){
 	string  outname("");
 	string  hddmname("");
 	
-	bool centeredVertex = false;
+	bool centeredVertex = true;
 	bool diag = false;
 	bool genFlat = false;
+	bool fsRootFormat = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 0.2;
@@ -77,6 +85,7 @@ int main( int argc, char* argv[] ){
 
 	int nEvents = 10000;
 	int batchSize = 10000;
+
 	
 	//parse command line:
 	for (int i = 1; i < argc; i++){
@@ -131,13 +140,16 @@ int main( int argc, char* argv[] ){
 		if (arg == "-d"){
 			diag = true; }
 		if (arg == "-v"){
-			centeredVertex = true; }
+			centeredVertex = false; }
 		if (arg == "-f"){
 			genFlat = true; }
+		if (arg == "-fsroot"){
+		        fsRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
 			cout << "\t -o    <name>\t ROOT file output name" << endl;
+			cout << "\t -fsroot \t Enable output in FSRoot format" << endl;
 			cout << "\t -hd   <name>\t HDDM file output name [optional]" << endl;
 			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
@@ -151,7 +163,7 @@ int main( int argc, char* argv[] ){
 			cout << "\t -t    <value>\t Momentum transfer slope [optional]" << endl;
 			cout << "\t -tmin <value>\t Minimum momentum transfer [optional]" << endl;
 			cout << "\t -tmax <value>\t Maximum momentum transfer [optional]" << endl;
-			cout << "\t -v \t\t Set vertex to (0,0,0), i.e. let geant generate vertex distribution [optional]" << endl;
+			cout << "\t -v \t\t Throw vertex distribution in gen_amp, not in hdgeant(4) [not recommended]" << endl;
 			cout << "\t -f \t\t Generate flat in M(X) (no physics) [optional]" << endl;
 			cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl;
 			exit(1);
@@ -276,13 +288,17 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-	AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+	AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
 	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
 	AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
-	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
+	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
-	AmpToolsInterface::registerAmplitude( dblRegge() );
+	AmpToolsInterface::registerAmplitude( Hist2D() );
+	AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+	AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
+	AmpToolsInterface::registerAmplitude( Flatte() );
+	AmpToolsInterface::registerAmplitude( Uniform() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
@@ -358,7 +374,12 @@ int main( int argc, char* argv[] ){
 
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
-	ROOTDataWriter rootOut( outname );
+  
+	// the first argument to the FSRootDataWriter is the number of particles *in addition to* the beam
+	// particle, which is typically the first in the list in GlueX reaction definitions
+	DataWriter* rootOut = ( fsRootFormat ?
+				static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
+				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 	
 	TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
 	ostringstream locStream;
@@ -405,6 +426,8 @@ int main( int argc, char* argv[] ){
 		int i=0;
                 while( i < batchSize ){
 
+			double weight = 1.;
+
 			Kinematics* kin;
 			if(bwGenLowerVertex.size() == 0) 
 				kin = resProd.generate(); // stable particle at lower vertex
@@ -412,6 +435,8 @@ int main( int argc, char* argv[] ){
 				// unstable particle at lower vertex
 				pair< double, double > bwLowerVertex = bwGenLowerVertex[0]();
 				double lowerVertex_mass_bw = bwLowerVertex.first;
+				weight *= bwLowerVertex.second;
+
 				if ( lowerVertex_mass_bw < thresholdLowerVertex || lowerVertex_mass_bw > 2.0) continue;
 				resProd.getProductionMechanism().setRecoilMass( lowerVertex_mass_bw );
 				
@@ -443,8 +468,9 @@ int main( int argc, char* argv[] ){
 				// loop over lower vertex decay particles
 				for(unsigned int j=1; j<lowerVertexChild.size(); j++) 
 					allPart.push_back(lowerVertexChild[j]);
-				
-				kin = new Kinematics( allPart, 1.0 );
+			
+				weight *= step1->weight();	
+				kin = new Kinematics( allPart, weight );
 				delete step1;				
 			}
 			
@@ -549,7 +575,7 @@ int main( int argc, char* argv[] ){
 					evt->setWeight( 1.0 );
 					
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes, centeredVertex );
-					rootOut.writeEvent( *evt );
+					rootOut->writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
 				}
@@ -589,6 +615,7 @@ int main( int argc, char* argv[] ){
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;
+	delete rootOut;
 	
 	return 0;
 }

@@ -22,7 +22,10 @@ public:
   /**
    * Default constructor for ROOTDataReaderBootstrap
    */
-  ROOTDataReaderBootstrap() : UserDataReader< ROOTDataReaderBootstrap >(), m_inFile( NULL ) { }
+ ROOTDataReaderBootstrap() : 
+  UserDataReader< ROOTDataReaderBootstrap >(), 
+    m_inFile( NULL ), 
+    m_randGenerator( NULL ) { }
   
   ~ROOTDataReaderBootstrap();
   

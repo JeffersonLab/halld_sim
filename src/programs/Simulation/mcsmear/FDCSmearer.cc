@@ -6,6 +6,8 @@ using namespace jana;
 
 #include <sstream>
 
+bool fdc_config_t::FDC_EFFVSDOCA(1);
+
 //-----------
 // fdc_config_t  (constructor)
 //-----------
@@ -65,7 +67,11 @@ fdc_config_t::fdc_config_t(JEventLoop *loop)
         	channel_efficiencies.push_back( new_strip_efficiencies[2*chamber] );
 		}
 	}
-	
+
+    FDC_EFFVSDOCA_PAR[0] = 0.999;
+    FDC_EFFVSDOCA_PAR[1] = 3.75e-4;
+    FDC_EFFVSDOCA_PAR[2] = 0.506;
+    FDC_EFFVSDOCA_PAR[3] = 3.75e-2;
 }
 
 
@@ -126,6 +132,10 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
 		     if (config->APPLY_EFFICIENCY_CORRECTIONS
              		&& !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyCorrectionFactor(witer)))
              		continue;
+            double doca = titer->getD();
+            if (config->APPLY_EFFICIENCY_CORRECTIONS
+                    && !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyVsDOCA(doca)))
+               continue;
 
             double t = titer->getT();
           	if(config->SMEAR_HITS) {
@@ -141,6 +151,8 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
          if (config->DROP_TRUTH_HITS)
             witer->deleteFdcAnodeTruthHits();
       }
+      if (config->DROP_TRUTH_HITS)
+         iter->deleteFdcTruthPoints();
    }
 }
 

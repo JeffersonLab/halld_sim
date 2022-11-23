@@ -682,10 +682,16 @@ def AddCCDB(env):
 ##################################
 def AddSQLite(env):
 	sqlitecpp_home = os.getenv('SQLITECPP_HOME')
-	env.Append(CPPDEFINES={'SQLITE_USE_LEGACY_STRUCT':'ON'})
+	sqlite_ge_3_19 = version_greater_than_or_equal_to('SQLITE_VERSION', [3, 19, 0])
+	if sqlite_ge_3_19.defined and not sqlite_ge_3_19.answer:
+		env.Append(CPPDEFINES={'SQLITE_USE_LEGACY_STRUCT':'ON'})
 	SQLITECPP_CPPPATH = ["%s/include" % (sqlitecpp_home)]
 	env.AppendUnique(CPPPATH = SQLITECPP_CPPPATH)
-	SQLITECPP_LIBPATH = ["%s/lib" % (sqlitecpp_home)]
+	sqlitecpp_ge_2_5 = version_greater_than_or_equal_to('SQLITECPP_VERSION', [2, 5, 0])
+	if sqlitecpp_ge_2_5.defined and sqlitecpp_ge_2_5.answer:
+		SQLITECPP_LIBPATH = ["%s/lib64" % (sqlitecpp_home)]
+	else:
+		SQLITECPP_LIBPATH = ["%s/lib" % (sqlitecpp_home)]
 	env.AppendUnique(LIBPATH = SQLITECPP_LIBPATH)
 	env.AppendUnique(LIBS    = 'SQLiteCpp')
 	sqlite_home = os.getenv('SQLITE_HOME')
@@ -1030,12 +1036,23 @@ def AddSWIG(env):
 ##################################
 def AddCUDA(env):
 	CUDA = os.getenv('CUDA_INSTALL_PATH')
+	AMPTOOLS = os.getenv('AMPTOOLS')
 	if CUDA != None	:
 		
 		# Create Builder that can compile .cu file into object files
 		NVCC = '%s/bin/nvcc' % CUDA
 #		CUDAFLAGS = '-I%s/include -arch=compute_13 -code=compute_13' % CUDA
 		CUDAFLAGS = ['-g', '-I%s/include' % CUDA]
+	
+		# set to floating point precision if built in AmpTools
+		FP32 = False
+		try:
+			FP32 = subprocess.check_output("nm -u --demangle %s/lib/libAmpTools_GPU.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True)
+			if FP32:
+				CUDAFLAGS.append('-DAMPTOOLS_GDOUBLE_FP32')
+		except:
+			pass
+
 		try:
 			CUDAFLAGS.extend(env['CUDAFLAGS'])
 		except:
@@ -1055,8 +1072,11 @@ def AddCUDA(env):
 		env.AppendUnique(LIBPATH=['%s/lib' % CUDA, '%s/lib64' % CUDA])
 		env.AppendUnique(LIBS=['cublas', 'cudart'])
 		env.AppendUnique(CPPPATH=['%s/include' % CUDA])
-		env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION'])
-		
+		if FP32:
+			env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION', '-DAMPTOOLS_GDOUBLE_FP32'])
+		else:
+			env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION'])
+
 		# Temporarily change to source directory and add all .cu files
 		curpath = os.getcwd()
 		srcpath = env.Dir('.').srcnode().abspath
@@ -1091,11 +1111,22 @@ def AddAmpTools(env):
 		AMPTOOLS_CPPPATH = "%s" % (AMPTOOLS)
 		AMPTOOLS_LIBPATH = "%s/lib" % (AMPTOOLS)
 		AMPTOOLS_LIBS = 'AmpTools'
-		if os.getenv('CUDA')!=None and os.path.exists('%s/lib/libAmpTools_GPU.a' % AMPTOOLS):
+		if os.getenv('CUDA_INSTALL_PATH')!=None and os.path.exists('%s/lib/libAmpTools_GPU.a' % AMPTOOLS):
 			AMPTOOLS_LIBS = 'AmpTools_GPU'
 			print('Using GPU enabled AMPTOOLS library')
 
-		env.AppendUnique(CXXFLAGS = ['-DHAVE_AMPTOOLS_MCGEN'])
+		CXXFLAGSLIST = ["-DHAVE_AMPTOOLS_MCGEN"]
+		# set to floating point precision if built in AmpTools
+		try:
+			if os.getenv('CUDA_INSTALL_PATH')==None:
+				if subprocess.check_output("nm -u --demangle %s/lib/libAmpTools.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
+					CXXFLAGSLIST.append("-DAMPTOOLS_GDOUBLE_FP32")
+			elif subprocess.check_output("nm -u --demangle %s/lib/libAmpTools_GPU.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
+				CXXFLAGSLIST.append("-DAMPTOOLS_GDOUBLE_FP32")
+		except:
+			pass
+
+		env.AppendUnique(CXXFLAGS = CXXFLAGSLIST)
 		env.AppendUnique(CPPPATH = AMPTOOLS_CPPPATH)
 		env.AppendUnique(LIBPATH = AMPTOOLS_LIBPATH)
 		env.AppendUnique(LIBS    = AMPTOOLS_LIBS)
@@ -1197,3 +1228,47 @@ def gcc_major_version():
 	version_major_str = vtokens[0]
 	major_version = int(version_major_str)
 	return major_version
+
+##################################
+# version comparison helper
+##################################
+
+class version_result():
+	def __init__(self, version, defined, answer):
+		self.version = version
+		self.defined = defined
+		self.answer = answer
+
+def version_greater_than_or_equal_to(version_env_var, version_array):
+	major_std = version_array[0]
+	minor_std = version_array[1]
+	subminor_std = version_array[2]
+	version = str(os.environ.get(version_env_var))
+	answer = False
+	disallowed_chars = 'pv'
+	if version == 'None':
+		defined = False
+	else:
+		defined = True
+		for char in disallowed_chars:
+			version = version.replace(char, "")
+		versions = version.split('.')
+		major = int(versions[0])
+		minor = int(versions[1])
+		subminor = int(versions[2])
+		if major > major_std:
+			answer = True
+		elif major == major_std:
+			if minor > minor_std:
+				answer = True
+			elif minor == minor_std:
+				if subminor >= subminor_std:
+					answer = True
+				else:
+					answer = False
+			else:
+				answer = False
+		else:
+			answer = False
+	result = version_result(version, defined, answer)
+	return result

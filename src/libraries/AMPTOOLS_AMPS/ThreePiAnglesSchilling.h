@@ -31,13 +31,23 @@ public:
 	ThreePiAnglesSchilling() : UserAmplitude< ThreePiAnglesSchilling >() { };
 	ThreePiAnglesSchilling( const vector< string >& args );
 	
+  enum UserVars { kPolFrac = 0, kCosTheta, kSinSqTheta, kSin2Theta,
+                  kBigPhi, kPhi, kNumUserVars };
+  
+  unsigned int numUserVars() const { return kNumUserVars; }
+  
 	string name() const { return "ThreePiAnglesSchilling"; }
     
-	complex< GDouble > calcAmplitude( GDouble** pKin ) const;
+  complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
+  void calcUserVars( GDouble** pKin, GDouble* userVars ) const;
+
+  // we can calcualte everything we need from userVars block so allow
+  // the framework to purge the four-vectors
+  bool needsUserVarsOnly() const { return true; }
 	
 #ifdef GPU_ACCELERATION
   
-  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
+ 	//void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
   
 	bool isGPUEnabled() const { return true; }
   
@@ -45,22 +55,22 @@ public:
   
 private:
 
-  AmpParameter rho000;
-  AmpParameter rho100;
-  AmpParameter rho1m10;
+  AmpParameter m_rho000;
+  AmpParameter m_rho100;
+  AmpParameter m_rho1m10;
 	
-  AmpParameter rho111;
-  AmpParameter rho001;
-  AmpParameter rho101;
-  AmpParameter rho1m11;
+  AmpParameter m_rho111;
+  AmpParameter m_rho001;
+  AmpParameter m_rho101;
+  AmpParameter m_rho1m11;
 
-  AmpParameter rho102;
-  AmpParameter rho1m12;
+  AmpParameter m_rho102;
+  AmpParameter m_rho1m12;
 
-  AmpParameter polAngle;
+  AmpParameter m_polAngle;
 
-  double polFraction;
-  TH1D *polFrac_vs_E;
+  double m_polFraction;
+  TH1D *m_polFrac_vs_E;
 
 };
 

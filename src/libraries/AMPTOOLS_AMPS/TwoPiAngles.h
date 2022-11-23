@@ -14,7 +14,10 @@
 #ifdef GPU_ACCELERATION
 void
 GPUTwoPiAngles_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
-                     int j, int m, GDouble bigTheta, GDouble refFact );
+			 GDouble rho000, GDouble rho100, GDouble rho1m10,
+			 GDouble rho111, GDouble rho001, GDouble rho101,
+			 GDouble rho1m11, GDouble rho102, GDouble rho1m12,
+			 GDouble polAngle );
 
 #endif // GPU_ACCELERATION
 
@@ -30,15 +33,23 @@ public:
 	
 	TwoPiAngles() : UserAmplitude< TwoPiAngles >() { };
 	TwoPiAngles( const vector< string >& args );
-	
+
+	enum UserVars { kPgamma = 0, kCosTheta, kSinSqTheta, kSin2Theta,
+			kBigPhi, kPhi, kNumUserVars };
+	unsigned int numUserVars() const { return kNumUserVars; }
+
 	string name() const { return "TwoPiAngles"; }
     
-	complex< GDouble > calcAmplitude( GDouble** pKin ) const;
+	complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
+	void calcUserVars( GDouble** pKin, GDouble* userVars ) const;
+
+	// we can calcualte everythign we need from userVars block so allow
+	// the framework to purge the four-vectors
+	bool needsUserVarsOnly() const { return true; }
 	
 #ifdef GPU_ACCELERATION
   
-  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
-  
+	void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
 	bool isGPUEnabled() const { return true; }
   
 #endif // GPU_ACCELERATION

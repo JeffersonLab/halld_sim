@@ -78,8 +78,8 @@ TwoPSHelicity::calcAmplitude( GDouble** pKin ) const {
 void
 TwoPSHelicity::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-  GPUTwoPSHelicity_exec( dimGrid,  dimBlock, GPU_AMP_ARGS,
-                       m_j, m_m, m_bigTheta, 
-                       static_cast< GDouble >( m_reflectivityFactor ) );
+//  GPUTwoPSHelicity_exec( dimGrid,  dimBlock, GPU_AMP_ARGS,
+//                       m_j, m_m, m_bigTheta, 
+//                       static_cast< GDouble >( m_reflectivityFactor ) );
 }
 #endif //GPU_ACCELERATION

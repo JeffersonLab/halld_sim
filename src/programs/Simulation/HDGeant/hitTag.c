@@ -85,8 +85,8 @@
 #define TAG_T_MIN_NS            -200
 #define TAG_T_MAX_NS            +200
 
-float endpoint_energy_calib_GeV = 0;
-
+float coherent_peak_GeV[2] = {0,0};
+float endpoint_calib_GeV = 0;
 float endpoint_energy_GeV = 0;
 float micro_limits_Erange[2];
 float hodo_limits_Erange[2];
@@ -116,19 +116,20 @@ void hitTagger (float xin[4], float xout[4],
    /* read beam_period from calibdb */
    if(beam_period < 0.0)
    {
-	  char dbname[] = "/PHOTON_BEAM/RF/beam_period::mc";
-	  unsigned int ndata = 1;
-	  if (GetCalib(dbname, &ndata, &beam_period)) {
-		 fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
-				 "failed to read RF period ",
-				 "from calibdb, cannot continue.");
-		 exit (2);
-	  }
+          char dbname[] = "/PHOTON_BEAM/RF/beam_period::mc";
+          unsigned int ndata = 1;
+          if (GetCalib(dbname, &ndata, &beam_period)) {
+        	 fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
+        			 "failed to read RF period ",
+        			 "from calibdb, cannot continue.");
+        	 exit (2);
+          }
    }
 
    int micro_chan;
    int hodo_chan;
-   double Etag = 0;
+   double Etagm = 0;
+   double Etagh = 0;
    double E = pin[3];
    float ref_time_z_cm = get_reference_plane_();
    double t = xin[3]*1e9-(xin[2]-ref_time_z_cm)/C_CM_PER_NS;
@@ -150,8 +151,8 @@ void hitTagger (float xin[4], float xout[4],
    if (read_endpoint_calib == 0) {
       char dbname[] = "/PHOTON_BEAM/hodoscope/endpoint_calib";
       unsigned int ndata = 1;
-      if (GetCalib(dbname, &ndata, &endpoint_energy_calib_GeV)) {
-	fprintf(stderr,"HDGeant error in hitTagger: failed to read endpoint_calib energy \n");
+      if (GetCalib(dbname, &ndata, &endpoint_calib_GeV)) {
+        fprintf(stderr,"HDGeant error in hitTagger: failed to read endpoint_calib energy \n");
       }
       
 
@@ -183,42 +184,42 @@ void hitTagger (float xin[4], float xout[4],
       }
       else {
 
-	micro_limits_Erange[0] = 0;
-	micro_limits_Erange[1] = 1;
-	for (i=0; i < micro_nchannels; ++i) {
-	  if (micro_limits_Erange[0] < micro_channel_Erange[3*i+1])
-	    micro_limits_Erange[0] = micro_channel_Erange[3*i+1];
-	  if (micro_limits_Erange[1] > micro_channel_Erange[3*i+2])
-	    micro_limits_Erange[1] = micro_channel_Erange[3*i+2];
-	}
-	
-	 
-	if(endpoint_energy_GeV > 0 && endpoint_energy_calib_GeV > 0) {
+        micro_limits_Erange[0] = 0;
+        micro_limits_Erange[1] = 1;
+        for (i=0; i < micro_nchannels; ++i) {
+          if (micro_limits_Erange[0] < micro_channel_Erange[3*i+1])
+            micro_limits_Erange[0] = micro_channel_Erange[3*i+1];
+          if (micro_limits_Erange[1] > micro_channel_Erange[3*i+2])
+            micro_limits_Erange[1] = micro_channel_Erange[3*i+2];
+        }
+        
+         
+        if(endpoint_energy_GeV > 0 && endpoint_calib_GeV > 0) {
 
-	  printf(" Correct Beam Photon Energy  (TAGM) \n\n");
-	  
-	  double delta_E = endpoint_energy_GeV  -  endpoint_energy_calib_GeV;
-	  
-	  for (i = 0; i < micro_nchannels; ++i) {
-	    micro_channel_Erange[3*i+1]  = micro_channel_Erange[3*i+1]*endpoint_energy_calib_GeV  +  delta_E;
-	    micro_channel_Erange[3*i+2]  = micro_channel_Erange[3*i+2]*endpoint_energy_calib_GeV  +  delta_E;
-	  }
-	  
-	  micro_limits_Erange[0]  =  micro_limits_Erange[0]*endpoint_energy_calib_GeV  +  delta_E;
-	  micro_limits_Erange[1]  =  micro_limits_Erange[1]*endpoint_energy_calib_GeV  +  delta_E;
-	  
-	} else {
-	  
-	  for (i = 0; i < micro_nchannels; ++i) {
-	    
-	    micro_channel_Erange[3*i+1]  *=  endpoint_energy_GeV; 
-	    micro_channel_Erange[3*i+2]  *=  endpoint_energy_GeV;	  
-	  }
-	  
-	  micro_limits_Erange[0] *= endpoint_energy_GeV;
-	  micro_limits_Erange[1] *= endpoint_energy_GeV;	
-	}
-	       	
+          printf(" Correct Beam Photon Energy  (TAGM) \n\n");
+          
+          double delta_E = endpoint_energy_GeV  -  endpoint_calib_GeV;
+          
+          for (i = 0; i < micro_nchannels; ++i) {
+            micro_channel_Erange[3*i+1]  = micro_channel_Erange[3*i+1]*endpoint_calib_GeV  +  delta_E;
+            micro_channel_Erange[3*i+2]  = micro_channel_Erange[3*i+2]*endpoint_calib_GeV  +  delta_E;
+          }
+          
+          micro_limits_Erange[0]  =  micro_limits_Erange[0]*endpoint_calib_GeV  +  delta_E;
+          micro_limits_Erange[1]  =  micro_limits_Erange[1]*endpoint_calib_GeV  +  delta_E;
+          
+        } else {
+          
+          for (i = 0; i < micro_nchannels; ++i) {
+            
+            micro_channel_Erange[3*i+1]  *=  endpoint_energy_GeV; 
+            micro_channel_Erange[3*i+2]  *=  endpoint_energy_GeV;	  
+          }
+          
+          micro_limits_Erange[0] *= endpoint_energy_GeV;
+          micro_limits_Erange[1] *= endpoint_energy_GeV;	
+        }
+               	
       }
    }
  
@@ -240,49 +241,49 @@ void hitTagger (float xin[4], float xout[4],
 
       if (GetArrayConstants(dbname, &ndata, hodo_channel_Erange, names) ||
           ndata != 3*hodo_nchannels)
-	{
-	  fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
-		  "failed to read hodoscope scaled_energy_range table",
-		  "from calibdb, cannot continue.");
-	  exit (2);
-	}
+        {
+          fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
+        	  "failed to read hodoscope scaled_energy_range table",
+        	  "from calibdb, cannot continue.");
+          exit (2);
+        }
       else {
-	
-	hodo_limits_Erange[0] = 0;
-	hodo_limits_Erange[1] = 1;
-	for (i=0; i < hodo_nchannels; ++i) {
-	  if (hodo_limits_Erange[0] < hodo_channel_Erange[3*i+1])
-	    hodo_limits_Erange[0] = hodo_channel_Erange[3*i+1];
-	  if (hodo_limits_Erange[1] > hodo_channel_Erange[3*i+2])
-	    hodo_limits_Erange[1] = hodo_channel_Erange[3*i+2];
-	}
+        
+        hodo_limits_Erange[0] = 0;
+        hodo_limits_Erange[1] = 1;
+        for (i=0; i < hodo_nchannels; ++i) {
+          if (hodo_limits_Erange[0] < hodo_channel_Erange[3*i+1])
+            hodo_limits_Erange[0] = hodo_channel_Erange[3*i+1];
+          if (hodo_limits_Erange[1] > hodo_channel_Erange[3*i+2])
+            hodo_limits_Erange[1] = hodo_channel_Erange[3*i+2];
+        }
       }
 
 
-      if(endpoint_energy_GeV > 0 && endpoint_energy_calib_GeV > 0) {
+      if(endpoint_energy_GeV > 0 && endpoint_calib_GeV > 0) {
 
-	printf(" Correct Beam Photon Energy  (TAGH) \n\n");
-	
-	double delta_E = endpoint_energy_GeV  -  endpoint_energy_calib_GeV;
-	
-	for (i = 0; i < hodo_nchannels; ++i) {
-	  hodo_channel_Erange[3*i + 1] = hodo_channel_Erange[3*i+1]*endpoint_energy_calib_GeV  +  delta_E;
-	  hodo_channel_Erange[3*i + 2] = hodo_channel_Erange[3*i+2]*endpoint_energy_calib_GeV  +  delta_E;
-	}
-	
-	hodo_limits_Erange[0] = hodo_limits_Erange[0]*endpoint_energy_calib_GeV + delta_E;
-	hodo_limits_Erange[1] = hodo_limits_Erange[1]*endpoint_energy_calib_GeV + delta_E;
-	
+        printf(" Correct Beam Photon Energy  (TAGH) \n\n");
+        
+        double delta_E = endpoint_energy_GeV  -  endpoint_calib_GeV;
+        
+        for (i = 0; i < hodo_nchannels; ++i) {
+          hodo_channel_Erange[3*i + 1] = hodo_channel_Erange[3*i+1]*endpoint_calib_GeV  +  delta_E;
+          hodo_channel_Erange[3*i + 2] = hodo_channel_Erange[3*i+2]*endpoint_calib_GeV  +  delta_E;
+        }
+        
+        hodo_limits_Erange[0] = hodo_limits_Erange[0]*endpoint_calib_GeV + delta_E;
+        hodo_limits_Erange[1] = hodo_limits_Erange[1]*endpoint_calib_GeV + delta_E;
+        
       } else {	
-	
-	for (i = 0; i < hodo_nchannels; ++i) {
-	  hodo_channel_Erange[3*i+1] *= endpoint_energy_GeV;
-	  hodo_channel_Erange[3*i+2] *= endpoint_energy_GeV;
-	}
-	
-	hodo_limits_Erange[0] *= endpoint_energy_GeV;
-	hodo_limits_Erange[1] *= endpoint_energy_GeV;
-	
+        
+        for (i = 0; i < hodo_nchannels; ++i) {
+          hodo_channel_Erange[3*i+1] *= endpoint_energy_GeV;
+          hodo_channel_Erange[3*i+2] *= endpoint_energy_GeV;
+        }
+        
+        hodo_limits_Erange[0] *= endpoint_energy_GeV;
+        hodo_limits_Erange[1] *= endpoint_energy_GeV;
+        
       }          
       
    }
@@ -304,21 +305,21 @@ void hitTagger (float xin[4], float xout[4],
          if ( E < micro_channel_Erange[3*i+1] &&
               E > micro_channel_Erange[3*i+2] )
          {
-            Etag = (micro_channel_Erange[3*i+1] + 
-                    micro_channel_Erange[3*i+2]) / 2;
+            Etagm = (micro_channel_Erange[3*i+1] + 
+                     micro_channel_Erange[3*i+2]) / 2;
             micro_chan = micro_channel_Erange[3*i];
             break;
          }
       }
    }
-   else if (E < hodo_limits_Erange[0] && E > hodo_limits_Erange[1]) {
+   if (E < hodo_limits_Erange[0] && E > hodo_limits_Erange[1]) {
       int i;
       for (i=0; i < hodo_nchannels; ++i) {
          if ( E < hodo_channel_Erange[3*i+1] &&
               E > hodo_channel_Erange[3*i+2] )
          {
-            Etag = (hodo_channel_Erange[3*i+1] +
-                    hodo_channel_Erange[3*i+2]) / 2;
+            Etagh = (hodo_channel_Erange[3*i+1] +
+                     hodo_channel_Erange[3*i+2]) / 2;
             hodo_chan = hodo_channel_Erange[3*i];
             break;
          }
@@ -341,7 +342,7 @@ void hitTagger (float xin[4], float xout[4],
          channels->in[0].taggerTruthHits = hits;
          channels->in[0].column = micro_chan;
          channels->in[0].row = 0;
-         channels->in[0].E = Etag;
+         channels->in[0].E = Etagm;
          channels->mult = 1;
          tag->microChannels = channels;
          microCount++;
@@ -396,7 +397,7 @@ void hitTagger (float xin[4], float xout[4],
          hits->mult = 0;
          channels->in[0].taggerTruthHits = hits;
          channels->in[0].counterId = hodo_chan;
-         channels->in[0].E = Etag;
+         channels->in[0].E = Etagh;
          channels->mult = 1;
          tag->hodoChannels = channels;
          hodoCount++;
