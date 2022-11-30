@@ -261,8 +261,12 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
   TLorentzVector d2=q_dot_v2*v2-v2sq*q;
   TLorentzVector N1=b1*p1+p1.Dot(c1)*v1+p1.Dot(d1)*p;
   TLorentzVector N2=b2*p1+p1.Dot(c2)*v2+p1.Dot(d2)*p;
+
+  double bslope=0.1;
+  double exp_b_v1sq=exp(bslope*v1sq);  
+  double exp_b_v2sq=exp(bslope*v2sq);
   
-   // Rho propagators for top exchange
+  // Rho propagators for top exchange
   double m_rho=0.77;
   double Gamma_rho=0.15;
   double m_rhosq_minus_v1sq=m_rho*m_rho-v1sq;
@@ -538,6 +542,23 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
 
     }
 
+    a1_aS_sum*=exp_b_v1sq;
+    a1_aS_diff*=exp_b_v1sq;  
+    a1_bS_sum*=exp_b_v1sq;
+    a1_bS_diff*=exp_b_v1sq;  
+    b1_aS_sum*=exp_b_v1sq;
+    b1_aS_diff*=exp_b_v1sq;
+    b1_bS_sum*=exp_b_v1sq;
+    b1_bS_diff*=exp_b_v1sq;
+    
+    a2_aS_sum*=exp_b_v2sq;
+    a2_aS_diff*=exp_b_v2sq; 
+    a2_bS_sum*=exp_b_v2sq;
+    a2_bS_diff*=exp_b_v2sq;   
+    b2_aS_sum*=exp_b_v2sq;
+    b2_aS_diff*=exp_b_v2sq; 
+    b2_bS_sum*=exp_b_v2sq;
+    b2_bS_diff*=exp_b_v2sq;
       
     T=kin_a1_aS*(cosphi*a1_aS_sum-sinphi*a1_aS_diff)
       + kin_a2_aS*(cosphi*a2_aS_sum-sinphi*a2_aS_diff)
@@ -596,7 +617,7 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
     double b1_a1=0,b2_a2=0.,b1_a2=0.,b2_a1=0.;
    
     // Compute square of amplitude    
-    if (two_particles==(7+7)){ // pi0 pi0
+    if (two_particles==(7+7)){ // pi0 pi0  
       a1_a1=gsq_rho_V_and_T*regge_rho_sq*Pi_omega_1_sq
       + (1./3.)*g_omega_V*g_rho_V_and_T*rho_1_omega_1_interference
       + (1./9.)*gsq_omega_V*regge_omega_sq*Pi_rho_1_sq;
@@ -675,6 +696,17 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
 			 + (1./3.)*g_omega_V*rho_2_omega_1_interference
 			 );
     }
+
+    a1_a1*=exp_b_v1sq*exp_b_v1sq;
+    a2_a2*=exp_b_v2sq*exp_b_v2sq;
+    a1_a2*=exp_b_v1sq*exp_b_v2sq; 
+    b1_b1*=exp_b_v1sq*exp_b_v1sq;
+    b2_b2*=exp_b_v2sq*exp_b_v2sq;
+    b1_b2*=exp_b_v1sq*exp_b_v2sq; 
+    b1_a1*=exp_b_v1sq*exp_b_v1sq;
+    b2_a2*=exp_b_v2sq*exp_b_v2sq;
+    b1_a2*=exp_b_v1sq*exp_b_v2sq; 
+    b2_a1*=exp_b_v1sq*exp_b_v2sq;    
 
     T=(m_p_sq-p1_dot_p2)*(a1_a1*M1_M1 + a1_a2*M1_M2 + a2_a2*M2_M2)
       + 2.*(a1_a1*N1_N1 + a1_a2*N1_N2 + a2_a2*N2_N2)
@@ -1510,9 +1542,9 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.8; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
+    double m_Sigma=0.75; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
-    width=0.875; // 0.4-0.7 GeV, PDG (2020)
+    width=0.85; // 0.4-0.7 GeV, PDG (2020)
     double BWmassTerm=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
@@ -1592,7 +1624,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   }
   // f0(980)/a0(980)
   if (got_etaeta==false && generate[1]){
-    double my_msq_R=0.9847*0.9847;
+    double my_msq_R=0.97*0.97;
     if (got_pipi){ // f0(980)	
       double MRsq_minus_m1sq_m2sq=my_msq_R-m1sq_plus_m2sq;	
       double temp=4.*m1sq*m2sq;
