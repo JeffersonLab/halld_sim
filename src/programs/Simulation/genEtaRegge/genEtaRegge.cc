@@ -1,6 +1,7 @@
 // Main program for generating eta events. 
 #include "HDDM/hddm_s.h"
 #include "particleType.h"
+#include <cmath>
 
 #include <TMath.h>
 #include <TRandom3.h>
@@ -21,6 +22,7 @@
 #include <locale>
 using namespace std;
 
+#include "UTILITIES/MyReadConfig.h"
 #include "UTILITIES/BeamProperties.h"
 #ifdef HAVE_EVTGEN
 #include "EVTGEN_MODELS/RegisterGlueXModels.h"
@@ -71,9 +73,17 @@ static inline void trim(std::string &s) {
     rtrim(s);
 }
 
+TString m_str_Nucleus = "";
+TString m_str_Participant = "";
+TString m_str_Spectator = "";
+TH1F * m_h_PFermi;
+double m_mass_nuclei = 0;
+double m_ParticipantMass = 0;
+double m_SpectatorMass = 0;
+
 // Masses
-const double m_p=0.93827; // GeV
-const double m_p_sq=m_p*m_p;
+double m_p=0.93827; // GeV
+double m_p_sq=m_p*m_p;
 double m_eta=0.54775; // GeV
 double m_eta_sq=m_eta*m_eta;
 // Width
@@ -83,7 +93,12 @@ double g_rho_eta_gamma=0.81;
 double g_omega_eta_gamma=0.29;
 double g_eta_gamma_gamma=0.0429;
 double g_phi_eta_gamma=0.38;
-
+/*
+double g_rho_eta_gamma=1;
+double g_omega_eta_gamma=0;
+double g_eta_gamma_gamma=0;
+double g_phi_eta_gamma=0;
+*/
 int Nevents=10000;
 int runNo=10000;
 bool debug=false;
@@ -96,15 +111,18 @@ TH2D *thrown_dalitzXY;
 TH2D *thrown_theta_vs_p;
 TH2D *thrown_theta_vs_p_eta;
 TH1D *cobrems_vs_E;
+TH1D *thrown_FermiP;
+TH1D *thrown_f;
 
 char input_file_name[250]="eta548.in";
 char output_file_name[250]="eta_gen.hddm";
 
 // Non-default option to generate uniform t-distribution from tmin to tmax
-/// (fixed to cross section at tflat_min)
+/// (calculating cross section at fixed t_uniform_eval)
 bool gen_uniform_t=false;
-float tflat_min=100.; // Physical values are negative. Cross section at larger |t| is equal to cross section at this number (for fixed E_gamma)
-float tflat_max=100.; // Physical values are negative
+double t_uniform_eval=-1; // Only used if gen_uniform is true. Currently, 
+float t_min_uniform=0; // takes min(t_min_uniform,t_0) so as to avoid unphysical t_values
+float t_max_uniform=-3; // takes max(t_max_uniform,t_max) so as to avoid unphysical t_values
 
 void Usage(void){
   printf("genEtaRegge: generator for eta production based on Regge trajectory formalism.\n");
@@ -113,6 +131,9 @@ void Usage(void){
   printf("             -O<output.hddm>   (default: eta_gen.hddm)\n");
   printf("             -I<input.in>      (default: eta548.in)\n");
   printf("             -R<run number>    (default: 10000)\n");
+  printf("             -U                (generate uniform t-distribution instead of sloped)\n");
+  printf("             -tmin<val>        (min t value for uniform dist., if -U specified, default=physical min.)\n");
+  printf("             -tmax<val>        (max t value for uniform dist., if -U specified, default=3.0)\n");
   printf("             -h                (Print this message and exit.)\n");
   printf("Coupling constants, photon beam energy range, and eta decay products are\n");
   printf("specified in the <input.in> file.\n");
@@ -132,6 +153,25 @@ void ParseCommandLineArguments(int narg, char* argv[])
   }
   for(int i=1; i<narg; i++){
     char *ptr = argv[i];
+
+	// For command line options -tmin and -tmax
+	if(ptr[0]=='-' && strlen(ptr)>=5) {
+		char *check_str = (char *)"-tmin", *matches=NULL;
+		matches=strstr(ptr,check_str);
+		if(matches) {
+			sscanf(&ptr[5],"%f",&t_min_uniform);
+			t_min_uniform=-abs(t_min_uniform); // Make sure value is negative, no matter what was supplied
+		}
+		
+		check_str = (char *)"-tmax"; matches=NULL;
+		matches=strstr(ptr,check_str);
+		if(matches) {
+			sscanf(&ptr[5],"%f",&t_max_uniform);
+			t_max_uniform=-abs(t_max_uniform); // Make sure value is negative, no matter what was supplied
+		}
+	}
+	
+	// For all other command line options (which are exactly one character long)
     if(ptr[0] == '-'){
       switch(ptr[1]){
       case 'h': Usage(); break;
@@ -152,6 +192,9 @@ void ParseCommandLineArguments(int narg, char* argv[])
 	break;
       case 'd':
 	debug=true;
+	break;
+      case 'U':
+	gen_uniform_t=true;
 	break;
       default:
 	break;
@@ -283,7 +326,7 @@ double CrossSection(double s,double t,double p_gamma,double p_eta,double theta){
 }
 
 // Put particle data into hddm format and output to file
-void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
+void WriteEvent(unsigned int eventNumber,TLorentzVector &beam,TLorentzVector &target, float vert[3],
 		vector<Particle_t> &particle_types,
 		vector<TLorentzVector> &particle_vectors, 
 		vector<bool> &particle_decayed,
@@ -316,15 +359,28 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
    be->momentum->E  = beam.E();
    // Target
    rs->in[0].target = ta = make_s_Target();
-   ta->type = Proton;
+   //ta->type = Proton;
+   if (m_str_Participant == "Proton") 
+     ta->type = Proton;
+   else if (m_str_Participant == "Neutron")
+     ta->type = Neutron;
+   else if (m_str_Participant == "")
+     ta->type = Proton;
    ta->properties = make_s_Properties();
    ta->properties->charge = ParticleCharge(ta->type);
    ta->properties->mass = ParticleMass(ta->type);
    ta->momentum = make_s_Momentum();
-   ta->momentum->px = 0.;
-   ta->momentum->py = 0.;
-   ta->momentum->pz = 0.;
-   ta->momentum->E  = ParticleMass(ta->type);
+   if (m_str_Participant == "" || (m_str_Nucleus == "" && m_str_Participant !=0)) {
+     ta->momentum->px = 0.;
+     ta->momentum->py = 0.;
+     ta->momentum->pz = 0.;
+     ta->momentum->E  = ParticleMass(ta->type);
+   } else if (m_str_Nucleus != "") {
+     ta->momentum->px = target.Px();
+     ta->momentum->py = target.Py();
+     ta->momentum->pz = target.Pz();
+     ta->momentum->E  = target.E();
+   }
    // Primary vertex 
    int num_vertices = 1 + secondary_vertices.size();
    rs->in[0].vertices = vs = make_s_Vertices(num_vertices);
@@ -391,14 +447,16 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
 }
 
 // Create some diagnostic histograms
-void CreateHistograms(string beamConfigFile,int num_decay_particles){
+void CreateHistograms(string beamConfigFile){
 
-  if(gen_uniform_t) thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,tflat_max);
-  else              thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,3);
+
+  thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,abs(t_max_uniform));
   thrown_t->SetXTitle("-t [GeV^{2}]");
+  thrown_dalitzZ=new TH1D("thrown_dalitzZ","thrown dalitz Z",110,-0.05,1.05);
   thrown_Egamma=new TH1D("thrown_Egamma","Thrown E_{#gamma} distribution",
 			       1000,0,12.);
   thrown_Egamma->SetTitle("E_{#gamma} [GeV]");
+  thrown_dalitzXY=new TH2D("thrown_dalitzXY","Dalitz distribution Y vs X",100,-1.,1.,100,-1.,1);
   
   thrown_theta_vs_p=new TH2D("thrown_theta_vs_p","Proton #theta_{LAB} vs. p",
 			       200,0,2.,180,0.,90.);
@@ -409,12 +467,8 @@ void CreateHistograms(string beamConfigFile,int num_decay_particles){
 			       120,0,12.,180,0.,180.);
   thrown_theta_vs_p_eta->SetXTitle("p [GeV/c]");
   thrown_theta_vs_p_eta->SetYTitle("#theta [degrees]");
-  
-  if(num_decay_particles==3) {
-      thrown_dalitzZ=new TH1D("thrown_dalitzZ","thrown dalitz Z",110,-0.05,1.05);
-      thrown_dalitzXY=new TH2D("thrown_dalitzXY","Dalitz distribution Y vs X",100,-1.,1.,100,-1.,1);
-  }
-  
+  thrown_FermiP=new TH1D("thrown_FermiP",";p_{F} [GeV/c];",250,0.,1.);
+  thrown_f=new TH1D("thrown_f",";p_{F} [GeV/c];",250,0.,1.);
   BeamProperties beamProp(beamConfigFile);
   cobrems_vs_E = (TH1D*)beamProp.GetFlux();
 }
@@ -499,6 +553,73 @@ int main(int narg, char *argv[])
     cerr << "Input file missing! Exiting..." <<endl;
     exit(-1);
   } 
+  
+  // Get generator config file
+  MyReadConfig * ReadFile = new MyReadConfig();
+  ReadFile->ReadConfigFile(input_file_name);
+  //TString m_str_beamConfigFile = ReadFile->GetConfigName("beamConfigFile");
+  //string beamConfigFile(m_str_beamConfigFile.Data());
+  m_str_Nucleus = ReadFile->GetConfigName("Nucleus");
+  m_str_Participant = ReadFile->GetConfigName("Participant");
+  m_str_Spectator = ReadFile->GetConfigName("Spectator");
+  TString m_str_Fermi_file = ReadFile->GetConfigName("FermiMotionFile");
+  if (m_str_Nucleus != "") { 
+    if (m_str_Nucleus == "D2") { 
+      m_mass_nuclei = 1.875613;
+      if(m_str_Participant == "Proton") {
+	m_ParticipantMass = 0.93827;
+	m_SpectatorMass = 0.93956;
+      } else if (m_str_Participant == "Neutron") {
+	m_ParticipantMass = 0.93956;
+	m_SpectatorMass = 0.93827;
+      }
+    } else if (m_str_Nucleus == "He4") {
+      m_mass_nuclei = 3.727379;
+      if(m_str_Participant == "Proton") {
+	m_ParticipantMass = 0.93827;
+	m_SpectatorMass = 2.808921;//003 001 3H
+      } else if (m_str_Participant == "Neutron") {
+	m_ParticipantMass = 0.93956;
+	m_SpectatorMass = 2.808391;//003 002 3He
+      }
+    } else if (m_str_Nucleus == "C12") {
+      m_mass_nuclei = 11.174862;
+      if(m_str_Participant == "Proton") {
+	m_ParticipantMass = 0.93827;
+	m_SpectatorMass = 10.252547;//011 005 11B
+      } else if (m_str_Participant == "Neutron") {
+	m_ParticipantMass = 0.93956;
+	m_SpectatorMass = 10.254018;//011 006 11C
+      }
+    }
+    m_p = m_ParticipantMass;
+    m_p_sq = m_p * m_p;
+  } else if (m_str_Nucleus == "" && m_str_Participant != "") {
+    if(m_str_Participant == "Proton") {
+      m_ParticipantMass = 0.93827;
+    } else if (m_str_Participant == "Neutron") {
+      m_ParticipantMass = 0.93956;
+    }
+    m_p = m_ParticipantMass;
+    m_p_sq = m_p * m_p;
+  }
+  if (m_str_Fermi_file != "") {
+    cout <<"Target is made of " << m_str_Nucleus << " with the participant " << m_str_Participant << " and spectator " << m_str_Spectator << endl;
+    cout <<"Nucleon Fermi motion is located in " << m_str_Fermi_file << endl;
+    m_h_PFermi = new TH1F("PFermi", "", 1000, 0.0, 1.0);
+    ifstream in;
+    in.open(m_str_Fermi_file);
+    int i = 0;
+    while (in.good()) {
+      double pf = 0, val = 0;
+      in >> pf >> val;
+      if (val > 0) {
+	m_h_PFermi->SetBinContent(i + 1, val);
+	i ++;
+      }
+    }
+    in.close();
+  }
 
   // Get beam properties configuration file
   string comment_line;
@@ -544,7 +665,12 @@ int main(int narg, char *argv[])
 
   cout << "number of decay particles = " << num_decay_particles << endl;
 
+  if( abs(t_max_uniform)>21. ) { // Max t at GlueX endpoint energy is about 20 GeV^2. Reset value to protect against inefficient accept/reject.
+    t_max_uniform=-21;
+	cout << "tmax provided is larger than physically allowed t at GlueX highest E, resetting to physical max........" << endl;
+  }
   
+  if(gen_uniform_t) cout << "GENERATING DATA WITH UNIFORM T-DIST FROM " << t_min_uniform << " TO " << t_max_uniform << endl;
 
   bool use_evtgen = false;
 #ifdef HAVE_EVTGEN
@@ -673,45 +799,10 @@ int main(int narg, char *argv[])
     }
   }
 
-  // Search for lines in input file starting with "tflat_min" or "tflat_max", if found we reset globals
-  while( !infile.eof() ) {
-    string line   = "";
-    string tflat_string = "";
-    getline(infile,line);
-    if(line.length() < 11) continue;
-    // Yes this code is ugly, but works. I miss python.
-    if(line.substr(0,9) == "tflat_min") {
-        string str_tval="";
-        for(size_t loc_i=9; loc_i<line.length(); loc_i++) {
-            string this_char; this_char += line[loc_i];
-            if(isdigit(line[loc_i]) || this_char=="." ) {
-                str_tval+=line[loc_i];
-            }
-            if(str_tval.length()>0 && this_char==" ") break;
-        }
-        tflat_min = -1*fabs(atof(str_tval.c_str()));
-    }
-    // Yes this code is ugly, but works. I miss python.
-    if(line.substr(0,9) == "tflat_max") {
-        string str_tval="";
-        for(size_t loc_i=9; loc_i<line.length(); loc_i++) {
-            string this_char; this_char += line[loc_i];
-            if(isdigit(line[loc_i]) || this_char=="." ) {
-                str_tval+=line[loc_i];
-            }
-            if(str_tval.length()>0 && this_char==" ") break;
-        }
-        tflat_max = -1*fabs(atof(str_tval.c_str()));
-    }
-  }
-  if(tflat_min<0.&&tflat_max<0.&&tflat_max<tflat_min) gen_uniform_t = true;
-  if(gen_uniform_t) cout << "GENERATING DATA WITH UNIFORM T-DIST FROM " << tflat_min << " TO " << tflat_max << endl;
-  
-
   infile.close();
   
   // Create some diagonistic histographs
-  CreateHistograms(beamConfigFile,num_decay_particles);
+  CreateHistograms(beamConfigFile);
 
   // Make a TGraph of the cross section at a fixed beam energy
   double xsec_max=0.;
@@ -735,7 +826,19 @@ int main(int narg, char *argv[])
 
     // vertex position at target
     float vert[4]={0.,0.,0.,0.};
-
+    
+    // IA variables
+    double p_Fermi = 0, p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
+    double ParticipantEnergy = 0;
+    TLorentzVector Ptotal_4Vec(0, 0, 0, 0);
+    if (m_str_Nucleus != "") {
+      p_Fermi = m_h_PFermi->GetRandom();
+      thrown_FermiP->Fill(p_Fermi);
+      p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
+      gRandom->Sphere(p_Fermi_x, p_Fermi_y, p_Fermi_z, p_Fermi);
+      ParticipantEnergy = m_mass_nuclei - sqrt(pow(m_SpectatorMass, 2) + pow(p_Fermi, 2));
+      //cout <<"ParticipantEnergy " << ParticipantEnergy << endl;
+    }
     // use the rejection method to produce eta's based on the cross section
     do{
       // First generate a beam photon using bremsstrahlung spectrum
@@ -746,6 +849,19 @@ int main(int narg, char *argv[])
       double Ecm=sqrt(s);
 
       // Momenta of incoming photon and outgoing eta and proton in cm frame
+      if (m_str_Nucleus != "") {
+	//p_Fermi = m_h_PFermi->GetRandom();
+	//thrown_FermiP->Fill(p_Fermi);
+	//p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
+	//gRandom->Sphere(p_Fermi_x, p_Fermi_y, p_Fermi_z, p_Fermi);
+	//ParticipantEnergy = m_mass_nuclei - sqrt(pow(m_SpectatorMass, 2) + pow(p_Fermi, 2));
+	Ptotal_4Vec = TLorentzVector(p_Fermi_x, p_Fermi_y, Egamma + p_Fermi_z, Egamma + ParticipantEnergy);
+	Ecm = Ptotal_4Vec.M();
+	s = pow(Ecm, 2);
+	//cout << " Ecm " << Ecm << " m_eta + m_ParticipantMass " << m_eta + m_ParticipantMass << endl;
+	//if ((Ecm - m_eta - m_ParticipantMass) <= 0) continue;
+      }
+      
       double p_gamma=(s-m_p_sq)/(2.*Ecm);
 
       // Generate mass distribution for unstable particle in the final state 
@@ -868,6 +984,7 @@ int main(int narg, char *argv[])
 	for (int im=1;im<num_decay_particles;im++){
 	  mass_check+=decay_masses[im];
 	}
+	//cout <<"mass check " << mass_check << " m_eta " << m_eta << endl;
       } while (mass_check>m_eta);
     } else {
     	// if using EvtGen, we don't know what the decay products are a priori
@@ -883,12 +1000,13 @@ int main(int narg, char *argv[])
 		} else {
 			m_eta = m_eta_R;
 		}
-    }
+      }
     
-    
+      
       double E_eta=(s+m_eta_sq-m_p_sq)/(2.*Ecm);
       p_eta=sqrt(E_eta*E_eta-m_eta_sq);
-    
+      if (std::isnan(E_eta)) continue;
+      
       // Momentum transfer t
       double p_diff=p_gamma-p_eta;
       double t0=m_eta_sq*m_eta_sq/(4.*s)-p_diff*p_diff;
@@ -905,14 +1023,13 @@ int main(int narg, char *argv[])
       xsec=CrossSection(s,t,p_gamma,p_eta,theta_cm);	  
 	  
 	  // If generating a sample uniform in t, we need to fix t and re-calculate theta_cm based on it. Others do not depend on t.
-	  if(gen_uniform_t&&t<tflat_min&&t>tflat_max) {
-		  //Cross section at fixed t value (tflat_min)
-		  double t_tmp = tflat_min;
-          // if(t0<t_tmp && t_tmp < 0. ) t_tmp=t0-0.00001; //If tflat_min is unphysically small, use (essentially) t0 instead
+	  if(gen_uniform_t) {
+		  //Cross section at fixed t value (t_tmp)
+		  double t_tmp = t_uniform_eval;
 		  double theta_cm_tmp = 2.*asin(0.5*sqrt( (t0-t_tmp)/(p_gamma*p_eta) ) );
 		  xsec=CrossSection(s,t_tmp,p_gamma,p_eta,theta_cm_tmp);
 		  // Make t uniform, calculate theta_cm based off of it
-		  t=myrand->Uniform(tflat_max,  min( float(t0),tflat_min) ); // If t_min_uniform provided is unphysical, then use physical t_min.
+		  t=myrand->Uniform(t_max_uniform,  min( float(t0),t_min_uniform) ); // If t_min_uniform provided is unphysical, then use physical t_min.
 		  theta_cm=2.*asin(0.5*sqrt( (t0-t)/(p_gamma*p_eta) ) );
 		  if( std::isnan(theta_cm)==true ) xsec=-1.; // Lazy person's way of skipping unphysical theta_cm. Breaking do/while to accept event will never be satisfied for this case.
 	  }
@@ -922,30 +1039,48 @@ int main(int narg, char *argv[])
     }
     while (xsec_test>xsec);
     
+    
+
     // Generate phi using uniform distribution
     double phi_cm=myrand->Uniform(2.*M_PI);
 
     // beam 4-vector (ignoring px and py, which are extremely small)
     TLorentzVector beam(0.,0.,Egamma,Egamma);
     thrown_Egamma->Fill(Egamma);
-
+    
+    if (m_str_Nucleus != "") {
+      target = TLorentzVector(p_Fermi_x, p_Fermi_y, p_Fermi_z, ParticipantEnergy);
+      //cout <<"rewrite target p4 w/ fermi"<<endl;
+    } else if (m_str_Nucleus == "" && m_str_Participant != "") {
+      target = TLorentzVector(0, 0, 0, m_p);
+    }
     // Velocity of the cm frame with respect to the lab frame
     TVector3 v_cm=(1./(Egamma+m_p))*beam.Vect();
     // Four-moementum of the eta in the CM frame
     double pt=p_eta*sin(theta_cm);
     TLorentzVector eta4(pt*cos(phi_cm),pt*sin(phi_cm),p_eta*cos(theta_cm),
 			sqrt(p_eta*p_eta+m_eta_sq));
-
+    
+    
     //Boost the eta 4-momentum into the lab
-    eta4.Boost(v_cm);
-  
+    //eta4.Boost(v_cm);
+    if (m_str_Nucleus != "") { 
+      eta4.Boost(Ptotal_4Vec.BoostVector());
+      //cout <<"Boost w/ fermi"<<endl;
+    } else if (m_str_Nucleus == "" && m_str_Participant != "") { 
+      eta4.Boost(v_cm);
+    }
+    if (std::isnan(eta4.P())) continue;
+    if (std::isnan(eta4.E())) continue;
+    //cout <<"before eta mass " << eta4.M() << " energy " << eta4.E() - eta4.M() << " mom " << eta4.P() << " hand " << p_eta << endl; 
+
     // Compute the 4-momentum for the recoil proton
     TLorentzVector proton4=beam+target-eta4; 
-
+    
     //proton4.Print();
     thrown_theta_vs_p->Fill(proton4.P(),180./M_PI*proton4.Theta());
     thrown_theta_vs_p_eta->Fill(eta4.P(),180./M_PI*eta4.Theta());
-
+    thrown_f->Fill(target.P());
     // Other diagnostic histograms
     thrown_t->Fill(-t);
 
@@ -954,8 +1089,13 @@ int main(int narg, char *argv[])
     output_particle_vectors.push_back(proton4);
 
     vector<Particle_t>output_particle_types;
-    output_particle_types.push_back(Proton);
-
+    if (m_str_Participant == "Proton") 
+      output_particle_types.push_back(Proton);
+    else if (m_str_Participant == "Neutron") 
+      output_particle_types.push_back(Neutron);
+    else if (m_str_Participant == "")
+      output_particle_types.push_back(Proton);
+      
     vector<bool>output_particle_decays;
 	output_particle_decays.push_back(false);
 	
@@ -965,18 +1105,19 @@ int main(int narg, char *argv[])
         // Set up the parent particle
         EvtVector4R pInit(eta4.E(), eta4.X(), eta4.Y(), eta4.Z());
         parent = EvtParticleFactory::particleFactory(EtaId, pInit);
-
+	
         if(num_decay_particles == 0) {  
             // just generate the eta and let the decay be done by an external program like decay_evtgen
             // this plays better with MCWrapper, apparently...
             TLorentzVector vec4v( eta4.X(), eta4.Y(), eta4.Z(), eta4.E());
-
-            output_particle_vectors.push_back(vec4v);
+	                
+	    output_particle_vectors.push_back(vec4v);
             output_particle_types.push_back(PDGtoPType(parent->getPDGId()));
         } else {            
             // Generate the event
             myGenerator->generateDecay(parent);
-            
+
+	    //cout << "else use evtgen eta mass " << eta4.M() << endl;    
             // Write out resulting particles
             for(unsigned int i=0; i<parent->getNDaug(); i++) {
                 TLorentzVector vec4v( parent->getDaug(i)->getP4Lab().get(1),
@@ -985,6 +1126,8 @@ int main(int narg, char *argv[])
                                       parent->getDaug(i)->getP4Lab().get(0)   );
                 output_particle_vectors.push_back(vec4v);
                 output_particle_types.push_back(PDGtoPType(parent->getDaug(i)->getPDGId()));
+		
+	
 						
                 // see if any of the particles decay and add info on them
                 // should be mostly pi0's, but we should go recursive...
@@ -1014,6 +1157,8 @@ int main(int narg, char *argv[])
 		// Generate 3-body decay of eta according to phase space
 		TGenPhaseSpace phase_space;
 		phase_space.SetDecay(eta4,num_decay_particles,decay_masses.data());
+		//cout <<"eta mass " << eta4.M() << " energy " << eta4.E() - eta4.M() << endl;
+		
 		double weight=0.,rand_weight=1.;
 		do{
 		  weight=phase_space.Generate();
@@ -1078,9 +1223,9 @@ int main(int narg, char *argv[])
 #endif //HAVE_EVTGEN
     
     // Write Event to HDDM file
-    WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,output_particle_decays,secondary_vertices,file);
+    WriteEvent(i,beam,target,vert,output_particle_types,output_particle_vectors,output_particle_decays,secondary_vertices,file);
     
-    if (((10*i)%Nevents)==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
+    if ((i%(Nevents/10))==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }
 
 
