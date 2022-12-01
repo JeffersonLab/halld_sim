@@ -422,6 +422,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam,TLorentzVector &ta
 // Create some diagnostic histograms
 void CreateHistograms(string beamConfigFile,int num_decay_particles){
 
+  thrown_FermiP=new TH1D("thrown_FermiP",";p_{F} [GeV/c];",250,0.,1.);
   if(gen_uniform_t) thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,tflat_max);
   else              thrown_t=new TH1D("thrown_t","Thrown -t distribution",1000,0.,3);
   thrown_t->SetXTitle("-t [GeV^{2}]");
