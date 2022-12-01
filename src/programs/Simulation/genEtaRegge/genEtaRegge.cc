@@ -21,6 +21,7 @@
 #include <locale>
 using namespace std;
 
+#include "UTILITIES/MyReadConfig.h"
 #include "UTILITIES/BeamProperties.h"
 #ifdef HAVE_EVTGEN
 #include "EVTGEN_MODELS/RegisterGlueXModels.h"
@@ -81,8 +82,8 @@ double m_ParticipantMass = 0;
 double m_SpectatorMass = 0;
 
 // Masses
-const double m_p=0.93827; // GeV
-const double m_p_sq=m_p*m_p;
+double m_p=0.93827; // GeV
+double m_p_sq=m_p*m_p;
 double m_eta=0.54775; // GeV
 double m_eta_sq=m_eta*m_eta;
 // Width
@@ -294,7 +295,7 @@ double CrossSection(double s,double t,double p_gamma,double p_eta,double theta){
 }
 
 // Put particle data into hddm format and output to file
-void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
+void WriteEvent(unsigned int eventNumber,TLorentzVector &beam,TLorentzVector &target, float vert[3],
 		vector<Particle_t> &particle_types,
 		vector<TLorentzVector> &particle_vectors, 
 		vector<bool> &particle_decayed,
@@ -1212,7 +1213,7 @@ int main(int narg, char *argv[])
 #endif //HAVE_EVTGEN
     
     // Write Event to HDDM file
-    WriteEvent(i,beam,vert,output_particle_types,output_particle_vectors,output_particle_decays,secondary_vertices,file);
+    WriteEvent(i,beam,target,vert,output_particle_types,output_particle_vectors,output_particle_decays,secondary_vertices,file);
     
     if (((10*i)%Nevents)==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }
