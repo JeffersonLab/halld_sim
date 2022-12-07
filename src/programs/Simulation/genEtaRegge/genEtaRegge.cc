@@ -1063,7 +1063,7 @@ int main(int narg, char *argv[])
     // IA modified boost
     if (m_str_Nucleus != "") { 
       eta4.Boost(Ptotal_4Vec.BoostVector());
-    } else if (m_str_Nucleus == "" && m_str_Participant != "") { 
+    } else if (m_str_Nucleus == "") { 
       eta4.Boost(v_cm);
     }
 
