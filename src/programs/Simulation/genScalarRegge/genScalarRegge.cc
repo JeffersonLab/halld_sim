@@ -1544,7 +1544,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   if (got_pipi && generate[0]){
     double m_Sigma=0.75; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
-    width=0.85; // 0.4-0.7 GeV, PDG (2020)
+    width=0.825; // 0.4-0.7 GeV, PDG (2020)
     double BWmassTerm=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
