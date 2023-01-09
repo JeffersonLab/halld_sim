@@ -161,21 +161,22 @@ int main( int argc, char* argv[] ){
 	//cout<<"refl = "<<irefl<<endl;
 	if (irefl < 2) {
 	  for (unsigned int i = 0; i < sums.size(); i++){
-	    
-	    bool disableSum = false;
-	    if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
+	    if( reflname[irefl] == "NegRefl" ){
 	      //ImagNegSign & RealPosSign are defined to be the negative reflectivity
-	      disableSum = true;
+	      //So, we turn off the positive reflectivity here
+	      if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos){
+		plotGen.disableSum(i);
+		//cout<<"disable sum "<<sums[i]<<"\n";
+	      }
 	    }
-	    else {
-	      disableSum = true;
+	    if( reflname[irefl] == "PosRefl" ){
+	      //And, we turn off the negative reflectivity here
+	      if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
+		//cout<<"disable sum "<<sums[i]<<"\n";
+		plotGen.disableSum(i);
+	      }
 	    }
-	    
-	    if(disableSum) {
-	      plotGen.disableSum(i);
-	      //cout<<"disable sum "<<sums[i]<<endl;
-	    }
-	  }
+	  }	 
 	}
 
 	// turn off unwanted amplitudes
@@ -193,7 +194,8 @@ int main( int argc, char* argv[] ){
       // loop over data, accMC, and genMC
       for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
 	if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd) continue;
-	if (irefl < reflname.size() && iamp < amphistname.size() && iplot == PlotGenerator::kData) continue; // only plot data once
+	bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
+	if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
 	
 	// loop over different variables
 	for (unsigned int ivar  = 0; ivar  < VecPsPlotGenerator::kNumHists; ivar++){
