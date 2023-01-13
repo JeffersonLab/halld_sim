@@ -49,6 +49,7 @@ using std::complex;
 using namespace std;
 
 #define eta_TYPE 17
+#define etaprime_TYPE 35
 #define pi0_TYPE 7
 #define gamma_TYPE 1
 #define Helium_TYPE 47
@@ -205,7 +206,7 @@ int main( int argc, char* argv[] ){
   cout << "histo " << m_histo << endl;
   cout << "decay " << m_decay << endl;
   cout << "target " << m_target << endl;
-  cout << "Fermi_file " << m_Fermi_file << endl;
+  //cout << "Fermi_file " << m_Fermi_file << endl;
 
   double M_target = M_He4;
   if (m_target == "He4" || m_target == "Helium") M_target = M_He4;
@@ -491,6 +492,7 @@ int main( int argc, char* argv[] ){
 	tmpEvt.q7 = He4_LAB_4Vec;
 	tmpEvt.nGen = 7;
       } else if (ng_max == 0) {
+	//cout <<"decay " << m_decay << endl;
 	tmpEvt.str_meson = m_decay;
 	tmpEvt.q1 = eta_LAB_4Vec;
 	tmpEvt.q2 = He4_LAB_4Vec;

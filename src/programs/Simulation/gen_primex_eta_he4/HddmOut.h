@@ -109,15 +109,19 @@ class HddmOut {
     beam->momentum->py = evt.beam.Py();
     beam->momentum->pz = evt.beam.Pz();
     beam->momentum->E  = evt.beam.E();
-
+    //cout <<"beam energy " << evt.beam.E() << " nGen " << evt.nGen << " str_meson " << evt.str_meson << endl;
     products->mult = evt.nGen;
     reaction->weight = evt.weight;
     if (evt.nGen == 2) {
       //PRODUCED PHOTON
-      if (evt.str_meson = "eta") {
+      if (evt.str_meson == "eta") {
 	products->in[0].type = Eta;
 	products->in[0].pdgtype = 221;
-      } else if (evt.str_meson = "pi0") {
+      } else if (evt.str_meson == "eta'") {
+	products->in[0].type = EtaPrime;
+	products->in[0].pdgtype = 331;
+	//cout <<"eta' " << endl; 
+      } else if (evt.str_meson == "pi0") {
 	products->in[0].type = Pi0;
 	products->in[0].pdgtype = 111;
       }
