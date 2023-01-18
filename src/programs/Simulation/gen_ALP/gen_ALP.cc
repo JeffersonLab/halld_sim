@@ -58,6 +58,7 @@ double dsigmadt(double eBeam, double t);
 double getCarbonFF0(double q);
 double getGeneralFF(double t, double Anuc, double Znuc);
 double getH(double s, double t);
+double getSAndRCorr(double q);
 
 const double alpha = 0.0072973525664;
 const double GeVfm = 0.1973;
@@ -71,6 +72,7 @@ const double m_12C = 12. * mU - 6*me;
 const double mup = 2.79;
 const double mp =  0.9382720881;
 Bool_t b_generalFF = false;
+Bool_t b_atomic_em = false;
 
 void Usage()
 {
@@ -155,6 +157,8 @@ bool init(int argc, char ** argv)
       if (ReadFile->GetConfigName("target") != "") {
 	genSettings.target = ParticleEnum((ReadFile->GetConfigName("target")).Data());
 	b_generalFF = true;
+	if (ReadFile->GetConfigName("atomic") != "")
+	  b_atomic_em = true;
       }
     }
 
@@ -242,15 +246,26 @@ void fini()
       hddm_s::ReactionList rs = pes().addReactions();
 
       hddm_s::TargetList ts = rs().addTargets();
-      ts().setType(genSettings.target);
+      if (!b_atomic_em)
+	ts().setType(genSettings.target);
+      else
+	ts().setType(Electron);
       hddm_s::PropertiesList tpros = ts().addPropertiesList();
-      tpros().setCharge(ParticleCharge(genSettings.target));
-      tpros().setMass(ParticleMass(genSettings.target));
+      if (!b_atomic_em) {
+	tpros().setCharge(ParticleCharge(genSettings.target));
+	tpros().setMass(ParticleMass(genSettings.target));
+      } else {
+	tpros().setCharge(ParticleCharge(Electron));
+	tpros().setMass(ParticleMass(Electron));
+      }
       hddm_s::MomentumList tmoms = ts().addMomenta();
       tmoms().setPx(0);
       tmoms().setPy(0);
       tmoms().setPz(0);
-      tmoms().setE(ParticleMass(genSettings.target));
+      if (!b_atomic_em)
+	tmoms().setE(ParticleMass(genSettings.target));
+      else
+	tmoms().setE(ParticleMass(genSettings.target));
 
       hddm_s::BeamList bs = rs().addBeams();
       bs().setType(Gamma);
@@ -271,9 +286,13 @@ void fini()
       os().setVx(0);
       os().setVy(0);
       os().setVz(0);
-
-      ps(0).setType(genSettings.target);
-      ps(0).setPdgtype(PDGtype(genSettings.target));
+      if (!b_atomic_em) {
+	ps(0).setType(genSettings.target);
+	ps(0).setPdgtype(PDGtype(genSettings.target));
+      } else {
+	ps(0).setType(Electron);
+	ps(0).setPdgtype(PDGtype(Electron));
+      }
       ps(0).setId(1);
       ps(0).setParentid(0);
       ps(0).setMech(0);
@@ -421,6 +440,7 @@ void t_scatter(double &weight, double eBeam, TLorentzVector &va, TLorentzVector 
   // Getting generator constants
   double ma = genSettings.ma;
   double mA = ParticleMass(genSettings.target);
+  if (b_atomic_em) mA = ParticleMass(Electron);
   TLorentzVector vbeam(0,0,eBeam,eBeam);
   TLorentzVector vA(0,0,0,mA);
 
@@ -506,17 +526,34 @@ double dsigmadt(double eBeam, double t)
   double width = genSettings.width;
   double Z = ParticleCharge(genSettings.target);
   double mA = ParticleMass(genSettings.target);
+  if (b_atomic_em) mA = ParticleMass(Electron);
   double s = 2*eBeam*mA + mA*mA;
   double q = sqrt(t * (t/(4*mA*mA) - 1))/GeVfm;
   double FF0 = 1;
-  double H = getH(s,t);
+  double H  = getH(s,t);
   if (b_generalFF) 
     FF0 = getGeneralFF(-t, mA, Z) / pow(Z, 2);
   else
     FF0 = getCarbonFF0(q);
-
+  if (b_atomic_em)
+    FF0 = sqrt(getSAndRCorr(q));
+  
   return nbGeVSq*alpha*Z*Z*FF0*FF0*width*H;
-   
+}
+
+
+double getSAndRCorr(double q) 
+{
+  //SCREENING AND RADIATIVE CORRECTIONS
+  double bohrRadius = (1.0 / alpha) * (1.0 / me);
+  double fH = 1.0 / pow(1 + pow(bohrRadius * q / 2.0, 2), 2);
+  double sHfactorPair = pow(1.0 - fH,2); //Screening for pair production
+  //double sHfactorTrip = 1.0 - pow(fH,2); //Screening for triplet production
+  
+  double radFactorDelta = 0.0093;
+  double radFactorPair =  1.0 + radFactorDelta;
+  
+  return radFactorPair * sHfactorPair;
 }
 
 double getCarbonFF0(double q)
@@ -559,6 +596,7 @@ double getH(double s, double t)
 
   double ma = genSettings.ma;
   double mA = ParticleMass(genSettings.target);
+  if (b_atomic_em) mA = ParticleMass(Electron);
 
   double numerator = ma*ma*t*(mA*mA + s) - pow(ma,4)*mA*mA - t*(pow(s - mA*mA,2) + s*t);
   double denominator = t*t*pow(s - mA*mA,2)*pow(t-4*mA*mA,2);
