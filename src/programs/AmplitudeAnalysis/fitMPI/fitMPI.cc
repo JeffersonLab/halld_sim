@@ -371,11 +371,11 @@ int main( int argc, char* argv[] ){
 
    if(numRnd==0){
       if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, maxIter, seedfile);
+         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
       else
-         runParScan(cfgInfo, useMinos, maxIter, seedfile, scanPar);
+         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
    } else {
-      runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5);
+      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
    }
 
    return 0;
