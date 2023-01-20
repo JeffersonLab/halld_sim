@@ -73,6 +73,7 @@ const double mup = 2.79;
 const double mp =  0.9382720881;
 Bool_t b_generalFF = false;
 Bool_t b_atomic_em = false;
+TString str_decay = "a>gg";
 
 void Usage()
 {
@@ -160,6 +161,8 @@ bool init(int argc, char ** argv)
 	if (ReadFile->GetConfigName("atomic") != "")
 	  b_atomic_em = true;
       }
+      if (ReadFile->GetConfigName("decay") != "")
+	str_decay = ReadFile->GetConfigName("decay");
     }
 
   // Get beam properties from configuration file 
@@ -233,8 +236,9 @@ void fini()
       vRec = VREC[event];
 
       vBeam.SetXYZT(0.,0.,eBeam,eBeam);
-      isoDecay(va,v1,v2);
-
+      if (str_decay == "a>gg")
+	isoDecay(va,v1,v2);
+      	
       // Save to ROOT tree
       outputTree->Fill();
 
@@ -301,29 +305,40 @@ void fini()
       pRec().setPy(vRec.Y());
       pRec().setPz(vRec.Z());
       pRec().setE(vRec.T());
-
-      ps(1).setType(Gamma);
-      ps(1).setPdgtype(PDGtype(Gamma));
-      ps(1).setId(2);
-      ps(1).setParentid(1);
-      ps(1).setMech(1);
-      hddm_s::MomentumList p1 = ps(1).addMomenta();
-      p1().setPx(v1.X());
-      p1().setPy(v1.Y());
-      p1().setPz(v1.Z());
-      p1().setE(v1.T());
-
-      ps(2).setType(Gamma);
-      ps(2).setPdgtype(PDGtype(Gamma));
-      ps(2).setId(3);
-      ps(2).setParentid(2);
-      ps(2).setMech(2);
-      hddm_s::MomentumList p2 = ps(2).addMomenta();
-      p2().setPx(v2.X());
-      p2().setPy(v2.Y());
-      p2().setPz(v2.Z());
-      p2().setE(v2.T());
-
+      if (str_decay == "a>gg") {
+	ps(1).setType(Gamma);
+	ps(1).setPdgtype(PDGtype(Gamma));
+	ps(1).setId(2);
+	ps(1).setParentid(1);
+	ps(1).setMech(1);
+	hddm_s::MomentumList p1 = ps(1).addMomenta();
+	p1().setPx(v1.X());
+	p1().setPy(v1.Y());
+	p1().setPz(v1.Z());
+	p1().setE(v1.T());
+	
+	ps(2).setType(Gamma);
+	ps(2).setPdgtype(PDGtype(Gamma));
+	ps(2).setId(3);
+	ps(2).setParentid(2);
+	ps(2).setMech(2);
+	hddm_s::MomentumList p2 = ps(2).addMomenta();
+	p2().setPx(v2.X());
+	p2().setPy(v2.Y());
+	p2().setPz(v2.Z());
+	p2().setE(v2.T());
+      } else if (str_decay == "a") {
+	ps(1).setType(Unknown);
+	ps(1).setPdgtype(PDGtype(Unknown));
+	ps(1).setId(2);
+	ps(1).setParentid(1);
+	ps(1).setMech(1);
+	hddm_s::MomentumList p1 = ps(1).addMomenta();
+	p1().setPx(va.X());
+	p1().setPy(va.Y());
+	p1().setPz(va.Z());
+	p1().setE(va.T());
+      }
       *outstream << record;
 
     }
