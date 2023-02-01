@@ -287,6 +287,7 @@ int main( int argc, char* argv[] ){
    string seedfile;
    string scanPar;
    int numRnd = 0;
+   unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
    int maxIter = 10000;
 
    // parse command line
@@ -304,6 +305,9 @@ int main( int argc, char* argv[] ){
       if (arg == "-r"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  numRnd = atoi(argv[++i]); }
+      if (arg == "-rs"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  randomSeed = atoi(argv[++i]); }
       if (arg == "-m"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
@@ -320,6 +324,7 @@ int main( int argc, char* argv[] ){
             cout << "   -c <file>\t\t\t\t config file" << endl;
             cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
             cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
+            cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
             cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
             cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          }
@@ -375,6 +380,8 @@ int main( int argc, char* argv[] ){
       else
          runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
    } else {
+      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+      AmpToolsInterface::setRandomSeed(randomSeed);
       runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
    }
 
