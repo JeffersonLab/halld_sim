@@ -2,6 +2,8 @@
 
 tagm_config_t *tagm_config_instance(0);
 
+static int RANDOMIZE_ETAG_IN_EBIN(0);
+
 //-----------
 // tagm_config_t  (constructor)
 //-----------
@@ -10,6 +12,15 @@ tagm_config_t::tagm_config_t(JEventLoop *loop) {
 	TAGM_TSIGMA = 0.200;        // ns
 	TAGM_FADC_TSIGMA = 0.350;   // ns
 	TAGM_NPIX_PER_GEV = 1.e5;
+
+    RANDOMIZE_ETAG_IN_EBIN = false;
+    gPARMS->SetDefaultParameter("TAGM:RANDOMIZE_ETAG_IN_EBIN",
+                                RANDOMIZE_ETAG_IN_EBIN,
+                                "Turn on/off randomization of tagged photon energy"
+                                " in smeared tagger microscope hits."
+                                " Set to \"1\" to turn on (it's off by default)");
+
+   // enable on-the-fly bzip2 compression on output stream
 
     std::vector<std::map<std::string, double> > quality;
     if (loop->GetCalib("/PHOTON_BEAM/microscope/fiber_quality", quality)) {
@@ -57,8 +68,11 @@ double TAGMSmearer::get_tagm_energy(int column, int mid_low_high_rand)
       return tagm_config_instance->energy_range_GeV[column][0];
    else if (mid_low_high_rand == 2)
       return tagm_config_instance->energy_range_GeV[column][1];
-   return gDRandom.Uniform(tagm_config_instance->energy_range_GeV[column][0],
-                           tagm_config_instance->energy_range_GeV[column][1]);
+   else if (RANDOMIZE_ETAG_IN_EBIN != 0)
+      return gDRandom.Uniform(tagm_config_instance->energy_range_GeV[column][0],
+                              tagm_config_instance->energy_range_GeV[column][1]);
+   return (tagm_config_instance->energy_range_GeV[column][0] +
+           tagm_config_instance->energy_range_GeV[column][1]) / 2;
 }
 
 //-----------
