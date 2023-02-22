@@ -40,7 +40,7 @@ public:
 	// Use this for indexing a user-defined data array and notifying
 	// the framework of the number of user-defined variables.
 	
-	enum UserVars { uv_dalitz_z = 0, uv_dalitz_sin3theta = 1, uv_dalitz_phi = 2, kNumUserVars };
+	enum UserVars { uv_dalitz_z = 0, uv_dalitz_sin3theta = 1, uv_lambda = 2, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	// This function needs to be defined -- see comments and discussion

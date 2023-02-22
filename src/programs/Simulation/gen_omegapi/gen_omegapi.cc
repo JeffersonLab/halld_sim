@@ -357,6 +357,7 @@ int main( int argc, char* argv[] ){
 	TH1F* M_p4 = new TH1F( "M_p4", "p4", 200, 0, 2 );
 
         TH2F* M_dalitz = new TH2F( "M_dalitz", "dalitzxy", 200, -2, 2, 200, -2, 2);
+	TH1F* lambda = new TH1F( "lambda", "#lambda_{#omega}", 120, 0.0, 1.2);
 
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
@@ -364,6 +365,8 @@ int main( int argc, char* argv[] ){
 	TH2F* M_CosThetaH = new TH2F( "M_CosThetaH", "M vs. cos#vartheta_{H}", 180, lowMass, highMass, 200, -1, 1);
 	TH2F* M_PhiH = new TH2F( "M_PhiH", "M vs. #varphi_{H}", 180, lowMass, highMass, 200, -3.14, 3.14);
 	TH2F* M_Phi_Prod = new TH2F( "M_Phi_Prod", "M vs. #Phi_{Prod}", 180, lowMass, highMass, 200, -3.14, 3.14);
+	
+	
 
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
@@ -551,6 +554,9 @@ int main( int argc, char* argv[] ){
 					M_CosThetaH->Fill( resonance.M(), cosThetaH);
 					M_PhiH->Fill( resonance.M(), phiH);
 
+					double lambda_omega = loccosthetaphih[2];
+					lambda->Fill(lambda_omega);
+
                                         double Phi = loccosthetaphi[2];
 					M_Phi_Prod->Fill( resonance.M(), Phi);
 
@@ -600,6 +606,7 @@ int main( int argc, char* argv[] ){
         M_p3->Write();
         M_p4->Write();
         M_dalitz->Write();
+	lambda->Write();
 	t->Write();
 	CosTheta_psi->Write();
 	M_CosTheta->Write();

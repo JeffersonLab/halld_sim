@@ -93,16 +93,14 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	  double dalitz_u = (pim+pi0).M2(); //u=M2(pim pi0)
 	  double m3pi = (2*pip.M())+pi0.M();
 	  double dalitz_d = 2*vec.M()*( vec.M() - m3pi);
-	  double dalitz_sc = (1/3.)*( vec.M2() - pip.M2() - pim.M2() - pi0.M2());
+	  double dalitz_sc = (1/3.)*( vec.M2() + pip.M2() + pim.M2() + pi0.M2());
 	  double dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
 	  double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
 	  double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
 	  double dalitz_sin3theta = TMath::Sin(3 *  TMath::ASin( (dalitzy/sqrt(dalitz_z) )) );
-	  double dalitz_phi = dalitz_s*dalitz_t*dalitz_u - pi0.M2()*pow(vec.M2() - pi0.M2(), 2.);
 
 	  userVars[uv_dalitz_z] = dalitz_z;
 	  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
-	  userVars[uv_dalitz_phi] = dalitz_phi;
   }
   else {
 	  // omega ps proton, omega -> pi0 g (4 particles)
@@ -141,6 +139,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[uv_PhiH] = locthetaphih[1];
 
   userVars[uv_prod_Phi] = locthetaphi[2];
+  userVars[uv_dalitz_phi] = locthetaphih[2];
 
   userVars[uv_MX] = X.M();
   userVars[uv_MVec] = vec.M();
