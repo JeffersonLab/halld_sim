@@ -62,9 +62,12 @@ DeltaAngles_res::calcAmplitude( GDouble** pKin ) const {
 	TLorentzVector target ( 0, 0, 0, 0.9382720813);
 	TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
 	TLorentzVector p1, p2, p3, ptot, ptemp; //p1 and p2 from decaying lower vertex, p2 used to calculate angles for SDME calculation, p3 = upper vertex resonance (b1 in this case)
+	
+	string lv1; lv1 += lowerVertex[0];
+	string lv2; lv2 += lowerVertex[1];
 
-        int index1 = atoi( lowerVertex[0] );
-        int index2 = atoi( lowerVertex[1] );
+        int index1 = atoi( lv1.c_str() );
+        int index2 = atoi( lv2.c_str() );
 
 	p1.SetPxPyPzE( pKin[index1][1], pKin[index1][2], pKin[index1][3], pKin[index1][0] );
 	p2.SetPxPyPzE( pKin[index2][1], pKin[index2][2], pKin[index2][3], pKin[index2][0] );
