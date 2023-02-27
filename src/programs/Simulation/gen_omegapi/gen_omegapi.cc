@@ -12,7 +12,9 @@
 
 #include "particleType.h"
 
+#include "AMPTOOLS_DATAIO/DataWriter.h"
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
+#include "AMPTOOLS_DATAIO/FSRootDataWriter.h"
 #include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
@@ -53,6 +55,7 @@ int main( int argc, char* argv[] ){
 	
 	bool diag = false;
 	bool genFlat = false;
+	bool fsRootFormat = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 1.0;//To take over threshold with a BW omega mass
@@ -144,10 +147,13 @@ int main( int argc, char* argv[] ){
 			diag = true; }
 		if (arg == "-f"){
 			genFlat = true; }
+		if (arg == "-fsroot"){
+			fsRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
 			cout << "\t -o    <name>\t ROOT file output name" << endl;
+			cout << "\t -fsroot \t Enable output in FSRoot format" << endl;
 			cout << "\t -hd   <name>\t HDDM file output name [optional]" << endl;
 			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
@@ -168,7 +174,7 @@ int main( int argc, char* argv[] ){
 	}
 	
 	if( configfile.size() == 0 || outname.size() == 0 ){
-		cout << "No config file or output specificed:  run gen_omegapi -h for help" << endl;
+		cout << "No config file or output specified:  run gen_omegapi -h for help" << endl;
 		exit(1);
 	}
 	
@@ -316,7 +322,9 @@ int main( int argc, char* argv[] ){
 
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
-	ROOTDataWriter rootOut( outname );
+	DataWriter* rootOut( fsRootFormat ?
+				static_cast< DataWriter* >( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
+				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 	
 	ASCIIDataWriter* asciiOut = NULL;
         if( asciiname.size() != 0 ) asciiOut = new ASCIIDataWriter( asciiname );
@@ -560,7 +568,7 @@ int main( int argc, char* argv[] ){
 					
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
                                         if( asciiOut ) asciiOut->writeEvent( *evt, pTypes );
-					rootOut.writeEvent( *evt );
+					rootOut->writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
 				}
