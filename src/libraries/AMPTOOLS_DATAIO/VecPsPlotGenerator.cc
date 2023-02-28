@@ -55,17 +55,23 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    TLorentzVector recoil = kin->particle( 1 );
    TLorentzVector bach = kin->particle( 2 );
 
-   bool m_3pi = true;  // vector decays to 3pi by default (omega)
-   int min_recoil = 6; // min particle index for recoil sum
+   // default is 2-body vector decay (set flag in config file for omega->3pi)
+   bool m_3pi = false;  
 
-   // check config file for 3pi dalitz parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
-   int nargs  = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0).size();
-   if(nargs == 11) m_3pi = false;
+   // min particle index for recoil sum
+   int min_recoil = 5; 
+
+   // check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
+   const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
+   for(uint ioption=7; ioption<args.size(); ioption++) {
+          TString option = args[ioption].c_str();
+	  if(option.EqualTo("omega3pi")) m_3pi = true;
+   }
 
    TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
    double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc, dalitzx, dalitzy; //initialize with 0?
 
-   if(m_3pi==1) {
+   if(m_3pi) {
 	  // omega ps proton, omega -> 3pi (6 particles)
 	  // omega pi- Delta++, omega -> 3pi (7 particles)
           TLorentzVector pi0 = kin->particle( 3 );//omega's pi0

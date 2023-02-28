@@ -28,32 +28,23 @@ UserAmplitude< Vec_ps_refl >( args )
   m_r = atoi( args[3].c_str() ); // real (+1) or imaginary (-1)
   m_s = atoi( args[4].c_str() ); // sign for polarization in amplitude
 
-  polAngle = AmpParameter( args[5] );
-  registerParameter( polAngle );
-  
-  polFraction = atof(args[6].c_str());
-  
-  // BeamProperties configuration file
-  if (polFraction == 0){
-    TString beamConfigFile = args[6].c_str();
-    BeamProperties beamProp(beamConfigFile);
-    polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
-  }
+  // default is 2-body vector decay (set flag in config file for omega->3pi)
+  m_3pi = false; 
 
-  m_3pi = false;
-  if(args.size() == (11)){
-	  m_3pi = true; // treat 3-pion decay dalitz parameters
+  // loop over any additional amplitude arguments
+  for(uint ioption=5; ioption<args.size(); ioption++) {
+	  TString option = args[ioption].c_str();
 
-	  //Dalitz Parameters for 3pi decays
-	  dalitz_alpha  = AmpParameter(args[6+1]);
-	  dalitz_beta   = AmpParameter(args[6+2]);
-	  dalitz_gamma  = AmpParameter(args[6+3]);
-	  dalitz_delta  = AmpParameter(args[6+4]);
-	  
-	  registerParameter(dalitz_alpha);
-	  registerParameter(dalitz_beta);
-	  registerParameter(dalitz_gamma);
-	  registerParameter(dalitz_delta);
+	  // check for fixed polarization in configuration file
+	  if(ioption==5 && option.IsFloat()) {
+		  polAngle = AmpParameter( args[5] );
+		  registerParameter( polAngle );
+	  }
+	  if(ioption==6) 
+		  polFraction = atof(args[6].c_str());
+		  
+	  // other options should be strings
+	  if(option.EqualTo("omega3pi")) m_3pi = true;
   }
 
   // make sure values are reasonable
@@ -86,21 +77,6 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	  vec = pi0 + pip + pim;
 	  vec_daught1 = pip;
 	  vec_daught2 = pim;
-	  
-	  ///////////////////////////////////////////// Dalitz Parameters ///////////////////////////////
-	  double dalitz_s = (pip+pim).M2(); //s=M2(pip pim)
-	  double dalitz_t = (pip+pi0).M2(); //t=M2(pip pi0)
-	  double dalitz_u = (pim+pi0).M2(); //u=M2(pim pi0)
-	  double m3pi = (2*pip.M())+pi0.M();
-	  double dalitz_d = 2*vec.M()*( vec.M() - m3pi);
-	  double dalitz_sc = (1/3.)*( vec.M2() + pip.M2() + pim.M2() + pi0.M2());
-	  double dalitzx = sqrt(3)*(dalitz_t - dalitz_u)/dalitz_d;
-	  double dalitzy = 3*(dalitz_sc - dalitz_s)/dalitz_d;
-	  double dalitz_z = dalitzx*dalitzx + dalitzy*dalitzy;
-	  double dalitz_sin3theta = TMath::Sin(3 *  TMath::ASin( (dalitzy/sqrt(dalitz_z) )) );
-
-	  userVars[uv_dalitz_z] = dalitz_z;
-	  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
   }
   else {
 	  // omega ps proton, omega -> pi0 g (4 particles)
@@ -139,7 +115,6 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[uv_PhiH] = locthetaphih[1];
 
   userVars[uv_prod_Phi] = locthetaphi[2];
-  userVars[uv_dalitz_phi] = locthetaphih[2];
 
   userVars[uv_MX] = X.M();
   userVars[uv_MVec] = vec.M();
@@ -160,23 +135,16 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble cosThetaH = userVars[uv_cosThetaH];
   GDouble PhiH = userVars[uv_PhiH];
   GDouble prod_angle = userVars[uv_prod_Phi];
-  GDouble dalitz_z = userVars[uv_dalitz_z];
-  GDouble dalitz_sin3theta = userVars[uv_dalitz_sin3theta];
-  GDouble dalitz_phi = userVars[uv_dalitz_phi];
   GDouble MX = userVars[uv_MX];
   GDouble MVec = userVars[uv_MVec];
   GDouble MPs = userVars[uv_MPs];
-
-  // dalitz parameters for 3-body vector decay
-  GDouble G = 1; // not relevant for 2-body vector decays 
-  if(m_3pi) G = sqrt( fabs(dalitz_phi * (1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta)) );
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
 
   for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
 	  GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
-	  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
+	  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH ));
   } 
 
   GDouble Factor = sqrt(1 + m_s * polFraction);
@@ -207,7 +175,7 @@ void Vec_ps_refl::updatePar( const AmpParameter& par ){
 void
 Vec_ps_refl::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, m_3pi, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta, polAngle, polFraction );
+	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, polAngle, polFraction );
 
 }
 

@@ -24,7 +24,8 @@ public:
   OmegaPiPlotGenerator( );
     
   void projectEvent( Kinematics* kin );
- 
+  void projectEvent( Kinematics* kin, const string& reactionName );
+
 private:
   
   void createHistograms( );

@@ -54,7 +54,16 @@ void OmegaPiPlotGenerator::createHistograms( ) {
 }
 
 void
-OmegaPiPlotGenerator::projectEvent( Kinematics* kin ){
+OmegaPiPlotGenerator::projectEvent(  Kinematics* kin ){
+
+  // this function will make this class backwards-compatible with older versions
+  // (v0.10.x and prior) of AmpTools, but will not be able to properly obtain
+  // the polariation plane in the lab when multiple orientations are used
+  projectEvent( kin, "" );
+}
+
+void
+OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
    //cout << "project event" << endl;
    TLorentzVector beam   = kin->particle( 0 );
