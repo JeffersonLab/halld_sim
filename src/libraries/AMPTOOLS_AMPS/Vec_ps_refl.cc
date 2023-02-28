@@ -22,39 +22,82 @@ UserAmplitude< Vec_ps_refl >( args )
 {
   //assert( args.size() == 11 );
   
+  
   m_j = atoi( args[0].c_str() ); // resonance spin J
   m_m = atoi( args[1].c_str() ); // spin projection (Lambda)
   m_l = atoi( args[2].c_str() ); // partial wave L
   m_r = atoi( args[3].c_str() ); // real (+1) or imaginary (-1)
   m_s = atoi( args[4].c_str() ); // sign for polarization in amplitude
 
-  polAngle = AmpParameter( args[5] );
-  registerParameter( polAngle );
-  
-  polFraction = atof(args[6].c_str());
-  
-  // BeamProperties configuration file
-  if (polFraction == 0){
-    TString beamConfigFile = args[6].c_str();
-    BeamProperties beamProp(beamConfigFile);
-    polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+  // 4 possibilities to initialize this amplitude:
+  // (with <J>: total spin, <m>: spin projection, <r>: +1/-1 for real/imaginary part; <s>: +1/-1 sign in P_gamma term)
+  //
+  // (1): 5 arguments, polarization information must be included in beam photon four vector
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_refl <J> <m> <l> <r> <s>
+  if(args.size() == (5)){
+    m_polInTree = true;
+    m_3pi = false;
   }
 
-  m_3pi = false;
-  if(args.size() == (11)){
-	  m_3pi = true; // treat 3-pion decay dalitz parameters
+  // (2): 9 arguments, polarization information must be included in beam photon four vector
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_refl <J> <m> <l> <r> <s> <4 dalitz parameters for 3-body vector decay>
+  else if(args.size() == (9)){
+    m_polInTree = true;
+    m_3pi = true;
 
-	  //Dalitz Parameters for 3pi decays
-	  dalitz_alpha  = AmpParameter(args[6+1]);
-	  dalitz_beta   = AmpParameter(args[6+2]);
-	  dalitz_gamma  = AmpParameter(args[6+3]);
-	  dalitz_delta  = AmpParameter(args[6+4]);
+    // treat 3-pion decay dalitz parameters
+    //Dalitz Parameters for 3pi decays
+	dalitz_alpha  = AmpParameter(args[4+1]);
+    dalitz_beta   = AmpParameter(args[4+2]);
+	dalitz_gamma  = AmpParameter(args[4+3]);
+	dalitz_delta  = AmpParameter(args[4+4]);
 	  
-	  registerParameter(dalitz_alpha);
-	  registerParameter(dalitz_beta);
-	  registerParameter(dalitz_gamma);
-	  registerParameter(dalitz_delta);
+	registerParameter(dalitz_alpha);
+	registerParameter(dalitz_beta);
+	registerParameter(dalitz_gamma);
+	registerParameter(dalitz_delta);
   }
+
+  // (3): 7 arguments, polarization fixed per amplitude
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_refl <J> <m> <l> <r> <s> <polAngle> <polFraction>
+  else if(args.size() == (7)){
+    m_polInTree = false;
+    m_3pi = false;
+  }
+
+  // (4): 11 arguments, polarization fixed per amplitude
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_refl <J> <m> <l> <r> <s> <polAngle> <polFraction> <4 dalitz parameters for 3-body vector decay>
+  else if(args.size() == (11)){
+    m_polInTree = false;
+    m_3pi = true;
+
+    // treat 3-pion decay dalitz parameters
+    //Dalitz Parameters for 3pi decays
+	dalitz_alpha  = AmpParameter(args[6+1]);
+    dalitz_beta   = AmpParameter(args[6+2]);
+	dalitz_gamma  = AmpParameter(args[6+3]);
+	dalitz_delta  = AmpParameter(args[6+4]);
+	  
+	registerParameter(dalitz_alpha);
+	registerParameter(dalitz_beta);
+	registerParameter(dalitz_gamma);
+	registerParameter(dalitz_delta);
+  }
+
+  if(!m_polInTree){
+    //polAngle = AmpParameter( args[5] );
+    //registerParameter( polAngle );
+    polAngle = atof( args[5].c_str() );
+    polFraction = atof(args[6].c_str());
+  
+    // BeamProperties configuration file
+    if (polFraction == 0){
+      TString beamConfigFile = args[6].c_str();
+      BeamProperties beamProp(beamConfigFile);
+      polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+    }
+  }
+
 
   // make sure values are reasonable
   assert( abs( m_m ) <= m_j );
@@ -69,8 +112,26 @@ UserAmplitude< Vec_ps_refl >( args )
 
 void
 Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
+
+  TLorentzVector beam;
+  TVector3 eps;
+  double beam_polFraction;
+  double beam_polAngle;
+
+  if(m_polInTree){
+    beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
+    eps.SetXYZ(pKin[0][1], pKin[0][2], 0.); // beam polarization vector;
+
+    beam_polFraction = eps.Mag();
+    beam_polAngle = eps.Phi()*TMath::RadToDeg();
+    //registerParameter( polAngle );
+  }
+  else{
+    beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
+    beam_polFraction = polFraction;
+    beam_polAngle = polAngle;
+  }
   
-  TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
   TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
 
   // common vector and pseudoscalar P4s
@@ -144,6 +205,9 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[uv_MVec] = vec.M();
   userVars[uv_MPs] = ps.M();
 
+  userVars[uv_beam_polFraction] = beam_polFraction;
+  userVars[uv_beam_polAngle] = beam_polAngle;
+
   return;
 }
 
@@ -164,6 +228,8 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble MX = userVars[uv_MX];
   GDouble MVec = userVars[uv_MVec];
   GDouble MPs = userVars[uv_MPs];
+  GDouble beam_polFraction = userVars[uv_beam_polFraction];
+  GDouble beam_polAngle = userVars[uv_beam_polAngle];
 
   // dalitz parameters for 3-body vector decay
   GDouble G = 1; // not relevant for 2-body vector decays
@@ -176,10 +242,15 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 	  GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
 	  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH )) * G;
   } 
-
-  GDouble Factor = sqrt(1 + m_s * polFraction);
+  
+  GDouble Factor = sqrt(1 + m_s * beam_polFraction);
+  
+  
   complex< GDouble > zjm = 0;
-  complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*(prod_angle + polAngle*TMath::DegToRad())) ); // - -> + in prod_angle and polAngle summing
+  
+  complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*(prod_angle + beam_polAngle*TMath::DegToRad())) ); // - -> + in prod_angle and polAngle summing
+  
+  
   if (m_r == 1)
 	  zjm = real(amplitude * rotateY);
   if (m_r == -1) 
