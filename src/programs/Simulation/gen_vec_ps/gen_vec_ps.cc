@@ -494,16 +494,16 @@ int main( int argc, char* argv[] ){
 
 			Kinematics* evt = ati.kinematics( i );
 			TLorentzVector resonance;
-			for (unsigned int i=2; i<Particles.size(); i++)
-			  resonance += evt->particle( i );
+			for (unsigned int j=2; j<Particles.size(); j++)
+			  resonance += evt->particle( j );
 
 			TLorentzVector isobar;
-			for (unsigned int i=3; i<Particles.size(); i++)
-			  isobar += evt->particle( i );
+			for (unsigned int j=3; j<Particles.size(); j++)
+			  isobar += evt->particle( j );
 
 			TLorentzVector isobar2;
-			for (unsigned int i=4; i<Particles.size(); i++)
-			  isobar2 += evt->particle( i );
+			for (unsigned int j=4; j<Particles.size(); j++)
+			  isobar2 += evt->particle( j );
 
 			TLorentzVector recoil = evt->particle( 1 );
                         if(bwGenLowerVertex.size()) {
