@@ -12,7 +12,9 @@
 
 #include "particleType.h"
 
+#include "AMPTOOLS_DATAIO/DataWriter.h"
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
+#include "AMPTOOLS_DATAIO/FSRootDataWriter.h"
 #include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
@@ -55,6 +57,7 @@ int main( int argc, char* argv[] ){
 
 	bool diag = false;
 	bool genFlat = false;
+        bool fsRootFormat = false;
 
 	// default upper and lower bounds
 	double lowMass = 1.0;//To take over threshold with a BW omega mass
@@ -132,6 +135,8 @@ int main( int argc, char* argv[] ){
 			diag = true; }
 		if (arg == "-f"){
 			genFlat = true; }
+		if (arg == "-fsroot"){
+		        fsRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
@@ -324,7 +329,9 @@ int main( int argc, char* argv[] ){
 
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
-	ROOTDataWriter rootOut( outname );
+	DataWriter* rootOut = ( fsRootFormat ?
+				static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
+				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 
 	ASCIIDataWriter* asciiOut = NULL;
         if( asciiname.size() != 0 ) asciiOut = new ASCIIDataWriter( asciiname );
@@ -587,7 +594,7 @@ int main( int argc, char* argv[] ){
 
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
                                         if( asciiOut ) asciiOut->writeEvent( *evt, pTypes );
-					rootOut.writeEvent( *evt );
+					rootOut->writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
 				}
@@ -634,6 +641,7 @@ int main( int argc, char* argv[] ){
 	diagOut->Close();
 
 	if( hddmOut ) delete hddmOut;
+	delete rootOut;
 
 	return 0;
 }

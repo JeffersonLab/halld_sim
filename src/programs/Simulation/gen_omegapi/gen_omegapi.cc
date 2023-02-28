@@ -12,7 +12,9 @@
 
 #include "particleType.h"
 
+#include "AMPTOOLS_DATAIO/DataWriter.h"
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
+#include "AMPTOOLS_DATAIO/FSRootDataWriter.h"
 #include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
@@ -55,7 +57,8 @@ int main( int argc, char* argv[] ){
         string  asciiname("");
 	
 	bool diag = false;
-	bool genFlat = false;
+        bool genFlat = false;
+        bool fsRootFormat = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 1.0;//To take over threshold with a BW omega mass
@@ -147,6 +150,8 @@ int main( int argc, char* argv[] ){
 			diag = true; }
 		if (arg == "-f"){
 			genFlat = true; }
+		if (arg == "-fsroot"){
+		        fsRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
@@ -321,7 +326,12 @@ int main( int argc, char* argv[] ){
 
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
-	ROOTDataWriter rootOut( outname );
+
+	// the first argument to the FSRootDataWriter is the number of particles *in addition to* the beam
+	// particle, which is typically the first in the list in GlueX reaction definitions
+	DataWriter* rootOut = ( fsRootFormat ?
+				static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
+				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 	
 	ASCIIDataWriter* asciiOut = NULL;
         if( asciiname.size() != 0 ) asciiOut = new ASCIIDataWriter( asciiname );
@@ -365,9 +375,10 @@ int main( int argc, char* argv[] ){
 	TH2F* M_CosThetaH = new TH2F( "M_CosThetaH", "M vs. cos#vartheta_{H}", 180, lowMass, highMass, 200, -1, 1);
 	TH2F* M_PhiH = new TH2F( "M_PhiH", "M vs. #varphi_{H}", 180, lowMass, highMass, 200, -3.14, 3.14);
 	TH2F* M_Phi_Prod = new TH2F( "M_Phi_Prod", "M vs. #Phi_{Prod}", 180, lowMass, highMass, 200, -3.14, 3.14);
+	TH2F* phi_Phi_Prod = new TH2F( "phi_Phi_Prod", "#phi vs. #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
+	TH2F* PhiH_Psi = new TH2F( "PhiH_Psi", "#phi_{H} vs. #phi - #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
+	TH2F* PhiH_PsiPrime = new TH2F( "PhiH_PsiPrime", "#phi_{H} vs. #phi + #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
 	
-	
-
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
 		
@@ -563,15 +574,22 @@ int main( int argc, char* argv[] ){
                                         GDouble psi = phi - Phi;
                                         if(psi < -1*PI) psi += 2*PI;
                                         if(psi > PI) psi -= 2*PI;
+
+					GDouble psiprime = phi + Phi;
+                                        if(psiprime < -1*PI) psiprime += 2*PI;
+                                        if(psiprime > PI) psiprime -= 2*PI;
 					
 					CosTheta_psi->Fill( psi, cosTheta);
-										
+					PhiH_Psi->Fill(psi, phiH);
+					PhiH_PsiPrime->Fill(psiprime, phiH);
+					phi_Phi_Prod->Fill(Phi, phi);
+
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
 					
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
                                         if( asciiOut ) asciiOut->writeEvent( *evt, pTypes );
-					rootOut.writeEvent( *evt );
+					rootOut->writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
 				}
@@ -614,10 +632,14 @@ int main( int argc, char* argv[] ){
 	M_CosThetaH->Write();
 	M_PhiH->Write();
 	M_Phi_Prod->Write();
+	phi_Phi_Prod->Write();
+	PhiH_Psi->Write();
+	PhiH_PsiPrime->Write();
 
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;
+	delete rootOut;
 	
 	return 0;
 }
