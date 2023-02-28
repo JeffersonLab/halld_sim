@@ -78,7 +78,7 @@ int main( int argc, char* argv[] ){
 	
 	float Mpip=ParticleMass(PiPlus), Mpi0=ParticleMass(Pi0), Momega=0.782;
 
-	//Exprected particle list: 
+	//Expected particle list: 
 	// pi0 omega(pi0 "rho"(pi+ pi-))
 	//  2         3         4   5
 	int par_types_list[]={1,14,7,7,8,9};
@@ -322,7 +322,7 @@ int main( int argc, char* argv[] ){
 
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
-	DataWriter* rootOut( fsRootFormat ?
+	DataWriter* rootOut = ( fsRootFormat ?
 				static_cast< DataWriter* >( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
 				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 	
@@ -614,6 +614,7 @@ int main( int argc, char* argv[] ){
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;
+	delete rootOut;
 	
 	return 0;
 }
