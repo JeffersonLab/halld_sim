@@ -82,7 +82,7 @@ int main( int argc, char* argv[] ){
 	
 	float Mpip=ParticleMass(PiPlus), Mpi0=ParticleMass(Pi0), Momega=0.782;
 
-	//Exprected particle list: 
+	//Expected particle list: 
 	// pi0 omega(pi0 "rho"(pi+ pi-))
 	//  2         3         4   5
 	int par_types_list[]={1,14,7,7,8,9};
@@ -333,7 +333,7 @@ int main( int argc, char* argv[] ){
 	// the first argument to the FSRootDataWriter is the number of particles *in addition to* the beam
 	// particle, which is typically the first in the list in GlueX reaction definitions
 	DataWriter* rootOut = ( fsRootFormat ?
-				static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
+				static_cast< DataWriter* >( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
 				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 	
 	ASCIIDataWriter* asciiOut = NULL;
