@@ -23,7 +23,7 @@ UserAmplitude< ComplexCoeff >( args )
   else if(args[2] == "MagPhi")
     m_represReIm = false;
   else
-     cout << "ERROR: '" << args[2] << "' is not a defined mode for the Piecewise amplitude! Choose 'ReIm' or 'MagPhi'." << endl;
+     cout << "ERROR: '" << args[2] << "' is not a defined mode for the ComplexCoeff amplitude! Choose 'ReIm' or 'MagPhi'." << endl;
 
   // need to register any free parameters so the framework knows about them
   registerParameter( m_param1 );
