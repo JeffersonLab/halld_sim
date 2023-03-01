@@ -7,6 +7,7 @@
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
+#include "TFile.h"
 
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
@@ -22,29 +23,48 @@ UserAmplitude< Vec_ps_refl >( args )
 {
   //assert( args.size() == 11 );
   
+  
   m_j = atoi( args[0].c_str() ); // resonance spin J
   m_m = atoi( args[1].c_str() ); // spin projection (Lambda)
   m_l = atoi( args[2].c_str() ); // partial wave L
   m_r = atoi( args[3].c_str() ); // real (+1) or imaginary (-1)
   m_s = atoi( args[4].c_str() ); // sign for polarization in amplitude
 
+  // default polarization information stored in tree
+  m_polInTree = true;
+
   // default is 2-body vector decay (set flag in config file for omega->3pi)
   m_3pi = false; 
 
-  // loop over any additional amplitude arguments
+  // 5 possibilities to initialize this amplitude:
+  // (with <J>: total spin, <m>: spin projection, <l>: partial wave, <r>: +1/-1 for real/imaginary part; <s>: +1/-1 sign in P_gamma term)
+
+  // loop over any additional amplitude arguments to change defaults
   for(uint ioption=5; ioption<args.size(); ioption++) {
 	  TString option = args[ioption].c_str();
 
-	  // check for fixed polarization in configuration file
+	  // polarization provided in configuration file
 	  if(ioption==5 && option.IsFloat()) {
-		  polAngle = AmpParameter( args[5] );
-		  registerParameter( polAngle );
+		  m_polInTree = false;
+		  polAngle = atof(args[5].c_str());
+	  
+		  TString polOption = args[6].c_str();
+		  if(polOption.IsFloat()) polFraction = atof(polOption.Data());
+		  else if(polOption.Contains(".root")) {
+			  polFraction = 0.;
+			  TFile* f = new TFile( polOption );
+			  polFrac_vs_E = (TH1D*)f->Get( args[7].c_str() );
+			  assert( polFrac_vs_E != NULL );
+		  }
+		  else {
+			  cout << "ERROR: Vec_ps_refl beam polarization not set" <<endl;
+			  assert(0);
+		  }
 	  }
-	  if(ioption==6) 
-		  polFraction = atof(args[6].c_str());
-		  
+
 	  // other options should be strings
 	  if(option.EqualTo("omega3pi")) m_3pi = true;
+
   }
 
   // make sure values are reasonable
@@ -60,8 +80,35 @@ UserAmplitude< Vec_ps_refl >( args )
 
 void
 Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
+
+  TLorentzVector beam;
+  TVector3 eps;
+  double beam_polFraction;
+  double beam_polAngle;
+
+  if(m_polInTree){
+    beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
+    eps.SetXYZ(pKin[0][1], pKin[0][2], 0.); // beam polarization vector;
+
+    beam_polFraction = eps.Mag();
+    beam_polAngle = eps.Phi()*TMath::RadToDeg();
+  }
+  else {
+    beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );
+    beam_polAngle = polAngle;
+    
+    if(polFraction > 0.) { // for fitting with fixed polarization
+	    beam_polFraction = polFraction;
+    }
+    else { // for fitting with polarization vs E_gamma from input histogram 
+	    int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+	    if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+		    beam_polFraction = 0.;
+	    } else 
+		    beam_polFraction = polFrac_vs_E->GetBinContent(bin);
+    }
+  }
   
-  TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
   TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
 
   // common vector and pseudoscalar P4s
@@ -120,6 +167,9 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[uv_MVec] = vec.M();
   userVars[uv_MPs] = ps.M();
 
+  userVars[uv_beam_polFraction] = beam_polFraction;
+  userVars[uv_beam_polAngle] = beam_polAngle;
+
   return;
 }
 
@@ -138,6 +188,8 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble MX = userVars[uv_MX];
   GDouble MVec = userVars[uv_MVec];
   GDouble MPs = userVars[uv_MPs];
+  GDouble beam_polFraction = userVars[uv_beam_polFraction];
+  GDouble beam_polAngle = userVars[uv_beam_polAngle];
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
@@ -146,10 +198,15 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 	  GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
 	  amplitude += conj(wignerD( m_j, m_m, lambda, cosTheta, Phi )) * hel_amp * conj(wignerD( 1, lambda, 0, cosThetaH, PhiH ));
   } 
-
-  GDouble Factor = sqrt(1 + m_s * polFraction);
+  
+  GDouble Factor = sqrt(1 + m_s * beam_polFraction);
+  
+  
   complex< GDouble > zjm = 0;
-  complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*(prod_angle + polAngle*TMath::DegToRad())) ); // - -> + in prod_angle and polAngle summing
+  
+  complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*(prod_angle + beam_polAngle*TMath::DegToRad())) ); // - -> + in prod_angle and polAngle summing
+  
+  
   if (m_r == 1)
 	  zjm = real(amplitude * rotateY);
   if (m_r == -1) 
@@ -175,7 +232,7 @@ void Vec_ps_refl::updatePar( const AmpParameter& par ){
 void
 Vec_ps_refl::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s, polAngle, polFraction );
+	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s );
 
 }
 
