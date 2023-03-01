@@ -63,7 +63,7 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
    // check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
    const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
-   for(uint ioption=7; ioption<args.size(); ioption++) {
+   for(uint ioption=5; ioption<args.size(); ioption++) {
           TString option = args[ioption].c_str();
 	  if(option.EqualTo("omega3pi")) m_3pi = true;
    }
