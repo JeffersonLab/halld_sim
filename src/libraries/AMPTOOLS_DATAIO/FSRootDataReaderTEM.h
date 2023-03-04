@@ -5,6 +5,7 @@
 #include "TString.h"
 #include "TFile.h"
 #include "TTree.h"
+#include "IUAmpTools/Kinematics.h"
 #include "IUAmpTools/DataReader.h"
 #include "IUAmpTools/UserDataReader.h"
 
@@ -20,11 +21,15 @@ class FSRootDataReaderTEM : public UserDataReader< FSRootDataReaderTEM >{
 
       string name() const { return "FSRootDataReaderTEM"; }
 
+      virtual vector<TLorentzVector> particleList();
+
       virtual Kinematics* getEvent();
 
       virtual void resetSource();
 
       virtual unsigned int numEvents() const;
+
+      virtual bool checkEvent();
 
       unsigned int eventCounter() const { return m_eventCounter; }
 
