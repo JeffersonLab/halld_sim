@@ -51,6 +51,11 @@ void OmegaPiPlotGenerator::createHistograms( ) {
    bookHistogram( kRecoilPiMass, new Histogram1D( 100, 0.9, 2.9, "MRecoilPi", "Invariant Mass of recoil and bachelor pion" ) );
    bookHistogram( kLambda, new Histogram1D( 110, 0.0, 1.1, "Lambda", "#lambda_{#omega}" ) );
    bookHistogram( kDalitz, new Histogram2D( 100, -2., 2., 100, -2., 2., "Dalitz", "Dalitz XY" ) );
+   bookHistogram( kThetaDelta, new Histogram1D( 100, 0., PI, "ThetaDelta", "#theta_{#pi^{+}}" ) );
+   bookHistogram( kPhiDelta, new Histogram1D( 100, -1*PI, PI, "PhiDelta", "#phi_{#pi^{+}}" ) );
+   bookHistogram( kSinSqThetaDelta, new Histogram1D( 100, 0., 1., "SinSqThetaDelta", "sin^{2}#theta_{#pi^{+}}" ) );
+   bookHistogram( kSin2ThetaDelta, new Histogram1D( 100, -1., 1., "Sin2ThetaDelta", "sin2#theta_{#pi^{+}}" ) );
+   bookHistogram( kCosSqThetaDelta, new Histogram1D( 100, 0., 1., "CosSqThetaDelta", "cos^{2}#theta_{#pi^{+}}" ) );
 }
 
 void
@@ -67,13 +72,14 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
 
    //cout << "project event" << endl;
    TLorentzVector beam   = kin->particle( 0 );
-   TLorentzVector recoil = kin->particle( 1 );
+   TLorentzVector proton = kin->particle( 1 );
    TLorentzVector Xs_pi = kin->particle( 2 );//bachelor pi0
    TLorentzVector omegas_pi = kin->particle( 3 );//omega's pi0
    TLorentzVector rhos_pip = kin->particle( 4 );//pi-
-   TLorentzVector rhos_pim = kin->particle( 5 );//pi+
+   TLorentzVector rhos_pim = kin->particle( 5 );//pi
 
-   TLorentzVector proton_pi = recoil + Xs_pi;
+   TLorentzVector recoil = proton;
+   TLorentzVector proton_pi = proton + Xs_pi;
    TLorentzVector recoil_pi = proton_pi;
    TLorentzVector two_pi = kin->particle( 2 );
    for(uint i=6; i<kin->particleList().size(); i++) {
@@ -140,6 +146,31 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
    dalitzx = sqrt(3.)*(dalitz_t - dalitz_u)/dalitz_d;
    dalitzy = 3.*(dalitz_sc - dalitz_s)/dalitz_d;
    fillHistogram( kDalitz, dalitzx, dalitzy );
-   
+
+   // Angles related to lower vertex
+   TLorentzVector pip2 = recoil - proton; 
+   TLorentzRotation recoilBoost( -recoil.BoostVector() );
+   TLorentzVector target_recoilRF = recoilBoost * target; 
+   TLorentzVector beam_recoilRF = recoilBoost * beam; 
+   TLorentzVector upperVertex_recoilRF = recoilBoost * X; 
+   TLorentzVector pip2_recoilRF = recoilBoost * pip2; 
+
+   TVector3 y = ( target_recoilRF.Vect().Unit().Cross( upperVertex_recoilRF.Vect().Unit() ) ).Unit(); //GJ frame: z-axis along -target direction in baryon RF
+   TVector3 z = target_recoilRF.Vect().Unit();
+   TVector3 x = y.Cross( z ).Unit();
+
+   TVector3 angles( pip2_recoilRF.Vect().Dot( x ), pip2_recoilRF.Vect().Dot( y ), pip2_recoilRF.Vect().Dot( z ));
+
+   double thetaDelta = angles.Theta();
+   double phiDelta = angles.Phi();
+   double sinSqThetaDelta = TMath::Sin( thetaDelta ) * TMath::Sin( thetaDelta );
+   double cosSqThetaDelta = TMath::Cos( thetaDelta ) * TMath::Cos( thetaDelta );
+   double sin2ThetaDelta = TMath::Sin( 2.0 * thetaDelta );
+
+   fillHistogram( kThetaDelta, thetaDelta );
+   fillHistogram( kPhiDelta, phiDelta );
+   fillHistogram( kSinSqThetaDelta, sinSqThetaDelta );
+   fillHistogram( kCosSqThetaDelta, cosSqThetaDelta );
+   fillHistogram( kSin2ThetaDelta, sin2ThetaDelta );
 }
 

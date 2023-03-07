@@ -116,7 +116,6 @@ int main( int argc, char* argv[] ){
     cout << "Loading Fit results" << endl;
     FitResults results( resultsName );
     if( !results.valid() ){
-
         cout << "Invalid fit results in file:  " << resultsName << endl;
         exit( 1 );
     }
