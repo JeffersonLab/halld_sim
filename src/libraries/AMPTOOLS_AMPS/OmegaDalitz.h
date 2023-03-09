@@ -1,12 +1,11 @@
-#if !defined(VEC_PS_REFL)
-#define VEC_PS_REFL
+#if !defined(OMEGADALITZ)
+#define OMEGADALITZ
 
 #include "IUAmpTools/Amplitude.h"
 #include "IUAmpTools/UserAmplitude.h"
 #include "IUAmpTools/AmpParameter.h"
 #include "GPUManager/GPUCustomTypes.h"
 
-#include "TH1D.h"
 #include <string>
 #include <complex>
 #include <vector>
@@ -16,21 +15,21 @@ using namespace std;
 
 #ifdef GPU_ACCELERATION
 void
-GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s );
+GPUOmegaDalitz_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta );
 #endif
 
 class Kinematics;
 
-class Vec_ps_refl : public UserAmplitude< Vec_ps_refl >
+class OmegaDalitz : public UserAmplitude< OmegaDalitz >
 {
     
 public:
 	
-	Vec_ps_refl() : UserAmplitude< Vec_ps_refl >() { };
-	Vec_ps_refl( const vector< string >& args );
-	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s );
+	OmegaDalitz() : UserAmplitude< OmegaDalitz >() { };
+	OmegaDalitz( const vector< string >& args );
+	OmegaDalitz( GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta );
 	
-	string name() const { return "Vec_ps_refl"; }
+	string name() const { return "OmegaDalitz"; }
     
 	complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
 
@@ -41,7 +40,7 @@ public:
 	// Use this for indexing a user-defined data array and notifying
 	// the framework of the number of user-defined variables.
 	
-	enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_Phi = 4, uv_MX = 5, uv_MVec = 6, uv_MPs = 7, uv_beam_polFraction = 8, uv_beam_polAngle = 9, kNumUserVars };
+	enum UserVars { uv_dalitz_z = 0, uv_dalitz_sin3theta = 1, uv_lambda = 2, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	// This function needs to be defined -- see comments and discussion
@@ -73,18 +72,12 @@ public:
 	
 private:
         
-	int m_j;
-	int m_m;
-	int m_l;
-	int m_r;
-	int m_s;
-	int m_3pi;
-	
-	//AmpParameter polAngle;
-	double polFraction;
-	double polAngle;
-	bool m_polInTree;
-	TH1D *polFrac_vs_E;
+	AmpParameter dalitz_alpha;
+	AmpParameter dalitz_beta;
+	AmpParameter dalitz_gamma;
+	AmpParameter dalitz_delta;
+
+	int index_daughter1, index_daughter2, index_daughter3;
 };
 
 #endif
