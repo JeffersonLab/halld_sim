@@ -165,7 +165,7 @@ double s3j(double j1, double j2, double j3,
 }
 
 
-double clebschGordan(int ij1, int ij2, int im1, int im2, int ij, int im) {
+GDouble clebschGordan(int ij1, int ij2, int im1, int im2, int ij, int im) {
 	
 	int esp;
 	double cgris;

@@ -100,7 +100,7 @@ GammaZToXZ::generate(){
    TLorentzVector EtaMom4Lab = cm2labBoost * EtaMom4CM;
    TLorentzVector recoil = cm2labBoost * recoilMom4CM;
 
-double trecoil = 2*recoil.M()*(recoil.E()-recoil.M());
+   // double trecoil = 2*recoil.M()*(recoil.E()-recoil.M());
 
 // cout << " tMin=" << tMin << " tMax=" << tMax << " t=" << t << " trecoil=" << trecoil << " m_slope=" << m_slope << " thetaCM=" << thetaCM*180/kPi << " phiCM=" << phiCM*180./kPi << endl;
 

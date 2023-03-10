@@ -1,0 +1,65 @@
+*** Begin of history file: Tue Mar 29 15:08:59 2022
+prlast
+h/fil 2 bggen.nt 0 -x
+zone 2 2
+h/cr/prof 101 ' ' 120 0.15 12.15 -1 100
+h/cr/prof 101 ' ' 120 0.15 12.15 -1 100
+ nt/pl //lun2/9.ev_stat.f(0,8,0.1,12.,2.,110.) ! 1000 1
+ nt/ls //lun2
+ nt/li //lun2
+ nt/lis //lun2
+ nt/pri //lun2/9
+ nt/loop //lun2/9 bgg_pri.f(0) 10 1
+ nt/loop //lun2/9 bgg_pri.f(0) 10 11
+ nt/pl //lun2/9.nt
+ nt/pl //lun2/9.np
+ nt/pri //lun2/9
+ nt/pl //lun2/9.iproc
+ nt/pl //lun2/9.p_kin.f(1,2) iproc=4
+ nt/pl //lun2/9.p_kin.f(1,2,0) iproc=4
+opt logy
+ nt/pl //lun2/9.p_kin.f(1,2,0) iproc=4
+ nt/pl //lun2/9.p_kin.f(2,2,0) iproc=4
+ nt/pl //lun2/9.p_kin.f(1,2,0) iproc=4
+ nt/pl //lun2/9.p_kin.f(2,1,0) iproc=4
+ nt/pl //lun2/9.p_kin.f(1,1,0) iproc=4
+clo 2
+h/fil 2 bggen.nt 0 -x
+ nt/pl //lun2/9.p_kin.f(1,2,0)
+ nt/pl //lun2/9.p_kin.f(1,2,0) pin(3,1)>10
+help integr
+help integrate
+help lo
+help loca
+loca
+h/fit 1000000(6:50) e
+ nt/pl //lun2/9.pin(3,1)
+ nt/pl //lun2/9.p_kin.f(2,3,1)
+opt liny
+ nt/pl //lun2/9.p_kin.f(2,3,1)
+ nt/pl //lun2/9.pin(3,1)
+ nt/pl //lun2/9.p_kin.f(2,4,1)
+clo 2
+h/fil 2 bggen.nt 0 -x
+nt/lis //lun2/9
+nt/pri //lun2/9
+ nt/pl //lun2/9.np
+ nt/pl //lun2/9.p_kin.f(1,2,0)
+opt logy
+ nt/pl //lun2/9.p_kin.f(1,2,0)
+ nt/pl //lun2/9.p_kin.f(1,2,0) np=4
+ nt/pl //lun2/9.p_kin.f(1,2,0)
+h/fit 1000000(6:50) e
+h/fit 1000000(20:70) e
+nt/pri //lun2/9
+ nt/pl //lun2/9.p_kin.f(1,2,0) pin(3,1)>10
+h/fit 1000000(20:80) e
+ nt/pl //lun2/9.efm.f(3,4,0,0) np=4
+ nt/pl //lun2/9.efm.f(3,4,0,0) np>4
+opt liny
+ nt/pl //lun2/9.efm.f(3,4,0,0) np>4
+ nt/pl //lun2/9.efm.f(3,4,0,0)
+ nt/pl //lun2/9.efm.f(3,4,5,0) np=5
+prlast
+exit
+*** End   of history file: Wed Mar 30 11:22:35 2022

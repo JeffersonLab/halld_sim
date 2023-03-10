@@ -13,6 +13,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -26,16 +27,15 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
@@ -71,7 +71,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
       else
          fitManager->migradMinimization();
 
-      fitFailed = ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
+      fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
 
       if( fitFailed )
          cout << "ERROR: fit failed use results with caution..." << endl;
@@ -136,7 +136,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          else
             fitManager->migradMinimization();
 
-         fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
 
          if( fitFailed )
             cout << "ERROR: fit failed use results with caution..." << endl;
@@ -243,7 +243,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          else
             fitManager->migradMinimization();
 
-         fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
          curLH = ati.likelihood();
 
          if( fitFailed )
@@ -338,13 +338,13 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPitdist() );
    AmpToolsInterface::registerAmplitude( ThreePiAngles() );
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+   AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
    AmpToolsInterface::registerAmplitude( Zlm() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
-   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );
    AmpToolsInterface::registerAmplitude( Uniform() );
-   AmpToolsInterface::registerAmplitude( dblRegge() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
@@ -355,6 +355,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderWithTCut>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderTEM>() );
+   AmpToolsInterface::registerDataReader( DataReaderMPI<FSRootDataReader>() );
 
    if(numRnd==0){
       if(scanPar=="")

@@ -13,6 +13,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -26,16 +27,17 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
+#include "AMPTOOLS_AMPS/TwoLeptonAngles.h"
+#include "AMPTOOLS_AMPS/TwoLeptonAnglesGJ.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
@@ -51,178 +53,178 @@ using std::complex;
 using namespace std;
 
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile) {
-   AmpToolsInterface ati( cfgInfo );
+  AmpToolsInterface ati( cfgInfo );
 
-   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
 
-   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
-   fitManager->setMaxIterations(maxIter);
+  MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
+  fitManager->setMaxIterations(maxIter);
 
-   if( useMinos ){
+  if( useMinos ){
 
-      fitManager->minosMinimization();
-   }
-   else{
+    fitManager->minosMinimization();
+  }
+  else{
 
-      fitManager->migradMinimization();
-   }
+    fitManager->migradMinimization();
+  }
 
-   bool fitFailed =
-      ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
+  bool fitFailed =
+    ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
 
-   if( fitFailed ){
-      cout << "ERROR: fit failed use results with caution..." << endl;
-      return 1e6;
-   }
+  if( fitFailed ){
+    cout << "ERROR: fit failed use results with caution..." << endl;
+    return 1e6;
+  }
 
-   cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
+  cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
-   ati.finalizeFit();
+  ati.finalizeFit();
 
-   if( seedfile.size() != 0 && !fitFailed ){
-      ati.fitResults()->writeSeed( seedfile );
-   }
+  if( seedfile.size() != 0 && !fitFailed ){
+    ati.fitResults()->writeSeed( seedfile );
+  }
 
-   return ati.likelihood();
+  return ati.likelihood();
 }
 
 void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, int numRnd, double maxFraction) {
-   AmpToolsInterface ati( cfgInfo );
-   string fitName = cfgInfo->fitName();
+  AmpToolsInterface ati( cfgInfo );
+  string fitName = cfgInfo->fitName();
 
-   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
 
-   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
-   fitManager->setMaxIterations(maxIter);
+  MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
+  fitManager->setMaxIterations(maxIter);
 
-   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
+  vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
-   // keep track of best fit (mininum log-likelihood)
-   double minLL = 0;
-   int minFitTag = -1;
+  // keep track of best fit (mininum log-likelihood)
+  double minLL = 0;
+  int minFitTag = -1;
 
-   for(int i=0; i<numRnd; i++) {
-      cout << endl << "###############################" << endl;
-      cout << "FIT " << i << " OF " << numRnd << endl;
-      cout << endl << "###############################" << endl;
+  for(int i=0; i<numRnd; i++) {
+    cout << endl << "###############################" << endl;
+    cout << "FIT " << i << " OF " << numRnd << endl;
+    cout << endl << "###############################" << endl;
 
-      // randomize parameters
-      ati.randomizeProductionPars(maxFraction);
-      for(size_t ipar=0; ipar<parRangeKeywords.size(); ipar++) {
-         ati.randomizeParameter(parRangeKeywords[ipar][0], atof(parRangeKeywords[ipar][1].c_str()), atof(parRangeKeywords[ipar][2].c_str()));
-      }
+    // randomize parameters
+    ati.randomizeProductionPars(maxFraction);
+    for(size_t ipar=0; ipar<parRangeKeywords.size(); ipar++) {
+      ati.randomizeParameter(parRangeKeywords[ipar][0], atof(parRangeKeywords[ipar][1].c_str()), atof(parRangeKeywords[ipar][2].c_str()));
+    }
 
-      if(useMinos)
-         fitManager->minosMinimization();
-      else
-         fitManager->migradMinimization();
+    if(useMinos)
+      fitManager->minosMinimization();
+    else
+      fitManager->migradMinimization();
 
-      bool fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+    bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
 
-      if( fitFailed )
-         cout << "ERROR: fit failed use results with caution..." << endl;
+    if( fitFailed )
+      cout << "ERROR: fit failed use results with caution..." << endl;
 
-      cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
+    cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
-      ati.finalizeFit(to_string(i));
+    ati.finalizeFit(to_string(i));
 
-      if( seedfile.size() != 0 && !fitFailed ){
-         string seedfile_rand = seedfile + Form("_%d.txt", i);
-         ati.fitResults()->writeSeed( seedfile_rand );
-      }
+    if( seedfile.size() != 0 && !fitFailed ){
+      string seedfile_rand = seedfile + Form("_%d.txt", i);
+      ati.fitResults()->writeSeed( seedfile_rand );
+    }
 
-      // update best fit
-      if( !fitFailed && ati.likelihood() < minLL ) {
-         minLL = ati.likelihood();
-         minFitTag = i;
-      }
-   }
+    // update best fit
+    if( !fitFailed && ati.likelihood() < minLL ) {
+      minLL = ati.likelihood();
+      minFitTag = i;
+    }
+  }
 
-   // print best fit results
-   if(minFitTag < 0) cout << "ALL FITS FAILED!" << endl;
-   else {
-      cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRnd << " RANDOM PRODUCTION PARS = " << minLL << endl;
-      gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
-      if( seedfile.size() != 0 )
-         gSystem->Exec(Form("cp %s_%d.txt %s.txt", seedfile.data(), minFitTag, seedfile.data()));
-   }
+  // print best fit results
+  if(minFitTag < 0) cout << "ALL FITS FAILED!" << endl;
+  else {
+    cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRnd << " RANDOM PRODUCTION PARS = " << minLL << endl;
+    gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
+    if( seedfile.size() != 0 )
+      gSystem->Exec(Form("cp %s_%d.txt %s.txt", seedfile.data(), minFitTag, seedfile.data()));
+  }
 }
 
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, string parScan) {
-   double minVal=0, maxVal=0, stepSize=0;
-   int steps=0;
+  double minVal=0, maxVal=0, stepSize=0;
+  int steps=0;
 
-   vector< vector<string> > parScanKeywords = cfgInfo->userKeywordArguments("parScan");
+  vector< vector<string> > parScanKeywords = cfgInfo->userKeywordArguments("parScan");
 
-   if(parScanKeywords.size()==0) {
-      cout << "No parScan keyword found in configuration file. Set up at least one parameter for scanning! Aborting." << endl;
+  if(parScanKeywords.size()==0) {
+    cout << "No parScan keyword found in configuration file. Set up at least one parameter for scanning! Aborting." << endl;
+    return;
+  } else {
+    for(size_t ipar=0; ipar<parScanKeywords.size(); ipar++) {
+      if(parScanKeywords[ipar][0]==parScan) {
+	minVal = atof(parScanKeywords[ipar][1].c_str());
+	maxVal = atof(parScanKeywords[ipar][2].c_str());
+	stepSize = atof(parScanKeywords[ipar][3].c_str());
+	steps = trunc((maxVal-minVal)/stepSize)+1;
+	break;
+      } else
+	cout << "Skipping configuration to scan " << parScanKeywords[ipar][0] << "since scanning of " << parScan << " was requested..." << endl;
+    }
+  }
+
+  AmpToolsInterface ati( cfgInfo );
+
+  string fitName = cfgInfo->fitName();
+  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+
+  ParameterManager* parMgr = ati.parameterManager();
+  MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
+  fitManager->setMaxIterations(maxIter);
+
+
+  for(int i=0; i<steps; i++) {
+    cout << endl << "###############################" << endl;
+    cout << "FIT " << i << " OF " << steps << endl;
+    cout << endl << "###############################" << endl;
+
+    // set parameter to be scanned
+    vector<ParameterInfo*> parInfoVec = cfgInfo->parameterList();
+
+    auto parItr = parInfoVec.begin();
+    for( ; parItr != parInfoVec.end(); ++parItr ) {
+      if( (**parItr).parName() == parScan ) break;
+    }
+
+    if( parItr == parInfoVec.end() ){
+      cout << "ERROR:  request to scan nonexistent parameter:  " << parScan << endl;
       return;
-   } else {
-      for(size_t ipar=0; ipar<parScanKeywords.size(); ipar++) {
-         if(parScanKeywords[ipar][0]==parScan) {
-            minVal = atof(parScanKeywords[ipar][1].c_str());
-            maxVal = atof(parScanKeywords[ipar][2].c_str());
-            stepSize = atof(parScanKeywords[ipar][3].c_str());
-            steps = trunc((maxVal-minVal)/stepSize)+1;
-            break;
-         } else
-            cout << "Skipping configuration to scan " << parScanKeywords[ipar][0] << "since scanning of " << parScan << " was requested..." << endl;
-      }
-   }
+    }
 
-   AmpToolsInterface ati( cfgInfo );
+    // set and fix parameter for scan
+    double value = minVal + i*stepSize;
+    parMgr->setAmpParameter( parScan, value );
 
-   string fitName = cfgInfo->fitName();
-   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+    cfgInfo->setFitName(fitName + "_scan");
 
-   ParameterManager* parMgr = ati.parameterManager();
-   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
-   fitManager->setMaxIterations(maxIter);
+    if(useMinos)
+      fitManager->minosMinimization();
+    else
+      fitManager->migradMinimization();
 
+    bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
 
-   for(int i=0; i<steps; i++) {
-      cout << endl << "###############################" << endl;
-      cout << "FIT " << i << " OF " << steps << endl;
-      cout << endl << "###############################" << endl;
+    if( fitFailed )
+      cout << "ERROR: fit failed use results with caution..." << endl;
 
-      // set parameter to be scanned
-      vector<ParameterInfo*> parInfoVec = cfgInfo->parameterList();
+    cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
-      auto parItr = parInfoVec.begin();
-      for( ; parItr != parInfoVec.end(); ++parItr ) {
-         if( (**parItr).parName() == parScan ) break;
-      }
+    ati.finalizeFit(to_string(i));
 
-      if( parItr == parInfoVec.end() ){
-         cout << "ERROR:  request to scan nonexistent parameter:  " << parScan << endl;
-         return;
-      }
-
-      // set and fix parameter for scan
-      double value = minVal + i*stepSize;
-      parMgr->setAmpParameter( parScan, value );
-
-      cfgInfo->setFitName(fitName + "_scan");
-
-      if(useMinos)
-         fitManager->minosMinimization();
-      else
-         fitManager->migradMinimization();
-
-      bool fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
-
-      if( fitFailed )
-         cout << "ERROR: fit failed use results with caution..." << endl;
-
-      cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
-
-      ati.finalizeFit(to_string(i));
-
-      if( seedfile.size() != 0 && !fitFailed ){
-         string seedfile_scan = seedfile + Form("_scan_%d.txt", i);
-         ati.fitResults()->writeSeed( seedfile_scan );
-      }
-   }
+    if( seedfile.size() != 0 && !fitFailed ){
+      string seedfile_scan = seedfile + Form("_scan_%d.txt", i);
+      ati.fitResults()->writeSeed( seedfile_scan );
+    }
+  }
 }
 
 int main( int argc, char* argv[] ){
@@ -272,7 +274,7 @@ int main( int argc, char* argv[] ){
 
    if (configfile.size() == 0){
       cout << "No config file specified" << endl;
-      exit(1);
+            exit(1);
    }
 
    ConfigFileParser parser(configfile);
@@ -289,15 +291,18 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
    AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
    AmpToolsInterface::registerAmplitude( TwoPitdist() );
+   AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
    AmpToolsInterface::registerAmplitude( ThreePiAngles() );
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+   AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
+   AmpToolsInterface::registerAmplitude( TwoLeptonAngles() );
+   AmpToolsInterface::registerAmplitude( TwoLeptonAnglesGJ() );
    AmpToolsInterface::registerAmplitude( Zlm() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
-   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );
    AmpToolsInterface::registerAmplitude( Uniform() );
-   AmpToolsInterface::registerAmplitude( dblRegge() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
@@ -307,6 +312,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
+   AmpToolsInterface::registerDataReader( FSRootDataReader() );
 
    if(numRnd==0){
       if(scanPar=="")
@@ -317,7 +323,7 @@ int main( int argc, char* argv[] ){
       runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5);
    }
 
-   return 0;
+  return 0;
 }
 
 

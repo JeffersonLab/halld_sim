@@ -19,61 +19,61 @@
 // Dependence of swave 2pi cross section on W (mass of 2pi system) Elton 4/17/2017
 // Version for sigma f0(500) production  Elton 9/9/2018
 
-complex<double> Aw_func (Double_t *x, Double_t *par) {
+complex<GDouble> Aw_func (GDouble *x, GDouble *par) {
   // Returns the amplitude for the sigma photon production. GlueX-doc-XXXX DRAFT October 1, 2018
   // "Amplitude generation of the $\sigma$ meson f$_0$(500)"
     
-    double alpha1Re=par[0];
-    double alpha1Im=par[1];
-    double alpha2Re=par[2];
-    double alpha2Im=par[3];
-    double alpha3Re=par[4];
-    double alpha3Im=par[5];
-    double alpha4Re=par[6];
-    double alpha4Im=par[7];
-    double W=x[0];
+    GDouble alpha1Re=par[0];
+    GDouble alpha1Im=par[1];
+    GDouble alpha2Re=par[2];
+    GDouble alpha2Im=par[3];
+    GDouble alpha3Re=par[4];
+    GDouble alpha3Im=par[5];
+    GDouble alpha4Re=par[6];
+    GDouble alpha4Im=par[7];
+    GDouble W=x[0];
     
-    complex<double> Amp1, Amp2;
-    complex<double> alpha1(alpha1Re,alpha1Im);
-    complex<double> alpha2(alpha2Re,alpha2Im);
-    complex<double> alpha3(alpha3Re,alpha3Im);
-    complex<double> alpha4(alpha4Re,alpha4Im);
+    complex<GDouble> Amp1, Amp2;
+    complex<GDouble> alpha1(alpha1Re,alpha1Im);
+    complex<GDouble> alpha2(alpha2Re,alpha2Im);
+    complex<GDouble> alpha3(alpha3Re,alpha3Im);
+    complex<GDouble> alpha4(alpha4Re,alpha4Im);
     
     
     // S-wave I=0 phase shift as a function of center of mass energy
     
-    Double_t Mpi = ParticleMass(Pi0);
-    Double_t Mk = ParticleMass(KPlus);
-    Double_t s = W*W;            // center of mass energy ^2
-    Double_t s0 = (2*Mk)*(2*Mk);
+    GDouble Mpi = ParticleMass(Pi0);
+    GDouble Mk = ParticleMass(KPlus);
+    GDouble s = W*W;            // center of mass energy ^2
+    GDouble s0 = (2*Mk)*(2*Mk);
     
     if (s <= 4*Mpi*Mpi || s >= s0) return 0;
     
-    Double_t k = s/4 - Mpi*Mpi >= 0? sqrt(s/4 - Mpi*Mpi) : 0;   // center-of-mass momentum
+    GDouble k = s/4 - Mpi*Mpi >= 0? sqrt(s/4 - Mpi*Mpi) : 0;   // center-of-mass momentum
  
     // Reference Ananthanaryan, Phys Reports 353 (2001) 207, Appendix D.   tan(delta)
     // S-wave I=0 phase shift as a function of center of mass energy
-    Double_t A00=0.225;
-    Double_t B00=12.651;
-    Double_t C00=-43.8454;
-    Double_t D00=-87.1632;
-    Double_t s00=0.715311;
+    GDouble A00=0.225;
+    GDouble B00=12.651;
+    GDouble C00=-43.8454;
+    GDouble D00=-87.1632;
+    GDouble s00=0.715311;
     
-    Double_t k2=k*k;
-    Double_t f = (2*k/sqrt(s))* (A00 + B00*k2 + C00*k2*k2 + D00*k2*k2*k2)*(4*Mpi*Mpi-s00)/(s-s00);
+    GDouble k2=k*k;
+    GDouble f = (2*k/sqrt(s))* (A00 + B00*k2 + C00*k2*k2 + D00*k2*k2*k2)*(4*Mpi*Mpi-s00)/(s-s00);
     
-    Double_t delta0 = atan(f);
+    GDouble delta0 = atan(f);
     if (delta0 < 0) delta0 += 3.14159;
 
     // cout << " s=" << s << " delta0=" << delta0 << endl;
     
-    Double_t sind = sin(delta0);
-    Double_t cosd = cos(delta0);
-    complex<double> expdelta(cos(delta0),sin(delta0)); 
+    GDouble sind = sin(delta0);
+    GDouble cosd = cos(delta0);
+    complex<GDouble> expdelta(cos(delta0),sin(delta0)); 
  
     Amp1 = (W/(2*k)) * sind * expdelta * (alpha1 + alpha2*s);
     Amp2 = cosd * expdelta* (alpha3 + alpha4*s);
-    complex<double> Amp = Amp1 + Amp2;
+    complex<GDouble> Amp = Amp1 + Amp2;
     
     return Amp;
 
@@ -137,26 +137,26 @@ TwoPiWt_sigma::calcAmplitude( GDouble** pKin ) const
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
   // next three lines commented out, unused variables
-  GDouble Et = Precoil.E();
-  GDouble Mt = Precoil.M();
-  GDouble t = -2*Precoil.M()*(Et - Mt);  
+  //  GDouble Et = Precoil.E();
+  //  GDouble Mt = Precoil.M();
+  //  GDouble t = -2*Precoil.M()*(Et - Mt);  
 
   
     Int_t const npar = 8;
-    Double_t xin[1];
+    GDouble xin[1];
     xin[0] = Wpipi;                // W, 2pi mass
-    Double_t Eg = pKin[0][0];          // incident photon energy
+    //    GDouble Eg = pKin[0][0];          // incident photon energy
 
-    Double_t alpha1Re=0.378129;
-    Double_t alpha1Im=0;
-    Double_t alpha2Re=0.751557;
-    Double_t alpha2Im=0;
-    Double_t alpha3Re=0.244899;
-    Double_t alpha3Im=0;
-    Double_t alpha4Re=0.179788;
-    Double_t alpha4Im=0;
+    GDouble alpha1Re=0.378129;
+    GDouble alpha1Im=0;
+    GDouble alpha2Re=0.751557;
+    GDouble alpha2Im=0;
+    GDouble alpha3Re=0.244899;
+    GDouble alpha3Im=0;
+    GDouble alpha4Re=0.179788;
+    GDouble alpha4Im=0;
 
-    Double_t parin[npar];
+    GDouble parin[npar];
     parin[0] = alpha1Re;
     parin[1] = alpha1Im;
     parin[2] = alpha2Re;
@@ -168,8 +168,8 @@ TwoPiWt_sigma::calcAmplitude( GDouble** pKin ) const
 
     complex<GDouble> Aw = Aw_func(xin,parin);
 
-    /*Double_t Bslope=3.7; 
-    Double_t Bgen=6.0;
+    /*GDouble Bslope=3.7; 
+    GDouble Bgen=6.0;
 
     Aw = Aw * exp(Bslope*t)/exp(6.0*t);         // Divide out generated exponential. Move to separate amplitude.*/ 
     Aw = isfinite(real(Aw))  && isfinite(imag(Aw))? Aw : 0;   // protect against infitinites

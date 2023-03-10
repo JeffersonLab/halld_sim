@@ -1,0 +1,21 @@
+   E.Chudakov       Apr 22, 2022 - update
+                    ............
+                    Jan 17, 2008 - the first release
+
+   This directory contains the code and tools to generate the photoproduction
+   of hadronic events in a wide energy range of E>0.15 GeV, matching the total
+   photoproduction cross section. It can be used to calculate the hadronic
+   background for GLUEX etc. It also can simulate exclusive binary processes,
+   for example gamma+p --> J/psi+p.
+
+   A detailed writeup can be found in:
+   doc/bggen-manual.org
+   The file is readable as is, but also can be converted to html using the
+   emacs org package, typically already installed. The html file provides
+   hyperlinks, "rich text" etc. Depending on the org version one can do:
+   $cd doc
+   $emacs bggen-manual.org --batch -f org-export-as-html --kill # older org version <=7
+   $emacs bggen-manual.org --batch -f org-html-export-to-html --kill # newer org version
+ 
+
+

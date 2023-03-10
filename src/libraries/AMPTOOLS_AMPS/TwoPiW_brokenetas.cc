@@ -71,7 +71,7 @@ TwoPiW_brokenetas::calcAmplitude( GDouble** pKin ) const
     Ptot.Print();*/
   }
   
-  Double_t Eg = pKin[0][0];          // incident photon energy
+  //  Double_t Eg = pKin[0][0];          // incident photon energy
   GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
   GDouble mass2 = P2.M();
@@ -79,9 +79,9 @@ TwoPiW_brokenetas::calcAmplitude( GDouble** pKin ) const
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
   // next three lines commented out, unused variables
-  GDouble Et = Precoil.E();
-  GDouble Mt = Precoil.M();
-  GDouble t = -2*Precoil.M()*(Et - Mt);  
+  //  GDouble Et = Precoil.E();
+  //  GDouble Mt = Precoil.M();
+  //  GDouble t = -2*Precoil.M()*(Et - Mt);  
 
   complex<GDouble> ImagOne(0,1);
     complex<GDouble> Aw;
