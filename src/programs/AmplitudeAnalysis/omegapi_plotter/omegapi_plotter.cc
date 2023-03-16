@@ -34,6 +34,7 @@
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -51,6 +52,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( ComplexCoeff() );
   AmpToolsInterface::registerAmplitude( Piecewise() );
   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+  AmpToolsInterface::registerAmplitude( DeltaAngles() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );

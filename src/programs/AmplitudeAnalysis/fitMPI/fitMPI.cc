@@ -43,6 +43,7 @@
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -374,6 +375,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
    AmpToolsInterface::registerAmplitude( ComplexCoeff() );
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+   AmpToolsInterface::registerAmplitude( DeltaAngles() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
