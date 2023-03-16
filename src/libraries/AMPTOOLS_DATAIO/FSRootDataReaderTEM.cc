@@ -66,8 +66,6 @@ FSRootDataReaderTEM::FSRootDataReaderTEM( const vector< string >& args ) :
         	cout << "Opening Tree " << inFileName << " " << inTreeName << " with " << m_numParticles << " final state particles" << endl;
       	if(args.size()==10)
         	cout << "Four-momentum prefix in FSRoot tree is " << fourMomentumPrefix << endl;
-      //if(args.size()==11) //Why is this line here?
-      //  cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << endl;
       	if(args.size()>=12)
         	cout << "Opening Friend Tree " << friendFileName << " " << friendBranchName << " " << friendTreeName << endl;
       	if(args.size()==13)
@@ -108,7 +106,6 @@ FSRootDataReaderTEM::FSRootDataReaderTEM( const vector< string >& args ) :
               			m_weight = 1.0;
 
          	}
-//		while( m_eventCounter < 5 ){
 		while( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
 			m_inTree->GetEntry( m_eventCounter++ );
 			assert( m_numParticles < Kinematics::kMaxParticles );
@@ -142,7 +139,6 @@ Kinematics* FSRootDataReaderTEM::getEvent(){
 	}
 	else{
 		while( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
-//		while( m_eventCounter < 5 ){
       			m_inTree->GetEntry( m_eventCounter++ );
 			assert( m_numParticles < Kinematics::kMaxParticles );
  			if(checkEvent())
@@ -161,7 +157,6 @@ vector<TLorentzVector> FSRootDataReaderTEM::particleList(){
 	locParticleList.push_back( TLorentzVector( m_PxPB, m_PyPB, m_PzPB, m_EnPB ) );
 	for (unsigned int i = 0; i < m_numParticles; ++i){
 		locParticleList.push_back( TLorentzVector( m_PxP[i], m_PyP[i], m_PzP[i], m_EnP[i] ) );
-//		cout << m_PxP[i] << " " << m_PyP[i] << " " << m_PzP[i] << " " << m_EnP[i] << endl;
 	}
 	return locParticleList;
 }
@@ -173,19 +168,14 @@ bool FSRootDataReaderTEM::checkEvent(){
         TLorentzVector recoil;
 
         for(unsigned int i = 0; i < m_numParticles; ++i){
-//		cout << i << ": " << m_PxP[i] << " " << m_PyP[i] << " " << m_PzP[i] << " " << m_EnP[i] << endl;
            	if (i > 0 && i < m_numParticles-1){
 			finalstate += TLorentzVector( m_PxP[i], m_PyP[i], m_PzP[i], m_EnP[i] );
-//			cout << "Adding " << i << "th particle (with mass " << TLorentzVector( m_PxP[i], m_PyP[i], m_PzP[i], m_EnP[i]).M() << " GeV) to finalstate" << endl;
 		}
             	if (i == 0 || i == m_numParticles-1){
 			recoil += TLorentzVector( m_PxP[i], m_PyP[i], m_PzP[i], m_EnP[i] ); // proton (particle 0) and last particle in the list compose the recoil particle. Eventually need to modify this to allow for stable lower vertices
-//			cout << "Adding " << i << "th particle (with mass " << TLorentzVector( m_PxP[i], m_PyP[i], m_PzP[i], m_EnP[i]).M() << " GeV) to recoil" << endl;
 		}
 	}
 
-//	cout << "m_recoil = " << recoil.M() << endl;
-//	cout << "m_finalstate = " << finalstate.M() << endl;
         // calculate -t and check if it, beam energy, and final state mass are in specified ranges
         // use the reconstructed proton
         TLorentzVector target = TLorentzVector(0, 0, 0, 0.938272);
@@ -194,7 +184,6 @@ bool FSRootDataReaderTEM::checkEvent(){
         double MMag = finalstate.M();
         
 	if(m_tMin <= tMag && tMag < m_tMax && m_EMin <= EMag && EMag < m_EMax && m_MMin <= MMag && MMag < m_MMax){
-//		cout << tMag << " and " << EMag << " and " << MMag << endl;
 		return true;
 	}
 	return false;
