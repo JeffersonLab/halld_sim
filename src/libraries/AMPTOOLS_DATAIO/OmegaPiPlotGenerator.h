@@ -17,7 +17,7 @@ class OmegaPiPlotGenerator : public PlotGenerator
 public:
   
   // create an index for different histograms
-  enum { kOmegaPiMass = 0, kCosTheta = 1, kPhi = 2, kCosThetaH = 3, kPhiH = 4, kProd_Ang = 5, kt = 6, kRecoilMass = 7, kTwoPiMass = 8, kProtonPiMass = 9, kRecoilPiMass = 10, kLambda = 11, kDalitz = 12, kThetaDelta = 13, kPhiDelta = 14, kSinSqThetaDelta = 15, kSin2ThetaDelta = 16, kCosSqThetaDelta = 17, kNumHists};
+  enum { kOmegaPiMass = 0, kCosTheta = 1, kPhi = 2, kCosThetaH = 3, kPhiH = 4, kProd_Ang = 5, kt = 6, kRecoilMass = 7, kTwoPiMass = 8, kProtonPiMass = 9, kRecoilPiMass = 10, kLambda = 11, kDalitz = 12, kThetaDelta = 13, kPhiDelta = 14, kSinSqThetaDelta = 15, kSin2ThetaDelta = 16, kCosSqThetaDelta = 17, kCosThetaDelta = 18, kNumHists};
 
   OmegaPiPlotGenerator( const FitResults& results, Option opt);
   OmegaPiPlotGenerator( const FitResults& results );

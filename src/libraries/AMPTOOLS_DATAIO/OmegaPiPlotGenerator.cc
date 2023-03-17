@@ -52,6 +52,7 @@ void OmegaPiPlotGenerator::createHistograms( ) {
    bookHistogram( kLambda, new Histogram1D( 110, 0.0, 1.1, "Lambda", "#lambda_{#omega}" ) );
    bookHistogram( kDalitz, new Histogram2D( 100, -2., 2., 100, -2., 2., "Dalitz", "Dalitz XY" ) );
    bookHistogram( kThetaDelta, new Histogram1D( 100, 0., PI, "ThetaDelta", "#theta_{#pi^{+}}" ) );
+   bookHistogram( kCosThetaDelta, new Histogram1D( 100, -1., 1., "CosThetaDelta", "cos#theta_{#pi^{+}}" ) );
    bookHistogram( kPhiDelta, new Histogram1D( 100, -1*PI, PI, "PhiDelta", "#phi_{#pi^{+}}" ) );
    bookHistogram( kSinSqThetaDelta, new Histogram1D( 100, 0., 1., "SinSqThetaDelta", "sin^{2}#theta_{#pi^{+}}" ) );
    bookHistogram( kSin2ThetaDelta, new Histogram1D( 100, -1., 1., "Sin2ThetaDelta", "sin2#theta_{#pi^{+}}" ) );
@@ -162,12 +163,14 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
    TVector3 angles( pip2_recoilRF.Vect().Dot( x ), pip2_recoilRF.Vect().Dot( y ), pip2_recoilRF.Vect().Dot( z ));
 
    double thetaDelta = angles.Theta();
+   double cosThetaDelta = TMath::Cos( thetaDelta );
    double phiDelta = angles.Phi();
    double sinSqThetaDelta = TMath::Sin( thetaDelta ) * TMath::Sin( thetaDelta );
    double cosSqThetaDelta = TMath::Cos( thetaDelta ) * TMath::Cos( thetaDelta );
    double sin2ThetaDelta = TMath::Sin( 2.0 * thetaDelta );
 
    fillHistogram( kThetaDelta, thetaDelta );
+   fillHistogram( kCosThetaDelta, cosThetaDelta );
    fillHistogram( kPhiDelta, phiDelta );
    fillHistogram( kSinSqThetaDelta, sinSqThetaDelta );
    fillHistogram( kCosSqThetaDelta, cosSqThetaDelta );

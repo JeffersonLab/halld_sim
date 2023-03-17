@@ -234,6 +234,7 @@ if(makePlots) {
 	  else if (ivar == OmegaPiPlotGenerator::kLambda)  histname += "Lambda";
 	  else if (ivar == OmegaPiPlotGenerator::kDalitz)  histname += "Dalitz";
 	  else if (ivar == OmegaPiPlotGenerator::kThetaDelta)  histname += "ThetaDelta";
+	  else if (ivar == OmegaPiPlotGenerator::kCosThetaDelta)  histname += "CosThetaDelta";
 	  else if (ivar == OmegaPiPlotGenerator::kPhiDelta)  histname += "PhiDelta";
 	  else if (ivar == OmegaPiPlotGenerator::kSinSqThetaDelta)  histname += "SinSqThetaDelta";
 	  else if (ivar == OmegaPiPlotGenerator::kCosSqThetaDelta)  histname += "CosSqThetaDelta";
