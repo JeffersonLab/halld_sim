@@ -23,6 +23,9 @@
 #include <hddm_s_merger.h>
 #include <mcsmear_config.h>
 
+#include <TAGMSmearer.h>
+#include <TAGHSmearer.h>
+
 const double fadc125_period_ns(8.);
 const double fadc250_period_ns(4.);
 
@@ -1556,7 +1559,7 @@ hddm_s::MicroChannelList &operator+=(hddm_s::MicroChannelList &dst,
          dst.add(1, (iord < dst.size())? iord : -1);
          dst(iord).setColumn(column);
          dst(iord).setRow(row);
-         dst(iord).setE(iter->getE());
+         dst(iord).setE(TAGMSmearer::get_tagm_energy(column));
       }
       dst(iord).getTaggerHits() += iter->getTaggerHits();
    }
@@ -1586,7 +1589,7 @@ hddm_s::HodoChannelList &operator+=(hddm_s::HodoChannelList &dst,
       if (iord == dst.size() || dst(iord).getCounterId() != cid) {
          dst.add(1, (iord < dst.size())? iord : -1);
          dst(iord).setCounterId(cid);
-         dst(iord).setE(iter->getE());
+         dst(iord).setE(TAGHSmearer::get_tagh_energy(cid));
       }
       dst(iord).getTaggerHits() += iter->getTaggerHits();
    }

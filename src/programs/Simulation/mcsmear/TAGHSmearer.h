@@ -16,6 +16,9 @@ class tagh_config_t
 	double TAGH_NPE_PER_GEV;
 
     std::map<int, int> counter_quality;
+    std::map<int, std::vector<double> > energy_range_GeV;
+    double endpoint_energy_GeV;
+    double endpoint_calib_GeV;
 };
 
 
@@ -30,7 +33,9 @@ class TAGHSmearer : public Smearer
 	}
 	
 	void SmearEvent(hddm_s::HDDM *record);
-	
+
+    static double get_tagh_energy(int counter, int low_mid_high=-1);
+
   private:
   	tagh_config_t  *tagh_config;
 };
