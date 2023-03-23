@@ -3,10 +3,10 @@ cobrems.conf
 #GEANT ids of decay particles (1=gamma,7=pi0, 8=pi+, 9=pi-, 17=eta).
 7 7
 #Regge cut parameters: dc c_P_n c_f2_n c_P_u c_f2_u 
-1.5 0.45 0.15 0. 0.
+1.8 0.45 0.15 0. 0.
 #Processes to simulate: f0(600) f0(980) f0(1370) f2(1270) background
 1 1 1 1 1
 #Coupling constants: f0(600) f0(980) f0(1370) f2(1270) background
-0.01125 0.0018 0.003 204.5 1.65
+0.0135 0.00275 0.00225 204.5 2.43
 # phases: f0(600) f0(980) f0(1500) f2(1270)
 4.5 1.5 1.5 0.0 0.0 3 3 3 3 3 

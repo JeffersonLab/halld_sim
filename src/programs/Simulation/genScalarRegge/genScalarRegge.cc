@@ -738,8 +738,8 @@ void GetResonanceParameters(double m1,double m2, double M_sq,double M_sq_R,
   double gK=2.22; 
   double g_m1m2=2.16;
   if (got_pipi){
-    gK=0.556;//*1.1;
-    g_m1m2=1.6;//*1.1;
+    gK=0.556*1.1;
+    g_m1m2=1.6*1.1;
   }
   double gKsq=gK*gK;    
   double g_m1m2_sq=g_m1m2*g_m1m2;
@@ -1542,9 +1542,9 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   
   // f0(600)
   if (got_pipi && generate[0]){
-    double m_Sigma=0.75; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
+    double m_Sigma=0.785; // difficult to model, estimate is 0.4-0.55 GeV,  PDG (2020)
     double M_sq_R=m_Sigma*m_Sigma; 
-    width=0.825; // 0.4-0.7 GeV, PDG (2020)
+    width=0.8; // 0.4-0.7 GeV, PDG (2020)
     double BWmassTerm=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
@@ -1624,7 +1624,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   }
   // f0(980)/a0(980)
   if (got_etaeta==false && generate[1]){
-    double my_msq_R=0.97*0.97;
+    double my_msq_R=0.975*0.975;
     if (got_pipi){ // f0(980)	
       double MRsq_minus_m1sq_m2sq=my_msq_R-m1sq_plus_m2sq;	
       double temp=4.*m1sq*m2sq;
