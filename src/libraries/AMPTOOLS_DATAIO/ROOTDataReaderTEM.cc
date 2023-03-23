@@ -78,7 +78,6 @@ ROOTDataReaderTEM::ROOTDataReaderTEM( const vector< string >& args ):
       cout << "Total events: " <<  m_inTree->GetEntries() << endl;
 
       while( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
-
 	 m_inTree->GetEntry( m_eventCounter++ );
          if(checkEvent()) m_numEvents++;
 
@@ -110,7 +109,6 @@ ROOTDataReaderTEM::getEvent()
    if (m_RangeSpecified == false){
 
       if( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
-         //  if( m_eventCounter < 10 ){ 
          m_inTree->GetEntry( m_eventCounter++ );
          assert( m_nPart < Kinematics::kMaxParticles );
 
@@ -169,9 +167,10 @@ bool ROOTDataReaderTEM::checkEvent()
          double EMag = TLorentzVector(m_pxBeam, m_pyBeam, m_pzBeam, m_eBeam ).E();
 
 	 double MMag = finalstate.M();
-
-         if (m_tMin <= tMag && tMag < m_tMax && m_EMin <= EMag && EMag < m_EMax && m_MMin <= MMag && MMag < m_MMax)
-		 return true;
+	
+        if (m_tMin <= tMag && tMag < m_tMax && m_EMin <= EMag && EMag < m_EMax && m_MMin <= MMag && MMag < m_MMax) {
+		return true;
+	}
 	 
 	 return false;
 }
