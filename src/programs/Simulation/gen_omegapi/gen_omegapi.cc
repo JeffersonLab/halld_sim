@@ -381,6 +381,9 @@ int main( int argc, char* argv[] ){
 	TH2F* phi_Phi_Prod = new TH2F( "phi_Phi_Prod", "#phi vs. #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
 	TH2F* PhiH_Psi = new TH2F( "PhiH_Psi", "#phi_{H} vs. #phi - #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
 	TH2F* PhiH_PsiPrime = new TH2F( "PhiH_PsiPrime", "#phi_{H} vs. #phi + #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
+
+	TH2F* MRecoil_CosThetaDelta = new TH2F( "MRecoil_CosThetaDelta", ";M(p#pi^{+}) (GeV);cos(#theta_{#pi^{+}})", 200, 1, 2, 200, -1, 1 );
+	TH2F* MRecoil_PhiDelta = new TH2F( "MRecoil_PhiDelta", ";M(p#pi^{+}) (GeV);#phi_{#pi^{+}} (rad)", 200, 1, 2, 200, -3.14, 3.14 );
 	
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
@@ -587,6 +590,27 @@ int main( int argc, char* argv[] ){
 					PhiH_PsiPrime->Fill(psiprime, phiH);
 					phi_Phi_Prod->Fill(Phi, phi);
 
+					// angles for recoil Delta++ -> p pi+ decay
+					if ( bwGenLowerVertex.size() == 1 ) {
+						TLorentzRotation recoilBoost( -recoil.BoostVector() );
+						TLorentzVector p6 = evt->particle ( 6 );
+						TLorentzVector target_recoilRF = recoilBoost * target;
+						TLorentzVector beam_recoilRF = recoilBoost * beam;
+						TLorentzVector resonance_recoilRF = recoilBoost * resonance;
+						TLorentzVector p6_recoilRF = recoilBoost * p6;
+
+						TVector3 recoily = (target_recoilRF.Vect().Unit().Cross(resonance_recoilRF.Vect().Unit())).Unit();
+						TVector3 recoilz = target_recoilRF.Vect().Unit();
+						TVector3 recoilx = recoily.Cross(recoilz).Unit();
+
+						TVector3 recoilAngles( p6_recoilRF.Vect().Dot(recoilx), p6_recoilRF.Vect().Dot(recoily), p6_recoilRF.Vect().Dot(recoilz) );
+						double cosThetaDelta = cos( recoilAngles.Theta() );
+						double phiDelta = recoilAngles.Phi();
+
+						MRecoil_CosThetaDelta->Fill( recoil.M(), cosThetaDelta );
+						MRecoil_PhiDelta->Fill( recoil.M(), phiDelta );
+					}
+
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
 					
@@ -638,6 +662,8 @@ int main( int argc, char* argv[] ){
 	phi_Phi_Prod->Write();
 	PhiH_Psi->Write();
 	PhiH_PsiPrime->Write();
+	MRecoil_CosThetaDelta->Write();
+	MRecoil_PhiDelta->Write();
 
 	diagOut->Close();
 	
