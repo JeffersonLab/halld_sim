@@ -104,7 +104,7 @@ void OmegaDalitz::updatePar( const AmpParameter& par ){
 void
 OmegaDalitz::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-	GPUOmegaDalitz_exec( dimGrid, dimBlock, GPU_AMP_ARGS, dalitz_alpha, dalitz_beta, dalitz_gamma, lambda );
+	GPUOmegaDalitz_exec( dimGrid, dimBlock, GPU_AMP_ARGS, dalitz_alpha, dalitz_beta, dalitz_gamma, dalitz_delta );
 
 }
 
