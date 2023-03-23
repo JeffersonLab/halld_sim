@@ -213,7 +213,7 @@ if(makePlots) {
       cout << "Looping over input data" << endl;
       // loop over data, accMC, and genMC
       for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
-	if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd) continue;
+	if (iplot == PlotGenerator::kGenMC) continue; // || iplot == PlotGenerator::kBkgnd) continue;
 	if (irefl < reflname.size() && iamp < amphistname.size() && iplot == PlotGenerator::kData) continue; // only plot data once
 	
 	// loop over different variables
