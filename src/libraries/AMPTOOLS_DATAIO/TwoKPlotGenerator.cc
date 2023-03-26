@@ -22,7 +22,7 @@ PlotGenerator( )
 void TwoKPlotGenerator::createHistograms() {
   // calls to bookHistogram go here
   
-  bookHistogram( k2PiMass, new Histogram1D( 86, 0.28, 2.0, "M2pi", "Invariant Mass of K^{+} K^{-}") );
+  bookHistogram( k2PiMass, new Histogram1D( 100, 1.0, 1.04, "M2pi", "Invariant Mass of K^{+} K^{-}") );
   bookHistogram( kPiPCosTheta, new Histogram1D( 50, -1., 1., "cosTheta", "cos( #theta ) of Resonance Production") );
 
   bookHistogram( kPhiPiPlus,  new Histogram1D( 50, -1*PI, PI, "PhiPiPlus",  "#Phi_{K_{+}}" ) );
@@ -30,7 +30,7 @@ void TwoKPlotGenerator::createHistograms() {
   bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#Phi" ) );
   bookHistogram( kphi, new Histogram1D( 50, -1*PI, PI, "phi", "#phi" ) );
   bookHistogram( kPsi, new Histogram1D( 50, -1*PI, PI, "psi", "#psi" ) );
-  bookHistogram( kt, new Histogram1D( 100, 0, 2.00, "t", "-t" ) );
+  bookHistogram( kt, new Histogram1D( 100, 0, 1.00, "t", "-t" ) );
 
   bookHistogram( kKpLabTheta, new Histogram1D( 100, 0, 20, "KpLabTheta", "Lab #theta of K+ (degrees)") );
   bookHistogram( kKpLabPhi, new Histogram1D( 180, -180, 180, "KpLabPhi", "Lab #phi of K+ (degrees)") );
