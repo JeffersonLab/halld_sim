@@ -152,6 +152,8 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
          curLH = ati.likelihood();
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
 
+	 ati.finalizeFit(to_string(i));
+
          if( seedfile.size() != 0 && !fitFailed ){
             string seedfile_rand = seedfile + Form("_%d.txt", i);
             ati.fitResults()->writeSeed( seedfile_rand );
@@ -162,7 +164,6 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
             minLH = curLH;
             minFitTag = i;
          }
-         ati.finalizeFit(to_string(i));
       }
    }
 
