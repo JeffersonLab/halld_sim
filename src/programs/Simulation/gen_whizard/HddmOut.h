@@ -107,42 +107,56 @@ class HddmOut {
     
     products->mult = evt.nGen;
     reaction->weight = evt.weight;
-    
-    for (int i = 0; i < (evt.nGen -1); i ++) {
-      Particle_t TYPE;
-      if (evt.pdg[i] == 11) TYPE = Electron; 
-      if (evt.pdg[i] == -11) TYPE = Positron;
-      if (evt.pdg[i] == 22) TYPE = Gamma; 
-      products->in[i].type = TYPE;
-      products->in[i].pdgtype = evt.pdg[i];
-      products->in[i].id = i;
-      products->in[i].parentid = 0;
-      products->in[i].mech = 0;
-      products->in[i].momentum = make_s_Momentum();
-      products->in[i].momentum->px = evt.q[i].Px();
-      products->in[i].momentum->py = evt.q[i].Py();
-      products->in[i].momentum->pz = evt.q[i].Pz();
-      products->in[i].momentum->E = evt.q[i].E();
-    }
-    
-    //RECOIL
-    int ID = 0;
-    if (evt.rxn == "ae_to_ae") 
-      ID = 1;
-    else if (evt.rxn == "ae_to_eee" || evt.rxn == "ae_to_aae")
-      ID = 2;
-    else if (evt.rxn == "ae_to_aeee")
-      ID = 3;
-    products->in[ID].type = Electron;
-    products->in[ID].id = ID;
-    products->in[ID].parentid = 0;
-    products->in[ID].mech = 0;
-    products->in[ID].momentum = make_s_Momentum();
-    products->in[ID].momentum->px = evt.recoil.Px();
-    products->in[ID].momentum->py = evt.recoil.Py();
-    products->in[ID].momentum->pz = evt.recoil.Pz();
-    products->in[ID].momentum->E = evt.recoil.E();
+    if (evt.rxn != "a_to_e") {
+      
+      products->in[0].type = Gamma;
+      products->in[0].pdgtype = evt.pdg[0];
+      products->in[0].id = 0;
+      products->in[0].parentid = 0;
+      products->in[0].mech = 0;
+      products->in[0].momentum = make_s_Momentum();
+      products->in[0].momentum->px = evt.q[0].Px();
+      products->in[0].momentum->py = evt.q[0].Py();
+      products->in[0].momentum->pz = evt.q[0].Pz();
+      products->in[0].momentum->E = evt.q[0].E();
 
+    } else if (evt.rxn != "a_to_e") {
+
+      for (int i = 0; i < (evt.nGen -1); i ++) {
+	Particle_t TYPE;
+	if (evt.pdg[i] == 11) TYPE = Electron; 
+	if (evt.pdg[i] == -11) TYPE = Positron;
+	if (evt.pdg[i] == 22) TYPE = Gamma; 
+	products->in[i].type = TYPE;
+	products->in[i].pdgtype = evt.pdg[i];
+	products->in[i].id = i;
+	products->in[i].parentid = 0;
+	products->in[i].mech = 0;
+	products->in[i].momentum = make_s_Momentum();
+	products->in[i].momentum->px = evt.q[i].Px();
+	products->in[i].momentum->py = evt.q[i].Py();
+	products->in[i].momentum->pz = evt.q[i].Pz();
+	products->in[i].momentum->E = evt.q[i].E();
+      }
+      
+      //RECOIL
+      int ID = 0;
+      if (evt.rxn == "ae_to_ae") 
+	ID = 1;
+      else if (evt.rxn == "ae_to_eee" || evt.rxn == "ae_to_aae")
+	ID = 2;
+      else if (evt.rxn == "ae_to_aeee")
+	ID = 3;
+      products->in[ID].type = Electron;
+      products->in[ID].id = ID;
+      products->in[ID].parentid = 0;
+      products->in[ID].mech = 0;
+      products->in[ID].momentum = make_s_Momentum();
+      products->in[ID].momentum->px = evt.recoil.Px();
+      products->in[ID].momentum->py = evt.recoil.Py();
+      products->in[ID].momentum->pz = evt.recoil.Pz();
+      products->in[ID].momentum->E = evt.recoil.E();
+    }
     flush_s_HDDM(hddmEvt, ostream);
 
   }
