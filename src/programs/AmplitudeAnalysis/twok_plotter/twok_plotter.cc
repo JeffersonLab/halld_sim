@@ -103,14 +103,26 @@ int main( int argc, char* argv[] ){
   TFile* plotfile = new TFile( outName.c_str(), "recreate");
   TH1::AddDirectory(kFALSE);
 
-  string reactionName = results.reactionList()[0];
-  plotGen.enableReaction( reactionName );
-  vector<string> sums = plotGen.uniqueSums();
+  int nreactions = results.reactionList().size();
+
+  string reactionName;
+
+  for (int i=0; i < nreactions; i++) {
+    reactionName = results.reactionList()[i];
+    plotGen.enableReaction( reactionName );
+    cout << reactionName << endl;
 
 
+
+  
+  vector<string> sums = plotGen.uniqueSums();    // only one of these
+
+
+  
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
   for (unsigned int isum = 0; isum <= sums.size(); isum++){
 
+    
     // turn on all sums by default
     for (unsigned int i = 0; i < sums.size(); i++){
       plotGen.enableSum(i);
@@ -140,8 +152,6 @@ int main( int argc, char* argv[] ){
         else if (ivar == TwoKPlotGenerator::kPsi)  histname += "psi";
         else if (ivar == TwoKPlotGenerator::kt)  histname += "t";
 
-
-
         else if (ivar == TwoKPlotGenerator::kKpLabTheta) histname += "KpLabTheta";
         else if (ivar == TwoKPlotGenerator::kKpLabPhi) histname += "KpLabPhi";
         else if (ivar == TwoKPlotGenerator::kpKp) histname += "pKp";
@@ -151,9 +161,6 @@ int main( int argc, char* argv[] ){
         else if (ivar == TwoKPlotGenerator::kPLabTheta) histname += "PLabTheta";
         else if (ivar == TwoKPlotGenerator::kPLabPhi) histname += "PLabPhi";
         else if (ivar == TwoKPlotGenerator::kpP) histname += "pP";
-
-
-
 	
         else continue;
 
@@ -171,6 +178,11 @@ int main( int argc, char* argv[] ){
           histname += sumName;
         }
 
+        if (nreactions > 1) {
+	  histname += "_";
+	  histname += reactionName;
+	}
+	
         Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
         TH1* thist = hist->toRoot();
         thist->SetName(histname.c_str());
@@ -181,6 +193,8 @@ int main( int argc, char* argv[] ){
     }
   }
 
+  } // end loop over reactions
+  
   plotfile->Close();
 
     // ************************
