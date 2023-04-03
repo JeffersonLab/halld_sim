@@ -113,6 +113,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     cout << "FIT " << i << " OF " << numRnd << endl;
     cout << endl << "###############################" << endl;
 
+    // re-initialize parameters from configuration file (reset those not randomized)
+    ati.reinitializePars();
+
     // randomize parameters
     ati.randomizeProductionPars(maxFraction);
     for(size_t ipar=0; ipar<parRangeKeywords.size(); ipar++) {
