@@ -269,11 +269,11 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
 
+         ati.finalizeFit(to_string(i));
          if( seedfile.size() != 0 && !fitFailed ){
             string seedfile_scan = seedfile + Form("_scan_%d.dat", i);
             ati.fitResults()->writeSeed( seedfile_scan );
          }
-         ati.finalizeFit(to_string(i));
       }
    }
    ati.exitMPI();
