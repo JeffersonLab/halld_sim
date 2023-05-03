@@ -20,6 +20,7 @@
 
 #include "AMPTOOLS_DATAIO/TwoPiPlotGenerator.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
+#include "AMPTOOLS_DATAIO/ROOTDataReaderHist.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
@@ -32,6 +33,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
+  AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
 }
 
 using namespace std;
