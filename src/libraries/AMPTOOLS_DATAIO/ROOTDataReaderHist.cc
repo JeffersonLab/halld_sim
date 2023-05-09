@@ -92,11 +92,10 @@ ROOTDataReaderHist::getEvent()
       particleList.push_back( TLorentzVector( m_px[i], m_py[i], m_pz[i], m_e[i] ) );
     }
 
-    double mass = (particleList[2]+particleList[3]).M();
-    m_weight = m_Hist->GetBinContent(m_Hist->FindBin(mass));
-    //cout << m_weight << endl;
+    float mass = (particleList[2]+particleList[3]).M();
+    float hist_weight = m_Hist->GetBinContent(m_Hist->FindBin(mass));
     
-    return new Kinematics( particleList, m_useWeight ? m_weight : 1.0 );
+    return new Kinematics( particleList, m_useWeight ? m_weight*hist_weight : hist_weight );
   }
   else{
     
