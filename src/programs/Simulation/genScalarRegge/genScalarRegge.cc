@@ -946,11 +946,13 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
   double p1_dot_dp=p1.Dot(dp);
   double p2_dot_dp=p2.Dot(dp);
   double p1_dot_p2=p1.Dot(p2);
+  double mp2_minus_p1_dot_p2=m_p_sq-p1_dot_p2;
 
-  // momentum transfer compenents
+  // momentum components
   double dpx=dp.X();
   double dpy=dp.Y();
-  double dpx2_plus_dpy2=dpx*dpx+dpy*dpy;
+  double dpz=dp.Z();
+  double dp2_sum=dpz*dpz+(7./6.)*(dpx*dpx+dpy*dpy);
 
   // other constants
   double m_rho=0.77; // GeV
@@ -968,15 +970,12 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
   double Kappa_rho=6.1;
 
   // Amplitude
-  double common_fac=(5./9.)*M_PI/(2.*m_p_sq)*(1./137.);
-  double vector_coupling
-    =2.*dpx2_plus_dpy2/m_rho_sq*p1_dot_dp*(p2_dot_dp/m_rho_sq-1.)
-    +2.*(m_p_sq-p1_dot_p2)*(1.+dpx2_plus_dpy2/m_rho_sq*(t/(2.*m_rho_sq)-1.));
-  double tensor_coupling=(1./4.)*Kappa_rho*Kappa_rho
-    *((2.*t-dpx2_plus_dpy2)*(1.+p1_dot_p2/m_p_sq)
-      +2.*p1_dot_dp*(2.*p2_dot_dp*(1.-dpx2_plus_dpy2/(2.*m_rho_sq))
-		     - dpx2_plus_dpy2*(1.-t/m_rho_sq))
-      );
+  double common_fac=4.*M_PI*(1./137.);
+  
+  double vector_coupling=2.*p1_dot_dp*(p2_dot_dp/m_rho_sq-1.)*dp2_sum/m_rho_sq
+    + mp2_minus_p1_dot_p2*(10./3.+(t-2.*m_rho_sq)*dp2_sum/(m_rho_sq*m_rho_sq));
+  double tensor_coupling=(Kappa_rho*Kappa_rho/(4.*m_p_sq)*mp2_minus_p1_dot_p2
+			  *(dp2_sum-(10./3.)*t));
   double amp_sum=gT_sq*(vector_coupling+tensor_coupling)*regge_rho_sq;
   double T=common_fac*gR*gR*(ReB*ReB+ImB*ImB)*amp_sum;
   
