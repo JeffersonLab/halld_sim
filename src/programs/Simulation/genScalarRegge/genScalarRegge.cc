@@ -735,8 +735,8 @@ void GetResonanceParameters(double m1,double m2, double M_sq,double M_sq_R,
   double MKPlus=ParticleMass(KPlus);
 
   // coupling constants
-  double gK=2.22; 
-  double g_m1m2=2.16;
+  double gK=2.22*1.; 
+  double g_m1m2=2.16*1.8;
   if (got_pipi){
     gK=0.556*1.1;
     g_m1m2=1.6*1.1;
@@ -971,7 +971,6 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
 
   // Amplitude
   double common_fac=4.*M_PI*(1./137.);
-  
   double vector_coupling=2.*p1_dot_dp*(p2_dot_dp/m_rho_sq-1.)*dp2_sum/m_rho_sq
     + mp2_minus_p1_dot_p2*(10./3.+(t-2.*m_rho_sq)*dp2_sum/(m_rho_sq*m_rho_sq));
   double tensor_coupling=(Kappa_rho*Kappa_rho/(4.*m_p_sq)*mp2_minus_p1_dot_p2
@@ -1711,8 +1710,8 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     double m_T=1.27; // mass determined empirically	
     double Gamma_T=0.19;
     if (got_pieta){
-      Gamma_T=0.107;
-      m_T=1.3183;
+      Gamma_T=0.11; // determined empirically
+      m_T=1.29; //determined empirically
     }
     double M_sq_R_T=m_T*m_T; 
     double BWmassTerm=M_sq_R_T-M_sq;

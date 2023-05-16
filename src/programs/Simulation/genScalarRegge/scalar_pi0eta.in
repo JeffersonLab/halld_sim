@@ -7,7 +7,7 @@ cobrems.conf
 #Processes to simulate: --- a0(980) a0(1450) a2(1320) background
 0 1 0 1 1
 #coupling constants: --- a0(980) a0(1450) a2(1320) background
-0. 0.00125 0.0054 183.675 11.
+0. 0.00275 0.0 58. 2.45
 # phases: --- a0(980) a0(1450) a2(1320) bkgrd
 0. 0. 0. 0. 0. 0.0 0.0 0.0 0.0 0.0
 
