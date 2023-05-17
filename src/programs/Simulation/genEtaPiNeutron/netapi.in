@@ -1,0 +1,8 @@
+#beam configuration file
+cobrems.conf
+#Processes to simulate: f0(600) f0(980) f0(1370) f2(1270) background
+0 1 0 1 1
+#Coupling constants: f0(600) f0(980) f0(1370) f2(1270) background
+0.0 0.235 0.0 58.0 60.
+# phases: f0(600) f0(980) f0(1500) f2(1270)
+0. 1.1 0. 0.0 0.0 3 3 3 3 3 
