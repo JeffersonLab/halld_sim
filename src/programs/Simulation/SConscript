@@ -11,6 +11,6 @@ EVTGEN_HOME = os.getenv('EVTGENDIR')
 if EVTGEN_HOME!=None:
    subdirs += ['decay_evtgen','gen_schannel']
 
-sbms.OptionallyBuild(env, ['genphoton', 'genpi', 'gen_2mu', 'stdhep_translators', 'gen_primex_compton'])
+sbms.OptionallyBuild(env, ['genphoton', 'genpi', 'gen_2mu', 'stdhep_translators', 'gen_primex_compton','genEtaPiNeutron'])
 
 SConscript(dirs=subdirs, exports='env osname', duplicate=0)
