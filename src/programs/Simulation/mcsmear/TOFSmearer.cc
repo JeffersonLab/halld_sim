@@ -2,6 +2,7 @@
 
 #include <TOF/DTOFGeometry.h>
 
+#define DTOFGEOMETRY_VERSION 2
 
 //-----------
 // tof_config_t  (constructor)
@@ -73,8 +74,8 @@ tof_config_t::tof_config_t(JEventLoop *loop)
        // for now there is just DTOFGEOMETRY_VERSION = 2, so this should always work...
 #else 
 	// geometry
-	const int TOF_NUM_PLANES = 2;
-	const int TOF_NUM_BARS = 44;
+	TOF_NUM_PLANES = 2;
+	TOF_NUM_BARS = 44;
 
 	// Load data from CCDB
 	cout<<"Get TOF/tof_parms parameters from CCDB..."<<endl;
