@@ -12,6 +12,8 @@ tof_config_t::tof_config_t(JEventLoop *loop)
  	TOF_SIGMA = 100.*k_psec;
  	TOF_PHOTONS_PERMEV = 400.;
  	TOF_BAR_THRESHOLD    = 0.0;
+	ATTENUATION_LENGTH = 150.;
+	FULL_BAR_LENGTH = 252.;
 
 	// The interface to DTOFGeometry changed at some point before GlueX-II running to be more flexible.  
 #ifdef DTOFGEOMETRY_VERSION
@@ -84,6 +86,8 @@ tof_config_t::tof_config_t(JEventLoop *loop)
 	
 	TOF_SIGMA =  tofparms["TOF_SIGMA"];
 	TOF_PHOTONS_PERMEV =  tofparms["TOF_PHOTONS_PERMEV"];
+	ATTENUATION_LENGTH = tofparms.at("TOF_ATTEN_LENGTH");
+	FULL_BAR_LENGTH = tofparms.at("TOF_PADDLE_LENGTH");
 	
 	cout<<"get TOF/paddle_resolutions from calibDB"<<endl;
 	vector <double> TOF_PADDLE_TIME_RESOLUTIONS_TEMP;
