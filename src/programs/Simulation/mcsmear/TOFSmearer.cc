@@ -2,7 +2,6 @@
 
 #include <TOF/DTOFGeometry.h>
 
-#define DTOFGEOMETRY_VERSION 2
 
 //-----------
 // tof_config_t  (constructor)
