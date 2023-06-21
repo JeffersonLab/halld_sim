@@ -12,10 +12,8 @@ tof_config_t::tof_config_t(JEventLoop *loop)
  	TOF_SIGMA = 100.*k_psec;
  	TOF_PHOTONS_PERMEV = 400.;
  	TOF_BAR_THRESHOLD    = 0.0;
-
-	// The interface to DTOFGeometry changed at some point before GlueX-II running to be more flexible.  
-#ifdef DTOFGEOMETRY_VERSION
-#if DTOFGEOMETRY_VERSION > 1
+	ATTENUATION_LENGTH = 150.;
+	FULL_BAR_LENGTH = 252.;
 
 	// load values from geometry
 	vector <const DTOFGeometry*> TOFGeom;
@@ -67,53 +65,6 @@ tof_config_t::tof_config_t(JEventLoop *loop)
             }	      
         }
     }
-#endif // DTOFGEOMETRY_VERSION > 1
-       // for now there is just DTOFGEOMETRY_VERSION = 2, so this should always work...
-#else 
-	// geometry
-	const int TOF_NUM_PLANES = 2;
-	const int TOF_NUM_BARS = 44;
-
-	// Load data from CCDB
-	cout<<"Get TOF/tof_parms parameters from CCDB..."<<endl;
-	map<string, double> tofparms;
-	if(loop->GetCalib("TOF/tof_parms", tofparms)) {
-	  jerr << "Problem loading TOF/tof_parms from CCDB!" << endl;
-	  return;
-	}
-	
-	TOF_SIGMA =  tofparms["TOF_SIGMA"];
-	TOF_PHOTONS_PERMEV =  tofparms["TOF_PHOTONS_PERMEV"];
-	
-	cout<<"get TOF/paddle_resolutions from calibDB"<<endl;
-	vector <double> TOF_PADDLE_TIME_RESOLUTIONS_TEMP;
-	if(loop->GetCalib("TOF/paddle_resolutions", TOF_PADDLE_TIME_RESOLUTIONS_TEMP)) {
-	  jerr << "Problem loading TOF/paddle_resolutions from CCDB!" << endl;
-	} else {
-	  for (unsigned int i = 0; i < TOF_PADDLE_TIME_RESOLUTIONS_TEMP.size(); i++) {
-	    TOF_PADDLE_TIME_RESOLUTIONS.push_back(TOF_PADDLE_TIME_RESOLUTIONS_TEMP.at(i));
-	  }
-	}
-
-	// load per-channel efficiencies
-	vector<double> raw_table;
-	if(loop->GetCalib("TOF/channel_mc_efficiency", raw_table)) {
-	  jerr << "Problem loading TOF/channel_mc_efficiency from CCDB!" << endl;
-	} else {
-	  int channel = 0;
-
-	  for(int plane=0; plane<TOF_NUM_PLANES; plane++) {
-	    int plane_index=2*TOF_NUM_BARS*plane;
-	    channel_efficiencies.push_back( vector< pair<double,double> >(TOF_NUM_BARS) );
-	    for(int bar=0; bar<TOF_NUM_BARS; bar++) {
-	      channel_efficiencies[plane][bar] 
-                = pair<double,double>(raw_table[plane_index+bar],
-				      raw_table[plane_index+TOF_NUM_BARS+bar]);
-	      channel+=2;
-            }      
-	  }
-	}
-#endif // DTOFGEOMETRY_VERSION
 
 	cout << "Number of TOF bars per plane = " << TOF_NUM_BARS << endl;
 }

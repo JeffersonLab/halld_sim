@@ -36,6 +36,8 @@
 #include "AMPTOOLS_AMPS/Hist2D.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -299,6 +301,8 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
 	AmpToolsInterface::registerAmplitude( Flatte() );
 	AmpToolsInterface::registerAmplitude( Uniform() );
+	AmpToolsInterface::registerAmplitude( ComplexCoeff() );
+	AmpToolsInterface::registerAmplitude( OmegaDalitz() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file

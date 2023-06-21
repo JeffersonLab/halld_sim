@@ -13,6 +13,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
+#include "AMPTOOLS_DATAIO/ROOTDataReaderHist.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
@@ -41,6 +42,8 @@
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
@@ -110,6 +113,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     cout << endl << "###############################" << endl;
     cout << "FIT " << i << " OF " << numRnd << endl;
     cout << endl << "###############################" << endl;
+
+    // re-initialize parameters from configuration file (reset those not randomized)
+    ati.reinitializePars();
 
     // randomize parameters
     ati.randomizeProductionPars(maxFraction);
@@ -193,6 +199,9 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     cout << "FIT " << i << " OF " << steps << endl;
     cout << endl << "###############################" << endl;
 
+    // reinitialize production parameters from seed file
+    ati.reinitializePars();
+
     // set parameter to be scanned
     vector<ParameterInfo*> parInfoVec = cfgInfo->parameterList();
 
@@ -247,6 +256,7 @@ int main( int argc, char* argv[] ){
    string seedfile;
    string scanPar;
    int numRnd = 0;
+   unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
    int maxIter = 10000;
 
    // parse command line
@@ -264,6 +274,9 @@ int main( int argc, char* argv[] ){
       if (arg == "-r"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  numRnd = atoi(argv[++i]); }
+      if (arg == "-rs"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  randomSeed = atoi(argv[++i]); } 
       if (arg == "-m"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
@@ -279,6 +292,7 @@ int main( int argc, char* argv[] ){
          cout << "   -c <file>\t\t\t\t config file" << endl;
          cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
          cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
+            cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
          cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          exit(1);}
@@ -318,12 +332,15 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
+   AmpToolsInterface::registerAmplitude( ComplexCoeff() );
+   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
+   AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
    AmpToolsInterface::registerDataReader( FSRootDataReader() );
 
    if(numRnd==0){
@@ -332,6 +349,8 @@ int main( int argc, char* argv[] ){
       else
          runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
    } else {
+      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+      AmpToolsInterface::setRandomSeed(randomSeed);
       runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
    }
 
