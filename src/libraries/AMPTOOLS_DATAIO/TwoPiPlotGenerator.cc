@@ -12,6 +12,7 @@ TwoPiPlotGenerator::TwoPiPlotGenerator( const FitResults& results ) :
 PlotGenerator( results )
 {
 
+	/*
   vector< string > reactionVec = reactions();
   for( auto reac = reactionVec.begin(); reac != reactionVec.end(); ++reac ){
 
@@ -27,6 +28,7 @@ PlotGenerator( results )
     //cout << "Angle " << results.parValue( parName ) << endl;
     m_reactionAngleMap[*reac] = results.parValue( parName );
   }
+	*/
 
 	createHistograms();
 }
@@ -71,7 +73,7 @@ void TwoPiPlotGenerator::projectEvent( Kinematics* kin ){
 
 void TwoPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
-  double polAngle = m_reactionAngleMap[ reactionName ];
+  double polAngle = 0.0; //m_reactionAngleMap[ reactionName ];
   
   TLorentzVector beam   = kin->particle( 0 );
   TLorentzVector recoil = kin->particle( 1 );
@@ -128,7 +130,6 @@ void TwoPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionNa
   fillHistogram( kMomProton, recoil.P() );
   fillHistogram( kPhi, Phi );
   fillHistogram( kphi, phi );
-
   fillHistogram( kPsi, psi );
   fillHistogram( kt, -t );      // fill with -t to make positive
 }

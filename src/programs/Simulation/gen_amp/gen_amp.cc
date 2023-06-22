@@ -235,6 +235,9 @@ int main( int argc, char* argv[] ){
 	case Neutron:
 	  recoil = ProductionMechanism::kNeutron; 
 	  break;
+	case Lambda:
+	  recoil = ProductionMechanism::kLambda;
+	  break;
 	case Pb208:
 	  recoil = ProductionMechanism::kZ;
 	  break;
