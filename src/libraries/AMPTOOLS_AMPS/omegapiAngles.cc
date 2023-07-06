@@ -129,3 +129,39 @@ vector <double> getomegapiAngles(double polAngle, TLorentzVector daughter, TLore
   return thetaphiPhi;
   
 }
+
+// add function to return angles of decaying Delta baryon - may move this to its own class if needed
+vector <double> getDeltaAngles(TLorentzVector daughter, TLorentzVector parent, TLorentzVector upperVertex, TLorentzVector target, TLorentzVector rf)
+{
+  // boost all to rf
+  TLorentzVector daughter_rf = daughter;
+  TLorentzVector parent_rf = parent;
+  TLorentzVector upperVertex_rf = upperVertex;
+  TLorentzVector target_rf = target;
+  TVector3 rfboost = rf.BoostVector();
+  upperVertex_rf.Boost(-1.0*rfboost);
+  parent_rf.Boost(-1.0*rfboost);
+  daughter_rf.Boost(-1.0*rfboost);
+  target_rf.Boost(-1.0*rfboost);
+
+  // boost daughter to parent
+  TVector3 parentBoost = parent_rf.BoostVector();
+  TLorentzVector target_parent = target_rf.Boost(-1.0*parentBoost);
+  TLorentzVector upperVertex_parent = upperVertex_rf.Boost(-1.0*parentBoost);
+  TLorentzVector daughter_parent = daughter_rf.Boost(-1.0*parentBoost);
+
+  // normal to the production plane
+  TVector3 y = (target_parent.Vect().Unit().Cross(upperVertex_parent.Vect().Unit())).Unit();
+  // choose GJ frame: z-axis along -target direction in baryon rest frame
+  TVector3 z = target_parent.Vect().Unit();
+  TVector3 x = y.Cross(z).Unit();
+
+  TVector3 angles( (daughter_parent.Vect()).Dot(x), (daughter_parent.Vect()).Dot(y), (daughter_parent.Vect()).Dot(z) ); 
+
+  double theta = angles.Theta();
+  double phi = angles.Phi();
+
+  vector <double> thetaphi{theta, phi};
+
+  return thetaphi;
+}
