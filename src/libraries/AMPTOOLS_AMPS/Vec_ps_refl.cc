@@ -169,6 +169,23 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   userVars[uv_beam_polFraction] = beam_polFraction;
   userVars[uv_beam_polAngle] = beam_polAngle;
+  
+  // Use these to test angular calculation for omegapiDelta
+  TLorentzVector pi0 = vec - vec_daught1 - vec_daught2;
+  TLorentzVector pip = vec_daught1;
+  TLorentzVector pim = vec_daught2;
+  cout << "Four-momenta: (Px, Py, Pz, E)" << endl;
+  cout << "beam photon: (" << beam[0] << ", " << beam[1] << ", " << beam[2] << ", " << beam[3] << ")" << endl;
+  cout << "recoil proton: (" << recoil[0] << ", " << recoil[1] << ", " << recoil[2] << ", " << recoil[3] << ")" << endl;
+  cout << "bachelor pion: (" << ps[0] << ", " << ps[1] << ", " << ps[2] << ", " << ps[3] << ")" << endl;
+  cout << "pi0 from omega: (" << pi0[0] << ", " << pi0[1] << ", " << pi0[2] << ", " << pi0[3] << ")" << endl;
+  cout << "pi+ from omega: (" << pip[0] << ", " << pip[1] << ", " << pip[2] << ", " << pip[3] << ")" << endl;
+  cout << "pi- from omega: (" << pim[0] << ", " << pim[1] << ", " << pim[2] << ", " << pim[3] << ")" << endl;
+  cout << "recoil pion: (" << pKin[6][1] << ", " << pKin[6][2] << ", " << pKin[6][3] << ", " << pKin[6][0] << ")" << endl;
+
+  cout << "angles:" << endl;
+  cout << "cos(theta_omega) = " << userVars[uv_cosTheta] << ", phi_omega = " << userVars[uv_Phi] << endl;
+  cout << "cos(theta_H) = " << userVars[uv_cosThetaH] << ", phi_H = " << userVars[uv_PhiH] << endl;
 
   return;
 }
@@ -190,6 +207,7 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble MPs = userVars[uv_MPs];
   GDouble beam_polFraction = userVars[uv_beam_polFraction];
   GDouble beam_polAngle = userVars[uv_beam_polAngle];
+
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);

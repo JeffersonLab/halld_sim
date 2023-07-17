@@ -1,5 +1,5 @@
-#if !defined(DELTAANGLES_RES)
-#define DELTAANGLES_RES
+#if !defined(LOWERVERTEXDELTA)
+#define LOWERVERTEXDELTA
 
 #include "IUAmpTools/Amplitude.h"
 #include "IUAmpTools/UserAmplitude.h"
@@ -18,7 +18,7 @@ using std::complex;
 using namespace std;
 
 #ifdef GPU_ACCELERATION
-void GPULowerVertexDelta_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_d, int m_p, int m_c );
+void GPULowerVertexDelta_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_d, int m_p, int m_c, int m_s );
 #endif // GPU_ACCELERATION
 
 
@@ -31,7 +31,7 @@ public:
 	
 	LowerVertexDelta() : UserAmplitude< LowerVertexDelta >() { };
 	LowerVertexDelta( const vector< string >& args );
-	LowerVertexDelta( int m_d, int m_p, int m_c );
+	LowerVertexDelta( int m_d, int m_p, int m_c, int m_s );
 
 	enum UserVars { kCosTheta = 0, kPhi = 1, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
@@ -54,6 +54,7 @@ private:
 	int m_d;
 	int m_p;
 	int m_c;  
+	int m_s;
 
 	string lowerVertex;
 	string upperVertex;

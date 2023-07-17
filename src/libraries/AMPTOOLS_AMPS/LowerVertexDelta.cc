@@ -16,19 +16,21 @@
 LowerVertexDelta::LowerVertexDelta( const vector< string >& args ) :
 UserAmplitude< LowerVertexDelta >( args )
 {
-	assert( args.size() == 5 );
+	assert( args.size() == 6 );
 
 	m_d = atoi( args[0].c_str() ); // Twice the helicity of decaying Delta baryon: (3,1,-1, or -3)
 	m_p = atoi( args[1].c_str() ); // Twice the helicity of final state proton (+/-1)
 	m_c = atoi( args[2].c_str() ); // Wigner D function (+1) or its complex conjugate (-1)
+	m_s = atoi( args[3].c_str() ); // The amplitude gets multiplied by a positive or negative sign
 
-	lowerVertex = args[3].c_str(); // indices of proton and pi+ from the lower vertex
-	upperVertex = args[4].c_str(); // indices of particles from the upper vertex
+	lowerVertex = args[4].c_str(); // indices of proton and pi+ from the lower vertex
+	upperVertex = args[5].c_str(); // indices of particles from the upper vertex
 
 	// make sure values are reasonable
 	assert( abs( m_d ) == 1 || abs( m_d ) == 3 );
 	assert( abs( m_p ) == 1 );
 	assert( abs( m_c ) == 1 );
+	assert( abs( m_s ) == 1 );
 }
 
 
@@ -43,10 +45,10 @@ LowerVertexDelta::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
 
 	complex <GDouble> amplitude;
 	if( m_c == 1 ){
-		amplitude = 2/3. * wignerD( 3/2., lambda_Delta, lambda_proton, cosTheta, phi );
+		amplitude = 2/3. * m_s * wignerD( 3/2., lambda_Delta, lambda_proton, cosTheta, phi );
 	}
 	else{
-		amplitude = 2/3. * conj( wignerD( 3/2., lambda_Delta, lambda_proton, cosTheta, phi ) );
+		amplitude = 2/3. * m_s * conj( wignerD( 3/2., lambda_Delta, lambda_proton, cosTheta, phi ) );
 	}
 
 	return amplitude;	
@@ -100,6 +102,8 @@ LowerVertexDelta::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
 	userVars[kCosTheta]	= angles.CosTheta();
 	userVars[kPhi] 		= angles.Phi();
+
+	cout << "cos(theta_p) = " << userVars[kCosTheta] << ", phi_p = " << userVars[kPhi] << endl;
 }
 
 #ifdef GPU_ACCELERATION
@@ -107,7 +111,7 @@ void
 LowerVertexDelta::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
 	GPULowerVertexDelta_exec( dimGrid, dimBlock, GPU_AMP_ARGS,
-			m_d, m_p, m_c );
+			m_d, m_p, m_c, m_s );
 }
 
 #endif // GPU_ACCELERATION
