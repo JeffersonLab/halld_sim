@@ -1,7 +1,7 @@
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/decayAngles.h"
 
 #include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
 #include "IUAmpTools/Histogram1D.h"
@@ -126,6 +126,14 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    // Helicity coordinate system
    TLorentzVector Gammap = beam + target;
 
+   double locPhiProd = getPhiProd( polAngle, X, beam, target, 2, true );
+
+   vector< double > locDecayAngles;
+   if( m_3pi ) locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, vec_daught2, beam, target, 2, true );
+   else locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true );
+
+
+/*
    // Calculate decay angles in helicity frame (same for all vectors)
    vector <double> locthetaphi = getomegapiAngles(polAngle, vec, X, beam, Gammap);
 
@@ -133,16 +141,16 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    vector <double> locthetaphih;
    if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
    else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
-
+*/
    double Mandt = fabs((target-recoil).M2());
    double recoil_mass = recoil.M();  
 
-   GDouble cosTheta = TMath::Cos(locthetaphi[0]);
-   GDouble Phi = locthetaphi[1];
-   GDouble cosThetaH = TMath::Cos(locthetaphih[0]);
-   GDouble PhiH = locthetaphih[1];
-   GDouble prod_angle = locthetaphi[2];
-   GDouble lambda = locthetaphih[2];
+   GDouble cosTheta = TMath::Cos(locDecayAngles[0]);
+   GDouble Phi = locDecayAngles[1];
+   GDouble cosThetaH = TMath::Cos(locDecayAngles[2]);
+   GDouble PhiH = locDecayAngles[3];
+   GDouble prod_angle = locPhiProd;
+   GDouble lambda = locDecayAngles[4];
 
    //cout << "calls to fillHistogram go here" << endl;
    fillHistogram( kVecPsMass, X.M() );

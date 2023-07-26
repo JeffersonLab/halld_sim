@@ -13,7 +13,8 @@
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+//#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/decayAngles.h"
 #include "AMPTOOLS_AMPS/barrierFactor.h"
 
 #include "UTILITIES/BeamProperties.h"
@@ -143,25 +144,30 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   //////////////////////// Boost Particles and Get Angles//////////////////////////////////
 
   TLorentzVector target(0,0,0,0.938);
-  //Helicity coordinate system
+  
   TLorentzVector Gammap = beam + target;
 
-  // Calculate decay angles in helicity frame (same for all vectors)
+  // Calculate decay angles in helicity or Gottfried-Jackson frame
   // set beam polarization angle to 0 degrees; apply diamond orientation in calcAmplitude
-  vector <double> locthetaphi = getomegapiAngles(0, vec, X, beam, Gammap);
+  double locPhiProd = getPhiProd( 0, X, beam, target, 2, true );
+  //vector <double> locthetaphi = getomegapiAngles(0, vec, X, beam, Gammap);
+  vector< double > locDecayAngles;
+  if(m_3pi) locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, vec_daught2, beam, target, 2, true ); 
+  else locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true ); 
+
 
   // Calculate vector decay angles (unique for each vector)
-  vector <double> locthetaphih;
-  if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
-  else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
+  //vector <double> locthetaphih;
+  //if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
+  //else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
 
-  userVars[uv_cosTheta] = TMath::Cos(locthetaphi[0]);
-  userVars[uv_Phi] = locthetaphi[1];
+  userVars[uv_cosTheta] = TMath::Cos(locDecayAngles[0]);
+  userVars[uv_Phi] = locDecayAngles[1];
 
-  userVars[uv_cosThetaH] = TMath::Cos(locthetaphih[0]);
-  userVars[uv_PhiH] = locthetaphih[1];
+  userVars[uv_cosThetaH] = TMath::Cos(locDecayAngles[2]);
+  userVars[uv_PhiH] = locDecayAngles[3];
 
-  userVars[uv_prod_Phi] = locthetaphi[2];
+  userVars[uv_prod_Phi] = locPhiProd;
 
   userVars[uv_MX] = X.M();
   userVars[uv_MVec] = vec.M();
@@ -169,12 +175,17 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   userVars[uv_beam_polFraction] = beam_polFraction;
   userVars[uv_beam_polAngle] = beam_polAngle;
-  
+/*  
   // Use these to test angular calculation for omegapiDelta
   TLorentzVector pi0 = vec - vec_daught1 - vec_daught2;
   TLorentzVector pip = vec_daught1;
   TLorentzVector pim = vec_daught2;
-  cout << "Four-momenta: (Px, Py, Pz, E)" << endl;
+  TLorentzVector pi_recoil( pKin[6][1], pKin[6][2], pKin[6][3], pKin[6][0] );
+  double s_mand = Gammap * Gammap;
+  TLorentzVector sqrt_t = X - beam;
+  TLorentzVector deltaRecoil = recoil + pi_recoil;
+
+  cout << "Four-momenta in lab frame: (Px, Py, Pz, E)" << endl;
   cout << "beam photon: (" << beam[0] << ", " << beam[1] << ", " << beam[2] << ", " << beam[3] << ")" << endl;
   cout << "recoil proton: (" << recoil[0] << ", " << recoil[1] << ", " << recoil[2] << ", " << recoil[3] << ")" << endl;
   cout << "bachelor pion: (" << ps[0] << ", " << ps[1] << ", " << ps[2] << ", " << ps[3] << ")" << endl;
@@ -182,11 +193,34 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   cout << "pi+ from omega: (" << pip[0] << ", " << pip[1] << ", " << pip[2] << ", " << pip[3] << ")" << endl;
   cout << "pi- from omega: (" << pim[0] << ", " << pim[1] << ", " << pim[2] << ", " << pim[3] << ")" << endl;
   cout << "recoil pion: (" << pKin[6][1] << ", " << pKin[6][2] << ", " << pKin[6][3] << ", " << pKin[6][0] << ")" << endl;
-
+  cout << "Mandelstam variables:" << endl;
+  cout << "s = " << s_mand << endl;
+  cout << "t = " << sqrt_t*sqrt_t << endl;
+  cout << "m2_omega = " << vec.M2() << endl;
+  cout << "m2_X = " << X.M2() << endl;
+  cout << "m2_pi1pi2 = " << (pi0 + pip).M2() << endl;
+  cout << "m2_pi2pi3 = " << (pip + pim).M2() << endl;
+  cout << "m2_ppip = " << ( pi_recoil + recoil ).M2() << endl;
   cout << "angles:" << endl;
   cout << "cos(theta_omega) = " << userVars[uv_cosTheta] << ", phi_omega = " << userVars[uv_Phi] << endl;
   cout << "cos(theta_H) = " << userVars[uv_cosThetaH] << ", phi_H = " << userVars[uv_PhiH] << endl;
-
+  cout << "cos(theta_omega)_GJ = " << TMath::Cos(locthetaphi[3]) << ", phi_omega_GJ = " << locthetaphi[4] << endl;
+ 
+  cout << "Testing new utility class:" << endl;
+  vector< double > locXTo4PiAnglesH = getTwoStepAngles(X, vec, vec_daught1, vec_daught2, pi0, beam, target, 1, true);
+  vector< double > locXTo4PiAnglesGJ = getTwoStepAngles(X, vec, vec_daught1, vec_daught2, pi0, beam, target, 2, true);
+  cout << "Helicity frame:" << endl;
+  cout << "cos(theta_omega) = " << TMath::Cos(locXTo4PiAnglesH[0]) << ", phi_omega = " << locXTo4PiAnglesH[1] << ", cos(theta_H) = " << TMath::Cos(locXTo4PiAnglesH[2]) << ", phi_H = " << locXTo4PiAnglesH[3] << endl;
+  cout << "Gottfried-Jackson frame:" << endl;
+  cout << "cos(theta_omega) = " << TMath::Cos(locXTo4PiAnglesGJ[0]) << ", phi_omega = " << locXTo4PiAnglesGJ[1] << ", cos(theta_H) = " << TMath::Cos(locXTo4PiAnglesGJ[2]) << ", phi_H = " << locXTo4PiAnglesGJ[3] << endl;
+  cout << "Lower Vertex Decay:" << endl;
+  vector< double > locDeltaAnglesH = getOneStepAngles(deltaRecoil, recoil, beam, target, 1, false);
+  vector< double > locDeltaAnglesGJ = getOneStepAngles(deltaRecoil, recoil, beam, target, 2, false);
+  cout << "Helicity frame:" << endl;
+  cout << "cos(theta_p) = " << TMath::Cos(locDeltaAnglesH[0]) << ", phi_p = " << locDeltaAnglesH[1] << endl;
+  cout << "Gottfried-Jackson frame:" << endl;
+  cout << "cos(theta_p) = " << TMath::Cos(locDeltaAnglesGJ[0]) << ", phi_p = " << locDeltaAnglesGJ[1] << endl;
+*/
   return;
 }
 

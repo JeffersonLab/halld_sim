@@ -57,7 +57,6 @@ private:
 	int m_s;
 
 	string lowerVertex;
-	string upperVertex;
 };
 
 #endif
