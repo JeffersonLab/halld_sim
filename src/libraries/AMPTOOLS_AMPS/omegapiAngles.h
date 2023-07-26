@@ -17,6 +17,4 @@ vector <double> getomegapiAngles(TLorentzVector daughter, TLorentzVector parent,
 
 vector <double> getomegapiAngles(double polAngle, TLorentzVector daughter, TLorentzVector parent, TLorentzVector InverseOfX, TLorentzVector rf);
 
-vector <double> getDeltaAngles(TLorentzVector daughter, TLorentzVector parent, TLorentzVector upperVertex, TLorentzVector target, TLorentzVector rf);
-
 #endif

@@ -111,11 +111,14 @@ vector <double> getomegapiAngles(double polAngle, TLorentzVector daughter, TLore
   //get the unit vectors in space
   TVector3 daughter_parentunit = (daughter_parentv).Unit();
   TVector3 InverseOfX_rfunit = (InverseOfX_rf.Vect()).Unit();
+  // use these to calculate GJ angles
+  TLorentzVector beamOP = InverseOfX_rf;
+  beamOP.Boost(-1.0*parentboost);
 
   TVector3 z = (parent_rf.Vect()).Unit();
   TVector3 y = ((InverseOfX_rfunit).Cross(z)).Unit();
   TVector3 x = (y.Cross(z)).Unit();
-  
+
   TVector3 Angles(daughter_parentunit.Dot(x),daughter_parentunit.Dot(y),daughter_parentunit.Dot(z));
 
   double theta = Angles.Theta();
@@ -125,43 +128,7 @@ vector <double> getomegapiAngles(double polAngle, TLorentzVector daughter, TLore
   double Phi = atan2(y.Dot(eps), InverseOfX.Vect().Unit().Dot(eps.Cross(y)));
 
   vector <double> thetaphiPhi{theta, phi, Phi};
-    
+ 
   return thetaphiPhi;
   
-}
-
-// add function to return angles of decaying Delta baryon - may move this to its own class if needed
-vector <double> getDeltaAngles(TLorentzVector daughter, TLorentzVector parent, TLorentzVector upperVertex, TLorentzVector target, TLorentzVector rf)
-{
-  // boost all to rf
-  TLorentzVector daughter_rf = daughter;
-  TLorentzVector parent_rf = parent;
-  TLorentzVector upperVertex_rf = upperVertex;
-  TLorentzVector target_rf = target;
-  TVector3 rfboost = rf.BoostVector();
-  upperVertex_rf.Boost(-1.0*rfboost);
-  parent_rf.Boost(-1.0*rfboost);
-  daughter_rf.Boost(-1.0*rfboost);
-  target_rf.Boost(-1.0*rfboost);
-
-  // boost daughter to parent
-  TVector3 parentBoost = parent_rf.BoostVector();
-  TLorentzVector target_parent = target_rf.Boost(-1.0*parentBoost);
-  TLorentzVector upperVertex_parent = upperVertex_rf.Boost(-1.0*parentBoost);
-  TLorentzVector daughter_parent = daughter_rf.Boost(-1.0*parentBoost);
-
-  // normal to the production plane
-  TVector3 y = (target_parent.Vect().Unit().Cross(upperVertex_parent.Vect().Unit())).Unit();
-  // choose GJ frame: z-axis along -target direction in baryon rest frame
-  TVector3 z = target_parent.Vect().Unit();
-  TVector3 x = y.Cross(z).Unit();
-
-  TVector3 angles( (daughter_parent.Vect()).Dot(x), (daughter_parent.Vect()).Dot(y), (daughter_parent.Vect()).Dot(z) ); 
-
-  double theta = angles.Theta();
-  double phi = angles.Phi();
-
-  vector <double> thetaphi{theta, phi};
-
-  return thetaphi;
 }

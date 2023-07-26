@@ -22,6 +22,7 @@
 #include "IUAmpTools/FitResults.h"
 #include "IUAmpTools/ConfigFileParser.h"
 #include "IUAmpTools/ConfigurationInfo.h"
+
 int main( int argc, char* argv[] ){
 
 	string configfile;
@@ -48,19 +49,18 @@ int main( int argc, char* argv[] ){
 
 	AmpToolsInterface ati( cfgInfo );
 	vector< TLorentzVector > p4List;
-	
-	// input Vincent's events
-	p4List.push_back( TLorentzVector(0, 0, 1.9437, 1.9437) ); //beam photon
-	p4List.push_back( TLorentzVector(0.3300, -0.5918, -1.7263, 2.0782) ); //recoil proton
-	p4List.push_back( TLorentzVector(-0.0548, 0.0983, 0.2882, 0.3375) ); //bachelor pion
-	p4List.push_back( TLorentzVector(-0.0371, 0.1172, 0.3739, 0.4161) ); //pi0 from omega
-	p4List.push_back( TLorentzVector(-0.2106, 0.0912, 0.2905, 0.3941) ); //pi+ from omega
-	p4List.push_back( TLorentzVector(0.0291, 0.1849, 0.4849, 0.5370) ); //pi- from omega
-	p4List.push_back( TLorentzVector(-0.0566, 0.1003, 0.2888, 0.3390) ); //recoil pion
-	
+
+	// list lab frame p4s, in the order specified in the AmpTools config file
+	p4List.push_back( TLorentzVector(0, 0, 8.209470, 8.209470) ); //beam photon
+	p4List.push_back( TLorentzVector(-0.291810, -0.315238, 0.695296, 1.244320) ); //recoil proton
+	p4List.push_back( TLorentzVector(0.183147, 0.002392, 0.384435, 0.448137) ); //bachelor pion
+	p4List.push_back( TLorentzVector(0.151104, 0.333728, 1.914300, 1.953710) ); //pi0 from omega
+	p4List.push_back( TLorentzVector(-0.135341, 0.038805, 2.134320, 2.143510) ); //pi+ from omega
+	p4List.push_back( TLorentzVector(0.076385, 0.004007, 3.173990, 3.177980) ); //pi- from omega
+	p4List.push_back( TLorentzVector(0.016522, -0.063693, -0.092871, 0.180096) ); //recoil pion
+
 	Kinematics kin( p4List );
 
-//	ati.printEventDetails( omegapi, &kin );
 	ati.printEventDetails( cfgInfo->reactionList()[0]->reactionName(), &kin );
 	
 	return 0;

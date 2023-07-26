@@ -1,5 +1,4 @@
-//Goal: Calculate the decay angles for any 1->2 or 1->3 body meson decay, in either the helicity or Gottfried-Jackson reference frames. Inputs should be the relevant 4-momentum vectors in the lab frame, and an integer flag specifying the desired reference frame
-// Reference frame conventions are those used in GlueX-doc-4829 (C. Meyer)
+//Goal: Calculate the decay angles for X->omegapi->4pi or Delta->protonpi decay, in either the helicity or Gottfried-Jackson reference frames. Inputs should be the relevant 4-momentum vectors in the lab frame, an integer flag specifying the desired reference frame, and a boolean specifying whether the decay happens at the upper or lower vertex of the t-channel reaction
 //Gottfried-Jackson RF: The z-axis is equal to the direction of flight of the incoming beam photon in the parent rest frame.
 //Adair RF: The z-axis is equal to the direction of flight of the incoming beam photon in the center of mass system.
 
@@ -143,14 +142,7 @@ vector< double > getOneStepAngles(TLorentzVector parentLab, TLorentzVector daugh
 	double phi = angles.Phi();
 
 	vector< double > thetaPhi{theta, phi};
-/*
-	// debug
-	cout << "4-vectors in the Delta rest frame:" << endl;
-	cout << "proton: ";
-	daughterParent.Print();
-	cout << "target: ";
-	inverseParent.Print();
-*/
+
 	return thetaPhi;
 }
 
