@@ -45,7 +45,7 @@
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
-#include "AMPTOOLS_AMPS/DeltaAngles.h"
+#include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -88,9 +88,9 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
 
   ati.finalizeFit();
 
-  if( seedfile.size() != 0 && !fitFailed ){
+//  if( seedfile.size() != 0 && !fitFailed ){
     ati.fitResults()->writeSeed( seedfile );
-  }
+//  }
 
   return ati.likelihood();
 }
@@ -333,7 +333,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( ComplexCoeff() );
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
-   AmpToolsInterface::registerAmplitude( DeltaAngles() );
+   AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
