@@ -243,23 +243,6 @@ vector< double > getTwoStepAngles(TLorentzVector parentLab, TLorentzVector daugh
   	double lambda = fabs( daughterDecayVector.Dot( daughterDecayVector ) ) / lambda_max;
 
 	vector< double > thetaPhiTwoStep{theta, phi, thetaH, phiH, lambda};
-/*
-	// debug
-	cout << "4-vectors in the omegapi rest frame:" << endl;
-	cout << "beam: ";
-	inverseParent.Print();
-	cout << "omega: ";
-	daughterParent.Print();
-	cout << "pi+: ";
-	granddaughter1Parent.Print();
-	cout << "pi-: ";
-	granddaughter2Parent.Print();
-	cout << "4-vectors in the omega rest frame:" << endl;
-	cout << "pi+: ";
-	granddaughter1Daughter.Print();
-	cout << "pi-: ";
-	granddaughter2Daughter.Print();
-*/
 
 	return thetaPhiTwoStep;
 }
