@@ -1,8 +1,9 @@
 
-#include "FixedTargetGenerator.h"
 #include "TLorentzVector.h"
 #include "TRandom.h"
-#include "Kinematics.h"
+
+#include "AMPTOOLS_MCGEN/FixedTargetGenerator.h"
+#include "IUAmpTools/Kinematics.h"
 
 #include <iostream>
 
