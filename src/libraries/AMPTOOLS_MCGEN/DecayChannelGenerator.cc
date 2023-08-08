@@ -8,9 +8,9 @@
 
 DecayChannelGenerator::DecayChannelGenerator() :
 m_bfTotal( 0 ),
+m_probRenormalized( false ),
 m_upperBound( 0 ),
-m_index( 0 ), 
-m_probRenormalized( false )
+m_index( 0 )
 {}
 
 using namespace std;
