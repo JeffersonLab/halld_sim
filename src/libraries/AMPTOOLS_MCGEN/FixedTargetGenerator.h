@@ -28,6 +28,8 @@ public:
                         const vector< double >& uvMasses,
                         const vector< double >& lvMasses );
 
+  void setSeed( unsigned int seed ){ m_randGen.SetSeed( seed ); }
+  
   Kinematics* generate() const;
 
   // These functions setup the inital state.
