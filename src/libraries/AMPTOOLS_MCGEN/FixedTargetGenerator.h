@@ -20,7 +20,7 @@ public:
   
   enum { kMomentumTransfer = 1, kUpperVtxMass = 2, kLowerVtxMass = 4 };
   
-  FixedTargetGenerator(){}
+  FixedTargetGenerator();
   
   // this constructor assumes the beam is a photon (go GlueX!)  --
   // more general cases can be handled by setBeamP4 below

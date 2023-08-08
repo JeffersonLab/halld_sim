@@ -9,6 +9,19 @@
 
 using namespace std;
 
+FixedTargetGenerator::FixedTargetGenerator() :
+m_lvMinUser( 0 ),
+m_lvMaxUser( 1E9 ),
+m_uvMinUser( 0 ),
+m_uvMaxUser( 1E9 ),
+m_tMagMinUser( 0 ),
+m_tMagMaxUser( 1E9 ),
+// by default we reweight any seed distributions put in by the user
+// to recover phase space
+m_reweightMask( kUpperVtxMass | kLowerVtxMass | kMomentumTransfer ),
+m_limitsValid( false )
+{}
+
 FixedTargetGenerator::FixedTargetGenerator( double photonBeamEnergy, double targetMass,
                                             const vector< double >& uvMasses,
                                             const vector< double >& lvMasses ) :
