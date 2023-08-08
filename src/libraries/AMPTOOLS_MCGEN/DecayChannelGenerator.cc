@@ -35,7 +35,7 @@ DecayChannelGenerator::addChannel( unsigned int channel, double bf )
 }
 
 unsigned int
-DecayChannelGenerator::operator()(){
+DecayChannelGenerator::operator()() const {
  
     if( fabs( m_bfTotal - 1 ) > 0.001 ){
         
@@ -73,7 +73,7 @@ DecayChannelGenerator::operator()(){
 }
 
 double
-DecayChannelGenerator::getProb( unsigned int chan ){
+DecayChannelGenerator::getProb( unsigned int chan ) const {
  
     if( fabs( m_bfTotal - 1 ) > 0.001 ){
         
