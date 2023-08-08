@@ -39,4 +39,8 @@ GPUPiecewise_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* params1, 
   cudaMemcpy(d_params2, &params2[0], nBins * sizeof(GDouble), cudaMemcpyHostToDevice );
 
   GPUPiecewise_kernel<<< dimGrid, dimBlock >>>(GPU_AMP_ARGS, d_params1, d_params2, nBins, represReIm);
+
+  cudaDeviceSynchronize();
+  cudaFree(d_params1);
+  cudaFree(d_params2);
 }

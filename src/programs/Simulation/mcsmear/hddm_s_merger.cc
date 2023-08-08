@@ -23,6 +23,9 @@
 #include <hddm_s_merger.h>
 #include <mcsmear_config.h>
 
+#include <TAGMSmearer.h>
+#include <TAGHSmearer.h>
+
 const double fadc125_period_ns(8.);
 const double fadc250_period_ns(4.);
 
@@ -625,10 +628,11 @@ hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldQ = dst(iord - 1).getQ();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldQ = dst(iord).getQ();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setQ(oldQ + newQ * pulse_fraction);
+            dst(iord).setQ(oldQ + newQ * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldQ = dst(iord).getQ();
@@ -745,9 +749,10 @@ hddm_s::FdcAnodeHitList &operator+=(hddm_s::FdcAnodeHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldDE = dst(iord - 1).getDE();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / dt;
-         dst(iord - 1).setDE(oldDE + newDE * pulse_fraction);
+         --iord;
+         double oldDE = dst(iord).getDE();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / dt;
+         dst(iord).setDE(oldDE + newDE * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldDE = dst(iord).getDE();
@@ -817,10 +822,11 @@ hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldQ = dst(iord - 1).getQ();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldQ = dst(iord).getQ();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setQ(oldQ + newQ * pulse_fraction);
+            dst(iord).setQ(oldQ + newQ * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldQ = dst(iord).getQ();
@@ -897,10 +903,11 @@ hddm_s::StcHitList &operator+=(hddm_s::StcHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldDE = dst(iord - 1).getDE();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldDE = dst(iord).getDE();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setDE(oldDE + newDE * pulse_fraction);
+            dst(iord).setDE(oldDE + newDE * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldDE = dst(iord).getDE();
@@ -1396,10 +1403,11 @@ hddm_s::FcalHitList &operator+=(hddm_s::FcalHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldE = dst(iord - 1).getE();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldE = dst(iord).getE();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setE(oldE + newE * pulse_fraction);
+            dst(iord).setE(oldE + newE * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldE = dst(iord).getE();
@@ -1487,10 +1495,11 @@ hddm_s::CcalHitList &operator+=(hddm_s::CcalHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldE = dst(iord - 1).getE();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldE = dst(iord).getE();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setE(oldE + newE * pulse_fraction);
+            dst(iord).setE(oldE + newE * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldE = dst(iord).getE();
@@ -1556,7 +1565,7 @@ hddm_s::MicroChannelList &operator+=(hddm_s::MicroChannelList &dst,
          dst.add(1, (iord < dst.size())? iord : -1);
          dst(iord).setColumn(column);
          dst(iord).setRow(row);
-         dst(iord).setE(iter->getE());
+         dst(iord).setE(TAGMSmearer::get_tagm_energy(column));
       }
       dst(iord).getTaggerHits() += iter->getTaggerHits();
    }
@@ -1586,7 +1595,7 @@ hddm_s::HodoChannelList &operator+=(hddm_s::HodoChannelList &dst,
       if (iord == dst.size() || dst(iord).getCounterId() != cid) {
          dst.add(1, (iord < dst.size())? iord : -1);
          dst(iord).setCounterId(cid);
-         dst(iord).setE(iter->getE());
+         dst(iord).setE(TAGHSmearer::get_tagh_energy(cid));
       }
       dst(iord).getTaggerHits() += iter->getTaggerHits();
    }
@@ -1609,10 +1618,11 @@ hddm_s::TaggerHitList &operator+=(hddm_s::TaggerHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldNpe = dst(iord - 1).getNpe();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldNpe = dst(iord).getNpe();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setNpe(oldNpe + newNpe * pulse_fraction);
+            dst(iord).setNpe(oldNpe + newNpe * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldNpe = dst(iord).getNpe();
@@ -1717,10 +1727,11 @@ hddm_s::PsHitList &operator+=(hddm_s::PsHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldDE = dst(iord - 1).getDE();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldDE = dst(iord).getDE();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setDE(oldDE + newDE * pulse_fraction);
+            dst(iord).setDE(oldDE + newDE * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldDE = dst(iord).getDE();
@@ -1809,10 +1820,11 @@ hddm_s::PscHitList &operator+=(hddm_s::PscHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldDE = dst(iord - 1).getDE();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldDE = dst(iord).getDE();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setDE(oldDE + newDE * pulse_fraction);
+            dst(iord).setDE(oldDE + newDE * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldDE = dst(iord).getDE();
@@ -1904,10 +1916,11 @@ hddm_s::TpolHitList &operator+=(hddm_s::TpolHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         double oldDE = dst(iord - 1).getDE();
-         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         --iord;
+         double oldDE = dst(iord).getDE();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
          if (pulse_fraction > 0)
-            dst(iord - 1).setDE(oldDE + newDE * pulse_fraction);
+            dst(iord).setDE(oldDE + newDE * pulse_fraction);
       }
       else if (iord < dst.size() && dst(iord).getT() - t < dt) {
          double oldDE = dst(iord).getDE();
@@ -1995,10 +2008,11 @@ hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
       while (iord < dst.size() && dst(iord).getT() < t)
          ++iord;
       if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-	hddm_s::FmwpcHitQList &oldcharges=dst(iord-1).getFmwpcHitQs();
+	--iord;
+	hddm_s::FmwpcHitQList &oldcharges=dst(iord).getFmwpcHitQs();
 	if (oldcharges.size()){
 	  double oldQ = oldcharges.begin()->getQ();
-	  double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / dt;
+	  double pulse_fraction = 1 - (t - dst(iord).getT()) / dt;
 	  oldcharges.begin()->setQ(oldQ + newQ * pulse_fraction);
 	}
       }

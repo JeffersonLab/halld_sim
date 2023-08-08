@@ -18,6 +18,7 @@ using namespace std;
 struct tmpEvt_t {
   int nGen;
   TString str_target;
+  TString str_meson;
   double weight;
   TLorentzVector beam;
   TLorentzVector target;
@@ -108,13 +109,22 @@ class HddmOut {
     beam->momentum->py = evt.beam.Py();
     beam->momentum->pz = evt.beam.Pz();
     beam->momentum->E  = evt.beam.E();
-
+    //cout <<"beam energy " << evt.beam.E() << " nGen " << evt.nGen << " str_meson " << evt.str_meson << endl;
     products->mult = evt.nGen;
     reaction->weight = evt.weight;
     if (evt.nGen == 2) {
       //PRODUCED PHOTON
-      products->in[0].type = Eta;
-      products->in[0].pdgtype = 221;
+      if (evt.str_meson == "eta") {
+	products->in[0].type = Eta;
+	products->in[0].pdgtype = 221;
+      } else if (evt.str_meson == "eta'") {
+	products->in[0].type = EtaPrime;
+	products->in[0].pdgtype = 331;
+	//cout <<"eta' " << endl; 
+      } else if (evt.str_meson == "pi0") {
+	products->in[0].type = Pi0;
+	products->in[0].pdgtype = 111;
+      }
       products->in[0].id = 1;
       products->in[0].parentid = 0;
       products->in[0].mech = 0;
@@ -125,10 +135,10 @@ class HddmOut {
       products->in[0].momentum->E = evt.q1.E();
             
       //PRODUCED Nucleus recoil
-      if (evt.str_target == "He3") {
+      if (evt.str_target == "He4" || evt.str_target == "Helium") {
 	products->in[1].type = Helium;
 	products->in[1].pdgtype = 1000020040;
-      } else if (evt.str_target == "Be9") {
+      } else if (evt.str_target == "Be9" || evt.str_target == "Beryllium-9") {
 	products->in[1].type = Be9;
 	products->in[1].pdgtype = 1000040090;
       } else if (evt.str_target == "Proton") {
@@ -174,10 +184,10 @@ class HddmOut {
       //PRODUCED Nucleus recoil
       //products->in[2].type = Helium;
       //products->in[2].pdgtype = 1000020040;
-      if (evt.str_target == "He3") {
+      if (evt.str_target == "He4" || evt.str_target == "Helium") {
 	products->in[2].type = Helium;
 	products->in[2].pdgtype = 1000020040;
-      } else if (evt.str_target == "Be9") {
+      } else if (evt.str_target == "Be9" || evt.str_target == "Beryllium-9") {
 	products->in[2].type = Be9;
 	products->in[2].pdgtype = 1000040090;
       } else if (evt.str_target == "Proton") {
@@ -271,10 +281,10 @@ class HddmOut {
       //PRODUCED Nucleus recoil
       //products->in[6].type = Helium;
       //products->in[6].pdgtype = 1000020040;
-      if (evt.str_target == "He3") {
+      if (evt.str_target == "He4" || evt.str_target == "Helium") {
 	products->in[6].type = Helium;
 	products->in[6].pdgtype = 1000020040;
-      } else if (evt.str_target == "Be9") {
+      } else if (evt.str_target == "Be9" || evt.str_target == "Beryllium-9") {
 	products->in[6].type = Be9;
 	products->in[6].pdgtype = 1000040090;
       } else if (evt.str_target == "Proton") {

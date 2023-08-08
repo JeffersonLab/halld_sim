@@ -24,12 +24,15 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -44,10 +47,13 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
   AmpToolsInterface::registerAmplitude( PhaseOffset() );
+  AmpToolsInterface::registerAmplitude( ComplexCoeff() );
   AmpToolsInterface::registerAmplitude( Piecewise() );
+  AmpToolsInterface::registerAmplitude( OmegaDalitz() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
+  AmpToolsInterface::registerDataReader( FSRootDataReader() );
 }
 
 using namespace std;
@@ -68,6 +74,7 @@ int main( int argc, char* argv[] ){
   }
 
   bool showGui = false;
+  bool makePlots = true;
   string outName = "omegapi_plot.root";
   string resultsName(argv[1]);
   for (int i = 2; i < argc; i++){
@@ -80,10 +87,14 @@ int main( int argc, char* argv[] ){
     if (arg == "-o"){
       outName = argv[++i];
     }
+    if (arg == "-n"){
+      makePlots = false;
+    }
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
       cout << "\t -o <file>\t output file path" << endl;
-      cout << "\t -g <file>\t show GUI" << endl;
+      cout << "\t -g \t show GUI" << endl;
+      cout << "\t -n \t don't make plots "<< endl;
       exit(1);
     }
   }
@@ -108,14 +119,18 @@ int main( int argc, char* argv[] ){
     exit( 1 );
   }
    cout << "Fit results loaded" << endl;
-    // ************************
-    // set up the plot generator
-    // ************************
-	cout << "before atisetup();"<< endl;
-  atiSetup();
-        cout << "Plotgen results"<< endl;
 
-  omegapi_PlotGen plotGen( results , PlotGenerator::kNoGenMC );
+   vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "3mp2f", "3mpf", "3m0f", "3mmf", "3mm2f", "0m", "1p", "1m", "2m", "3m"};
+  vector<string> reflname = {"PosRefl", "NegRefl"};
+
+if(makePlots) {
+
+  // ************************
+  // set up the plot generator
+  // ************************
+  atiSetup();
+
+  omegapi_PlotGen plotGen( results , PlotGenerator::kNoGenMC ); // slow step to load ROOT trees
   cout << " Initialized ati and PlotGen" << endl;
 
     // ************************
@@ -131,16 +146,13 @@ int main( int argc, char* argv[] ){
   vector<string> amps = plotGen.uniqueAmplitudes();
   cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-  vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "3mp2f", "3mpf", "3m0f", "3mmf", "3mm2f", "0m", "1p", "1m", "2m", "3m"};
-  vector<string> reflname = {"PosRefl", "NegRefl"};
-
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
   for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
 
     // loop over desired amplitudes 
     for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
 
-      // turn all ampltiudes by default 
+      // turn all ampltiudes on by default 
       for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
 	plotGen.enableAmp( jamp );
       }
@@ -215,7 +227,9 @@ int main( int argc, char* argv[] ){
 	  else if (ivar == OmegaPiPlotGenerator::kRecoilMass)  histname += "MRecoil";
 	  else if (ivar == OmegaPiPlotGenerator::kProtonPiMass)  histname += "MProtonPi";
 	  else if (ivar == OmegaPiPlotGenerator::kRecoilPiMass)  histname += "MRecoilPi";
-	  
+	  else if (ivar == OmegaPiPlotGenerator::kLambda)  histname += "Lambda";
+	  else if (ivar == OmegaPiPlotGenerator::kDalitz)  histname += "Dalitz";
+
 	  else continue;
 	  
 	  if (iplot == PlotGenerator::kData) histname += "dat";
@@ -247,6 +261,7 @@ int main( int argc, char* argv[] ){
   }
 
   plotfile->Close();
+}
 
   // model parameters
   cout << "Checking Parameters" << endl;
@@ -270,9 +285,10 @@ int main( int argc, char* argv[] ){
     double parError = results.parError( pars[i] );
     outfile << parValue << "\t" << parError << "\t" << endl;
   }
+  outfile << results.covariance( "dsratio", "dphase" ) << endl;
 
   outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
-  vector<string> fullamps = plotGen.fullAmplitudes();
+  vector<string> fullamps = results.ampList();
   for (unsigned int i = 0; i < fullamps.size(); i++){
     vector<string> useamp;  useamp.push_back(fullamps[i]);
     outfile << "FIT FRACTION " << fullamps[i] << " = "
@@ -295,31 +311,13 @@ int main( int argc, char* argv[] ){
 	    
 	    if(fullamps[i].find("::" + locampname) == std::string::npos) continue;
 	    //cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
-
-	    // parse amplitude name for naturality to compute reflectivity 
-	    int j = locampname[0]-'0';
-	    int parity = 0;
-	    if( locampname[1] == 'p' ) parity = +1;
-	    else if( locampname[1] == 'm' ) parity = -1;
-	    else cout<<"Undefined parity in amplitude"<<endl;
-	    int naturality = parity*pow(-1,j);	   
  
-	    // select reflectivity (based on naturality)
+	    // select reflectivity 
 	    if(fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
-		    if (naturality>0) {
-			    ampsumPosRefl[iamp].push_back(fullamps[i]);
-		    }
-		    if (naturality<0) {
-			    ampsumNegRefl[iamp].push_back(fullamps[i]);
-		    }
-	    }
+	      ampsumNegRefl[iamp].push_back(fullamps[i]);
+            }
 	    else {
-		    if (naturality>0) {
-			    ampsumNegRefl[iamp].push_back(fullamps[i]);
-		    }
-		    if (naturality<0) {
-			    ampsumPosRefl[iamp].push_back(fullamps[i]);
-		    }
+	      ampsumPosRefl[iamp].push_back(fullamps[i]);
 	    }
     }
     
@@ -360,8 +358,8 @@ int main( int argc, char* argv[] ){
     // ************************
     // start the GUI
     // ************************
-
-  if(showGui) {
+  /*
+  if(makePlots && showGui) {
 
 	  cout << ">> Plot generator ready, starting GUI..." << endl;
 	  
@@ -386,6 +384,7 @@ int main( int argc, char* argv[] ){
 	  app.Run();
      cout << " App running" << endl;
   }
+  */
     
   return 0;
 

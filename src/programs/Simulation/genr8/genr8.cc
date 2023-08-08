@@ -529,6 +529,9 @@ l0:   imassc2=0;
     if(!(X->width<0)) 
       do{/*use BreitWigner--phasespace distribution */
 	initMass(X);
+        initMass(Y);  // RM: Initialize the masses of the Y children before 
+                      // they're used in setMass(X).  Using them uninitialized leads to
+                      // unpredictable (and hard to debug) consequences!
 	setMass(X);
 
 	/*

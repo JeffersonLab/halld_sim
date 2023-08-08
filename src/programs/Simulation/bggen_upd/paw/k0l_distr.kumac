@@ -1,0 +1,161 @@
+MACRO k0l_distr attach=1 fill=1
+*
+* --- K0L angular distribution
+*
+exec sizes_set type=0
+opt liny
+gr/opt utit
+gr/opt nsta
+gr/opt ndat
+gr/set xmgl 3.
+gr/set xlab 2.
+igset txci 1
+
+titl 'PYTHIA, Bremsstrahlung beam 3-12 GeV'  
+if [attach]=1 then
+  clo 1
+  clo 2
+  h/fil 1 ../run/arch/bggen_k0l_0.nt 0 -x
+  h/fil 2 ../run/arch/bggen_k0l_1.nt 0 -x
+endif
+
+x11=0
+x12=0.01
+n1=100
+b1=$SIGMA(([x12]-[x11])/[n1])
+
+x21=0
+x22=0.00014
+n2=350
+b2=$SIGMA(([x22]-[x21])/[n2])
+
+
+if [fill]=1 then
+  h/del 1001 
+  h/del 1002 
+  h/del 1003 
+  h/del 1004 
+  h/del 1011 
+  h/del 1012 
+  h/del 1013 
+  h/del 1014 
+
+  1dh 1001 '1-cos([q]) Lab frame' [n1] [x11] [x12]
+  1dh 1002 '1-cos([q]) Lab frame' [n1] [x11] [x12]
+
+  1dh 1011 '1-cos([q]) Lab frame' [n2] [x21] [x22]
+  1dh 1012 '1-cos([q]) Lab frame' [n2] [x21] [x22]
+
+  nt/loop //lun1/9 part_kin.f(6,0,130,1001)>-1
+  nt/loop //lun1/9 ev_stat.f(0,333,0.,20.,0.,180.)>0.and.part_kin.f(6,0,130,1002)>-1
+
+  nt/loop //lun2/9 part_kin.f(6,0,130,1011)>-1
+  nt/loop //lun2/9 ev_stat.f(0,333,0.,20.,0.,180.)>0.and.part_kin.f(6,0,130,1012)>-1
+endif
+
+
+zone 1 2
+
+nent1=$HINFO(1001,'ENTRIES')
+nent2=$HINFO(1002,'ENTRIES')
+nsim=5.e6
+
+x1=[x11]
+x2=[x12]
+
+h/pl 1001
+set hcol 2
+h/pl 1002 s
+set hcol 1
+tity='2[p] dN/d[W] "X#'//[b1]
+atit 'K^0! ?L!   1-cos([q]?LAB!)       .' [tity]
+y1=0.
+y2=1.
+opt ntic
+null [x1] [x2] [y1] [y2] sab
+opt tic
+yy1=$SIGMA([y1]*0.9+[y2]*0.1)
+dy=$SIGMA(([y2]-[y1])*0.05)
+yy2=$SIGMA([yy1]+[dy])
+igset tang 90
+t=0.03
+do i=1,3
+  xx=$SIGMA(1-cos([t]))
+  gr/prim/line [xx] [yy1] [xx] [yy2]
+  mess [xx] [yy1] [yy2]
+  txt=[t]//' rad'
+  itx [xx] [yy2] [txt]
+  t=$SIGMA([t]+0.03)
+enddo
+igset tang 0
+igset txci 1
+xx=$SIGMA([x1]*0.6+[x2]*0.4)
+yy=$SIGMA([y1]*0.1+[y2]*0.9)
+itx [xx] [yy] '5M events simulated'
+xx=$SIGMA([x1]*0.5+[x2]*0.5)
+yy=$SIGMA([y1]*0.5+[y2]*0.5)
+ef=$SIGMA([nent1]/[nsim]*100)
+ef=$FORMAT([ef],F5.1)
+txt='K^0! ?L! all '//[ef]//'% total'
+itx [xx] [yy] [txt]
+ef=$SIGMA([nent2]/[nsim]*100)
+ef=$FORMAT([ef],F5.1)
+igset txci 2
+txt='K^0! ?L! from [f] '//[ef]//'% total'
+yy=$SIGMA([y1]*0.9+[y2]*0.1)
+itx [xx] [yy] [txt]
+igset txci 1
+
+nent1=$HINFO(1011,'ENTRIES')
+nent2=$HINFO(1012,'ENTRIES')
+
+nsim=100.e6
+
+x1=[x21]
+x2=[x22]
+
+h/pl 1011
+set hcol 2
+h/pl 1012 s
+set hcol 1
+tity='2[p] dN/d[W] "X#'//[b2]
+atit 'K^0! ?L!   1-cos([q]?LAB!)       .' [tity]
+y1=0.
+y2=1.
+opt ntic
+null [x1] [x2] [y1] [y2] sab
+opt tic
+yy1=$SIGMA([y1]*0.8+[y2]*0.2)
+dy=$SIGMA(([y2]-[y1])*0.05)
+yy2=$SIGMA([yy1]+[dy])
+igset tang 90
+t=0.004
+do i=1,4
+  xx=$SIGMA(1-cos([t]))
+  gr/prim/line [xx] [yy1] [xx] [yy2]
+  mess [xx] [yy1] [yy2]
+  txt=[t]//' rad'
+  itx [xx] [yy2] [txt]
+  t=$SIGMA([t]+0.004)
+enddo
+igset tang 0
+igset txci 1
+xx=$SIGMA([x1]*0.6+[x2]*0.4)
+yy=$SIGMA([y1]*0.1+[y2]*0.9)
+itx [xx] [yy] '100M events simulated'
+xx=$SIGMA([x1]*0.5+[x2]*0.5)
+yy=$SIGMA([y1]*0.44+[y2]*0.56)
+ef=$SIGMA([nent1]/[nsim]*100)
+ef=$FORMAT([ef],F5.1)
+txt='K^0! ?L! all '
+itx [xx] [yy] [txt]
+ef=$SIGMA([nent2]/[nsim]*100)
+ef=$FORMAT([ef],F5.1)
+igset txci 2
+txt='K^0! ?L! from [f] '
+yy=$SIGMA([y1]*0.95+[y2]*0.05)
+itx [xx] [yy] [txt]
+igset txci 1
+
+RETURN
+
