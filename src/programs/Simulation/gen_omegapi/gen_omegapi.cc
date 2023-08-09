@@ -20,6 +20,7 @@
 
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/decayAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
@@ -27,6 +28,7 @@
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -268,6 +270,7 @@ int main( int argc, char* argv[] ){
         AmpToolsInterface::registerAmplitude( PhaseOffset() );
 	AmpToolsInterface::registerAmplitude( ComplexCoeff() );
 	AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+	AmpToolsInterface::registerAmplitude( DeltaAngles() );
 
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
@@ -299,7 +302,7 @@ int main( int argc, char* argv[] ){
 	}
 
 		ProductionMechanism::Type type =
-		( genFlat ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
+		( genFlat || !foundResonance ? ProductionMechanism::kFlat : ProductionMechanism::kResonant );
 
 	// generate over a range of mass
 	// start with threshold or lowMass, whichever is higher
@@ -384,6 +387,11 @@ int main( int argc, char* argv[] ){
 
 	TH2F* MRecoil_CosThetaDelta = new TH2F( "MRecoil_CosThetaDelta", ";M(p#pi^{+}) (GeV);cos(#theta_{#pi^{+}})", 200, 1, 2, 200, -1, 1 );
 	TH2F* MRecoil_PhiDelta = new TH2F( "MRecoil_PhiDelta", ";M(p#pi^{+}) (GeV);#phi_{#pi^{+}} (rad)", 200, 1, 2, 200, -3.14, 3.14 );
+	TH2F* phiDelta_Phi_Prod = new TH2F( "phiDelta_Phi_Prod", "#phi_{#Delta} vs. #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
+	
+	TH2F* MassCorr = new TH2F( "MassCorr", ";M(p#pi^{+}) (GeV);M(#omega#pi^{-}) (GeV)", 200, 1, 2, 200, lowMass, highMass );
+	TH2F* MassCorrW = new TH2F( "MassCorrW", ";M(p#pi^{+}) (GeV);M(#omega#pi^{-}) (GeV)", 200, 1, 2, 200, lowMass, highMass );
+
 	
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
@@ -522,7 +530,7 @@ int main( int argc, char* argv[] ){
 				if( weightedInten > rand || genFlat ){
 
 					mass->Fill( resonance.M() );
-					massW->Fill( resonance.M(), genWeight );
+					massW->Fill( resonance.M(), weightedInten );
 					
 					intenW->Fill( weightedInten );
 					intenWVsM->Fill( resonance.M(), weightedInten );
@@ -531,9 +539,13 @@ int main( int argc, char* argv[] ){
 					M_isobar2->Fill( isobar2.M() );
 					M_recoil->Fill( recoil.M() );
 					M_recoilW->Fill( recoil.M(), weightedInten );
+
+					MassCorr->Fill( recoil.M(), resonance.M() );
+					MassCorrW->Fill( recoil.M(), resonance.M(), weightedInten );
 					
 					// calculate angular variables
 					TLorentzVector beam = evt->particle ( 0 );
+					TLorentzVector nucleon = evt->particle( 1 ); 
 					TLorentzVector p1 = evt->particle ( 2 );
 					TLorentzVector p2 = evt->particle ( 3 );
 					TLorentzVector p3 = evt->particle ( 4 );
@@ -558,23 +570,24 @@ int main( int argc, char* argv[] ){
 					t->Fill(-1*(recoil-target).M2());
 
                                         TLorentzVector Gammap = beam + target;
-                                        vector <double> loccosthetaphi = getomegapiAngles(polAngle, isobar, resonance, beam, Gammap);
-                                        double cosTheta = cos(loccosthetaphi[0]);
-                                        double phi = loccosthetaphi[1];
+					vector< double > upperVertexAngles = getTwoStepAngles( resonance, isobar, p3, p4, beam, target, 2, true  );
+//                                        vector <double> loccosthetaphi = getomegapiAngles(polAngle, isobar, resonance, beam, Gammap);
+                                        double cosTheta = cos( upperVertexAngles[0] );
+                                        double phi = upperVertexAngles[1];
 
-                                        vector <double> loccosthetaphih = getomegapiAngles( p3, isobar, resonance, Gammap, p4);
-                                        double cosThetaH = cos(loccosthetaphih[0]);
-                                        double phiH = loccosthetaphih[1];
+//                                        vector <double> loccosthetaphih = getomegapiAngles( p3, isobar, resonance, Gammap, p4);
+                                        double cosThetaH = cos( upperVertexAngles[2] );
+                                        double phiH = upperVertexAngles[3];
 
 					M_CosTheta->Fill( resonance.M(), cosTheta);
 					M_Phi->Fill( resonance.M(), phi);
 					M_CosThetaH->Fill( resonance.M(), cosThetaH);
 					M_PhiH->Fill( resonance.M(), phiH);
 
-					double lambda_omega = loccosthetaphih[2];
+					double lambda_omega = upperVertexAngles[4];
 					lambda->Fill(lambda_omega);
 
-                                        double Phi = loccosthetaphi[2];
+                                        double Phi = getPhiProd( polAngle, resonance, beam, target, 2, true );
 					M_Phi_Prod->Fill( resonance.M(), Phi);
 
                                         GDouble psi = phi - Phi;
@@ -592,23 +605,25 @@ int main( int argc, char* argv[] ){
 
 					// angles for recoil Delta++ -> p pi+ decay
 					if ( bwGenLowerVertex.size() == 1 ) {
-						TLorentzRotation recoilBoost( -recoil.BoostVector() );
-						TLorentzVector p6 = evt->particle ( 6 );
-						TLorentzVector target_recoilRF = recoilBoost * target;
-						TLorentzVector beam_recoilRF = recoilBoost * beam;
-						TLorentzVector resonance_recoilRF = recoilBoost * resonance;
-						TLorentzVector p6_recoilRF = recoilBoost * p6;
+//						TLorentzRotation recoilBoost( -recoil.BoostVector() );
+//						TLorentzVector p6 = evt->particle ( 6 );
+//						TLorentzVector target_recoilRF = recoilBoost * target;
+//						TLorentzVector beam_recoilRF = recoilBoost * beam;
+//						TLorentzVector resonance_recoilRF = recoilBoost * resonance;
+//						TLorentzVector p6_recoilRF = recoilBoost * p6;
 
-						TVector3 recoily = (target_recoilRF.Vect().Unit().Cross(resonance_recoilRF.Vect().Unit())).Unit();
-						TVector3 recoilz = target_recoilRF.Vect().Unit();
-						TVector3 recoilx = recoily.Cross(recoilz).Unit();
+//						TVector3 recoily = (target_recoilRF.Vect().Unit().Cross(resonance_recoilRF.Vect().Unit())).Unit();
+//						TVector3 recoilz = target_recoilRF.Vect().Unit();
+//						TVector3 recoilx = recoily.Cross(recoilz).Unit();
 
-						TVector3 recoilAngles( p6_recoilRF.Vect().Dot(recoilx), p6_recoilRF.Vect().Dot(recoily), p6_recoilRF.Vect().Dot(recoilz) );
-						double cosThetaDelta = cos( recoilAngles.Theta() );
-						double phiDelta = recoilAngles.Phi();
+//						TVector3 recoilAngles( p6_recoilRF.Vect().Dot(recoilx), p6_recoilRF.Vect().Dot(recoily), p6_recoilRF.Vect().Dot(recoilz) );
+						vector< double > lowerVertexAngles = getOneStepAngles( recoil, nucleon, beam, target, 2, false );
+						double cosThetaDelta = cos( lowerVertexAngles[0] );
+						double phiDelta = lowerVertexAngles[1];
 
 						MRecoil_CosThetaDelta->Fill( recoil.M(), cosThetaDelta );
 						MRecoil_PhiDelta->Fill( recoil.M(), phiDelta );
+						phiDelta_Phi_Prod->Fill(Phi, phiDelta);
 					}
 
 					// we want to save events with weight 1
@@ -664,6 +679,9 @@ int main( int argc, char* argv[] ){
 	PhiH_PsiPrime->Write();
 	MRecoil_CosThetaDelta->Write();
 	MRecoil_PhiDelta->Write();
+	phiDelta_Phi_Prod->Write();
+	MassCorr->Write();
+	MassCorrW->Write();
 
 	diagOut->Close();
 	

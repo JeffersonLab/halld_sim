@@ -11,6 +11,7 @@
 #include "TLorentzRotation.h"
 
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/decayAngles.h"
 
 //#include <cmath>
 //#include <complex>
@@ -51,12 +52,12 @@ void OmegaPiPlotGenerator::createHistograms( ) {
    bookHistogram( kRecoilPiMass, new Histogram1D( 100, 0.9, 2.9, "MRecoilPi", "Invariant Mass of recoil and bachelor pion" ) );
    bookHistogram( kLambda, new Histogram1D( 110, 0.0, 1.1, "Lambda", "#lambda_{#omega}" ) );
    bookHistogram( kDalitz, new Histogram2D( 100, -2., 2., 100, -2., 2., "Dalitz", "Dalitz XY" ) );
-   bookHistogram( kThetaDelta, new Histogram1D( 100, 0., PI, "ThetaDelta", "#theta_{#pi^{+}}" ) );
+//   bookHistogram( kThetaDelta, new Histogram1D( 100, 0., PI, "ThetaDelta", "#theta_{#pi^{+}}" ) );
    bookHistogram( kCosThetaDelta, new Histogram1D( 100, -1., 1., "CosThetaDelta", "cos#theta_{#pi^{+}}" ) );
    bookHistogram( kPhiDelta, new Histogram1D( 100, -1*PI, PI, "PhiDelta", "#phi_{#pi^{+}}" ) );
-   bookHistogram( kSinSqThetaDelta, new Histogram1D( 100, 0., 1., "SinSqThetaDelta", "sin^{2}#theta_{#pi^{+}}" ) );
-   bookHistogram( kSin2ThetaDelta, new Histogram1D( 100, -1., 1., "Sin2ThetaDelta", "sin2#theta_{#pi^{+}}" ) );
-   bookHistogram( kCosSqThetaDelta, new Histogram1D( 100, 0., 1., "CosSqThetaDelta", "cos^{2}#theta_{#pi^{+}}" ) );
+//   bookHistogram( kSinSqThetaDelta, new Histogram1D( 100, 0., 1., "SinSqThetaDelta", "sin^{2}#theta_{#pi^{+}}" ) );
+//   bookHistogram( kSin2ThetaDelta, new Histogram1D( 100, -1., 1., "Sin2ThetaDelta", "sin2#theta_{#pi^{+}}" ) );
+//   bookHistogram( kCosSqThetaDelta, new Histogram1D( 100, 0., 1., "CosSqThetaDelta", "cos^{2}#theta_{#pi^{+}}" ) );
 }
 
 void
@@ -108,16 +109,23 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
   TLorentzVector Gammap = beam + target;
  
   //Calculate decay angles in helicity frame
-  vector <double> locthetaphi = getomegapiAngles(polAngle, omega, X, beam, Gammap);
+//  vector <double> locthetaphi = getomegapiAngles(polAngle, omega, X, beam, Gammap);
 
-  vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
+//  vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
 
-   GDouble cosTheta = TMath::Cos(locthetaphi[0]);
-   GDouble Phi = locthetaphi[1];
-   GDouble cosThetaH = TMath::Cos(locthetaphih[0]);
-   GDouble PhiH = locthetaphih[1];
-   GDouble prod_angle = locthetaphi[2];
-   GDouble lambda = locthetaphih[2];
+   vector< double > upperVertexAngles = getTwoStepAngles( X, omega, rhos_pip, rhos_pim, beam, target, 2, true );
+   vector< double > lowerVertexAngles = getOneStepAngles( recoil, proton, beam, target, 2, false );
+
+   GDouble cosTheta = TMath::Cos( upperVertexAngles[0] );
+   GDouble Phi = upperVertexAngles[1];
+   GDouble cosThetaH = TMath::Cos( upperVertexAngles[2] );
+   GDouble PhiH = upperVertexAngles[3];
+   GDouble prod_angle = getPhiProd( polAngle, X, beam, target, 2, true );
+   GDouble lambda = upperVertexAngles[4];
+
+   GDouble cosThetaDelta = TMath::Cos( lowerVertexAngles[0] );
+   GDouble phiDelta = lowerVertexAngles[1];
+
 
    // cout << "calls to fillHistogram go here" << endl;
    fillHistogram( kOmegaPiMass, b1_mass );
@@ -149,31 +157,8 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
    fillHistogram( kDalitz, dalitzx, dalitzy );
 
    // Angles related to lower vertex
-   TLorentzVector pip2 = recoil - proton; 
-   TLorentzRotation recoilBoost( -recoil.BoostVector() );
-   TLorentzVector target_recoilRF = recoilBoost * target; 
-   TLorentzVector beam_recoilRF = recoilBoost * beam; 
-   TLorentzVector upperVertex_recoilRF = recoilBoost * X; 
-   TLorentzVector pip2_recoilRF = recoilBoost * pip2; 
 
-   TVector3 y = ( target_recoilRF.Vect().Unit().Cross( upperVertex_recoilRF.Vect().Unit() ) ).Unit(); //GJ frame: z-axis along -target direction in baryon RF
-   TVector3 z = target_recoilRF.Vect().Unit();
-   TVector3 x = y.Cross( z ).Unit();
-
-   TVector3 angles( pip2_recoilRF.Vect().Dot( x ), pip2_recoilRF.Vect().Dot( y ), pip2_recoilRF.Vect().Dot( z ));
-
-   double thetaDelta = angles.Theta();
-   double cosThetaDelta = TMath::Cos( thetaDelta );
-   double phiDelta = angles.Phi();
-   double sinSqThetaDelta = TMath::Sin( thetaDelta ) * TMath::Sin( thetaDelta );
-   double cosSqThetaDelta = TMath::Cos( thetaDelta ) * TMath::Cos( thetaDelta );
-   double sin2ThetaDelta = TMath::Sin( 2.0 * thetaDelta );
-
-   fillHistogram( kThetaDelta, thetaDelta );
    fillHistogram( kCosThetaDelta, cosThetaDelta );
    fillHistogram( kPhiDelta, phiDelta );
-   fillHistogram( kSinSqThetaDelta, sinSqThetaDelta );
-   fillHistogram( kCosSqThetaDelta, cosSqThetaDelta );
-   fillHistogram( kSin2ThetaDelta, sin2ThetaDelta );
 }
 

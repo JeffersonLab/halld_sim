@@ -35,6 +35,7 @@
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -53,6 +54,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( Piecewise() );
   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
   AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+  AmpToolsInterface::registerAmplitude( DeltaAngles() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
@@ -136,6 +138,7 @@ if(makePlots) {
 
   omegapi_PlotGen plotGen( results , PlotGenerator::kNoGenMC ); // slow step to load ROOT trees
   cout << " Initialized ati and PlotGen" << endl;
+//  plotGen.setWeightMCByIntensity( false ); // turn off weighting by model
 
     // ************************
     // set up an output ROOT file to store histograms
@@ -233,12 +236,12 @@ if(makePlots) {
 	  else if (ivar == OmegaPiPlotGenerator::kRecoilPiMass)  histname += "MRecoilPi";
 	  else if (ivar == OmegaPiPlotGenerator::kLambda)  histname += "Lambda";
 	  else if (ivar == OmegaPiPlotGenerator::kDalitz)  histname += "Dalitz";
-	  else if (ivar == OmegaPiPlotGenerator::kThetaDelta)  histname += "ThetaDelta";
+//	  else if (ivar == OmegaPiPlotGenerator::kThetaDelta)  histname += "ThetaDelta";
 	  else if (ivar == OmegaPiPlotGenerator::kCosThetaDelta)  histname += "CosThetaDelta";
 	  else if (ivar == OmegaPiPlotGenerator::kPhiDelta)  histname += "PhiDelta";
-	  else if (ivar == OmegaPiPlotGenerator::kSinSqThetaDelta)  histname += "SinSqThetaDelta";
-	  else if (ivar == OmegaPiPlotGenerator::kCosSqThetaDelta)  histname += "CosSqThetaDelta";
-	  else if (ivar == OmegaPiPlotGenerator::kSin2ThetaDelta)  histname += "Sin2ThetaDelta";
+//	  else if (ivar == OmegaPiPlotGenerator::kSinSqThetaDelta)  histname += "SinSqThetaDelta";
+//	  else if (ivar == OmegaPiPlotGenerator::kCosSqThetaDelta)  histname += "CosSqThetaDelta";
+//	  else if (ivar == OmegaPiPlotGenerator::kSin2ThetaDelta)  histname += "Sin2ThetaDelta";
 
 	  else continue;
 	  
