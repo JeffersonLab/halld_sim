@@ -68,14 +68,14 @@ public:
   // the vertices or exponential t slopes then then the events will
   // be generated with a weight that recovers pure phase space.
   //
-  // A desirale option for some applications may be the following:
+  // A desirable option for some applications may be the following:
   //
   // addMomentumTransfer( 2.0 );
   // setReweightMask( kUpperVtxMass | kLowerVtxMass );
   //
   // In this case events will be generated with e^-2*|t| and, additional
   // upper vertex and lower vertex BW's as desired.  The weight with the
-  // events will unweight the BW's but no the t-distribution.  The
+  // events will unweight the BW's but not the t-distribution.  The
   // corresponding mass distributions then will no longer be pure phase
   // space but what one gets when phase space is weighted by e^-2*|t|
   
