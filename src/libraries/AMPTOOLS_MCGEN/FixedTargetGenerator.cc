@@ -61,21 +61,21 @@ FixedTargetGenerator::setLowerVtxMasses( const vector< double >& lvMasses ){
 }
 
 void
-FixedTargetGenerator::addUpperVtxBW( double mass, double width, double fraction = 1 ){
+FixedTargetGenerator::addUpperVtxBW( double mass, double width, double fraction ){
   
   m_upperBWGen.push_back( BreitWignerGenerator( mass, width ) );
   m_upperDecayChannel.addChannel( m_upperBWGen.size()-1, fraction );
 }
 
 void
-FixedTargetGenerator::addLowerVtxBW( double mass, double width, double fraction = 1 ){
+FixedTargetGenerator::addLowerVtxBW( double mass, double width, double fraction ){
   
   m_lowerBWGen.push_back( BreitWignerGenerator( mass, width ) );
   m_lowerDecayChannel.addChannel( m_lowerBWGen.size()-1, fraction );
 }
 
 void
-FixedTargetGenerator::addMomentumTransfer( double tSlope, double fraction = 1 ){
+FixedTargetGenerator::addMomentumTransfer( double tSlope, double fraction ){
   
   // we will always generate a negative argument:  exp( - t * tSlope  )
   // so take absolute value to avoid sign ambiguated

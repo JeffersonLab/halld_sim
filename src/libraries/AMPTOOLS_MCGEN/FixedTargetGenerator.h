@@ -45,8 +45,8 @@ public:
   // might peak.  If the kUpperVtxMass and/or kLowerVtxMass bits
   // are turned on in the reweight mask then weights will be provided
   // to smooth out these peaks in one or both distributions.
-  void addUpperVtxBW( double mass, double width, double fraction );
-  void addLowerVtxBW( double mass, double width, double fraction );
+  void addUpperVtxBW( double mass, double width, double fraction = 1 );
+  void addLowerVtxBW( double mass, double width, double fraction = 1 );
 
   // specify a range of mass to generate -- otherwise the full
   // kinematic limits are used
@@ -55,7 +55,7 @@ public:
   
   // these should be absolute values:  |t|
   void setMomentumTransferRange( double min, double max );
-  void addMomentumTransfer( double tSlope, double fraction );
+  void addMomentumTransfer( double tSlope, double fraction = 1 );
 
   // The mask a bitmask formed with the enums above -- the
   // default behavior is achieved by:
