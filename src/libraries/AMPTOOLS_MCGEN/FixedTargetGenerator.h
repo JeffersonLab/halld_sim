@@ -28,7 +28,10 @@ public:
 
   void setSeed( unsigned int seed ){ m_randGen.SetSeed( seed ); }
   
-  Kinematics* generate() const;
+  // by default include the beam four-vector as the first item
+  // in the generated kinematics object -- passing false
+  // to this function will suppress that behavior
+  Kinematics* generate( bool includeBeam = true ) const;
 
   // These functions setup the inital state.
   void setBeamEnergy( double eBeam );

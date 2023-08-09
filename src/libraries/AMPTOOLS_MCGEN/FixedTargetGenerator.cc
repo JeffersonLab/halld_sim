@@ -153,7 +153,7 @@ FixedTargetGenerator::setReweightMask( unsigned int mask ){
 // const member functions:
 
 Kinematics*
-FixedTargetGenerator::generate() const {
+FixedTargetGenerator::generate( bool includeBeam ) const {
 
   if( !m_limitsValid ) calculateLimits();
 
@@ -238,7 +238,9 @@ FixedTargetGenerator::generate() const {
   vector< TLorentzVector > lvP4 = vertexGenP4( top.second, lvPairs, m_lvMasses );
 
   // concatenate the lists together
-  vector< TLorentzVector > allP4 = uvP4;
+  vector< TLorentzVector > allP4;
+  if( includeBeam ) allP4.push_back( m_beam );
+  allP4.insert( allP4.end(), uvP4.begin(), uvP4.end() );
   allP4.insert( allP4.end(), lvP4.begin(), lvP4.end() );
     
   return new Kinematics( allP4, seedWeight );
