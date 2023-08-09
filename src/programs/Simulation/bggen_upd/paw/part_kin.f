@@ -6,7 +6,8 @@ C          =1 - theta (degrees)
 C          =2 - p(Y)-theta(x)(degrees) 
 C          =3 - theta rad 
 C          =4 - cos(th)  ~ dN/dOmega
-C          =4 - th  weight 1/sin(theta)
+C          =5 - th  weight 1/sin(theta)
+C          =6 - 1-cos(theta)
 C       KTYP>0 - GEANT particle type
 C          <=0  use KPYTH - PYTHIA KF type
 C
@@ -17,7 +18,8 @@ C
       LOGICAL HEXIST
 C
       INTEGER ip,j,ifirst,ievstart,nfind,ifind
-      REAL pf,th,qq,ct,thd
+      REAL pf,th,qq,ct,thd,cti
+      DOUBLE PRECISION dqq,dpf,dst,dct,dpt,dth,dcti
       DATA ifirst/1/
       DATA ievstart/0/
 C
@@ -47,14 +49,24 @@ C
 C         write(6,*) ifind,KGEANT,KPYTH,ITYP(1,ip),ITYP(3,ip)
          IF(ifind.NE.0) THEN
             nfind=nfind+1
-            qq=0.
+            dqq=0.
             DO j=1,3
-               qq=qq+POUT(j,ip)**2
+               dqq=dqq+DBLE(POUT(j,ip))**2
+               IF(j.EQ.2) dpt=SQRT(dqq)
             ENDDO
-            pf=SQRT(qq)
-            ct=POUT(3,ip)/pf
-            th=ACOS(ct)
-            thd=th*180./3.1416
+            dpf=SQRT(dqq)
+            dst=ASIN(dpt/dpf)
+            dct=SQRT(1.D0-dst**2)
+            IF(dst.LT.0.5D0) THEN
+               dth=ASIN(dst)
+            ELSE
+               dth=ACOS(dct)
+            ENDIF
+            dcti=1.D0-dct
+            ct=dct
+            th=dth
+            thd=th*180./3.14159
+            cti=dcti
 C
             IF(IFL.EQ.0) THEN
                CALL HFILL(IDH,pf,0.,1.)
@@ -68,6 +80,8 @@ C
                CALL HFILL(IDH,ct,0.,1.)
             ELSE IF(IFL.EQ.5) THEN
                IF(th.GT.0.) CALL HFILL(IDH,th,0.,1./SIN(th))
+            ELSE IF(IFL.EQ.6) THEN
+               CALL HFILL(IDH,cti,0.,1.)
             ENDIF
          ENDIF
       ENDDO

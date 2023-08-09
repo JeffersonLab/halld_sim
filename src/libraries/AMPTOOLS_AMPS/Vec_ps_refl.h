@@ -14,17 +14,9 @@
 using std::complex;
 using namespace std;
 
-// A class for describing the angular portion of the decay R->12
-// in the reflectivity basis for photon beams: m can be negative!
-// particles 1 and 2 are pseudoscalars
-//
-// j,m are the total and z projection of the spin of R
-// r=+/-1 indicates real/imaginary part of Vec_ps_refl
-// s=+/-1 multiplies with sqrt(1+/- P_gamma)
-
 #ifdef GPU_ACCELERATION
 void
-GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction );
+GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s );
 #endif
 
 class Kinematics;
@@ -36,7 +28,7 @@ public:
 	
 	Vec_ps_refl() : UserAmplitude< Vec_ps_refl >() { };
 	Vec_ps_refl( const vector< string >& args );
-	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s, int m_3pi, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta, GDouble polAngle, GDouble polFraction);
+	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s );
 	
 	string name() const { return "Vec_ps_refl"; }
     
@@ -49,7 +41,7 @@ public:
 	// Use this for indexing a user-defined data array and notifying
 	// the framework of the number of user-defined variables.
 	
-	enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_Phi = 4, uv_dalitz_z = 5, uv_dalitz_sin3theta = 6, uv_MX = 7, uv_MVec = 8, uv_MPs = 9, kNumUserVars };
+	enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_Phi = 4, uv_MX = 5, uv_MVec = 6, uv_MPs = 7, uv_beam_polFraction = 8, uv_beam_polAngle = 9, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	// This function needs to be defined -- see comments and discussion
@@ -88,14 +80,10 @@ private:
 	int m_s;
 	int m_3pi;
 	
-	AmpParameter dalitz_alpha;
-	AmpParameter dalitz_beta;
-	AmpParameter dalitz_gamma;
-	AmpParameter dalitz_delta;
-	
-	AmpParameter polAngle;
-	
+	//AmpParameter polAngle;
 	double polFraction;
+	double polAngle;
+	bool m_polInTree;
 	TH1D *polFrac_vs_E;
 };
 

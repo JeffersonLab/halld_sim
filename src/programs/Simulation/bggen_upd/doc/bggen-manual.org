@@ -8,7 +8,8 @@
 
 * Introduction
 ** This manual
-This manual can be converted to html, providing hyperlinks, "rich text" etc:
+The origin of this manual is stored in the text file doc/bggen-manual.org. It is readable as is.
+The manual can be converted to html, providing hyperlinks, "rich text" etc:
 #+begin_example
  $cd doc
  $emacs bggen-manual.org --batch -f org-export-as-html --kill # older org version <=7
@@ -36,14 +37,15 @@ It can do two kinds of simulation:
    ([[https://inspirehep.net/literature/756345][references therein]]).
 
 The photon beam spectrum is calculated using the code from R.Jones for 
-the coherent Bremsstrahlung.
+the coherent Bremsstrahlung. Alternatively, the beam energy spectrum can be set by the user.
 The effective reaction rate for a given beam energy
 is proportional to the product of the beam spectrum and the cross section of the reactions
 simulated at the given energy. For simulation of "minimum bias events" the full photoproduction
 cross section is used.
 
 /BGGEN/ writes out the generated events in the HDDM format which can be used as input for 
-the GlueX GEANT program.
+the GlueX GEANT program. It can also write out in different formats allowing to study the
+output very quickly.
  
 The /PYTHIA/ event records are transferred to the output as they are. The "low-energy"
 and binary reactions are simulated in the /BGGEN/ code, which includes simulating
@@ -67,6 +69,7 @@ of the initial kinematics and the particle's decays.
      - J/\psi production: because of a change in cobrems.F between /bggen_jpsi/ and /bggen/ (/bggen_upd/ uses
        the more recent version from /bggen/) the events were not identical. The distribution of the momenta
        of the final-state particles happen to be the same within the statistical fluctuations.
+   + The beam spectrum: A new option to set the beam spectrum "by hand" is added.
    + For the binary reaction 1 + 2 \rightarrow 3 + 4, we set 1: \gamma{} and 2: /proton/. The difference
      with /bggen_jpsi/:
      - The kinematic variable /t/ is defined now as (p_{3}-p_{1})^{2} (it was (p_{3}-p_{2})^{2}),
@@ -81,6 +84,13 @@ of the initial kinematics and the particle's decays.
        from a separate file /particle.ffr/. The data can be redefined in the main /run.ffr/ - see the examples
        in the /run/ directory and explanations in this document.
      - New /FFREAD/ commands added allowing to print out lists of the particle names and features from /PYTHIA/  
+6. 2022 Sept. 19 (E.Chudakov). The non-uniform particle decays in the binary production mode used
+    a non-standard frame - neither the Gottfried-Jackson, nor the Helicity frame. It turned out that
+    a 1+cos^{2}\theta distribution set for J/\psi in this non-standard frame was reflected to the same distribution 
+    in the Gottfried-Jackson frame. A uniform phase space distribution was not affected. Neither the PYTHIA
+    generator was affected.
+    The code was updated in a way that users may select either the Helicity or Gottfried-Jackson frame 
+    for the angular distribution of 2-body decays.  
 
 ** Installation
 
@@ -115,16 +125,21 @@ drwxr-xr-x 2 gen halld-2 4096 Mar 16 22:11 xsec_table       # auxiliary for calc
 #+end_example
 
 * Input data and controls
+
+The directory /run/ is used to run the program. It contains the input data.
 ** Input files
 #+begin_example
-lrwxrwxrwx 1 gen halld-2       12 Apr 13 11:14 fort.15 -> run_jpsi.ffr      # The symbolic links
-lrwxrwxrwx 1 gen halld-2       12 Apr 12 14:25 fort.16 -> particle.ffr      # can be set to the files needed
-lrwxrwxrwx 1 gen halld-2       17 Apr 12 17:02 fort.17 -> run_mcwrapper.ffr # for the current run
--rw-r--r-- 1 gen halld-2     3454 Apr 12 16:33 particle.ffr                 # table of particles and IDG --> KF matching
--rw-r--r-- 1 gen halld-2     1057 Mar 16 22:11 pythia.dat                   # input flags and values for /PYTHIA/
--rw-r--r-- 1 gen halld-2     8437 Apr 13 11:15 run_jpsi.ffr                 # example: control file for J/psi simulation
--rw-r--r-- 1 gen halld-2     3003 Apr 12 17:11 run_pyth.ffr                 # example: control file for BG simulation (/PYTHIA/ etc)
--rw-r--r-- 1 gen halld-2      426 Apr 12 17:01 run_mcwrapper.ffr            # auxiliary file with definitions to be changed by MCwrapper
+$ ls -l run/
+
+-rwxr-xr-x 1 gen halld-2 1397 Apr 22 16:51 config.sh                        # a script to configure a run
+-rw-r--r-- 1 gen halld-2 4138 Apr 14 18:02 particles.ffr                    # table of particles and IDG --> KF matching
+-rw-r--r-- 1 gen halld-2 1057 Apr 17 21:24 pythia.dat                       # input flags and values for /PYTHIA/
+-rw-r--r-- 1 gen halld-2 1827 May  3 22:53 README                           #
+-rw-r--r-- 1 gen halld-2 9546 Apr 27 09:35 run_jpsi_beamspectr.ffr          # example master file - jpsi production with a user's beam spectrum
+-rw-r--r-- 1 gen halld-2 8672 Apr 27 09:36 run_jpsi.ffr                     # example master file - jpsi production
+-rw-r--r-- 1 gen halld-2  426 Apr 12 17:01 run_mcwrapper.ffr                # auxiliary file with definitions to be changed by MCwrapper
+-rw-r--r-- 1 gen halld-2 5090 Apr 28 16:18 run_pyth_beampoints.ffr          # example master file - BG simulation (PYTHIA etc), a user's beam spectrum
+-rw-r--r-- 1 gen halld-2 3038 May  3 22:49 run_pyth.ffr                     # example master file - BG simulation (PYTHIA etc)
 #+end_example
 
 The /*.ffr/ files are set in the [[http://cds.cern.ch/record/2296371/files/ffio.pdf][FFREAD]] format[fn:ffread].
@@ -134,19 +149,37 @@ The same key can be set multiple times in the input file, the data in the later 
 overwrites the earlier lines. The keys started with * are treated differently - 
 the data are treated once the key is read, and can be put into other locations. The next
 similar key will not overwrite the previously set data. The lines are up to 120 characters long.
-Comments can be put after the # sign. "C ..." in the first column is a comment line.
+Comments can be put after the # sign. "C ..." in the first column is a comment line. It is convenient
+to comment out commands not needed for a particular run.
 
- 
-The main input file is read from /fort.15/.  It should be used for settings for a particular
-computing job.
-It is convenient to use a symbolic link 
-to some particular file, say
+The main commands for a particular simulation are stored in a master control file. One can clone
+an appropriate file in this directory, edit it and configure a particular computing job. 
 #+begin_example
-$ ln -s run_pyth.ffr fort.15
+$ cp run_pyth.ffr run_pyth_my.ffr
+$ emacs run_pyth_my.ffr            # make the needed changes
+$ ./config.sh run_pyth_my.ffr
+$ ls -l
+-rwxr-xr-x 1 gen halld-2 1397 Apr 22 16:51 config.sh
+lrwxrwxrwx 1 gen halld-2   12 May  3 23:31 fort.15 -> run_pyth_my.ffr
+lrwxrwxrwx 1 gen halld-2   13 May  3 23:31 fort.16 -> particles.ffr
+lrwxrwxrwx 1 gen halld-2   17 May  3 23:31 fort.17 -> run_mcwrapper.ffr
+-rw-r--r-- 1 gen halld-2 4138 Apr 14 18:02 particles.ffr
+-rw-r--r-- 1 gen halld-2 1057 Apr 17 21:24 pythia.dat
+-rw-r--r-- 1 gen halld-2 1827 May  3 22:53 README
+-rw-r--r-- 1 gen halld-2 9546 Apr 27 09:35 run_jpsi_beamspectr.ffr       
+-rw-r--r-- 1 gen halld-2 8672 Apr 27 09:36 run_jpsi.ffr                  
+-rw-r--r-- 1 gen halld-2  426 Apr 12 17:01 run_mcwrapper.ffr             
+-rw-r--r-- 1 gen halld-2 5090 Apr 28 16:18 run_pyth_beampoints.ffr       
+-rw-r--r-- 1 gen halld-2 3038 May  3 22:49 run_pyth.ffr                  
 #+end_example
+  
 The other /FFREAD/ input files can be read out using an /FFREAD/ command /READ/ in /fort.15/.
+They are linked to /fort.16/ and /fort.17/.
 They should be nearly static.
+
+The beginning of a master control file:
 #+begin_example
+$ head -16 run_pyth.ffr
 LIST                    #    print the commands while reading
 C ===    INPUT file for BGGEN
 C
@@ -162,13 +195,13 @@ C
 C ------------- General controls ---------------
 SIMUL     0             # type of simulation =0 - BG, =1 - exclusive (J/psi ...)         
 C                        =0 - BG (PYTHIA+low energy reactions)              
+C                        =1 - exclusive binary photoproduction, for example gamma+p-->J/psi+p        
 #+end_example
-A note: the commands lower in a /FFREAD/ input file can changed the data set by commands upper in the file. 
 
 The flag /SIMUL=0/ is set for the background simulation - /PYTHIA/+"low energy"
 
 *** Particle lists and interface to /GEANT/
-/BGGEN/ prepares data (event records) for /GEANT/ and uses internally the /GEANT3/ particle /IDG-s/, 
+/BGGEN/ prepares data (event records) for /GEANT/ and uses internally the /GEANT3/ particle /ID-s/, 
 say /IDG=14/ for protons. At the /BGGEN/ output there are two types of particles:
 + Particles decayed in /PYTHIA/ or /BGGEN/. For them /BGGEN/ sets /IDG=0/ for the output. They are not 
   processed by /GEANT/
@@ -178,14 +211,14 @@ say /IDG=14/ for protons. At the /BGGEN/ output there are two types of particles
   - particles leaving signals in the detectors
   - particles with a considerable decay path, as \Lambda{}^{0}
   - short living particles not specified in the standard /GEANT/, for example \eta{}' was not set in /GEANT3/. 
-/PYTHIA/ is using a standard particle nomenclature (see a PDG book for explanations), 
-In /PYTHIA/ for this particle /ID/ a variable name /KF/ is typically used. For the particles not decayed
+/PYTHIA/ is using a standard particle nomenclature  (see a PDG book for explanations), 
+For this identifier a variable name /KF/ is typically used in /PYTHIA/. For the particles not decayed
 (or not otherwise vanished) in /PYTHIA/ a match between /KF/ and /IDG/ must be set.
 
-/GEANT3/ sets up to 50 particles in the code with IDG from 1 to 50. The list does not contain
+The /GEANT3/ code sets up 50 particles with IDG from 1 to 50. The list does not contain
 low resonances as \rho and \Delta. The particle properties for /BGGEN/ are set in the file /particle.ffr/.
 Many of these definitions are needed for the proper operation of /BGGEN/, one
-should leave the /IDG \rightarrow KF/ relations, and the masses as they are. 
+should leave the /IDG \rightarrow KF/ relations, and the masses as they are in this file. 
 #+begin_example
 $cat particle.ffr
 C   PYTHIA: PY_dec=0 turns off decays of this particle in PYTHIA (left to GEANT tracking)
@@ -247,11 +280,20 @@ END
 #+end_example
 The purpose of the flags are:
 + The flag in column 3 /PY_dec=0/ forbids the decays of this particle in /PYTHIA/ (the are left to /GEANT/).
-+ /BGGEN/ simulates decays for the "low - energy" and for binary reactions The decay flags in the columns 6-8
++ /BGGEN/ simulates decays for the "low - energy" processes (/SIMUL 0/) and for binary reactions (/SIMUL 1/). 
+  The decay flags in the columns 6-8
   are the /IDGs/ for the decay products (up to 3). Only one decay mode is used. The flag in the column 9:
-  - =0 - isotropic decays
-  - =1 - \rho - type angular distribution
-  - =2 - J/\psi - type angular distribution
+  - = 0 - isotropic decays
+  - = 1 - \rho -   type angular distribution: (1-cos^{2}\theta_{rest}), in the Gottfried-Jackson frame    
+  - =-1 - \rho -   type angular distribution: (1-cos^{2}\theta_{rest}), in the Helicity frame    
+  - = 2 - J/\psi - type angular distribution: (1+cos^{2}\theta_{rest}), in the Gottfried-Jackson frame 
+  - =-2 - J/\psi - type angular distribution: (1+cos^{2}\theta_{rest}), in the Helicity frame 
+
+A note: Both frames are defined in the rest frame of the particle (say, J/\psi). In the Gottfried-Jackson frame the Z direction is 
+along the beam momentum in this frame. In the Helicity frame the Z direction is opposite to the recoil direction in this frame.
+In order to get the right angles
+the 4-momenta of the decay product, as of the beam or the recoil, should be boosted to the rest frame of J/\psi, either directly from
+the Lab frame or from the CM frame of the event.
 
 In the main input file one can redefine the decay parameters or add new particles, for example:
 
@@ -390,7 +432,7 @@ An example of commands that can be used in /fort.15/ (up to 500 such lines):
 ** Main input file /fort.15/ for setting parameters and controls 
 The commands can be grouped into several sections:
 *** general controls
-Note: some commands are commented out by a leading "C " in these examples.
+
 #+begin_example
 C ------------- General controls ---------------
 SIMUL     0             # type of simulation =0 - BG, =1 - binary, exclusive reactions
@@ -413,7 +455,9 @@ KEYS                    # print all the FF keys
 STOP
 #+end_example
 
-*** beam definitions
+*** beam and target definitions
+
+Settings for the coherent Bremsstrahlung photon beam:
 #+begin_example
 C ------------  Beam ---------------------------
 EELEC         11.7      # electron beam energy
@@ -426,12 +470,93 @@ DCOLLIM        0.005    # collimator diameter in m
 RADTHICK      50.E-6    # thickness of the radiator in m 
 C ----------------------------------------------
 C
-PARTINIT  1  14         # GEANT types of the interacting particles: gamma proton
+PARTINIT  1  14         # GEANT types of the interacting particles beam+target : gamma proton
+C
+NBEAMEXT      0         # User-defined beam spectrum - the number of bins/points (=0 - the Bremsstrahlung beam)
+#+end_example
+
+An example of settings for a user-defined beam spectrumis is shown
+below. The spectrum /dN/dE/ is defined in the limits /Emin:Emax/.
+However, the beam spectrum is simulated in the interval defined by the
+key /EPHLIM/, which should be fully contained in the /Emin:Emax/
+interval.
+#+begin_example 
+C
+C         nbins flg   Emin  Emax         flg=0 - bins of same width
+NBEAMEXT    100  0    8.0   12.0   #  User's beam spectrum setting
+RBEAMEXT  1.4963  1.4888  1.4815  1.4742  1.4670  1.4599  1.4528  1.4458  1.4388  1.4320
+          1.4252  1.4184  1.4118  1.4052  1.3986  1.3921  1.3857  1.3793  1.3730  1.3667
+          1.3605  1.3544  1.3483  1.3423  1.3363  1.3304  1.3245  1.3187  1.3129  1.3072
+          1.3015  1.2959  1.2903  1.2848  1.2793  1.2739  1.2685  1.2632  1.2579  1.2526
+          1.2474  1.2422  1.2371  1.2320  1.2270  1.2220  1.2170  1.2121  1.2072  1.2024
+          1.1976  1.1928  1.1881  1.1834  1.1788  1.1742  1.1696  1.1650  1.1605  1.1561
+          1.1516  1.1472  1.1429  1.1385  1.1342  1.1299  1.1257  1.1215  1.1173  1.1132
+          1.1091  1.1050  1.1009  1.0969  1.0929  1.0889  1.0850  1.0811  1.0772  1.0733
+          1.0695  1.0657  1.0619  1.0582  1.0545  1.0508  1.0471  1.0435  1.0399  1.0363
+          1.0327  1.0292  1.0256  1.0221  1.0187  1.0152  1.0118  1.0084  1.0050  1.0017
 C
 #+end_example
+There are two options:
++ /flg=0/ - the beam spectrum is defined as a histogram with the bin size /(Emax-Emin)/nbins/
++ /flg=1/ - the beam spectrum /dN/dE/ is defined in an arbitrary sample of /nbins/ points
+            for a specified array of the energy values. In this case the values /Emin/ and /Emax/
+            are not used. An example of such a setting is shown below.
+
+#+begin_example
+C ------------  Beam ---------------------------
+EELEC         11.9      # electron beam energy
+EEMIT          1.E-8    # beam emittance rad m
+C EPHLIM   0.15 11.7      # photon beam energy range in GeV
+EPHLIM   3.10 11.6      # photon beam energy range in GeV
+C EPEAK          8.7      # coherent peak energy
+C ZCOLLIM     7600.       # distance to the collimator in cm
+C DCOLLIM        0.005    # collimator diameter in m
+C RADTHICK      20.E-6    # thickness of the radiator in m
+C
+C          bins flg   Emin  Emax         flg=0 - bins of same width
+NBEAMEXT    107  1    0.   0.   #  User's beam spectrum setting
+C  --- spectrum dN/dE
+RBEAMEXT  3.9669  3.7209  3.5036  3.3103  3.1373  2.9814  2.8402  2.7119  2.5946  2.4870
+          2.3881  2.2967  2.2120  2.1333  2.0601  1.9917  1.9277  1.8677  1.8113  1.7582
+          1.7082  1.6609  1.6162  1.5947  1.5842  1.5738  1.5635  1.5534  1.5434  1.5335
+          1.5238  1.5142  1.5047  1.4953  1.4861  1.4769  1.4679  1.4590  1.4502  1.4414
+          1.4328  1.4243  1.4159  1.4076  1.3994  1.3913  1.3833  1.3754  1.3675  1.3598
+          1.3521  1.3445  1.3370  1.3296  1.3223  1.3151  1.3079  1.3008  1.2938  1.2869
+          1.2800  1.2732  1.2665  1.2598  1.2533  1.2468  1.2403  1.2339  1.2276  1.2214
+          1.2152  1.2091  1.2030  1.1970  1.1911  1.1852  1.1794  1.1736  1.1679  1.1622
+          1.1566  1.1511  1.1456  1.1401  1.1348  1.1294  1.1241  1.1189  1.1137  1.1085
+          1.1034  1.0984  1.0934  1.0884  1.0835  1.0787  1.0738  1.0690  1.0643  1.0596
+          1.0549  1.0503  1.0458  1.0412  1.0367  1.0323  1.0278
+C  ---  energy values
+EBEAMEXT  3.0250  3.2250  3.4250  3.6250  3.8250  4.0250  4.2250  4.4250  4.6250  4.8250
+          5.0250  5.2250  5.4250  5.6250  5.8250  6.0250  6.2250  6.4250  6.6250  6.8250
+          7.0250  7.2250  7.4250  7.5250  7.5750  7.6250  7.6750  7.7250  7.7750  7.8250
+          7.8750  7.9250  7.9750  8.0250  8.0750  8.1250  8.1750  8.2250  8.2750  8.3250
+          8.3750  8.4250  8.4750  8.5250  8.5750  8.6250  8.6750  8.7250  8.7750  8.8250
+          8.8750  8.9250  8.9750  9.0250  9.0750  9.1250  9.1750  9.2250  9.2750  9.3250
+          9.3750  9.4250  9.4750  9.5250  9.5750  9.6250  9.6750  9.7250  9.7750  9.8250
+          9.8750  9.9250  9.9750 10.0250 10.0750 10.1250 10.1750 10.2250 10.2750 10.3250
+         10.3750 10.4250 10.4750 10.5250 10.5750 10.6250 10.6750 10.7250 10.7750 10.8250
+         10.8750 10.9250 10.9750 11.0250 11.0750 11.1250 11.1750 11.2250 11.2750 11.3250
+         11.3750 11.4250 11.4750 11.5250 11.5750 11.6250 11.6750 
+#+end_example
+
+On the technical side, the beam spectrum is simulated using the /HRNDM1/ function
+of /HBOOK/, which provides a smooth continuous distribution within the histogram limits.
+The appropriate histogram is filled in the following way:
+
+1. Bremsstrahlung beam: the limits set by the key /EPHLIM/, fine binning of about 5~MeV.
+2. User-defined, /ifl=0/: the limits and number of bins are defined by the key /NBEAMEXT/. Only the values within /EPHLIM/ limits are accepted (up to 1000 tries).
+3. User-defined, /ifl=1/. The histogram is booked as in the item 1 and filled using the 3-rd degree polynomial interpolation.
+
+A note: for the beam energy simulation the beam energy spectrum is multiplied by the cross section
+of the process at the given energy. For /SIMUL 0/ it is the full photoproduction cross section,
+for exclusive reactions /SIMUL 1/ the user-defined cross section table is used. 
+  
 *** Setting for the minimum bias events simulation: PYTHIA+low energy
 #+begin_example 
  ------------  BG simulation ------------------
+SIMUL        0
 C                       PYTHIA flags are set in a file pythia.dat
 EPYTHMIN     3.         # minimal energy for PYTHIA simulation
 ELOWMIN      0.15       # minimal energy for the low energy processes generator 
@@ -450,6 +575,7 @@ C                         # SELECTEV 333 221   # would require at least one \phi
 *** Setting for the binary reaction simulation: here for J/\psi p 
 
 #+begin_example
+SIMUL   1
 C ==========================================================================
 C  reac - J/psi: gamma p -> J/psi p 
 C
@@ -460,10 +586,8 @@ RADCORR   183         # radiative corrections for J/psi decay
 C
 C ----------------------------------------------------
 C               t-dependence 3 energy intervals  (Lubomir)
-C         tmin tmax
-REACTLIM  -11.   0.          # t limits (simulated in narrower ranges depending on the beam energy)
-C                a1      a2     a3    a4    a5      - parameters of the t-distribution function 
-C          Emax  Norm  slope1 slope2 fac2   fac3   : dsigma/dt~ Norm*(exp(slope1*t)+exp(slope2*t)*fac2)/(1-fac3**t)^4
+REACTLIM  -11.   0.          # t limits wide enough for the full energy range (simulated in the kinem. allowed limits)
+C          Emax Norm   slope1 slope2 fac2  dipole     : dsigma/dt~ Norm*(exp(slope1*t)+exp(slope2*t)*fac2)/(1+t*dipole)**4
 REACTDIS1  9.28  1.    1.52  -0.650 0.00119  0.  # energy range 1       Ebeam<9.28 GeV
 REACTDIS2 10.36  1.    1.22   0.268 0.033    0.  # energy range 2  9.28<Ebeam<10.36 GeV
 REACTDIS3 13.    1.    1.89   0.646 0.149    0.  # energy range 3 10.36<Ebeam<13 GeV
@@ -545,11 +669,11 @@ event the beam energy is compared with this limits sequentially. A command:
 REACTDIS1  13.    1.    1.16     0.  0.0    0.   # example for a single exponential exp(1.16*t)
 #+end_example
 would set only one energy interval (since /E_{beam}<13 GeV/) and a single exponential 
-function with a slope of 1.16 /GeV^{-1}/.
+function with a slope of 1.16 /GeV^{-2}/.
 
 A command
 #+begin_example 
-REACTLIM  -11.   0.          # t limits (simulated in narrower ranges depending on the beam energy)
+REACTLIM  -11.   0.          # t limits wide enough for the full energy range (simulated in the kinem. allowed limits)
 #+end_example
 sets a range of the /t/ variable wide enough for all beam energies. 
 Simulation is done in the proper interval for the given beam energy in the event.
@@ -561,6 +685,7 @@ Simulation is done in the proper interval for the given beam energy in the event
 | Key       | Variable to fill | # of words | Type    |          Default | Function                                                     |
 |-----------+------------------+------------+---------+------------------+--------------------------------------------------------------|
 | DCOLLIM   | DCOLL            |          1 | REAL    |           0.0050 | Diameter of the collimator, m                                |
+| EBEAMEXT  | ENBMEXT          |       1000 | REAL    |                0 | User-defined beam spectrum: array of values of dN/dE         |
 | EELEC     | EELEC            |          1 | REAL    |              12. | Electron beam energy, GeV                                    |
 | EEMIT     | EEMIT            |          1 | REAL    |            1.E-8 | Beam emittance r * m                                         |
 | ELOWMIN   | ELOWMIN          |          1 | REAL    |             0.15 | Minimal beam energy for low energy background generator, GeV |
@@ -569,12 +694,14 @@ Simulation is done in the proper interval for the given beam energy in the event
 | EPYTHMIN  | EPYMIN           |          1 | REAL    |               3. | Minimal beam energy for PYTHIA                               |
 | LISTPYTH  | LISTPYTH         |          1 | INTEGER |                0 | =1 print PYTHIA particle list, =2 + decay channels           |
 | LISTMLIM  | AMLIST           |          1 | REAL    |               6. | Print particles info if mass<AMLIST                          |
+| NBEAMEXT  | NBMEXT           |          4 | MIXED   |                0 | User-defined beam spectrum: number of bins                   |
 | NPRIEV    | NPRIEV           |          1 | INTEGER |                0 | Number of events to print                                    |
 | *PARTICLE | K_PTMP(1)        |         16 | MIXED   |             16*0 | Particles parameters, used as *PARTICLE                      |
 | PARTINIT  | IPINIT(1)        |          2 | INTEGER |            1  14 | Geant particle IDs for the beam and target                   |
-| *PYTMOD   | KPYMOD(1)        |          8 | MIXED   |           8*' '  | Commands to PYTHIA, as *PYTMOD 'PARP(2)=3.'                  |
+| *PYTMOD   | KPYMOD(1)        |          8 | MIXED   |            8*' ' | Commands to PYTHIA, as *PYTMOD 'PARP(2)=3.'                  |
 | RADCORR   | IRADCORR(1)      |         10 | INTEGER |                0 | Do rad corrections for decays of particles with KF listed    |
 | RADTHICK  | RADT             |          1 | REAL    |           50.E-6 | Radiator thickness in m                                      |
+| RBEAMEXT  | RABMEXT          |       1000 | REAL    |                0 | User-defined beam spectrum: array of values of the energy    |
 | REACENER  | ELREAC(1)        |       3003 | MIXED   | -1. -1. 0 3000*0 | Binary reaction energy dependence: range, N points, xsection |
 | REACPART  | IPREAC(1)        |          2 | INTEGER |           -1  -1 | Geant particle IDs for the exclusive binary reaction         |
 | REACTDIS1 | TPAREAC(1,1)     |         11 | REAL    |            11*0. | /t/ distr: E_{max}, parameters of the function               |

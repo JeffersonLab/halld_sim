@@ -16,17 +16,26 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
 	FCAL_THRESHOLD          = 0.0; // 108
 	FCAL_THRESHOLD_SCALING  = 0.0; // (110/108)
 	FCAL_ENERGY_WIDTH_FLOOR = 0.0; // 0.03
-
+	FCAL_ENERGY_RANGE       = 8.0; // 8 GeV for E_{e^-} = 12GeV
+	
 	// Get values from CCDB
-	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
-    map<string, double> fcalparms;
-    if(loop->GetCalib("FCAL/fcal_parms", fcalparms)) { 
-     	jerr << "Problem loading FCAL/fcal_parms from CCDB!" << endl;
-    } else {
-       	FCAL_PHOT_STAT_COEF   = fcalparms["FCAL_PHOT_STAT_COEF"]; 
-       	FCAL_BLOCK_THRESHOLD  = fcalparms["FCAL_BLOCK_THRESHOLD"];
+	cout << "Get PHOTON_BEAM/endpoint_energy from CCDB ..." << endl;
+	map<string, float> beam_parms;
+	if (loop->GetCalib("PHOTON_BEAM/endpoint_energy", beam_parms)) {
+	  jerr << "Problem loading PHOTON_BEAM/endpoint_energy from CCDB!" << endl;
+	} else {
+	  double endpoint_energy = beam_parms["PHOTON_BEAM_ENDPOINT_ENERGY"];
+	  if (endpoint_energy > 12) FCAL_ENERGY_RANGE = 8. / 12. * endpoint_energy;
 	}
-		
+	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
+	map<string, double> fcalparms;
+	if(loop->GetCalib("FCAL/fcal_parms", fcalparms)) { 
+	  jerr << "Problem loading FCAL/fcal_parms from CCDB!" << endl;
+	} else {
+	  FCAL_PHOT_STAT_COEF   = fcalparms["FCAL_PHOT_STAT_COEF"]; 
+	  FCAL_BLOCK_THRESHOLD  = fcalparms["FCAL_BLOCK_THRESHOLD"];
+	}
+	
 	cout<<"get FCAL/gains from calibDB"<<endl;
     vector <double> FCAL_GAINS_TEMP;
     if(loop->GetCalib("FCAL/gains", FCAL_GAINS_TEMP)) {
@@ -207,7 +216,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	 double Ethreshold=fcal_config->FCAL_BLOCK_THRESHOLD;
 	 double sigEfloor=fcal_config->FCAL_ENERGY_WIDTH_FLOOR;
 	 double sigEstat=fcal_config->FCAL_PHOT_STAT_COEF;
-	 double Erange = 8.0;
+	 double Erange = fcal_config->FCAL_ENERGY_RANGE;
          
 	 if (row<DFCALGeometry::kBlocksTall&&column<DFCALGeometry::kBlocksWide){
 	   // correct simulation efficiencies 
@@ -232,7 +241,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	     hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
 	     hddm_s::FcalTruthLightGuideList::iterator lgiter;
 	     for (lgiter = lghits.begin(); lgiter != lghits.end(); lgiter++) {
-	       E += lgiter->getE();
+	       E += lgiter->getDE();
 	     }
 	   }
 	   // Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
