@@ -10,8 +10,6 @@
 
 #include <vector>
 
-#define PI 3.14159
-
 class Kinematics;
 
 class FixedTargetGenerator {

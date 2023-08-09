@@ -1,6 +1,7 @@
 
 #include "TLorentzVector.h"
 #include "TRandom.h"
+#include "TMath.h"
 
 #include "AMPTOOLS_MCGEN/FixedTargetGenerator.h"
 #include "IUAmpTools/Kinematics.h"
@@ -43,6 +44,20 @@ m_limitsValid( false )
   setTargetMass( targetMass );
   
   calculateLimits();
+}
+
+void
+FixedTargetGenerator::setUpperVtxMasses( const vector< double >& uvMasses ){
+  
+  m_uvMasses = uvMasses;
+  m_limitsValid = false;
+}
+
+void
+FixedTargetGenerator::setLowerVtxMasses( const vector< double >& lvMasses ){
+  
+  m_lvMasses = lvMasses;
+  m_limitsValid = false;
 }
 
 void
@@ -203,7 +218,7 @@ FixedTargetGenerator::generate() const {
     // by seedWeight to recover phase space.  True phase space
     // will only be recovered if m_reweightMask = 7 (all bits on).
     
-    psWeight = pcm( m_W, lvM, uvM )/(4*PI*m_W);
+    psWeight = pcm( m_W, lvM, uvM )/(4*TMath::Pi()*m_W);
     
     psWeight *= vertexPS( uvPairs, m_uvMasses );
     psWeight *= vertexPS( lvPairs, m_lvMasses );
@@ -367,7 +382,7 @@ FixedTargetGenerator::calculateLimits() const {
   // now calculate the max weight by computing the products of the maximum
   // relative momentum at every step of the decay
   
-  m_maxWeight = pcm( m_W, m_lvMin, m_uvMin )/(4*PI*m_W);
+  m_maxWeight = pcm( m_W, m_lvMin, m_uvMin )/(4*TMath::Pi()*m_W);
   
   // for each of the vertices, we are going to step backwards starting
   // from the final two stable particles -- the maximum momentum for these
@@ -529,7 +544,7 @@ FixedTargetGenerator::decay( const TLorentzVector& p4Initial,
 
   // then rotate appropriately
   p4Final.first.RotateY( acos( cosTheta ) );
-  p4Final.first.RotateZ( m_randGen.Uniform( 0, 2*PI ) );
+  p4Final.first.RotateZ( m_randGen.Uniform( 0, 2*TMath::Pi() ) );
   p4Final.second.SetVectM( -p4Final.first.Vect(), m2 );
   
   // then boost to the frame of initial state
