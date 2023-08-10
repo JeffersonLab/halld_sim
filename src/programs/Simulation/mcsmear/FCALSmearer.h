@@ -27,8 +27,8 @@ class fcal_config_t
 	double FCAL_ENERGY_WIDTH_FLOOR;	
 	double INSERT_PHOT_STAT_COEF;
 	double INSERT_ENERGY_WIDTH_FLOOR;	
-
-    bool FCAL_ADD_LIGHTGUIDE_HITS;
+	double FCAL_ENERGY_RANGE;
+	bool FCAL_ADD_LIGHTGUIDE_HITS;
 	
 	vector< vector<double > > block_efficiencies;
 	

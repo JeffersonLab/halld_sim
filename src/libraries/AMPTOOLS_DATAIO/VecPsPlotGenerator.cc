@@ -34,7 +34,8 @@ void VecPsPlotGenerator::createHistograms( ) {
    bookHistogram( kRecoilMass, new Histogram1D( 100, 0.9, 1.9 , "MRecoil", "Invariant Mass of Recoil [GeV]" ) );
    bookHistogram( kProtonPsMass, new Histogram1D( 100, 0.9, 2.9, "MProtonPs", "Invariant Mass of proton and bachelor Ps [GeV]" ) );
    bookHistogram( kRecoilPsMass, new Histogram1D( 100, 0.9, 2.9, "MRecoilPs", "Invariant Mass of recoil and bachelor Ps [GeV]" ) );
-  
+   bookHistogram( kLambda, new Histogram1D( 110, 0.0, 1.1, "Lambda", "#lambda_{#omega}" ) );
+   bookHistogram( kDalitz, new Histogram2D( 100, -2., 2., 100, -2., 2., "Dalitz", "Dalitz XY" ) );
 }
 
 void
@@ -54,16 +55,23 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    TLorentzVector recoil = kin->particle( 1 );
    TLorentzVector bach = kin->particle( 2 );
 
-   bool m_3pi = true;  // vector decays to 3pi by default (omega)
-   int min_recoil = 6; // min particle index for recoil sum
+   // default is 2-body vector decay (set flag in config file for omega->3pi)
+   bool m_3pi = false;  
 
-   // check config file for 3pi dalitz parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
-   int nargs  = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0).size();
-   if(nargs == 11) m_3pi = false;
+   // min particle index for recoil sum
+   int min_recoil = 5; 
+
+   // check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
+   const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
+   for(uint ioption=5; ioption<args.size(); ioption++) {
+          TString option = args[ioption].c_str();
+	  if(option.EqualTo("omega3pi")) m_3pi = true;
+   }
 
    TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
+   double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc, dalitzx, dalitzy; //initialize with 0?
 
-   if(m_3pi==1) {
+   if(m_3pi) {
 	  // omega ps proton, omega -> 3pi (6 particles)
 	  // omega pi- Delta++, omega -> 3pi (7 particles)
           TLorentzVector pi0 = kin->particle( 3 );//omega's pi0
@@ -73,6 +81,19 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
           vec_daught1 = pip;
           vec_daught2 = pim;
 	  min_recoil = 6;
+
+	  // Dalitz variables
+	  TLorentzVector p2 = pi0;
+	  TLorentzVector p3 = pip;
+	  TLorentzVector p4 = pim;
+	  dalitz_s = (p3+p4).M2();//s=M(pip pim)
+	  dalitz_t = (p2+p3).M2();//s=M(pip pi0)
+	  dalitz_u = (p2+p4).M2();//s=M(pim pi0)
+	  dalitz_d = 2*(p2+p3+p4).M()*( (p2+p3+p4).M() - ((2*0.13957018)+0.1349766) );
+	  dalitz_sc = (1/3.)*( (p2+p3+p4).M2() + ((2*(0.13957018*0.13957018))+(0.1349766*0.1349766)) );
+	  dalitzx = sqrt(3.)*(dalitz_t - dalitz_u)/dalitz_d;
+	  dalitzy = 3.*(dalitz_sc - dalitz_s)/dalitz_d;
+
    }
    else {
 	  // omega ps proton, omega -> pi0 g (4 particles)
@@ -121,6 +142,7 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    GDouble cosThetaH = TMath::Cos(locthetaphih[0]);
    GDouble PhiH = locthetaphih[1];
    GDouble prod_angle = locthetaphi[2];
+   GDouble lambda = locthetaphih[2];
 
    //cout << "calls to fillHistogram go here" << endl;
    fillHistogram( kVecPsMass, X.M() );
@@ -133,5 +155,7 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    fillHistogram( kRecoilMass, recoil_mass );
    fillHistogram( kProtonPsMass, proton_ps.M() );
    fillHistogram( kRecoilPsMass, recoil_ps.M() );
+   fillHistogram( kLambda, lambda );
+   fillHistogram( kDalitz, dalitzx, dalitzy );
 
 }
