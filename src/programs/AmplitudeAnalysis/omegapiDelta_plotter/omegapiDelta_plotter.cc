@@ -197,25 +197,25 @@ int main( int argc, char* argv[] ){
 
 				// turn on all sums by default
 				for (unsigned int i = 0; i < sums.size(); i++) plotGen.enableSum( i );
-	
-				// pick PosHelNegPolConj sum to stay on, others get turned off
+/*
+				// pick PosHelPosPolConj sum to stay on, others get turned off
 				for (unsigned int i = 0; i < sums.size(); i++){
 					bool disableSum = false;
-					if( sums[i].find( "PosHelNegPolConj" ) == std::string::npos ) disableSum = true;
+					if( sums[i].find( "PosHelPosPolConj" ) == std::string::npos ) disableSum = true;
 					if( disableSum ){
 						plotGen.disableSum( i );
 						cout << "Disable sum: " << sums[i] << endl;
 					}
 				}
-
+*/
 				// turn off unwanted amplitudes
-//	       			for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
-//					if( amps[jamp].find( locampname.data() ) == std::string::npos ) {
-//						plotGen.disableAmp( jamp );
-//	    					cout << "Disable amplitude " << amps[jamp] << endl;
-//		  			}
-//				}
-	      		}
+				for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
+					if( amps[jamp].find( locampname.data() ) == std::string::npos ) {
+						plotGen.disableAmp( jamp );
+						cout << "Disable amplitude " << amps[jamp] << endl;
+					}
+				}
+			}
 
 	      		cout << "Looping over input data" << endl;
       			// loop over data, accMC, and genMC
@@ -423,7 +423,7 @@ int main( int argc, char* argv[] ){
     	// ************************
     	// start the GUI
     	// ************************
-/*
+
   	if(makePlots && showGui) {
 
 		cout << ">> Plot generator ready, starting GUI..." << endl;
@@ -449,7 +449,7 @@ int main( int argc, char* argv[] ){
 	  	app.Run();
 	     	cout << " App running" << endl;
   	}
-*/
+
 	}    
   	return 0;
 
