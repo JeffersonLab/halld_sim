@@ -46,6 +46,7 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -88,9 +89,9 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
 
   ati.finalizeFit();
 
-//  if( seedfile.size() != 0 && !fitFailed ){
+  if( seedfile.size() != 0 && !fitFailed ){
     ati.fitResults()->writeSeed( seedfile );
-//  }
+  }
 
   return ati.likelihood();
 }
@@ -290,7 +291,7 @@ int main( int argc, char* argv[] ){
          cout << "   -c <file>\t\t\t\t config file" << endl;
          cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
          cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
-            cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
+         cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
          cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          exit(1);}
@@ -334,6 +335,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+   AmpToolsInterface::registerAmplitude( DeltaAngles() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
