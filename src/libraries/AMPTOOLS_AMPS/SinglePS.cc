@@ -21,20 +21,14 @@
 SinglePS::SinglePS( const vector< string >& args ) :
 UserAmplitude< SinglePS >( args )
 {
-  //assert( args.size() == 11 );
-  
-  
-//  m_j = atoi( args[0].c_str() ); // resonance spin J
-//  m_m = atoi( args[1].c_str() ); // spin projection (Lambda)
-//  m_l = atoi( args[2].c_str() ); // partial wave L
   m_r = atoi( args[0].c_str() ); // real (+1) or imaginary (-1)
   m_s = atoi( args[1].c_str() ); // sign for polarization in amplitude
 
   // default polarization information stored in tree
   m_polInTree = true;
 
-  // 5 possibilities to initialize this amplitude:
-  // (with <J>: total spin, <m>: spin projection, <l>: partial wave, <r>: +1/-1 for real/imaginary part; <s>: +1/-1 sign in P_gamma term)
+  // 2 possibilities to initialize this amplitude:
+  // (with <r>: +1/-1 for real/imaginary part; <s>: +1/-1 sign in P_gamma term)
 
   // loop over any additional amplitude arguments to change defaults
   for( uint ioption = 2; ioption < args.size(); ioption++ ) {
@@ -50,7 +44,7 @@ UserAmplitude< SinglePS >( args )
 		  else if(polOption.Contains(".root")) {
 			  polFraction = 0.;
 			  TFile* f = new TFile( polOption );
-			  polFrac_vs_E = (TH1D*)f->Get( args[7].c_str() );
+			  polFrac_vs_E = (TH1D*)f->Get( args[4].c_str() );
 			  assert( polFrac_vs_E != NULL );
 		  }
 		  else {
@@ -61,7 +55,6 @@ UserAmplitude< SinglePS >( args )
   }
 
   // make sure values are reasonable
-//  assert( abs( m_m ) <= m_j );
   // m_r = +1 for real
   // m_r = -1 for imag
   assert( abs( m_r ) == 1 );
