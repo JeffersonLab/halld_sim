@@ -24,6 +24,8 @@ UserAmplitude< SinglePS >( args )
   m_r = atoi( args[0].c_str() ); // real (+1) or imaginary (-1)
   m_s = atoi( args[1].c_str() ); // sign for polarization in amplitude
 
+  lowerVertex = args[2].c_str(); // indices of proton and pi+ from the lower vertex
+
   // default polarization information stored in tree
   m_polInTree = true;
 
@@ -31,20 +33,20 @@ UserAmplitude< SinglePS >( args )
   // (with <r>: +1/-1 for real/imaginary part; <s>: +1/-1 sign in P_gamma term)
 
   // loop over any additional amplitude arguments to change defaults
-  for( uint ioption = 2; ioption < args.size(); ioption++ ) {
+  for( uint ioption = 3; ioption < args.size(); ioption++ ) {
 	  TString option = args[ioption].c_str();
 
 	  // polarization provided in configuration file
-	  if( ioption == 2 && option.IsFloat() ) {
+	  if( ioption == 3 && option.IsFloat() ) {
 		  m_polInTree = false;
-		  polAngle = atof( args[2].c_str() );
+		  polAngle = atof( args[3].c_str() );
 	  
-		  TString polOption = args[3].c_str();
+		  TString polOption = args[4].c_str();
 		  if( polOption.IsFloat() ) polFraction = atof( polOption.Data() );
 		  else if(polOption.Contains(".root")) {
 			  polFraction = 0.;
 			  TFile* f = new TFile( polOption );
-			  polFrac_vs_E = (TH1D*)f->Get( args[4].c_str() );
+			  polFrac_vs_E = (TH1D*)f->Get( args[5].c_str() );
 			  assert( polFrac_vs_E != NULL );
 		  }
 		  else {
@@ -94,19 +96,21 @@ SinglePS::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 		    beam_polFraction = polFrac_vs_E->GetBinContent(bin);
     }
   }
-  
-  TLorentzVector ps ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); // pi-
+ 
+  string lv1; lv1 += lowerVertex[0];
+  string lv2; lv2 += lowerVertex[1];
 
-  TLorentzVector ps_recoil(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); // pi+
-  TLorentzVector proton_recoil(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]); // proton
+  int index1 = atoi( lv1.c_str() );
+  int index2 = atoi( lv2.c_str() );
+ 
+  TLorentzVector recoil1( pKin[index1][1], pKin[index1][2], pKin[index1][3], pKin[index1][0]); // pi+
+  TLorentzVector recoil2( pKin[index2][1], pKin[index2][2], pKin[index2][3], pKin[index2][0]); // proton
 
-  TLorentzVector recoil = ps_recoil + proton_recoil;
+  TLorentzVector recoil = recoil1 + recoil2;
 
   //////////////////////// Boost Particles and Get Angles//////////////////////////////////
 
   TLorentzVector target(0,0,0,0.938);
-  //Helicity coordinate system
-  TLorentzVector Gammap = beam + target;
 
   // set beam polarization angle to 0 degrees; apply diamond orientation in calcAmplitude
   double phiProd = getPhiProd( 0., recoil, beam, target, 2, false ); 

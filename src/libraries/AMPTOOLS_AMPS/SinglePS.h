@@ -76,6 +76,7 @@ private:
 	int m_r;
 	int m_s;
 
+	string lowerVertex;
 	
 	//AmpParameter polAngle;
 	double polFraction;
