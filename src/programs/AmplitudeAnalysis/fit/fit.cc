@@ -46,6 +46,7 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/SinglePS.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -337,6 +338,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+   AmpToolsInterface::registerAmplitude( SinglePS() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
