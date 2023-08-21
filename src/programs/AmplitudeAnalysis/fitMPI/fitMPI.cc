@@ -44,6 +44,8 @@
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/DeltaAngles.h"
+#include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/SinglePS.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -131,6 +133,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
          cout << "FIT " << i << " OF " << numRnd << endl;
          cout << endl << "###############################" << endl;
 
+	 // re-initialize parameters from configuration file (reset those not randomized)
+	 ati.reinitializePars();
+
          // randomize parameters
          ati.randomizeProductionPars(maxFraction);
          for(size_t ipar=0; ipar<parRangeKeywords.size(); ipar++) {
@@ -153,6 +158,8 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
          curLH = ati.likelihood();
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
 
+	 ati.finalizeFit(to_string(i));
+
          if( seedfile.size() != 0 && !fitFailed ){
             string seedfile_rand = seedfile + Form("_%d.txt", i);
             ati.fitResults()->writeSeed( seedfile_rand );
@@ -163,7 +170,6 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
             minLH = curLH;
             minFitTag = i;
          }
-         ati.finalizeFit(to_string(i));
       }
    }
 
@@ -266,11 +272,11 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
 
+         ati.finalizeFit(to_string(i));
          if( seedfile.size() != 0 && !fitFailed ){
             string seedfile_scan = seedfile + Form("_scan_%d.dat", i);
             ati.fitResults()->writeSeed( seedfile_scan );
          }
-         ati.finalizeFit(to_string(i));
       }
    }
    ati.exitMPI();
@@ -376,6 +382,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( ComplexCoeff() );
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( DeltaAngles() );
+   AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+   AmpToolsInterface::registerAmplitude( SinglePS() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );

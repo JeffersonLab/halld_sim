@@ -13,6 +13,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
+#include "AMPTOOLS_DATAIO/ROOTDataReaderHist.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReaderTEM.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
@@ -47,6 +48,7 @@
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/DeltaAngles.h"
+#include "AMPTOOLS_AMPS/SinglePS.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -115,6 +117,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     cout << endl << "###############################" << endl;
     cout << "FIT " << i << " OF " << numRnd << endl;
     cout << endl << "###############################" << endl;
+
+    // re-initialize parameters from configuration file (reset those not randomized)
+    ati.reinitializePars();
 
     // randomize parameters
     ati.randomizeProductionPars(maxFraction);
@@ -336,11 +341,13 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
    AmpToolsInterface::registerAmplitude( DeltaAngles() );
+   AmpToolsInterface::registerAmplitude( SinglePS() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
+   AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
    AmpToolsInterface::registerDataReader( FSRootDataReader() );
    AmpToolsInterface::registerDataReader( FSRootDataReaderTEM() );
 

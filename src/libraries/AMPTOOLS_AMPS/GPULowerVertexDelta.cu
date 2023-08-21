@@ -3,11 +3,15 @@
 #include "GPUManager/GPUCustomTypes.h"
 #include "GPUManager/CUDA-Complex.cuh"
 
+<<<<<<< HEAD
 #include "AMPTOOLS_AMPS/breakupMomentum.cuh"
 #include "AMPTOOLS_AMPS/barrierFactor.cuh"
 
 #include "GPUUtils/wignerD.cuh"
 #include "GPUUtils/clebsch.cuh"
+=======
+#include "GPUUtils/wignerD.cuh"
+>>>>>>> master
 ///////////////////////////////////////////////////////////////////////////////
 __device__ WCUComplex CZero = { 0, 0 };
 ///////////////////////////////////////////////////////////////////////////////

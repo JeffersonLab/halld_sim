@@ -6,7 +6,7 @@ using namespace std;
 
 GDouble
 wignerDSmall( GDouble aj, GDouble am, GDouble an, GDouble beta ){
-  
+
 	// Calculates the beta-term
 	//                         d j mn (beta)
 	// in the matrix element of the finite rotation operator
@@ -15,9 +15,9 @@ wignerDSmall( GDouble aj, GDouble am, GDouble an, GDouble beta ){
 	// Quantum Theory of Angular Momentum, World Scientific,
 	// Singapore 1988.
 	// CERNLIB DDJMNB function translated from Fortran to C++ by Rene Brun
-  
+
 	double f = 8.72664625997164788e-3;    
-  
+
   double fcl[51] = { 0 , 0 ,
 		6.93147180559945309e-1 ,1.79175946922805500e00,
 		3.17805383034794562e00 ,4.78749174278204599e00,
@@ -48,10 +48,10 @@ wignerDSmall( GDouble aj, GDouble am, GDouble an, GDouble beta ){
 	int jpm = int(aj+am);
 	int jpn = int(aj+an);
 	int jmm = int(aj-am);	
-	
+
 	int jmn = int(aj-an);
 	int mpn = int(am+an);
-	
+
 	double r = 0;
 	if (beta == 0) 
 	{
@@ -95,20 +95,32 @@ wignerDSmall( GDouble aj, GDouble am, GDouble an, GDouble beta ){
 			q   = -q;
 		}
 	}
-  
+
 	return r;
 }
 
 complex< GDouble > wignerD( int l, int m, int n, 
                            GDouble cosTheta, GDouble phi ){
-	
+
     double dtheta = acos( cosTheta ) * 180.0 / PI;
-	
+
     GDouble dpart = wignerDSmall( l, m, n, dtheta );
-	
+
     return complex< GDouble >( cos( -1.0 * m * phi ) * dpart, 
 							sin( -1.0 * m * phi ) * dpart );
-	
+
+}
+
+complex< GDouble > wignerD( GDouble l, GDouble m, GDouble n,
+                           GDouble cosTheta, GDouble phi ){
+
+    double dtheta = acos( cosTheta ) * 180.0 / PI;
+
+    GDouble dpart = wignerDSmall( l, m, n, dtheta );
+
+    return complex< GDouble >( cos( -1.0 * m * phi ) * dpart,
+							sin( -1.0 * m * phi ) * dpart );
+
 }
 
 complex< GDouble > wignerD( GDouble l, GDouble m, GDouble n, 
@@ -124,7 +136,7 @@ complex< GDouble > wignerD( GDouble l, GDouble m, GDouble n,
 }
 
 complex< GDouble > Y( int l, int m, GDouble cosTheta, GDouble phi ){
-  
+
   return ( (GDouble)sqrt( (2*l+1) / (4*PI) ) ) * 
           conj( wignerD( l, m, 0, cosTheta, phi ) );
 }
