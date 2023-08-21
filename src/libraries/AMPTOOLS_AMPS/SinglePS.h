@@ -1,5 +1,5 @@
-#if !defined(VEC_PS_REFL)
-#define VEC_PS_REFL
+#if !defined(SINGLEPS)
+#define SINGLEPS
 
 #include "IUAmpTools/Amplitude.h"
 #include "IUAmpTools/UserAmplitude.h"
