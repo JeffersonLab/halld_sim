@@ -195,7 +195,7 @@ int main( int argc, char* argv[] ){
 
 		unsigned int iplot = PlotGenerator::kAccMC;
 		// loop over different variables
-		for( unsigned int ivar = 0; ivar < OmegaPiPlotGenerator::kNumHists; ivar++ )
+		for( unsigned int ivar = 0; ivar < OmegaPiPlotGenerator::kNumHists; ivar++ ) {
  
 			// set unique histogram name for each plot (could put in directories...)
 			string histname = plotGen.getHistogram( ivar )->name();
