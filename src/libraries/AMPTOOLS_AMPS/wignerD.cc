@@ -123,18 +123,6 @@ complex< GDouble > wignerD( GDouble l, GDouble m, GDouble n,
 
 }
 
-complex< GDouble > wignerD( GDouble l, GDouble m, GDouble n, 
-                           GDouble cosTheta, GDouble phi ){
-	
-    double dtheta = acos( cosTheta ) * 180.0 / PI;
-	
-    GDouble dpart = wignerDSmall( l, m, n, dtheta );
-	
-    return complex< GDouble >( cos( -1.0 * m * phi ) * dpart, 
-							sin( -1.0 * m * phi ) * dpart );
-	
-}
-
 complex< GDouble > Y( int l, int m, GDouble cosTheta, GDouble phi ){
 
   return ( (GDouble)sqrt( (2*l+1) / (4*PI) ) ) * 
