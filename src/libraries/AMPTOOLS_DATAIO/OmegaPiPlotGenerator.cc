@@ -58,6 +58,7 @@ void OmegaPiPlotGenerator::createHistograms( ) {
    bookHistogram( kOmegaHAngles, new Histogram2D( 100, -1., 1., 100, -1*PI, PI, "OmegaHAngles", "cos#theta_{H} and #phi_{H}" ) );
    bookHistogram( kDeltaAngles, new Histogram2D( 100, -1., 1., 100, -1*PI, PI, "DeltaAngles", "cos#theta_{p} and #phi_{p}" ) );
    bookHistogram( kBigLittlePhi, new Histogram2D( 100, -1*PI, PI, 100, -1*PI, PI, "BigLittlePhi", "#Phi_{Prod} and #phi" ) );
+   bookHistogram( kBigLittlePhiDelta, new Histogram2D( 100, -1*PI, PI, 100, -1*PI, PI, "BigLittlePhiDelta", "#Phi_{Prod} and #phi_{p}" ) );
 }
 
 void
@@ -164,5 +165,6 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
    fillHistogram( kCosThetaDelta, cosThetaDelta );
    fillHistogram( kPhiDelta, phiDelta );
    fillHistogram( kDeltaAngles, cosThetaDelta, phiDelta );
+   fillHistogram( kBigLittlePhiDelta, prod_angle, phiDelta );
 }
 
