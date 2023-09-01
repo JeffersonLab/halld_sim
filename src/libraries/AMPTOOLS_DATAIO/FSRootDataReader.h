@@ -26,7 +26,7 @@ class FSRootDataReader : public UserDataReader< FSRootDataReader >{
 
       virtual unsigned int numEvents() const;
 
-      int eventCounter() const { return m_eventCounter; }
+      unsigned int eventCounter() const { return m_eventCounter; }
 
 
    private:
@@ -34,7 +34,7 @@ class FSRootDataReader : public UserDataReader< FSRootDataReader >{
       TFile* m_inFile;
       TTree* m_inTree;
       TTree* m_inFriendTree;
-      int m_eventCounter;
+      unsigned int m_eventCounter;
       unsigned int m_numParticles;
 
       double m_EnPB;

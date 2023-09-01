@@ -22,8 +22,8 @@
 
 #include "UTILITIES/BeamProperties.h"
 
-#include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
-#include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
+//#include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
+//#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
 
 #include "AMPTOOLS_AMPS/Compton.h"
 
@@ -49,6 +49,7 @@ using std::complex;
 using namespace std;
 
 #define eta_TYPE 17
+#define etaprime_TYPE 35
 #define pi0_TYPE 7
 #define gamma_TYPE 1
 #define Helium_TYPE 47
@@ -67,19 +68,31 @@ int main( int argc, char* argv[] ){
   ifstream in_incoherent;
   
   double beamLowE   = 3.0;
-  double beamHighE  = 12.0;
+  //double beamHighE  = 12.0;
+  double beamHighE  = 22.011;
   const double M_He4 = 3.727379378;
   const double M_Be9 = 8.39479;
   const double M_p = 0.93827208816;
   const double M_n = 0.93956542052;
   const double M_eta = 0.54730;
-  const double M_pi0 = 1.3957018e-01;
+  const double M_etapr = 0.95778;
+  const double M_pi0 = 0.13497685;
   const double M_gamma = 0.0;
   
   int runNum = 9001;
   int seed = 0;
   
   int nEvents = 10000;
+
+  //int bin_egam = 9400;
+  //double egam_min = 2.5995;
+  //double egam_max = 12.0005;
+  int bin_egam = 1000;
+  double egam_min = 12.011;
+  double egam_max = 22.011;
+  int bin_theta = 650;
+  double theta_min = 0.0;
+  double theta_max = 6.5;
   
   //double dummy;
   
@@ -180,15 +193,24 @@ int main( int argc, char* argv[] ){
   TString m_decay = ReadFile->GetConfigName("decay"); 
   TString m_target = ReadFile->GetConfigName("target"); 
   TString m_Fermi_file = ReadFile->GetConfigName("Fermi_file"); 
+  Double_t * m_binning = ReadFile->GetConfig6Par("binning");
+  /*if (m_decay != 0) {
+    bin_egam = (int) m_binning[0];
+    egam_min = m_binning[1];
+    egam_max = m_binning[2]; 
+    bin_theta = (int) m_binning[3]; 
+    theta_min = m_binning[4]; 
+    theta_max = m_binning[5];
+    }*/
   cout << "rfile " << m_rfile << endl;
   cout << "histo " << m_histo << endl;
   cout << "decay " << m_decay << endl;
   cout << "target " << m_target << endl;
-  cout << "Fermi_file " << m_Fermi_file << endl;
+  //cout << "Fermi_file " << m_Fermi_file << endl;
 
   double M_target = M_He4;
-  if (m_target == "He4") M_target = M_He4;
-  if (m_target == "Be9") M_target = M_Be9;
+  if (m_target == "He4" || m_target == "Helium") M_target = M_He4;
+  if (m_target == "Be9" || m_target == "Beryllium-9") M_target = M_Be9;
   if (m_target == "Proton") M_target = M_p;
   if (m_target == "Neutron") M_target = M_n;
   TLorentzVector Target_4Vec(0, 0, 0, M_target);
@@ -196,22 +218,37 @@ int main( int argc, char* argv[] ){
   // Load eta-meson differential cross-section based on Ilya Larin's calculation, see the *.F program in this directory 
   TFile * ifile = new TFile(m_rfile);
   TH2F * h_dxs = (TH2F *) ifile->Get(m_histo);
+  bin_egam = h_dxs->GetNbinsX();
+  egam_min = h_dxs->GetXaxis()->GetXmin();
+  egam_max = h_dxs->GetXaxis()->GetXmax();                                                                                                                                                   
+  bin_theta = h_dxs->GetNbinsY();                                                                                                                                                                         
+  theta_min = h_dxs->GetYaxis()->GetXmin();
+  theta_max = h_dxs->GetYaxis()->GetXmax();   
 
   double M_meson = 0;
-  if (m_decay.Contains("eta"))
+  if (m_decay == "eta")
     M_meson = M_eta;
-  else if (m_decay.Contains("pi0"))
+  else if (m_decay == "pi0")
     M_meson = M_pi0;
-  
+  else if (m_decay == "eta'")
+    M_meson = M_etapr;
+  else if (m_decay == "eta->2g")
+    M_meson = M_eta;
+  else if (m_decay == "eta->6g")
+    M_meson = M_eta;
+  else if (m_decay == "pi0->2g")
+    M_meson = M_pi0;
   // Create decayGen
   TGenPhaseSpace decayGen;
-  TGenPhaseSpace decayGenTMP;
+  TGenPhaseSpace decayGenTMP1;
+  TGenPhaseSpace decayGenTMP2;
+  TGenPhaseSpace decayGenTMP3;
   
   TFile* diagOut = new TFile( "gen_primex_eta_he4_diagnostic.root", "recreate" );
   TH2F* h_Tkin_eta_vs_egam = new TH2F("Tkin_eta_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{#eta} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 12.0);
   TH2F* h_Tkin_photon_vs_egam = new TH2F("Tkin_photon_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{#gamma} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 12.0);
   TH2F* h_Tkin_recoilA_vs_egam = new TH2F("Tkin_recoilA_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{A} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 1.0);
-  TH2F* h_theta_eta_vs_egam = new TH2F("theta_eta_vs_egam", ";E_{#gamma} [GeV];#theta_{#eta} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0., 10.);
+  TH2F* h_theta_eta_vs_egam = new TH2F("theta_eta_vs_egam", ";E_{#gamma} [GeV];#theta_{#eta} [GeV];Count [a.u.]", bin_egam, egam_min, egam_max, bin_theta, theta_min, theta_max);
   TH2F* h_theta_photon_vs_egam = new TH2F("theta_photon_vs_egam", ";E_{#gamma} [GeV];#theta_{#gamma} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0., 180.);
   TH2F* h_theta_recoilA_vs_egam = new TH2F("theta_recoilA_vs_egam", ";E_{#gamma} [GeV];#theta_{A} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0., 180.);
   
@@ -350,7 +387,7 @@ int main( int argc, char* argv[] ){
     if (E_LAB_eta1 > E_LAB_eta0) E_LAB_eta = E_LAB_eta1;
     
     // Calculate eta-meson momentun im LAB
-    double P_LAB_eta = sqrt(pow(E_LAB_eta, 2) - pow(M_eta, 2));
+    double P_LAB_eta = sqrt(pow(E_LAB_eta, 2) - pow(M_meson, 2));
     
     // Calculate the momentum for each direction
     double Px_LAB_eta = P_LAB_eta * sin(ThetaLAB) * cos(PhiLAB);
@@ -366,6 +403,8 @@ int main( int argc, char* argv[] ){
     
     TLorentzVector photon_4Vec[6];
     TLorentzVector pi0_4Vec[3];
+    for (int i = 0; i < 3; i ++) pi0_4Vec[i] = TLorentzVector(0, 0, 0, 0);
+    for (int i = 0; i < 6; i ++) photon_4Vec[i] = TLorentzVector(0, 0, 0, 0);
     int ng_max = 0;
     if (m_decay == "pi0->2g") {
       ng_max = 2;
@@ -391,21 +430,33 @@ int main( int argc, char* argv[] ){
 	pi0_4Vec[0] = * decayGen.GetDecay(0);
 	pi0_4Vec[1] = * decayGen.GetDecay(1);
 	pi0_4Vec[2] = * decayGen.GetDecay(2);
-      }
-      for (int j = 0; j < 3; j ++) {
+	//for (int j = 0; j < 3; j ++) {
 	double mass[] = {M_gamma, M_gamma};
-	if (decayGenTMP.SetDecay(pi0_4Vec[j], 2, mass)) {
-	  decayGenTMP.Generate();
-	  photon_4Vec[0 + 2 * j] = * decayGenTMP.GetDecay(0);
-	  photon_4Vec[1 + 2 * j] = * decayGenTMP.GetDecay(1);
+	if (decayGenTMP1.SetDecay(pi0_4Vec[0], 2, mass)) {
+	  decayGenTMP1.Generate();
+	  photon_4Vec[0] = * decayGenTMP1.GetDecay(0);
+	  photon_4Vec[1] = * decayGenTMP1.GetDecay(1);
+	}
+	if (decayGenTMP2.SetDecay(pi0_4Vec[1], 2, mass)) {
+	  decayGenTMP2.Generate();
+	  photon_4Vec[2] = * decayGenTMP2.GetDecay(0);
+	  photon_4Vec[3] = * decayGenTMP2.GetDecay(1);
+	}
+	if (decayGenTMP3.SetDecay(pi0_4Vec[2], 2, mass)) {
+	  decayGenTMP3.Generate();
+	  photon_4Vec[4] = * decayGenTMP3.GetDecay(0);
+	  photon_4Vec[5] = * decayGenTMP3.GetDecay(1);
 	}
       }
     }
-    
-    
+        
     // Deduce by energy and mass conservation the recoil nucleus 4Vec
     TLorentzVector He4_LAB_4Vec = IS_4Vec - eta_LAB_4Vec;
-    
+    if (m_target == "Neutron")
+      He4_LAB_4Vec = TLorentzVector(He4_LAB_4Vec.Px(), He4_LAB_4Vec.Py(), He4_LAB_4Vec.Pz(), sqrt(pow(M_n, 2) + pow(He4_LAB_4Vec.P(), 2)));
+    if (m_target == "Proton")
+      He4_LAB_4Vec = TLorentzVector(He4_LAB_4Vec.Px(), He4_LAB_4Vec.Py(), He4_LAB_4Vec.Pz(), sqrt(pow(M_p, 2) + pow(He4_LAB_4Vec.P(), 2)));
+
     h_Tkin_recoilA_vs_egam->Fill(ebeam, He4_LAB_4Vec.E() - He4_LAB_4Vec.M());
     h_theta_recoilA_vs_egam->Fill(ebeam, He4_LAB_4Vec.Theta() * TMath::RadToDeg());
     h_Tkin_eta_vs_egam->Fill(ebeam, eta_LAB_4Vec.E() - eta_LAB_4Vec.M());
@@ -441,6 +492,8 @@ int main( int argc, char* argv[] ){
 	tmpEvt.q7 = He4_LAB_4Vec;
 	tmpEvt.nGen = 7;
       } else if (ng_max == 0) {
+	//cout <<"decay " << m_decay << endl;
+	tmpEvt.str_meson = m_decay;
 	tmpEvt.q1 = eta_LAB_4Vec;
 	tmpEvt.q2 = He4_LAB_4Vec;
 	tmpEvt.nGen = 2;

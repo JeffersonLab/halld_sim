@@ -15,6 +15,10 @@ class tagm_config_t
 	double TAGM_FADC_TSIGMA;
 	double TAGM_NPIX_PER_GEV;
 
+    std::map<int, int> fiber_quality;
+    std::map<int, std::vector<double> > energy_range_GeV;
+    double endpoint_energy_GeV;
+    double endpoint_calib_GeV;
 };
 
 
@@ -29,7 +33,9 @@ class TAGMSmearer : public Smearer
 	}
 	
 	void SmearEvent(hddm_s::HDDM *record);
-	
+
+    static double get_tagm_energy(int column, int low_mid_high=-1);
+
   private:
   	tagm_config_t  *tagm_config;
 };

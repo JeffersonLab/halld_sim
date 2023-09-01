@@ -1036,12 +1036,23 @@ def AddSWIG(env):
 ##################################
 def AddCUDA(env):
 	CUDA = os.getenv('CUDA_INSTALL_PATH')
+	AMPTOOLS = os.getenv('AMPTOOLS')
 	if CUDA != None	:
 		
 		# Create Builder that can compile .cu file into object files
 		NVCC = '%s/bin/nvcc' % CUDA
 #		CUDAFLAGS = '-I%s/include -arch=compute_13 -code=compute_13' % CUDA
 		CUDAFLAGS = ['-g', '-I%s/include' % CUDA]
+	
+		# set to floating point precision if built in AmpTools
+		FP32 = False
+		try:
+			FP32 = subprocess.check_output("nm -u --demangle %s/lib/libAmpTools_GPU.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True)
+			if FP32:
+				CUDAFLAGS.append('-DAMPTOOLS_GDOUBLE_FP32')
+		except:
+			pass
+
 		try:
 			CUDAFLAGS.extend(env['CUDAFLAGS'])
 		except:
@@ -1061,8 +1072,11 @@ def AddCUDA(env):
 		env.AppendUnique(LIBPATH=['%s/lib' % CUDA, '%s/lib64' % CUDA])
 		env.AppendUnique(LIBS=['cublas', 'cudart'])
 		env.AppendUnique(CPPPATH=['%s/include' % CUDA])
-		env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION'])
-		
+		if FP32:
+			env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION', '-DAMPTOOLS_GDOUBLE_FP32'])
+		else:
+			env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION'])
+
 		# Temporarily change to source directory and add all .cu files
 		curpath = os.getcwd()
 		srcpath = env.Dir('.').srcnode().abspath
@@ -1101,7 +1115,18 @@ def AddAmpTools(env):
 			AMPTOOLS_LIBS = 'AmpTools_GPU'
 			print('Using GPU enabled AMPTOOLS library')
 
-		env.AppendUnique(CXXFLAGS = ['-DHAVE_AMPTOOLS_MCGEN'])
+		CXXFLAGSLIST = ["-DHAVE_AMPTOOLS_MCGEN"]
+		# set to floating point precision if built in AmpTools
+		try:
+			if os.getenv('CUDA_INSTALL_PATH')==None:
+				if subprocess.check_output("nm -u --demangle %s/lib/libAmpTools.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
+					CXXFLAGSLIST.append("-DAMPTOOLS_GDOUBLE_FP32")
+			elif subprocess.check_output("nm -u --demangle %s/lib/libAmpTools_GPU.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
+				CXXFLAGSLIST.append("-DAMPTOOLS_GDOUBLE_FP32")
+		except:
+			pass
+
+		env.AppendUnique(CXXFLAGS = CXXFLAGSLIST)
 		env.AppendUnique(CPPPATH = AMPTOOLS_CPPPATH)
 		env.AppendUnique(LIBPATH = AMPTOOLS_LIBPATH)
 		env.AppendUnique(LIBS    = AMPTOOLS_LIBS)

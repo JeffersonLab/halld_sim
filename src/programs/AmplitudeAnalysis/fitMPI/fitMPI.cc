@@ -27,21 +27,22 @@
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -56,7 +57,7 @@ using namespace std;
 int rank_mpi;
 int size;
 
-double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile) {
+double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
    AmpToolsInterfaceMPI ati( cfgInfo );
    bool fitFailed = true;
    double lh = 1e7;
@@ -72,7 +73,10 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
       else
          fitManager->migradMinimization();
 
-      fitFailed = ( fitManager->status() != 0 && fitManager->eMatrixStatus() != 3 );
+      if(hesse)
+         fitManager->hesseEvaluation();
+
+      fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
 
       if( fitFailed )
          cout << "ERROR: fit failed use results with caution..." << endl;
@@ -93,7 +97,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, stri
    return lh;
 }
 
-void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, int numRnd, double maxFraction) {
+void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numRnd, double maxFraction) {
    AmpToolsInterfaceMPI ati( cfgInfo );
 
    MinuitMinimizationManager* fitManager = NULL; 
@@ -126,6 +130,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          cout << "FIT " << i << " OF " << numRnd << endl;
          cout << endl << "###############################" << endl;
 
+	 // re-initialize parameters from configuration file (reset those not randomized)
+	 ati.reinitializePars();
+
          // randomize parameters
          ati.randomizeProductionPars(maxFraction);
          for(size_t ipar=0; ipar<parRangeKeywords.size(); ipar++) {
@@ -137,13 +144,18 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          else
             fitManager->migradMinimization();
 
-         fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+         if(hesse)
+            fitManager->hesseEvaluation();
+
+         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
 
          if( fitFailed )
             cout << "ERROR: fit failed use results with caution..." << endl;
 
          curLH = ati.likelihood();
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
+
+	 ati.finalizeFit(to_string(i));
 
          if( seedfile.size() != 0 && !fitFailed ){
             string seedfile_rand = seedfile + Form("_%d.txt", i);
@@ -155,7 +167,6 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
             minLH = curLH;
             minFitTag = i;
          }
-         ati.finalizeFit(to_string(i));
       }
    }
 
@@ -176,7 +187,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
 }
 
 
-void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string seedfile, string parScan) {
+void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan) {
    double minVal=0, maxVal=0, stepSize=0;
    int steps=0;
 
@@ -221,6 +232,9 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          cout << "FIT " << i << " OF " << steps << endl;
          cout << endl << "###############################" << endl;
 
+	 // reinitialize production parameters from seed file
+	 ati.reinitializePars();
+
          // set parameter to be scanned
          vector<ParameterInfo*> parInfoVec = cfgInfo->parameterList();
 
@@ -244,7 +258,10 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
          else
             fitManager->migradMinimization();
 
-         fitFailed = (fitManager->status() != 0 && fitManager->eMatrixStatus() != 3);
+         if(hesse)
+            fitManager->hesseEvaluation();
+
+         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
          curLH = ati.likelihood();
 
          if( fitFailed )
@@ -252,11 +269,11 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, int maxIter, string s
 
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
 
+         ati.finalizeFit(to_string(i));
          if( seedfile.size() != 0 && !fitFailed ){
             string seedfile_scan = seedfile + Form("_scan_%d.dat", i);
             ati.fitResults()->writeSeed( seedfile_scan );
          }
-         ati.finalizeFit(to_string(i));
       }
    }
    ati.exitMPI();
@@ -273,11 +290,13 @@ int main( int argc, char* argv[] ){
    // set default parameters
 
    bool useMinos = false;
+   bool hesse = false;
 
    string configfile;
    string seedfile;
    string scanPar;
    int numRnd = 0;
+   unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
    int maxIter = 10000;
 
    // parse command line
@@ -295,10 +314,14 @@ int main( int argc, char* argv[] ){
       if (arg == "-r"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  numRnd = atoi(argv[++i]); }
+      if (arg == "-rs"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  randomSeed = atoi(argv[++i]); }
       if (arg == "-m"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
       if (arg == "-n") useMinos = true;
+      if (arg == "-H") hesse = true;
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
@@ -306,9 +329,11 @@ int main( int argc, char* argv[] ){
          if(rank_mpi==0) {
             cout << endl << " Usage for: " << argv[0] << endl << endl;
             cout << "   -n \t\t\t\t\t use MINOS instead of MIGRAD" << endl;
+            cout << "   -H \t\t\t\t\t evaluate HESSE matrix after minimization" << endl;
             cout << "   -c <file>\t\t\t\t config file" << endl;
             cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
             cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
+            cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
             cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
             cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          }
@@ -339,18 +364,20 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPitdist() );
    AmpToolsInterface::registerAmplitude( ThreePiAngles() );
    AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-   AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+   AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
    AmpToolsInterface::registerAmplitude( Zlm() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
-   AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );
    AmpToolsInterface::registerAmplitude( Uniform() );
-   AmpToolsInterface::registerAmplitude( dblRegge() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+   AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( Flatte() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
+   AmpToolsInterface::registerAmplitude( ComplexCoeff() );
+   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
@@ -360,11 +387,13 @@ int main( int argc, char* argv[] ){
 
    if(numRnd==0){
       if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, maxIter, seedfile);
+         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
       else
-         runParScan(cfgInfo, useMinos, maxIter, seedfile, scanPar);
+         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
    } else {
-      runRndFits(cfgInfo, useMinos, maxIter, seedfile, numRnd, 0.5);
+      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+      AmpToolsInterface::setRandomSeed(randomSeed);
+      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
    }
 
    return 0;

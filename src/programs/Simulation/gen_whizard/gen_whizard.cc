@@ -69,7 +69,7 @@ int main( int argc, char* argv[] ){
   double beamLowE   = 3.0;
   double beamHighE  = 12.0;
   const double M_electron = 0.000511;
-  const double M_gamma = 0.0;
+  //  const double M_gamma = 0.0;
   TLorentzVector Target_4Vec(0, 0, 0, M_electron);
   
   int runNum = 9001;
@@ -197,9 +197,42 @@ int main( int argc, char* argv[] ){
   TH1F * h_lgam1 = new TH1F("lgam1", ";E_{#gamma} [GeV]; Luminosity MeV^{1} #cdot mb^{-1}", 12000, 0.0, 12.0);
   TH1F * h_lgam2 = new TH1F("lgam2", ";E_{#gamma} [GeV]; Luminosity MeV^{1} #cdot mb^{-1}", 12000, 0.0, 12.0);
   TH1F * h_lgam3 = new TH1F("lgam3", ";E_{#gamma} [GeV]; Luminosity MeV^{1} #cdot mb^{-1}", 12000, 0.0, 12.0);
-  
-  if (m_run_wo == "true") { //If "true" run WO
+
+  if (m_process == "a_to_a") {
     
+    for (int i = 0; i < nEvents; ++i) { //Generate photon beam spectrum
+      if (i%10000 == 1)
+	cout << "event " << i <<endl;
+      
+      // get beam energy
+      double ebeam = 0;
+      if (beamconfigfile == "" || cobrem_vs_E == 0) 
+	ebeam = ebeam_spectrum.GetRandom();
+      else if (beamconfigfile != "")
+	ebeam = cobrem_vs_E->GetRandom();
+      
+      h_egam1->Fill(ebeam);
+
+      TLorentzVector gamma_4Vec(0, 0, ebeam, ebeam);
+      
+      //HDDM STUFF
+      tmpEvt_t tmpEvt;
+      tmpEvt.beam = gamma_4Vec;
+      tmpEvt.target = Target_4Vec;
+      tmpEvt.q[0] = gamma_4Vec;
+      tmpEvt.pdg[0] = 22;
+      //tmpEvt.recoil = e_recoil_4Vec;
+      tmpEvt.nGen = 1;
+      tmpEvt.rxn = m_process;
+      tmpEvt.weight = 1;
+      hddmWriter->write(tmpEvt, runNum, i);
+      
+    }
+    
+  }
+  
+  if (m_run_wo == "true" && m_process != "a_to_a") { //If "true" run WO
+        
     for (int i = 0; i < nEvents; ++i) { //Generate photon beam spectrum
       if (i%10000 == 1)
 	cout << "event " << i <<endl;
@@ -232,7 +265,7 @@ int main( int argc, char* argv[] ){
     }
   }
   
-  if (m_run_wo == "false" || m_lhe_dir != "" || m_lhe_file != "") { //Read and loop over a single or all root file
+  if ((m_run_wo == "false" || m_lhe_dir != "" || m_lhe_file != "")  && m_process != "a_to_a") { //Read and loop over a single or all root file
     
     TSystemDirectory dir(m_lhe_dir.Data(), m_lhe_dir.Data());
     TList * files = dir.GetListOfFiles(); 

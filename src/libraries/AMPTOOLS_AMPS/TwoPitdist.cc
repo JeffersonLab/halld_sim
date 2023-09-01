@@ -74,8 +74,8 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
   
   /*GDouble Wpipi  = Ptot.M();
   GDouble mass1 = P1.M();
-  GDouble mass2 = P2.M();*/
-  GDouble Thetapipi = Ptot.Theta()*180./PI;
+  GDouble mass2 = P2.M();
+  GDouble Thetapipi = Ptot.Theta()*180./PI;*/
 
   // get momentum transfer
   Precoil.SetPxPyPzE (pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);   // Recoil is particle 3
@@ -86,7 +86,7 @@ TwoPitdist::calcAmplitude( GDouble** pKin ) const
   complex<GDouble> ImagOne(0,1);
   complex<GDouble> Arel; 
 
-  Arel = sqrt(exp(Bslope*t)/exp(Bgen*t)) * RealOne;  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
+  Arel = G_SQRT(exp(Bslope*t)/exp(Bgen*t)) * RealOne;  // Divide out generated exponential. This must be the same as in GammaZToXYZ.cc. Return sqrt(exp^Bt) 
   if (-t > mtmax) Arel = 0;      // eliminate events at high t with large weights
 
   // if (Thetapipi > 1.5) cout << " TwoPitdist" << " Thetapipi=" << Thetapipi << " Bslope=" << Bslope << " Bgen=" << Bgen << " t=" << t <<  " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel) << endl; 

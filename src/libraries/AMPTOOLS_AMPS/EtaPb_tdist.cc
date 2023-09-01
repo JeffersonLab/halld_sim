@@ -75,7 +75,7 @@ EtaPb_tdist::calcAmplitude( GDouble** pKin ) const
     Double_t arg = ThEta*ThEta/(2*ThetaSigma*ThetaSigma)<100? ThEta*ThEta/(2*ThetaSigma*ThetaSigma) : 0;
     Arel = arg > 0? ThEta * sqrt(exp(-arg) /exp(Bgen*t)) :0;   // Can Change phase of sigma relative to Primakoff
   // Adjust phase for this amplitude relative to other amplitudes
-    Arel = Arel * (cos(Phase*PI/180.) + ImagOne*sin(Phase*PI/180.));
+    Arel = Arel * (G_COS(Phase*PI/180.) + ImagOne*G_SIN(Phase*PI/180.));
     // cout << " t=" << t << " ThEta=" << ThEta << " arg=" << arg << " num=" << ThEta * sqrt(exp(-arg)) << " den=" << exp(Bgen*t) << " Re(Arel)=" << real(Arel) << " imag(Arel)=" << imag(Arel)  << endl;
 
     //cout << "EtaPb_tdist" << " ThetaSigma=" << ThetaSigma << " Phase=" << Phase << " Bgen=" << Bgen << " t=" << t 

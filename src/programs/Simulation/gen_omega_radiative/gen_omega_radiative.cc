@@ -14,7 +14,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
 #include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
@@ -141,7 +141,7 @@ int main( int argc, char* argv[] ){
    srand48(seed);
 
 	// setup AmpToolsInterface
-	AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+	AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 

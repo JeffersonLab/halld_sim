@@ -58,7 +58,7 @@ Pi0Regge::calcAmplitude( GDouble** pKin ) const {
 	GDouble theta = p1_cm.Theta();	
 
 	// amplitude coded in c++ (include calculation of beam asymmetry)
-	GDouble BeamSigma = 0.;
+	double BeamSigma = 0.;
 	GDouble W = Pi0PhotCS_S(Ecom, theta, BeamSigma);
 	W *= (1 - Pgamma * BeamSigma * cos2Phi);
 
