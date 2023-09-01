@@ -31,7 +31,7 @@ using namespace jana;
 #include <FMWPCSmearer.h>
 #include <CTOFSmearer.h>
 #include <GEMTRDSmearer.h>
-
+#include <ITOFSmearer.h>
 
 class Smear
 {
