@@ -109,7 +109,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
   // keep track of best fit (mininum log-likelihood)
-  double minLL = std::numeric_limits<double>::max();
+  double minLL = numeric_limits<double>::max();
   int minFitTag = -1;
 
   for(int i=0; i<numRnd; i++) {
