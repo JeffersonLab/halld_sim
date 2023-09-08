@@ -6,6 +6,7 @@
 #include <vector>
 #include <utility>
 #include <map>
+#include <limits>
 
 #include "TSystem.h"
 
@@ -119,7 +120,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
       parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
       // keep track of best fit (mininum log-likelihood)
-      minLH = 0;
+      minLH = numeric_limits<double>::max();
       minFitTag = -1;
    }
 
