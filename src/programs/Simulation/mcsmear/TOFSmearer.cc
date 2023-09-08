@@ -9,12 +9,12 @@
 tof_config_t::tof_config_t(JEventLoop *loop) 
 {
 	// default values
- 	TOF_SIGMA = 100.*k_psec;
- 	TOF_PHOTONS_PERMEV = 400.;
+ 	TOF_SIGMA = 155.563*k_psec;
+ 	TOF_PHOTONS_PERMEV = 8000.;
  	TOF_BAR_THRESHOLD    = 0.0;
 	ATTENUATION_LENGTH = 150.;
 	FULL_BAR_LENGTH = 252.;
-
+	/*
 	// load values from geometry
 	vector <const DTOFGeometry*> TOFGeom;
 	loop->Get(TOFGeom);
@@ -34,7 +34,7 @@ tof_config_t::tof_config_t(JEventLoop *loop)
     TOF_PHOTONS_PERMEV =  tofparms.at("TOF_PHOTONS_PERMEV");
     ATTENUATION_LENGTH = tofparms.at("TOF_ATTEN_LENGTH");
     FULL_BAR_LENGTH = tofparms.at("TOF_PADDLE_LENGTH");
-	
+
     string locTOFPaddleResolTable = TOFGeom[0]->Get_CCDB_DirectoryName() + "/paddle_resolutions";
 	cout<<"get "<<locTOFPaddleResolTable<<" from calibDB"<<endl;
     vector <double> TOF_PADDLE_TIME_RESOLUTIONS_TEMP;
@@ -65,8 +65,8 @@ tof_config_t::tof_config_t(JEventLoop *loop)
             }	      
         }
     }
-
-	cout << "Number of TOF bars per plane = " << TOF_NUM_BARS << endl;
+    */
+    //cout << "Number of TOF bars per plane = " << TOF_NUM_BARS << endl;
 }
 
 
@@ -84,21 +84,22 @@ void TOFSmearer::SmearEvent(hddm_s::HDDM *record)
       hddm_s::FtofTruthHitList::iterator titer;
       for (titer = thits.begin(); titer != thits.end(); ++titer) {
          // correct simulation efficiencies 
+	/*
 		 if (config->APPLY_EFFICIENCY_CORRECTIONS
 		 		&& !gDRandom.DecideToAcceptHit(tof_config->GetEfficiencyCorrectionFactor(titer)))
 		 			continue;
-		 			
+	*/
          // Smear the time
          //double t = titer->getT() + gDRandom.SampleGaussian(tof_config->TOF_SIGMA);
          double t = titer->getT();
          // Smear the energy
          float NewE = titer->getDE();
          if(config->SMEAR_HITS) {
-			 t += gDRandom.SampleGaussian(tof_config->GetHitTimeResolution(iter->getPlane(),iter->getBar()));
-         	 double npe = titer->getDE() * 1000. * tof_config->TOF_PHOTONS_PERMEV;
-         	 npe += gDRandom.SampleGaussian(sqrt(npe));
-          	 NewE = npe/tof_config->TOF_PHOTONS_PERMEV/1000.;
-		 }
+	   t += gDRandom.SampleGaussian(tof_config->TOF_SIGMA);
+	   double npe = titer->getDE() * 1000. * tof_config->TOF_PHOTONS_PERMEV;
+	   npe += gDRandom.SampleGaussian(sqrt(npe));
+	   NewE = npe/tof_config->TOF_PHOTONS_PERMEV/1000.;
+	 }
          // Apply an average attenuation correction to set the energy scale
          NewE *= exp(tof_config->FULL_BAR_LENGTH / 2 / tof_config->ATTENUATION_LENGTH);
          if (NewE > tof_config->TOF_BAR_THRESHOLD) {
