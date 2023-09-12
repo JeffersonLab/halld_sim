@@ -241,7 +241,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	     hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
 	     hddm_s::FcalTruthLightGuideList::iterator lgiter;
 	     for (lgiter = lghits.begin(); lgiter != lghits.end(); lgiter++) {
-	       E += lgiter->getE();
+	       E += lgiter->getDE();
 	     }
 	   }
 	   // Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
