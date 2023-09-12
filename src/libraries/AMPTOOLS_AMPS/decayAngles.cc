@@ -83,7 +83,7 @@ double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beam
 
 	TVector3 eps( cos( polAngle ), sin( polAngle ), 0.0 );
 
-	double phiProd = atan2( y.Dot( eps ), inverseLab.Vect().Unit().Dot( eps.Cross( y ) ) );
+	double phiProd = atan2( y.Dot( eps ), inverseCM.Vect().Unit().Dot( eps.Cross( y ) ) );
 
 	return phiProd;	
 } 
