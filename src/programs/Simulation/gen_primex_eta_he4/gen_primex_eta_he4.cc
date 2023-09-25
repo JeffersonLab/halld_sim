@@ -193,7 +193,7 @@ int main( int argc, char* argv[] ){
   TString m_decay = ReadFile->GetConfigName("decay"); 
   TString m_target = ReadFile->GetConfigName("target"); 
   TString m_Fermi_file = ReadFile->GetConfigName("Fermi_file"); 
-  Double_t * m_binning = ReadFile->GetConfig6Par("binning");
+  // Double_t * m_binning = ReadFile->GetConfig6Par("binning");
   /*if (m_decay != 0) {
     bin_egam = (int) m_binning[0];
     egam_min = m_binning[1];
@@ -270,8 +270,8 @@ int main( int argc, char* argv[] ){
     TLorentzVector IS_4Vec = InGamma_4Vec + Target_4Vec;
     
     // Mass in the centre-of-mass frame
-    double sqrt_s = IS_4Vec.M();
-    double s = pow(sqrt_s, 2);
+    // double sqrt_s = IS_4Vec.M();
+    // double s = pow(sqrt_s, 2);
     
     // Histo. creation that will store the calculated diff. xs. vs. LAB polar angle
     int ebeam_bin = h_dxs->GetXaxis()->FindBin(ebeam);

@@ -162,7 +162,7 @@ int main(int argc, char **argv){
   
   TGraph * grXS_pair = new TGraph();
   TGraph * grXS_trip = new TGraph();
-  double Z = 0, A = 0, rho = 0, Ltarget = 0;
+  double Z = 0; //, A = 0, rho = 0, Ltarget = 0;
   // Get generator config file
   if (genSettings.genconfigfile != "") {
     MyReadConfig * ReadFile = new MyReadConfig();
@@ -176,9 +176,9 @@ int main(int argc, char **argv){
     TString m_XS_pair = ReadFile->GetConfigName("XS_pair"); 
     TString m_XS_trip = ReadFile->GetConfigName("XS_trip"); 
     Z = m_target[0];
-    A = m_target[1];
-    rho = m_target[2];
-    Ltarget = m_target[3];
+    // A = m_target[1];
+    // rho = m_target[2];
+    // Ltarget = m_target[3];
     grXS_pair = new TGraph(m_XS_pair);
     grXS_trip = new TGraph(m_XS_trip);
     genSettings.polDir = (int) m_polDir[0];
