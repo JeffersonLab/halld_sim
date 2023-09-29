@@ -52,14 +52,14 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
 	t += gDRandom.SampleGaussian(gemtrd_config->GEMTRD_TSIGMA);
 
 	// Approximate longitudinal diffusion
-	double sigma_t=sqrt(2.*D*tdrift)/v;
+	double sigma_t=(tdrift>0.) ? sqrt(2.*D*tdrift)/v : 0.;
 	t+=gDRandom.SampleGaussian(sigma_t);
 	
 	x += gDRandom.SampleGaussian(gemtrd_config->GEMTRD_XYSIGMA);
 	y += gDRandom.SampleGaussian(gemtrd_config->GEMTRD_XYSIGMA);
 	
 	// Approximate transverse diffusion
-	double sigma_xy=sqrt(2.*Dt*tdrift);
+	double sigma_xy=(tdrift>0) ? sqrt(2.*Dt*tdrift) : 0.;
 	x += gDRandom.SampleGaussian(sigma_xy);
 	y += gDRandom.SampleGaussian(sigma_xy);
 
