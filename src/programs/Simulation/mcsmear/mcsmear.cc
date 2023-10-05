@@ -104,7 +104,7 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'D': config->DUMP_RCDB_CONFIG=true;               break;
           case 'e': config->APPLY_EFFICIENCY_CORRECTIONS=false;  break;
           case 'm': config->APPLY_HITS_TRUNCATION=false;         break;
-          case 'E': config->FCAL_ADD_LIGHTGUIDE_HITS=true;       break;
+          case 'E': config->FCAL_ADD_LIGHTGUIDE_HITS=false;       break;
 	      case 'R': config->SKIP_READING_RCDB=true;              break;
 	      case 't': config->MERGE_TAGGER_HITS=false;             break;
 	      case 'l': {
@@ -120,6 +120,9 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'M': config->BCAL_NO_POISSON_STATISTICS = true;   break;
           case 'S': config->BCAL_NO_FADC_SATURATION = true;      break;
           case 'T': config->BCAL_NO_SIPM_SATURATION = true;      break;
+          case 'x': config->FCAL_LIGHTGUIDE_SCALE_FACTOR = atof(&ptr[2]);
+              cout << "FCAL lightguide scale factor = " << config->FCAL_LIGHTGUIDE_SCALE_FACTOR << endl;
+              break;
          }
       }
       else {
@@ -227,6 +230,7 @@ void Usage(void)
    cout << "    -R       Don't load information from RCDB" << endl;
    cout << "    -t       Don't merge random hits from tagger counters" << endl;
    cout << "    -D       Dump configuration debug information" << endl;
+   cout << "    -E       Don't include FCAL light guide energy deposition (def. include)" << endl;
    cout << "    -G       Don't smear BCAL times (def. smear)" << endl;
    cout << "    -H       Don't add BCAL dark hits (def. add)" << endl;
    cout << "    -K       Don't apply BCAL sampling fluctuations (def. apply)" << endl;
@@ -234,6 +238,7 @@ void Usage(void)
    cout << "    -M       Don't apply BCAL Poisson statistics (def. apply)" << endl;
    cout << "    -S       Don't apply BCAL fADC saturation (def. apply)" << endl;
    cout << "    -T       Don't apply BCAL SiPM saturation (def. apply)" << endl;
+   cout << "    -x       Scale factor for FCAL light guide energy deposition (def. 1.0)" << endl;
  //  cout << "    -f#      TOF sigma in psec (def: " <<  TOF_SIGMA/k_psec << ")" << endl;
    cout << "    -h       Print this usage statement." << endl;
    cout << endl;

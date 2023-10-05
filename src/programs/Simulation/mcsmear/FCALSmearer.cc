@@ -17,6 +17,9 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
 	FCAL_THRESHOLD_SCALING  = 0.0; // (110/108)
 	FCAL_ENERGY_WIDTH_FLOOR = 0.0; // 0.03
 	FCAL_ENERGY_RANGE       = 8.0; // 8 GeV for E_{e^-} = 12GeV
+
+    FCAL_LIGHTGUIDE_SCALE_FACTOR = -1.0;
+    FCAL_ADD_LIGHTGUIDE_HITS = true;
 	
 	// Get values from CCDB
 	cout << "Get PHOTON_BEAM/endpoint_energy from CCDB ..." << endl;
@@ -120,7 +123,18 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
         FCAL_TSIGMA = fcalmctimingsmear["FCAL_TSIGMA"];
     }
 
-
+	// allow for setting this value on the command line - presumably
+	// the user will set it to some non-zero value
+	// this should override the CCDB setting
+	if(FCAL_LIGHTGUIDE_SCALE_FACTOR < 0.) {  
+		cout<<"get FCAL/fcal_lightguide_scale_factorparameters from calibDB"<<endl;
+		map<string, double> fcallightguidescale;
+		if(loop->GetCalib("FCAL/fcal_lightguide_scale_factor", fcallightguidescale)) {
+			jerr << "Problem loading FCAL/fcal_lightguide_scale_factor from CCDB!" << endl;
+		} else {
+			FCAL_LIGHTGUIDE_SCALE_FACTOR = fcallightguidescale["factor"];
+		}
+	}
 
     // initialize 2D matrix of efficiencies, indexed by (row,column)
     vector< vector<double > > new_block_efficiencies(DFCALGeometry::kBlocksTall, 
@@ -181,6 +195,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
 //-----------
 void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 {
+
    /// Smear the FCAL hits using the nominal resolution of the individual blocks.
    /// The way this works is a little funny and warrants a little explanation.
    /// The information coming from hdgeant is truth information indexed by 
@@ -223,7 +238,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	   if (config->APPLY_EFFICIENCY_CORRECTIONS
 	       && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(row, column))) {
 	     continue;
-	   } 
+	   }
 	 
 	   // Get gain constant per block	      
 	   int channelnum = fcalGeom->channel(row, column); 
@@ -241,7 +256,7 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	     hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
 	     hddm_s::FcalTruthLightGuideList::iterator lgiter;
 	     for (lgiter = lghits.begin(); lgiter != lghits.end(); lgiter++) {
-	       E += lgiter->getE();
+             E += lgiter->getDE() * fcal_config->FCAL_LIGHTGUIDE_SCALE_FACTOR;
 	     }
 	   }
 	   // Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
