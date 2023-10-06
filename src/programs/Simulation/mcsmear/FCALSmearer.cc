@@ -18,9 +18,6 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
 	FCAL_ENERGY_WIDTH_FLOOR = 0.0; // 0.03
 	FCAL_ENERGY_RANGE       = 8.0; // 8 GeV for E_{e^-} = 12GeV
 
-    FCAL_LIGHTGUIDE_SCALE_FACTOR = -1.0;
-    FCAL_ADD_LIGHTGUIDE_HITS = true;
-	
 	// Get values from CCDB
 	cout << "Get PHOTON_BEAM/endpoint_energy from CCDB ..." << endl;
 	map<string, float> beam_parms;
