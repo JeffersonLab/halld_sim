@@ -238,7 +238,7 @@ void Usage(void)
    cout << "    -M       Don't apply BCAL Poisson statistics (def. apply)" << endl;
    cout << "    -S       Don't apply BCAL fADC saturation (def. apply)" << endl;
    cout << "    -T       Don't apply BCAL SiPM saturation (def. apply)" << endl;
-   cout << "    -x       Scale factor for FCAL light guide energy deposition (def. 1.0)" << endl;
+   cout << "    -x       Scale factor for FCAL light guide energy deposition (def. CCDB)" << endl;
  //  cout << "    -f#      TOF sigma in psec (def: " <<  TOF_SIGMA/k_psec << ")" << endl;
    cout << "    -h       Print this usage statement." << endl;
    cout << endl;
