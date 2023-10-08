@@ -46,6 +46,7 @@ class mcsmear_config_t
 	bool APPLY_HITS_TRUNCATION;
 
     bool FCAL_ADD_LIGHTGUIDE_HITS;
+    double FCAL_LIGHTGUIDE_SCALE_FACTOR;
 	
 	// flags to pass command line info to subdetector classes
 	double BCAL_NO_T_SMEAR;

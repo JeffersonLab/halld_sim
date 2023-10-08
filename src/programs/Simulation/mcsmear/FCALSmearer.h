@@ -29,6 +29,7 @@ class fcal_config_t
 	double INSERT_ENERGY_WIDTH_FLOOR;	
 	double FCAL_ENERGY_RANGE;
 	bool FCAL_ADD_LIGHTGUIDE_HITS;
+    double FCAL_LIGHTGUIDE_SCALE_FACTOR;
 	
 	vector< vector<double > > block_efficiencies;
 	
@@ -48,6 +49,7 @@ class FCALSmearer : public Smearer
 
     fcal_config = new fcal_config_t(loop, fcalGeom);
     fcal_config->FCAL_ADD_LIGHTGUIDE_HITS = in_config->FCAL_ADD_LIGHTGUIDE_HITS;
+    fcal_config->FCAL_LIGHTGUIDE_SCALE_FACTOR = in_config->FCAL_LIGHTGUIDE_SCALE_FACTOR;
   }
   ~FCALSmearer() {
     delete fcal_config;
