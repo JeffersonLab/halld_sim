@@ -43,6 +43,8 @@ TH2D *thrown_theta_vs_p;
 TH2D *thrown_mass_vs_E;
 TH1D *cobrems_vs_E;
 
+Particle_t Nucleon;
+
 char input_file_name[50]="scalar.in";
 char output_file_name[50]="scalar_gen.hddm";
 
@@ -107,7 +109,7 @@ double BackgroundCrossSection(TLorentzVector &q /* beam */,
 			      vector<TLorentzVector>&particles){
   
   int two_particles=particle_types[0]+particle_types[1];
-  TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  TLorentzVector p1(0,0,0.,ParticleMass(Nucleon));
   TLorentzVector p2=particles[2];
   TLorentzVector p=p1-p2;
   double t=p.M2();
@@ -430,7 +432,7 @@ double InterferenceCrossSection(TLorentzVector &q /* beam */,
   int two_particles=particle_types[0]+particle_types[1];
   
   // Four vectors
-  TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  TLorentzVector p1(0,0,0.,ParticleMass(Nucleon));
   TLorentzVector p2=particles[2];
   TLorentzVector p=p1-p2;
   TLorentzVector v1=particles[0]-q;
@@ -1836,7 +1838,7 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
   int two_particles=particle_types[0]+particle_types[1];
   
   // Four vectors
-  TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  TLorentzVector p1(0,0,0.,ParticleMass(Nucleon));
   TLorentzVector p2=particles[2];
   TLorentzVector dp=p2-p1;
   
@@ -1933,7 +1935,7 @@ double TensorBackgroundInterference(TLorentzVector &q /* beam */,
   int two_particles=particle_types[0]+particle_types[1];
   
   // Four vectors
-  TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  TLorentzVector p1(0,0,0.,ParticleMass(Nucleon));
   TLorentzVector p2=particles[2];
   TLorentzVector dp=p2-p1;
   TLorentzVector v1=particles[0]-q;
@@ -2195,7 +2197,7 @@ double TensorScalarInterference(TLorentzVector &q /* beam */,
   double m_rho_sq=m_rho*m_rho;
 
   // Four vectors
-  TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  TLorentzVector p1(0,0,0.,ParticleMass(Nucleon));
   TLorentzVector p2=particles[2];
   TLorentzVector dp=p2-p1;
   
@@ -2403,7 +2405,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
    be->momentum->E  = beam.E();
    // Target
    rs->in[0].target = ta = make_s_Target();
-   ta->type = Proton;
+   ta->type = Nucleon;
    ta->properties = make_s_Properties();
    ta->properties->charge = ParticleCharge(ta->type);
    ta->properties->mass = ParticleMass(ta->type);
@@ -2457,7 +2459,7 @@ void CreateHistograms(string beamConfigFile){
   thrown_mass_vs_E->SetYTitle("M(4#gamma) [GeV]");
   thrown_mass_vs_E->SetXTitle("E(beam) [GeV]");
   
-  thrown_theta_vs_p=new TH2D("thrown_theta_vs_p","Proton #theta_{LAB} vs. p",
+  thrown_theta_vs_p=new TH2D("thrown_theta_vs_p","Nucleon #theta_{LAB} vs. p",
 			       200,0,2.,180,0.,90.);
   thrown_theta_vs_p->SetXTitle("p [GeV/c]");
   thrown_theta_vs_p->SetYTitle("#theta [degrees]");
@@ -2722,7 +2724,7 @@ int main(int narg, char *argv[])
   vector<TLorentzVector>particle_vectors(num_final_state_particles);
   vector<Particle_t>particle_types(num_final_state_particles);
   double *decay_masses =new double[num_decay_particles];
-  particle_types[last_index]=Proton;
+  particle_types[last_index]=Nucleon;
 
   // GEANT ids of decay particles
   getline(infile,comment_line);
@@ -2765,6 +2767,12 @@ int main(int narg, char *argv[])
     cout << " " << phase[k]; 
   }
   infile.ignore(); // ignore the '\n' at the end of this line
+
+  // Nucleon
+  getline(infile,comment_line);
+  infile >> Nucleon;
+  infile.ignore(); // ignore the '\n' at the end of this line
+
   cout << endl;
   infile.close();
   
