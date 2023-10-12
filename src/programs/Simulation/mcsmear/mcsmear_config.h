@@ -48,7 +48,6 @@ class mcsmear_config_t
     bool FCAL_ADD_LIGHTGUIDE_HITS;
     double FCAL_LIGHTGUIDE_SCALE_FACTOR;
 	
-	bool FCAL_ADD_LIGHTGUIDE_HITS;
 	bool FCAL_NEW_TIME_SMEAR;
 	// flags to pass command line info to subdetector classes
 	double BCAL_NO_T_SMEAR;
