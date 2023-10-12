@@ -107,6 +107,8 @@ void ParseCommandLineArguments(int narg, char* argv[], mcsmear_config_t *config)
           case 'E': config->FCAL_ADD_LIGHTGUIDE_HITS=false;       break;
 	      case 'R': config->SKIP_READING_RCDB=true;              break;
 	      case 't': config->MERGE_TAGGER_HITS=false;             break;
+	      case 'W': config->FCAL_NEW_TIME_SMEAR=true;            break;
+              case 'w': config->FCAL_NEW_TIME_SMEAR=false;           break;
 	      case 'l': {
 	   		config->DETECTORS_TO_LOAD=&ptr[2];
 	   		cout << "Detector list: " << config->DETECTORS_TO_LOAD << endl;  
@@ -229,6 +231,8 @@ void Usage(void)
  //  cout << "    -Xsigma  BCAL fADC time resolution (def. " << BCAL_FADC_TIME_RESOLUTION << " ns)" << endl;
    cout << "    -R       Don't load information from RCDB" << endl;
    cout << "    -t       Don't merge random hits from tagger counters" << endl;
+   cout << "    -W       Use new energy-dependent FCAL time smearing" << endl;
+   cout << "    -w       Use old energy-dependent FCAL time smearing (default)" << endl;
    cout << "    -D       Dump configuration debug information" << endl;
    cout << "    -E       Don't include FCAL light guide energy deposition (def. include)" << endl;
    cout << "    -G       Don't smear BCAL times (def. smear)" << endl;
