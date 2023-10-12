@@ -3,7 +3,7 @@
 //-----------
 // fcal_config_t  (constructor)
 //-----------
-fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom) 
+fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mcsmear_config_t *in_config) 
 {
 	// default values
 	FCAL_PHOT_STAT_COEF     = 0.0; // 0.05;
@@ -24,6 +24,9 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
   	FCAL_TIME_D = 0.0;   // -4.32
   	FCAL_TIME_E = 0.0;   // 0.014
 	
+    FCAL_ADD_LIGHTGUIDE_HITS = in_config->FCAL_ADD_LIGHTGUIDE_HITS;
+    FCAL_LIGHTGUIDE_SCALE_FACTOR = in_config->FCAL_LIGHTGUIDE_SCALE_FACTOR;
+
 	// Get values from CCDB
 	cout << "Get PHOTON_BEAM/endpoint_energy from CCDB ..." << endl;
 	map<string, float> beam_parms;
@@ -143,7 +146,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
 	// the user will set it to some non-zero value
 	// this should override the CCDB setting
 	if(FCAL_LIGHTGUIDE_SCALE_FACTOR < 0.) {  
-		cout<<"get FCAL/fcal_lightguide_scale_factorparameters from calibDB"<<endl;
+		cout<<"get FCAL/fcal_lightguide_scale_factor parameters from calibDB"<<endl;
 		map<string, double> fcallightguidescale;
 		if(loop->GetCalib("FCAL/fcal_lightguide_scale_factor", fcallightguidescale)) {
 			jerr << "Problem loading FCAL/fcal_lightguide_scale_factor from CCDB!" << endl;
