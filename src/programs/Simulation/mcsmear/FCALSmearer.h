@@ -11,7 +11,7 @@
 class fcal_config_t 
 {
   public:
-	fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom);
+	fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mcsmear_config_t *in_config);
 
 	double FCAL_PHOT_STAT_COEF;
 	double FCAL_BLOCK_THRESHOLD;
@@ -29,7 +29,13 @@ class fcal_config_t
 	double INSERT_ENERGY_WIDTH_FLOOR;	
 	double FCAL_ENERGY_RANGE;
 	bool FCAL_ADD_LIGHTGUIDE_HITS;
-    double FCAL_LIGHTGUIDE_SCALE_FACTOR;
+    	double FCAL_LIGHTGUIDE_SCALE_FACTOR;
+	bool FCAL_NEW_TIME_SMEAR;
+ 	double FCAL_TIME_A;
+  	double FCAL_TIME_B;
+  	double FCAL_TIME_C;
+  	double FCAL_TIME_D;
+  	double FCAL_TIME_E;
 	
 	vector< vector<double > > block_efficiencies;
 	
@@ -47,9 +53,11 @@ class FCALSmearer : public Smearer
     // Get the FCAL geometry
     loop->GetSingle(fcalGeom);
 
-    fcal_config = new fcal_config_t(loop, fcalGeom);
+    fcal_config = new fcal_config_t(loop, fcalGeom, in_config);
     fcal_config->FCAL_ADD_LIGHTGUIDE_HITS = in_config->FCAL_ADD_LIGHTGUIDE_HITS;
     fcal_config->FCAL_LIGHTGUIDE_SCALE_FACTOR = in_config->FCAL_LIGHTGUIDE_SCALE_FACTOR;
+    fcal_config->FCAL_NEW_TIME_SMEAR = in_config->FCAL_NEW_TIME_SMEAR;
+    
   }
   ~FCALSmearer() {
     delete fcal_config;
