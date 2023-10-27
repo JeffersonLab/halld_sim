@@ -63,6 +63,7 @@ C         write(6,*) ifind,KGEANT,KPYTH,ITYP(1,ip),ITYP(3,ip)
                dth=ACOS(dct)
             ENDIF
             dcti=1.D0-dct
+            pf=dpf
             ct=dct
             th=dth
             thd=th*180./3.14159

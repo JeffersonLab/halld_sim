@@ -17,7 +17,8 @@ C
      +              ,ISIMUL,IPINIT(2)
      +              ,NRADCOR,IRADCORR(MXRADP)
      +              ,IDTDIST
-     +              ,KFEVSEL(MXEVSEL),PAREVSEL(4)
+     +              ,KFEVSEL(MXEVSEL),PAREVSEL(4),NFEVSEL(MXEVSEL)
+     +              ,NFEFINAL
       INTEGER   NEVENT    ! number of events to simulate (F)
      +         ,RUNNO     ! run number to use
      +         ,IWROUT    ! (1)>0 - write out the HDDS file (events) (F)
@@ -46,6 +47,8 @@ C                           ip1 ip2 ip3 .... (>0) use PHOTOS to the decays of th
      +         ,IDTDIST   ! <>0 - starting ID of histograms for t-distributions for ISIMUL>0 (exclusive production)
      +         ,KFEVSEL   ! kf1 kf2 kf3 ... kf5 select events that contain particles kf1 (kf<>0) AND kf2 AND ... 
 C                                                (see the KF code), useful for PYTHIA
+     +         ,NFEVSEL   ! (i) - the exact number of particles of KFEVSEL(i) type, =0 - at least one particle 
+     +         ,NFEFINAL  ! >0 - the number of particles in the final state (KS = 1)
       REAL      EPH_LIM ! limits on the photon beam energy GeV (F)
      +         ,EHLIM   ! beam spectrum histogram x limits
      +         ,EELEC   ! electron beam energy (F)
