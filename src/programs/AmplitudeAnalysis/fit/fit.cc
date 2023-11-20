@@ -84,7 +84,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
 
   if( fitFailed ){
     cout << "ERROR: fit failed use results with caution..." << endl;
-    return 1e6;
+    return 1e6; //comment this out for now...
   }
 
   cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
@@ -291,13 +291,13 @@ int main( int argc, char* argv[] ){
          else  scanPar = argv[++i]; }
       if (arg == "-h"){
          cout << endl << " Usage for: " << argv[0] << endl << endl;
-         cout << "   -n \t\t\t\t\t use MINOS instead of MIGRAD" << endl;
-         cout << "   -H \t\t\t\t\t evaluate HESSE matrix after minimization" << endl;
-         cout << "   -c <file>\t\t\t\t config file" << endl;
-         cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
+         cout << "   -n \t\t\t\t use MINOS instead of MIGRAD" << endl;
+         cout << "   -H \t\t\t\t evaluate HESSE matrix after minimization" << endl;
+         cout << "   -c <file>\t\t\t config file" << endl;
+         cout << "   -s <output file>\t\t for seeding next fit based on this fit (optional)" << endl;
          cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
          cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
-         cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
+         cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          exit(1);}
    }
