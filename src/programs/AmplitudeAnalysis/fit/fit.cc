@@ -90,7 +90,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
 
   if( fitFailed ){
     cout << "ERROR: fit failed use results with caution..." << endl;
-    return 1e6;
+    return 1e6; //comment this out for now...
   }
 
   cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
