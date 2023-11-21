@@ -17,7 +17,7 @@ C
       LOGICAL HEXIST
       EXTERNAL HRNDM1,HXI,HEXIST
 C
-      INTEGER i,j,ip,ier,lout,idnt,lenc(2),nkfsel,ntry
+      INTEGER i,j,ip,ier,lout,idnt,lenc(2),nkfsel,ntry,npfinal
       REAL ebeam,de,ecent,thdg,ptot,pt2
       CHARACTER cent(2)*6,centt(2)*12
 C
@@ -105,6 +105,17 @@ C
 C---    Event selection (if needed)
 C
       ierr=0
+      IF(NFEFINAL.GT.0) THEN
+         npfinal=0
+         DO ip=1,NTRA
+            IF(ITPTRA(2,ip).EQ.1) npfinal=npfinal+1 ! number of undecayed (final) particles
+         ENDDO
+         IF(npfinal.NE.NFEFINAL) THEN
+            ierr=1
+            GO TO 999
+         ENDIF
+      ENDIF
+C
       DO i=1,MXEVSEL
          nkfsel=0
          IF(KFEVSEL(i).NE.0) THEN
@@ -121,7 +132,8 @@ C
                 ENDIF
               ENDIF 
             ENDDO
-            IF(nkfsel.EQ.0) THEN
+            IF(nkfsel.EQ.0.OR.
+     +        (NFEVSEL(i).GT.0.AND.nkfsel.NE.NFEVSEL(i))) THEN
                ierr=1           ! required particle not found in the record
                GO TO 999
             ENDIF

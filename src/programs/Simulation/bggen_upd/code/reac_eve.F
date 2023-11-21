@@ -106,7 +106,8 @@ C
                amdec=amdec+amd(i,ip)
             ENDDO
          ENDIF
-         IF(am(ip).LT.amdec+0.01) THEN
+         IF(am(ip).LT.amdec+0.0005) THEN   ! 2023/08/01 change from 10 to 0.5 MeV
+C            write(6,*) ' ******** Err', am(ip),amdec+0.0005
             IF(ntry1.LT.1000) GO TO 35
             WRITE(6,*) ' *** REAC_EVE unsuff mass for decay '
      +           ,idgea,am(ip),amdec 
@@ -116,7 +117,7 @@ C
          amtot=amtot+am(ip)
       ENDDO
 C
-      IF(amtot.GE.ecm-0.001) THEN
+      IF(amtot.GE.ecm-0.0005) THEN ! 2023/08/01 change from 10 to 0.5 MeV
          IF(ntry.LT.1000) GO TO 30
          WRITE(6,*) ' *** REAC_EVE unsuff energy for reaction '
      +           ,amtot,ecm 
@@ -213,7 +214,7 @@ C         write(6,*) 'ip,idgea,ndec ',ip,idgea,ND_PART(idgea)
             itorig(np+i)=ip
             it1dec(np+i)=0
          ENDDO
-         IF(am(ip).LT.amdec+0.01) THEN
+         IF(am(ip).LT.amdec+0.0005) THEN ! 2023/08/01 change from 10 to 0.5 MeV
             IF(ntry.LT.1000) GO TO 120
             WRITE(6,*) ' *** REAC_EVE unsuff mass for decay '
      +           ,idgea,am(ip),amdec 
