@@ -134,22 +134,27 @@ int main( int argc, char* argv[] ){
 	string jpTag[] = { "1p" };
 	int jpNum = 1;
 
-	string mJTag[] = { "0" };
-	int mJNum = 1;
+	string mJTag[] = { "m", "0", "p" };
+	int mJNum = 3;
 
 	string lTag[] = { "s" };
 	int lNum = 1;
 
-	string helDelTag[] = { "p1" };
-	int helDelNum = 1;
+	string helDelTag[] = { "m3", "m1", "p1", "p3" };
+	int helDelNum = 4;
 
 	for( int refl = 0; refl < reflNum; ++refl ){
 		for( int jp = 0; jp < jpNum; ++jp ){
 			amphistname.push_back( reflTag[refl] + jpTag[jp] );
 			for( int mJ = 0; mJ < mJNum; ++mJ ){
 				for( int l = 0; l < lNum; ++l ){
+					amphistname.push_back( reflTag[refl] + jpTag[jp] + mJTag[mJ] + lTag[l] );
 					for( int helDel = 0; helDel < helDelNum; helDel++ ){
 						amphistname.push_back( reflTag[refl] + jpTag[jp] + mJTag[mJ] + lTag[l] + helDelTag[helDel] );
+						string tempmJ = reflTag[refl] + jpTag[jp] + lTag[l] +helDelTag[helDel];
+						if( std::find( amphistname.begin(), amphistname.end(), tempmJ ) == amphistname.end() ) {
+							amphistname.push_back( tempmJ );
+						}
 					}
 				}
 			}
@@ -212,7 +217,7 @@ int main( int argc, char* argv[] ){
 				for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
 					if( amps[jamp].find( locampname.data() ) == std::string::npos ) {
 						plotGen.disableAmp( jamp );
-						cout << "Disable amplitude " << amps[jamp] << endl;
+//						cout << "Disable amplitude " << amps[jamp] << endl;
 					}
 				}
 			}
@@ -227,24 +232,8 @@ int main( int argc, char* argv[] ){
 				for( unsigned int ivar = 0; ivar < OmegaPiPlotGenerator::kNumHists; ivar++ ){
 	  
 	  				// set unique histogram name for each plot (could put in directories...)
-	  				string histname =  "";
-	  				if (ivar == OmegaPiPlotGenerator::kOmegaPiMass)  histname += "MOmegaPi";
-	  				else if (ivar == OmegaPiPlotGenerator::kCosTheta)  histname += "CosTheta";
-	  				else if (ivar == OmegaPiPlotGenerator::kPhi)  histname += "Phi";
-		  			else if (ivar == OmegaPiPlotGenerator::kCosThetaH)  histname += "CosTheta_H";
-		  			else if (ivar == OmegaPiPlotGenerator::kPhiH)  histname += "Phi_H";
-	  				else if (ivar == OmegaPiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
-	  				else if (ivar == OmegaPiPlotGenerator::kt)  histname += "t";
-		  			else if (ivar == OmegaPiPlotGenerator::kRecoilMass)  histname += "MRecoil";
-		  			else if (ivar == OmegaPiPlotGenerator::kProtonPiMass)  histname += "MProtonPi";
-	  				else if (ivar == OmegaPiPlotGenerator::kRecoilPiMass)  histname += "MRecoilPi";
-	  				else if (ivar == OmegaPiPlotGenerator::kLambda)  histname += "Lambda";
-		  			else if (ivar == OmegaPiPlotGenerator::kDalitz)  histname += "Dalitz";
-		  			else if (ivar == OmegaPiPlotGenerator::kCosThetaDelta)  histname += "CosThetaDelta";
-	  				else if (ivar == OmegaPiPlotGenerator::kPhiDelta)  histname += "PhiDelta";
+	  				string histname = plotGen.getHistogram( ivar )->name();
 
-	  				else continue;
-	  
 	  				if (iplot == PlotGenerator::kData) histname += "dat";
 	  				if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
 	  				if (iplot == PlotGenerator::kAccMC) histname += "acc";
