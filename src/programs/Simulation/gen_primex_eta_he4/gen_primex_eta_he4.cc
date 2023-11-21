@@ -192,7 +192,9 @@ int main( int argc, char* argv[] ){
   TString m_histo = ReadFile->GetConfigName("histo"); 
   TString m_decay = ReadFile->GetConfigName("decay"); 
   TString m_target = ReadFile->GetConfigName("target"); 
-  TString m_Fermi_file = ReadFile->GetConfigName("Fermi_file"); 
+  TString m_Fermi_file = ReadFile->GetConfigName("fermi_file"); 
+  TString m_Participant = ReadFile->GetConfigName("participant");
+  TString m_Spectator = ReadFile->GetConfigName("spectator"); 
   // Double_t * m_binning = ReadFile->GetConfig6Par("binning");
   /*if (m_decay != 0) {
     bin_egam = (int) m_binning[0];
@@ -207,13 +209,43 @@ int main( int argc, char* argv[] ){
   cout << "decay " << m_decay << endl;
   cout << "target " << m_target << endl;
   //cout << "Fermi_file " << m_Fermi_file << endl;
-
-  double M_target = M_He4;
+  TH1F * m_h_PFermi;
+  Particle_t t_target;
+  Particle_t t_meson;
+  Particle_t t_spectator; 
+  Particle_t t_participant;
+  if (m_Fermi_file != "") {
+    cout <<"Target is made of " << m_target << " with the participant " << m_Participant << " and spectator " << m_Spectator << endl;
+    cout <<"Nucleon Fermi motion is located in " << m_Fermi_file << endl;
+    m_h_PFermi = new TH1F("PFermi", "", 1000, 0.0, 1.0);
+    ifstream in;
+    in.open(m_Fermi_file);
+    int i = 0;
+    while (in.good()) {
+      double pf = 0, val = 0;
+      in >> pf >> val;
+      if (val > 0) {
+	m_h_PFermi->SetBinContent(i + 1, val);
+	i ++;
+      }
+    }
+    in.close();
+    t_target = ParticleEnum(m_target.Data());
+    t_meson = ParticleEnum(m_decay.Data());
+    t_spectator = ParticleEnum(m_Spectator.Data());
+    t_participant = ParticleEnum(m_Participant.Data());
+    cout << "Spectator mass " << ParticleMass(t_spectator) << " pdg " << PDGtype(t_spectator) << endl;
+    cout << "Participant mass " << ParticleMass(t_participant) << " pdg " << PDGtype(t_participant) << endl;
+  }
+  
+  double M_target = ParticleMass(t_target);
+  /*
   if (m_target == "He4" || m_target == "Helium") M_target = M_He4;
   if (m_target == "Be9" || m_target == "Beryllium-9") M_target = M_Be9;
   if (m_target == "Proton") M_target = M_p;
   if (m_target == "Neutron") M_target = M_n;
-  TLorentzVector Target_4Vec(0, 0, 0, M_target);
+  */
+  TLorentzVector Target_4Vec(0, 0, 0, ParticleMass(t_target));
 
   // Load eta-meson differential cross-section based on Ilya Larin's calculation, see the *.F program in this directory 
   TFile * ifile = new TFile(m_rfile);
@@ -225,7 +257,8 @@ int main( int argc, char* argv[] ){
   theta_min = h_dxs->GetYaxis()->GetXmin();
   theta_max = h_dxs->GetYaxis()->GetXmax();   
 
-  double M_meson = 0;
+  double M_meson = ParticleMass(t_meson);
+  /*
   if (m_decay == "eta")
     M_meson = M_eta;
   else if (m_decay == "pi0")
@@ -238,6 +271,7 @@ int main( int argc, char* argv[] ){
     M_meson = M_eta;
   else if (m_decay == "pi0->2g")
     M_meson = M_pi0;
+  */
   // Create decayGen
   TGenPhaseSpace decayGen;
   TGenPhaseSpace decayGenTMP1;
@@ -251,6 +285,7 @@ int main( int argc, char* argv[] ){
   TH2F* h_theta_eta_vs_egam = new TH2F("theta_eta_vs_egam", ";E_{#gamma} [GeV];#theta_{#eta} [GeV];Count [a.u.]", bin_egam, egam_min, egam_max, bin_theta, theta_min, theta_max);
   TH2F* h_theta_photon_vs_egam = new TH2F("theta_photon_vs_egam", ";E_{#gamma} [GeV];#theta_{#gamma} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0., 180.);
   TH2F* h_theta_recoilA_vs_egam = new TH2F("theta_recoilA_vs_egam", ";E_{#gamma} [GeV];#theta_{A} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0., 180.);
+  TH1F *thrown_FermiP = new TH1F("thrown_FermiP",";p_{F} [GeV/c];",250,0.,1.);;
   
   for (int i = 0; i < nEvents; ++i) {
     if (i%1000 == 1)
@@ -398,6 +433,24 @@ int main( int argc, char* argv[] ){
     TLorentzVector eta_LAB_4Vec(Px_LAB_eta, Py_LAB_eta, Pz_LAB_eta, E_LAB_eta);
     //TLorentzVector eta_COM_4Vec = eta_LAB_4Vec;
     //eta_COM_4Vec.Boost(-IS_4Vec.BoostVector());
+    
+    // IA variables
+    double p_Fermi = 0, p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
+    TLorentzVector SpectatorP4(0, 0, 0, 0);
+    TLorentzVector ParticipantP4(0, 0, 0, 0);
+    if (m_Spectator != "") {
+      double s_mass = ParticleMass(t_spectator);
+      double p_mass = ParticleMass(t_participant);
+      p_Fermi = m_h_PFermi->GetRandom();
+      thrown_FermiP->Fill(p_Fermi);
+      p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
+      gRandom->Sphere(p_Fermi_x, p_Fermi_y, p_Fermi_z, p_Fermi);
+      double SpectatorE = sqrt(pow(p_Fermi, 2) + pow(s_mass, 2));
+      SpectatorP4 = TLorentzVector(p_Fermi_x, p_Fermi_y, p_Fermi_z, SpectatorE);
+      ParticipantP4 = IS_4Vec - eta_LAB_4Vec - SpectatorP4;
+      double w_mass = ParticipantP4.M();
+      ParticipantP4 = p_mass / w_mass * ParticipantP4;
+    }
         
     // Make the eta-meson decay into two photons
     
@@ -472,6 +525,8 @@ int main( int argc, char* argv[] ){
       tmpEvt.str_target = m_target;
       tmpEvt.beam = InGamma_4Vec;
       tmpEvt.target = Target_4Vec;
+      tmpEvt.t_targ = t_target;
+      tmpEvt.t_meso = t_meson;
       if (m_decay == "pi0->2g") {
 	tmpEvt.q1 = photon_4Vec[0];
 	tmpEvt.q2 = photon_4Vec[1];
@@ -491,12 +546,23 @@ int main( int argc, char* argv[] ){
 	tmpEvt.q6 = photon_4Vec[5];
 	tmpEvt.q7 = He4_LAB_4Vec;
 	tmpEvt.nGen = 7;
-      } else if (ng_max == 0) {
+      } else if (ng_max == 0 && m_Fermi_file == "") {
 	//cout <<"decay " << m_decay << endl;
 	tmpEvt.str_meson = m_decay;
 	tmpEvt.q1 = eta_LAB_4Vec;
 	tmpEvt.q2 = He4_LAB_4Vec;
 	tmpEvt.nGen = 2;
+      } else if (ng_max == 0 && m_Fermi_file != "") {
+	//cout <<"decay " << m_decay << endl;
+	tmpEvt.str_meson = m_decay;
+	tmpEvt.q1 = eta_LAB_4Vec;
+	tmpEvt.q2 = ParticipantP4;
+	tmpEvt.q3 = SpectatorP4;
+	//tmpEvt.t_targ = t_target;
+	//tmpEvt.t_meso = t_meson;
+	tmpEvt.t_part = t_participant;
+	tmpEvt.t_spec = t_spectator;
+	tmpEvt.nGen = 3;
       }
       tmpEvt.weight = 1.;
       hddmWriter->write(tmpEvt,runNum,i);
@@ -526,6 +592,7 @@ int main( int argc, char* argv[] ){
   h_theta_eta_vs_egam->Write();
   h_theta_photon_vs_egam->Write();
   h_theta_recoilA_vs_egam->Write();
+  thrown_FermiP->Write();
   //h_dxs->Write();
   //cobrem_vs_Erange->Write();
   diagOut->Close();
