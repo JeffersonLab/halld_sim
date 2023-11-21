@@ -43,6 +43,7 @@ int main( int argc, char* argv[] ){
 	cfgInfo->display();
 
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
+	AmpToolsInterface::registerAmplitude( PhaseOffset() );
 	AmpToolsInterface::registerAmplitude( OmegaDalitz() );
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 	AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
