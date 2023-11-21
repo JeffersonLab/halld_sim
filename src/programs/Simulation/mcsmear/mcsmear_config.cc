@@ -26,7 +26,11 @@ mcsmear_config_t::mcsmear_config_t()
 	DUMP_RCDB_CONFIG = false;
 	APPLY_EFFICIENCY_CORRECTIONS = true;
 	APPLY_HITS_TRUNCATION  = true;
-	FCAL_ADD_LIGHTGUIDE_HITS = false;
+
+	FCAL_ADD_LIGHTGUIDE_HITS = true;
+    FCAL_LIGHTGUIDE_SCALE_FACTOR = -1.;
+	FCAL_NEW_TIME_SMEAR = false;
+
 	SKIP_READING_RCDB = false;
 	MERGE_TAGGER_HITS = true;
 
