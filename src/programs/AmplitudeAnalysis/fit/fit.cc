@@ -109,8 +109,8 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
-  // keep track of best fit (mininum log-likelihood)
-  double minLL = 0;
+  // keep track of best fit (minimum log-likelihood)
+  double minLL = 1000000;
   int minFitTag = -1;
 
   for(int i=0; i<numRnd; i++) {
