@@ -124,14 +124,14 @@ int main( int argc, char* argv[] ){
 	string reflTag[] = { "p", "m" };
 	int reflNum = 2;
 
-	string jpTag[] = { "1p" };
+	string jpTag[] = { "1m" };
 	int jpNum = 1;
 
 	string mJTag[] = { "p", "0", "m" };
 	int mJNum = 3;
 
-	string lTag[] = { "s", "d" };
-	int lNum = 2;
+	string lTag[] = { "p" };
+	int lNum = 1;
 
 	string helDelTag[] = { "m3", "m1", "p1", "p3" };
 	int helDelNum = 4;
