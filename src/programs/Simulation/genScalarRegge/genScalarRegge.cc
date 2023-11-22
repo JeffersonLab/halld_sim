@@ -21,7 +21,7 @@ using namespace std;
 
 
 // Masses
-double m_p=0.0; // GeV
+double m_p=ParticleMass(Proton); // GeV
 double m_p_sq=m_p*m_p;
 // Width
 double width=0.;
