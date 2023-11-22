@@ -19,6 +19,8 @@ struct tmpEvt_t {
   int nGen;
   TString str_target;
   TString str_meson;
+  TString str_participant;
+  TString str_spectator;
   Particle_t t_targ;
   Particle_t t_meso;
   Particle_t t_spec;
@@ -118,7 +120,7 @@ class HddmOut {
     target->momentum->py = 0;
     target->momentum->pz = 0;
     target->momentum->E  = ParticleMass(evt.t_targ);
-
+    
     beam->momentum->px = evt.beam.Px();
     beam->momentum->py = evt.beam.Py();
     beam->momentum->pz = evt.beam.Pz();
@@ -127,9 +129,9 @@ class HddmOut {
     products->mult = evt.nGen;
     reaction->weight = evt.weight;
     if (evt.nGen == 2) {
-      /*
+      
       //PRODUCED PHOTON
-      if (evt.str_meson == "eta") {
+      if (evt.str_meson == "Eta") {
 	products->in[0].type = Eta;
 	products->in[0].pdgtype = 221;
       } else if (evt.str_meson == "eta'") {
@@ -140,7 +142,7 @@ class HddmOut {
 	products->in[0].type = Pi0;
 	products->in[0].pdgtype = 111;
       }
-      */
+      
       products->in[0].id = 1;
       products->in[0].parentid = 0;
       products->in[0].mech = 0;
@@ -149,8 +151,8 @@ class HddmOut {
       products->in[0].momentum->py = evt.q1.Py();
       products->in[0].momentum->pz = evt.q1.Pz();
       products->in[0].momentum->E = evt.q1.E();
-      products->in[0].type = evt.t_meso;
-      products->in[0].pdgtype = PDGtype(evt.t_meso);
+      //products->in[0].type = evt.t_meso;
+      //products->in[0].pdgtype = PDGtype(evt.t_meso);
 
       //PRODUCED Nucleus recoil
       /*
@@ -179,8 +181,8 @@ class HddmOut {
       products->in[1].type = evt.t_targ;
       products->in[1].pdgtype = PDGtype(evt.t_targ);
     } else if (evt.nGen == 3) {
-      /*
-      if (evt.str_meson == "eta") {
+      
+      if (evt.str_meson == "Eta") {
 	products->in[0].type = Eta;
 	products->in[0].pdgtype = 221;
       } else if (evt.str_meson == "eta'") {
@@ -191,7 +193,7 @@ class HddmOut {
 	products->in[0].type = Pi0;
 	products->in[0].pdgtype = 111;
       }
-      */
+      
       products->in[0].id = 1;
       products->in[0].parentid = 0;
       products->in[0].mech = 0;
@@ -213,7 +215,16 @@ class HddmOut {
       products->in[1].momentum->E = evt.q2.E();
       products->in[1].type = evt.t_part;
       products->in[1].pdgtype = PDGtype(evt.t_part);
-
+      /*
+      if (evt.str_participant == "Neutron") {
+	products->in[1].type = Neutron;
+	products->in[1].pdgtype = 2112;
+      } else  if (evt.str_participant == "Proton") {
+	products->in[1].type = Proton;
+	products->in[1].pdgtype = 2212;
+      }
+      */
+      /*
       products->in[2].id = 3;
       products->in[2].parentid = 0;
       products->in[2].mech = 0;
@@ -224,6 +235,7 @@ class HddmOut {
       products->in[2].momentum->E = evt.q3.E();
       products->in[2].type = evt.t_spec;
       products->in[2].pdgtype = PDGtype(evt.t_spec);
+      */
       /*
       //PRODUCED PHOTON
       products->in[0].type = Gamma;

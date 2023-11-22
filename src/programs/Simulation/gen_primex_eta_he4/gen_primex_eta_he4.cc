@@ -234,6 +234,8 @@ int main( int argc, char* argv[] ){
     t_meson = ParticleEnum(m_decay.Data());
     t_spectator = ParticleEnum(m_Spectator.Data());
     t_participant = ParticleEnum(m_Participant.Data());
+    cout << "Target mass " << ParticleMass(t_target) << " pdg " << PDGtype(t_target) << endl;
+    cout << "Meson mass " << ParticleMass(t_meson) << " pdg " << PDGtype(t_meson) << endl;
     cout << "Spectator mass " << ParticleMass(t_spectator) << " pdg " << PDGtype(t_spectator) << endl;
     cout << "Participant mass " << ParticleMass(t_participant) << " pdg " << PDGtype(t_participant) << endl;
   }
@@ -555,6 +557,8 @@ int main( int argc, char* argv[] ){
       } else if (ng_max == 0 && m_Fermi_file != "") {
 	//cout <<"decay " << m_decay << endl;
 	tmpEvt.str_meson = m_decay;
+	tmpEvt.str_spectator = m_Spectator;
+	tmpEvt.str_participant = m_Participant;
 	tmpEvt.q1 = eta_LAB_4Vec;
 	tmpEvt.q2 = ParticipantP4;
 	tmpEvt.q3 = SpectatorP4;
