@@ -238,15 +238,15 @@ int main( int argc, char* argv[] ){
     cout << "Meson mass " << ParticleMass(t_meson) << " pdg " << PDGtype(t_meson) << endl;
     cout << "Spectator mass " << ParticleMass(t_spectator) << " pdg " << PDGtype(t_spectator) << endl;
     cout << "Participant mass " << ParticleMass(t_participant) << " pdg " << PDGtype(t_participant) << endl;
+  } else {
+    t_target = ParticleEnum(m_target.Data());
+    t_meson = ParticleEnum(m_decay.Data());
+    cout << "Target mass " << ParticleMass(t_target) << " pdg " << PDGtype(t_target) << endl;
+    cout << "Meson mass " << ParticleMass(t_meson) << " pdg " << PDGtype(t_meson) << endl;
   }
   
   double M_target = ParticleMass(t_target);
-  /*
-  if (m_target == "He4" || m_target == "Helium") M_target = M_He4;
-  if (m_target == "Be9" || m_target == "Beryllium-9") M_target = M_Be9;
-  if (m_target == "Proton") M_target = M_p;
-  if (m_target == "Neutron") M_target = M_n;
-  */
+  
   TLorentzVector Target_4Vec(0, 0, 0, ParticleMass(t_target));
 
   // Load eta-meson differential cross-section based on Ilya Larin's calculation, see the *.F program in this directory 
@@ -260,20 +260,6 @@ int main( int argc, char* argv[] ){
   theta_max = h_dxs->GetYaxis()->GetXmax();   
 
   double M_meson = ParticleMass(t_meson);
-  /*
-  if (m_decay == "eta")
-    M_meson = M_eta;
-  else if (m_decay == "pi0")
-    M_meson = M_pi0;
-  else if (m_decay == "eta'")
-    M_meson = M_etapr;
-  else if (m_decay == "eta->2g")
-    M_meson = M_eta;
-  else if (m_decay == "eta->6g")
-    M_meson = M_eta;
-  else if (m_decay == "pi0->2g")
-    M_meson = M_pi0;
-  */
   // Create decayGen
   TGenPhaseSpace decayGen;
   TGenPhaseSpace decayGenTMP1;
@@ -305,94 +291,12 @@ int main( int argc, char* argv[] ){
     
     // Initial state 4Vec
     TLorentzVector IS_4Vec = InGamma_4Vec + Target_4Vec;
-    
-    // Mass in the centre-of-mass frame
-    // double sqrt_s = IS_4Vec.M();
-    // double s = pow(sqrt_s, 2);
-    
+      
     // Histo. creation that will store the calculated diff. xs. vs. LAB polar angle
     int ebeam_bin = h_dxs->GetXaxis()->FindBin(ebeam);
     TH1F * h_ThetaLAB = (TH1F *) h_dxs->ProjectionY("h_ThetaLAB", ebeam_bin, ebeam_bin);
     if (h_ThetaLAB->GetEntries() == 0) continue;
     
-    /*
-    // XS initialization
-    double xs_tot = 0, xs_Primakoff = 0, xs_interference = 0, xs_strong_coherent = 0, xs_incoherent = 0;
-    
-    // read or calculate differential cross-section
-    // open coh. diff. xs
-    in_coherent.open(TString::Format("ds_eta_he4_%0.3f.dat", ebeam)); 
-    
-    // open incoh. diff. xs
-    in_incoherent.open(TString::Format("inc_eta_he4_%0.3f.dat", ebeam)); 
-    
-    // if already calculated, read
-    int j = 0; 
-    if (in_coherent.good() && in_incoherent.good()) { 
-    
-    // Read Primakoff, interference, and strong coherent diff. xs terms
-    j = 0;
-    while (in_coherent.good()) {
-    xs_tot = 0; xs_Primakoff = 0; xs_interference = 0; xs_strong_coherent = 0; xs_incoherent = 0;
-    in_coherent >> dummy >> dummy >> xs_Primakoff >> xs_interference >> xs_strong_coherent >> xs_incoherent;
-    xs_tot = xs_Primakoff + xs_interference + xs_strong_coherent + xs_incoherent;
-    h_ThetaLAB->Fill(h_ThetaLAB->GetBinCenter(j + 1), xs_tot);
-    j ++;
-    }
-    in_coherent.close();
-    
-    // Read incoh. term
-    j = 0;
-    while (in_incoherent.good()) {
-    xs_incoherent = 0;
-    in_incoherent >> dummy >> xs_incoherent >> dummy >> dummy;
-    h_ThetaLAB->Fill(h_ThetaLAB->GetBinCenter(j + 1), xs_incoherent);
-    j ++;
-    }
-    in_incoherent.close();
-    
-    } else { // If not calculated, calculate and then read
-    
-    // Close files if not already closed
-    in_coherent.close();
-    in_incoherent.close();
-    
-    // Calculate and produce diff. xs dat files for 100 bin from 0 to 10 degree
-    // Calculate Coulomb term of the coherent diff. xs 
-    system(TString::Format("ff_coulomb %0.03f ff_coulom_%0.3f.dat", ebeam, ebeam));
-    
-    // Calculate strong term of the coherent diff. xs 
-    system(TString::Format("ff_strong %0.03f ff_strong_%0.3f.dat", ebeam, ebeam));
-    
-    // Calculate Primakoff, interference, and strong coherent diff. xs 
-    system(TString::Format("ds_eta_he4 %0.03f ff_coulom_%0.3f.dat ff_strong_%0.3f.dat ds_eta_he4_%0.3f.dat", ebeam, ebeam, ebeam, ebeam));
-    
-    // Calculate incoherent
-    system(TString::Format("inc_eta_he4 %0.03f inc_eta_he4_%0.3f.dat", ebeam, ebeam));
-    
-    // Read Primakoff, interference, and strong coherent diff. xs terms
-    in_coherent.open(TString::Format("ds_eta_he4_%0.3f.dat", ebeam));
-    j = 0;
-    while (in_coherent.good()) {
-    xs_tot = 0; xs_Primakoff = 0; xs_interference = 0; xs_strong_coherent = 0; xs_incoherent = 0;
-    in_coherent >> dummy >> dummy >> xs_Primakoff >> xs_interference >> xs_strong_coherent >> xs_incoherent;
-    xs_tot = xs_Primakoff + xs_interference + xs_strong_coherent + xs_incoherent;
-    h_ThetaLAB->Fill(h_ThetaLAB->GetBinCenter(j + 1), xs_tot);
-    j ++;
-    }
-    in_coherent.close();
-    
-    // Read incoh. term
-    j = 0;
-    while (in_incoherent.good()) {
-    xs_incoherent = 0;
-    in_incoherent >> dummy >> xs_incoherent >> dummy >> dummy;
-    h_ThetaLAB->Fill(h_ThetaLAB->GetBinCenter(j + 1), xs_incoherent);
-    j ++;
-    }
-    in_incoherent.close();
-    }
-    */
     // Generate eta-meson theta in LAB
     double ThetaLAB = h_ThetaLAB->GetRandom();
     ThetaLAB *= TMath::DegToRad();
@@ -433,9 +337,7 @@ int main( int argc, char* argv[] ){
     
     // Store the results in TLorentzVector for the eta-meson
     TLorentzVector eta_LAB_4Vec(Px_LAB_eta, Py_LAB_eta, Pz_LAB_eta, E_LAB_eta);
-    //TLorentzVector eta_COM_4Vec = eta_LAB_4Vec;
-    //eta_COM_4Vec.Boost(-IS_4Vec.BoostVector());
-    
+        
     // IA variables
     double p_Fermi = 0, p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
     TLorentzVector SpectatorP4(0, 0, 0, 0);
@@ -549,21 +451,17 @@ int main( int argc, char* argv[] ){
 	tmpEvt.q7 = He4_LAB_4Vec;
 	tmpEvt.nGen = 7;
       } else if (ng_max == 0 && m_Fermi_file == "") {
-	//cout <<"decay " << m_decay << endl;
 	tmpEvt.str_meson = m_decay;
 	tmpEvt.q1 = eta_LAB_4Vec;
 	tmpEvt.q2 = He4_LAB_4Vec;
 	tmpEvt.nGen = 2;
       } else if (ng_max == 0 && m_Fermi_file != "") {
-	//cout <<"decay " << m_decay << endl;
 	tmpEvt.str_meson = m_decay;
 	tmpEvt.str_spectator = m_Spectator;
 	tmpEvt.str_participant = m_Participant;
 	tmpEvt.q1 = eta_LAB_4Vec;
 	tmpEvt.q2 = ParticipantP4;
 	tmpEvt.q3 = SpectatorP4;
-	//tmpEvt.t_targ = t_target;
-	//tmpEvt.t_meso = t_meson;
 	tmpEvt.t_part = t_participant;
 	tmpEvt.t_spec = t_spectator;
 	tmpEvt.nGen = 3;

@@ -125,11 +125,11 @@ class HddmOut {
     beam->momentum->py = evt.beam.Py();
     beam->momentum->pz = evt.beam.Pz();
     beam->momentum->E  = evt.beam.E();
-    //cout <<"beam energy " << evt.beam.E() << " nGen " << evt.nGen << " str_meson " << evt.str_meson << endl;
+
     products->mult = evt.nGen;
     reaction->weight = evt.weight;
     if (evt.nGen == 2) {
-      
+      /*
       //PRODUCED PHOTON
       if (evt.str_meson == "Eta") {
 	products->in[0].type = Eta;
@@ -142,7 +142,7 @@ class HddmOut {
 	products->in[0].type = Pi0;
 	products->in[0].pdgtype = 111;
       }
-      
+      */
       products->in[0].id = 1;
       products->in[0].parentid = 0;
       products->in[0].mech = 0;
@@ -151,8 +151,8 @@ class HddmOut {
       products->in[0].momentum->py = evt.q1.Py();
       products->in[0].momentum->pz = evt.q1.Pz();
       products->in[0].momentum->E = evt.q1.E();
-      //products->in[0].type = evt.t_meso;
-      //products->in[0].pdgtype = PDGtype(evt.t_meso);
+      products->in[0].type = evt.t_meso;
+      products->in[0].pdgtype = PDGtype(evt.t_meso);
 
       //PRODUCED Nucleus recoil
       /*
@@ -181,7 +181,7 @@ class HddmOut {
       products->in[1].type = evt.t_targ;
       products->in[1].pdgtype = PDGtype(evt.t_targ);
     } else if (evt.nGen == 3) {
-      
+      /*
       if (evt.str_meson == "Eta") {
 	products->in[0].type = Eta;
 	products->in[0].pdgtype = 221;
@@ -193,7 +193,7 @@ class HddmOut {
 	products->in[0].type = Pi0;
 	products->in[0].pdgtype = 111;
       }
-      
+      */
       products->in[0].id = 1;
       products->in[0].parentid = 0;
       products->in[0].mech = 0;
