@@ -207,7 +207,10 @@ int main( int argc, char* argv[] ){
   cout << "rfile " << m_rfile << endl;
   cout << "histo " << m_histo << endl;
   cout << "decay " << m_decay << endl;
+  if (m_decay == "eta") m_decay = "Eta";
+  if (m_decay == "eta'") m_decay = "EtaPrime";
   cout << "target " << m_target << endl;
+  
   //cout << "Fermi_file " << m_Fermi_file << endl;
   TH1F * m_h_PFermi;
   Particle_t t_target;
