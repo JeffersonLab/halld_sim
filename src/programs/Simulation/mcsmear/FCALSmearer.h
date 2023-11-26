@@ -54,8 +54,6 @@ class FCALSmearer : public Smearer
     loop->GetSingle(fcalGeom);
 
     fcal_config = new fcal_config_t(loop, fcalGeom, in_config);
-    fcal_config->FCAL_ADD_LIGHTGUIDE_HITS = in_config->FCAL_ADD_LIGHTGUIDE_HITS;
-    fcal_config->FCAL_LIGHTGUIDE_SCALE_FACTOR = in_config->FCAL_LIGHTGUIDE_SCALE_FACTOR;
     fcal_config->FCAL_NEW_TIME_SMEAR = in_config->FCAL_NEW_TIME_SMEAR;
     
   }
