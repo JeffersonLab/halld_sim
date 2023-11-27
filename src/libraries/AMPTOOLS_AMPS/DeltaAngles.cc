@@ -12,6 +12,7 @@
 #include "AMPTOOLS_AMPS/DeltaAngles.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
+#include "AMPTOOLS_AMPS/decayAngles.h"
 
 DeltaAngles::DeltaAngles( const vector< string >& args ) :
 UserAmplitude< DeltaAngles >( args )
@@ -83,9 +84,10 @@ DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
 void
 DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
-	TLorentzVector target ( 0, 0, 0, 0.9382720813);
+	TLorentzVector target ( 0, 0, 0, 0.9382720813 );
 	TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
-	TLorentzVector p1, p2, p3, ptot, ptemp; //p1 and p2 from decaying lower vertex, p2 used to calculate angles for SDME calculation, p3 = upper vertex resonance (b1 in this case)
+//	TLorentzVector p1, p2, p3, ptot, ptemp; //p1 and p2 from decaying lower vertex, p2 used to calculate angles for SDME calculation, p3 = upper vertex resonance (b1 in this case)
+	TLorentzVector p1, p2, pDelta; //p1 and p2 from decaying lower vertex, p2 used to calculate angles for SDME calculation, p3 = upper vertex resonance (b1 in this case)
 	
 	string lv1; lv1 += lowerVertex[0];
 	string lv2; lv2 += lowerVertex[1];
@@ -96,8 +98,20 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	p1.SetPxPyPzE( pKin[index1][1], pKin[index1][2], pKin[index1][3], pKin[index1][0] );
 	p2.SetPxPyPzE( pKin[index2][1], pKin[index2][2], pKin[index2][3], pKin[index2][0] );
 
-	ptot = p1 + p2;
+	pDelta = p1 + p2;
 
+	vector< double > thetaPhi = getOneStepAngles( pDelta, p1, beam, target, 2, false );
+
+	userVars[kCosTheta]	= TMath::Cos( thetaPhi[0] );
+	userVars[kSinSqTheta]	= TMath::Sin( thetaPhi[0] ) * TMath::Sin( thetaPhi[0] );
+	userVars[kSin2Theta]	= TMath::Sin( 2.*thetaPhi[0] );
+	userVars[kPhi]		= thetaPhi[1];
+
+	double phiProd = getPhiProd( 0, pDelta, beam, target, 2, false );
+	userVars[kBigPhi]	= phiProd;
+
+
+/*
 	//p3 is sum of all particles in upper vertex
 	for( unsigned int i = 0; i < upperVertex.size(); ++i ){
 		string num; num += upperVertex[i];
@@ -106,8 +120,8 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 		p3 += ptemp;
 		ptot += ptemp;
 	}
-
-	TLorentzVector lowerVertexResonance = p1 + p2;
+*/
+/*	TLorentzVector lowerVertexResonance = p1 + p2;
 	TLorentzRotation lowerVertexBoost( -lowerVertexResonance.BoostVector() );
 
 	TLorentzVector target_lowerVertexRF = lowerVertexBoost * target;
@@ -134,7 +148,7 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	TVector3 eps(cos(polAngle*TMath::DegToRad()), sin(polAngle*TMath::DegToRad()), 0.0); // beam polarization vector in lab
 	userVars[kBigPhi] = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 //	Phi = Phi > 0? Phi : Phi + 3.14159;
-	
+*/	
 	// polarization BeamProperties
 	GDouble Pgamma = polFraction;
 	
