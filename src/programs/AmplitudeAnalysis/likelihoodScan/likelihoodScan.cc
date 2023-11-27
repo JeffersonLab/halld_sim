@@ -36,7 +36,7 @@
 using std::complex;
 using namespace std;
 
-void runScan( ConfigurationInfo* cfgInfo, int nBins, string xAmp, double xMin, double xMax, string yAmp, double yMin, double yMax, string outfile ) {
+void runProdParScan( ConfigurationInfo* cfgInfo, int nBins, string xAmp, double xMin, double xMax, string yAmp, double yMin, double yMax, string outfile, bool fullScan, int maxIter ) {
 	AmpToolsInterface ati( cfgInfo );
 
 	if( xMin > xMax || yMin > yMax ){
@@ -48,7 +48,6 @@ void runScan( ConfigurationInfo* cfgInfo, int nBins, string xAmp, double xMin, d
 
 	string title = ";" + xAmp + ";" + yAmp;
 	TH2F *hScan = new TH2F( "hScan", title.c_str(), nBins, xMin, xMax, nBins, yMin, yMax );
-	TH2F *hScanMin = new TH2F( "hScanMin", title.c_str(), nBins, xMin, xMax, nBins, yMin, yMax );
 
 	double xBinSize = (xMax - xMin) / nBins;
 	double yBinSize = (yMax - yMin) / nBins;
@@ -56,30 +55,34 @@ void runScan( ConfigurationInfo* cfgInfo, int nBins, string xAmp, double xMin, d
 	string termX( "omegapi::NegHelNegPolNorm::" + xAmp );
 	string termY( "omegapi::NegHelNegPolNorm::" + yAmp );
 
-	cout << "NOMINAL LIKELIHOOD = " << ati.likelihood() << endl;
-	double minL = 100000;
+	cout << "LIKELIHOOD BEFORE MINIMIZATION = " << ati.likelihood() << endl;
+	double minLL = numeric_limits< double >::max();
 	
-//	cout << xAmp << "\t" << yAmp << "\t" << "Likelihood" << endl;
+	MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
+	fitManager->setMaxIterations( maxIter );
 
 	for( int iX = 0; iX < nBins; iX++ ) {
 		double realValX = xMin + ( iX + 0.5 ) * xBinSize; // use value at the center of the bin
-		ati.parameterManager()->setProductionParameter( termX, complex< double >( realValX, 0 ) );
 		for( int iY = 0; iY < nBins; iY++ ) {
+			if( fullScan ) ati.reinitializePars();
+			ati.parameterManager()->setProductionParameter( termX, complex< double >( realValX, 0 ) );
 			double realValY = yMin + ( iY + 0.5 ) * yBinSize;
 			ati.parameterManager()->setProductionParameter( termY, complex< double >( realValY, 0 ) );
+			bool fitFailed = false;
+			if( fullScan ) {
+				fitManager->migradMinimization();
+				fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
+				if( fitFailed )
+					cout << "ERROR: fit failed use results with caution..." << endl;
+			}
 			double likelihood = ati.likelihood();
-			if( likelihood < minL ) minL = likelihood;
-//			cout << realValX << "\t" << realValY << "\t\t" << likelihood << endl;
+			if( fullScan ) ati.finalizeFit();
+			if( !fitFailed && likelihood < minLL ) minLL = likelihood;
 			hScan->Fill( realValX, realValY, likelihood );
 		}
 	}
 
-//	TAxis *xAxis = hScan->GetXaxis();
-//	TAxis *yAxis = hScan->GetYaxis();
-
-	cout << "MINIMUM LIKELIHOOD = " << minL << endl;
-
-//	cout << xAmp << "\t" << yAmp << "\t" << "Old LL\tNew LL" << endl;
+	cout << "MINIMUM LIKELIHOOD = " << minLL << endl;
 
 	for( int iX = 0; iX < nBins; iX++ ) {
 		double realValX = xMin + ( iX + 0.5 ) * xBinSize; // use value at the center of the bin
@@ -87,19 +90,17 @@ void runScan( ConfigurationInfo* cfgInfo, int nBins, string xAmp, double xMin, d
 			double realValY = yMin + ( iY + 0.5 ) * yBinSize;
 			int bin = hScan->FindBin( realValX, realValY );
 			double oldContent = hScan->GetBinContent( bin );
-			double newContent = oldContent - minL;
-//			cout << realValX << "\t" << realValY << "\t" << oldContent << "\t" << newContent << endl;
-			hScanMin->SetBinContent( bin, newContent );
+			double newContent = oldContent - minLL;
+			hScan->SetBinContent( bin, newContent );
 		}
 	}
 
 
 	fOut->WriteObject( hScan, "hScan" );
-	fOut->WriteObject( hScanMin, "hScanMin" );
 	fOut->Close();
 }
 
-void runFullScan( ConfigurationInfo* cfgInfo, int nBins, string xAmp, double xMin, double xMax, string yAmp, double yMin, double yMax, string outfile, int maxIter ) {
+void runParScan( ConfigurationInfo* cfgInfo, int nBins, string xAmp, double xMin, double xMax, string yAmp, double yMin, double yMax, string outfile, bool fullScan, int maxIter ) {
 	AmpToolsInterface ati( cfgInfo );
 	
 	if( xMin > xMax || yMin > yMax ){
@@ -115,46 +116,47 @@ void runFullScan( ConfigurationInfo* cfgInfo, int nBins, string xAmp, double xMi
 	double xBinSize = (xMax - xMin) / nBins;
 	double yBinSize = (yMax - yMin) / nBins;
 
-	string termX( "omegapi::NegHelNegPolNorm::" + xAmp );
-	string termY( "omegapi::NegHelNegPolNorm::" + yAmp );
+//	string termX( xAmp );
+//	string termY( "omegapi::NegHelNegPolNorm::" + yAmp );
 
 	cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
 
+	ParameterManager* parManager = ati.parameterManager();
 	MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
 	fitManager->setMaxIterations( maxIter );
 
 	double minLL = numeric_limits<double>::max();
 
 	for( int iX = 0; iX < nBins; iX++ ){
-		ati.reinitializePars();
-		double realValX = xMin + ( iX + 0.5 ) * xBinSize;
-		ati.parameterManager()->setProductionParameter( termX, complex< double >( realValX, 0) );
+		double valX = xMin + ( iX + 0.5 ) * xBinSize;
 		for( int iY = 0; iY < nBins; iY++ ){
-			double realValY = yMin + ( iY + 0.5 ) * yBinSize;
-			ati.parameterManager()->setProductionParameter( termY, complex< double >( realValY, 0) );
+			if( fullScan ) ati.reinitializePars();
+			parManager->setAmpParameter( xAmp, valX );
+			double valY = yMin + ( iY + 0.5 ) * yBinSize;
+			parManager->setAmpParameter( yAmp, valY );
 
-			fitManager->migradMinimization();
-
-			bool fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
-			if( fitFailed )
-				cout << "ERROR: fit failed use results with caution..." << endl;
-
+			bool fitFailed = false;
+			if( fullScan ){
+				fitManager->migradMinimization();
+				fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
+				if( fitFailed )
+					cout << "ERROR: fit failed use results with caution..." << endl;
+			}
 			double likelihood = ati.likelihood();
-			ati.finalizeFit();
-
+			if( fullScan ) ati.finalizeFit();
 			if( !fitFailed && likelihood < minLL ) minLL = likelihood;
 
-			hScan->Fill( realValX, realValY, likelihood );			
+			hScan->Fill( valX, valY, likelihood );			
 		}
 	}	
 
 	cout << "MINIMUM LIKELIHOOD = " << minLL << endl;
 
 	for( int iX = 0; iX < nBins; iX++ ){
-		double realValX = xMin + ( iX + 0.5 ) * xBinSize;
+		double valX = xMin + ( iX + 0.5 ) * xBinSize;
 		for( int iY = 0; iY < nBins; iY++ ){
-			double realValY = yMin + ( iY + 0.5 ) * yBinSize;
-			int bin = hScan->FindBin( realValX, realValY );
+			double valY = yMin + ( iY + 0.5 ) * yBinSize;
+			int bin = hScan->FindBin( valX, valY );
 			double oldContent = hScan->GetBinContent( bin );
 			double newContent = oldContent - minLL;
 			hScan->SetBinContent( bin, newContent );
@@ -173,6 +175,7 @@ int main( int argc, char* argv[] ){
 	string outfile;
 	int nBins = 10;
 	bool fullScan = false;
+	bool scanAmpPars = false;
 	double xMin = 0.;
 	double xMax = 90.;
 	double yMin = 0.;
@@ -227,12 +230,14 @@ int main( int argc, char* argv[] ){
 			yMin *= -1.; }
 		if( arg == "-yMaxNeg" ){
 			yMax *= -1.; }
+		if( arg == "-ap" ){
+			scanAmpPars = true; }
 		if( arg == "-h" ){
          		cout << endl << " Usage for: " << argv[0] << endl << endl;
          		cout << "   -c <file>\t\t\t\t config file" << endl;
 			cout << "   -o <file>\t\t\t\t output file" << endl;
 			cout << "   -b <int>\t\t\t\t number of bins on each axis (default 10)" << endl;
-			cout << "   -f \t\t\t\t\t run a fit at each scan point" << endl;
+			cout << "   -f \t\t\t\t\t run a fit at each scan point (default will simply calculate likelihood)" << endl;
 			cout << "   -m <int>\t\t\t\t maximum number of fit iterations (default 10000)" << endl;
 			cout << "   -x <string>\t\t\t\t amplitude on x-axis (default m1p0sp1)" << endl;
 			cout << "   -y <string>\t\t\t\t amplitude on y-axis (default m1p0sm1)" << endl;
@@ -244,6 +249,7 @@ int main( int argc, char* argv[] ){
 			cout << "   -xMaxNeg \t\t\t\t multiply xMax by -1" << endl;
 			cout << "   -yMinNeg \t\t\t\t multiply yMin by -1" << endl;
 			cout << "   -yMaxNeg \t\t\t\t multiply yMax by -1" << endl;
+			cout << "   -ap \t\t\t\t\t scan amplitude parameters (default will scan production parameters)" << endl; 	
 			exit(1); }
    	}
 
@@ -274,10 +280,10 @@ int main( int argc, char* argv[] ){
    	AmpToolsInterface::registerDataReader( FSRootDataReader() );
    	AmpToolsInterface::registerDataReader( FSRootDataReaderTEM() );
 
-	if( fullScan )
-		runFullScan( cfgInfo, nBins, xAmp, xMin, xMax, yAmp, yMin, yMax, outfile, maxIter );
-	else
-   		runScan( cfgInfo, nBins, xAmp, xMin, xMax, yAmp, yMin, yMax, outfile );
+	if( scanAmpPars )
+		runParScan( cfgInfo, nBins, xAmp, xMin, xMax, yAmp, yMin, yMax, outfile, fullScan, maxIter );
+	else	
+		runProdParScan( cfgInfo, nBins, xAmp, xMin, xMax, yAmp, yMin, yMax, outfile, fullScan, maxIter );
 
   	return 0;
 }
