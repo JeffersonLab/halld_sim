@@ -1194,7 +1194,7 @@ def AddEvtGen(env):
 	else:
                 AddHepMC(env)
                 AddPhotos(env)
-                EVTGEN_CPPPATH = "%s/" % (EVTGEN_HOME)
+                EVTGEN_CPPPATH = "%s/include" % (EVTGEN_HOME)
                 EVTGEN_LIBPATH = [ "%s/lib" % (EVTGEN_HOME), "%s/lib64" % (EVTGEN_HOME) ]   # either of these could be true
                 EVTGEN_LIBS = [ "EvtGen", "EvtGenExternal" ] 
                 EVTGEN_LIBS += [ "EVTGEN_MODELS" ]

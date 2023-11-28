@@ -40,6 +40,7 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
+#include "AMPTOOLS_AMPS/TwoPSMoment.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -310,6 +311,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( OmegaDalitz() );
 	AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
 	AmpToolsInterface::registerAmplitude( SinglePS() );
+	AmpToolsInterface::registerAmplitude( TwoPSMoment() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
