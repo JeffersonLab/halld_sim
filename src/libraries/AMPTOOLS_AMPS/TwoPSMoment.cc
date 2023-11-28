@@ -166,6 +166,6 @@ TwoPSMoment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 void
 TwoPSMoment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-   GPUTwoPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_maxL, m_nMoments );
+   GPUTwoPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, m_alpha, m_L, m_M, m_nMoments );
 }
 #endif

@@ -14,7 +14,7 @@
 #ifdef GPU_ACCELERATION
 void
 GPUTwoPSMoment_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
-		     int maxL, int nMoments );
+		     GDouble* H, int* alpha, int* L, int *M, int nMoments );
 #endif // GPU_ACCELERATION
 
 
