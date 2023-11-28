@@ -16,6 +16,7 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -47,6 +48,7 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( OmegaDalitz() );
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 	AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+	AmpToolsInterface::registerAmplitude( DeltaAngles() );
 
 	AmpToolsInterface ati( cfgInfo );
 	vector< TLorentzVector > p4List;
