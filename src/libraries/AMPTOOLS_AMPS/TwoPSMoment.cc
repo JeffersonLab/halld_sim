@@ -86,9 +86,9 @@ TwoPSMoment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
 	   if(alpha == 0)
 		   mom *= sphericalHarmonics[L][M].real();
 	   else if(alpha == 1) 
-		   mom *= -1 * pGamma * cos(2*bigPhi) * sphericalHarmonics[L][M].real();
+		   mom *= pGamma * cos(2*bigPhi) * sphericalHarmonics[L][M].real();
 	   else if(alpha == 2) 
-		   mom *= pGamma * sin(2*bigPhi) * sphericalHarmonics[L][M].imag();
+		   mom *= -1 * pGamma * sin(2*bigPhi) * sphericalHarmonics[L][M].imag();
 	   
 	   // m = 0 only non-zero for alpha = 0, 1 but half the size of other m-projections
 	   if(M == 0 && alpha < 2) mom *= 0.5;
