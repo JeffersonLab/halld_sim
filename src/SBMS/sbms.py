@@ -819,6 +819,7 @@ def AddXERCES(env):
 def AddCERNLIB(env):
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore'])
 	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic'])
+	env.PrependUnique(FORTRANFLAGS = ['-std=legacy'])
 	gccver = gcc_major_version()
 	if gccver >= 10:
 		env.PrependUnique(FORTRANFLAGS = ['-fallow-argument-mismatch'])
@@ -831,7 +832,7 @@ def AddCERNLIB(env):
 	env.AppendUnique(FORTRANPATH   = [CERN_FORTRANPATH])
 	env.AppendUnique(CPPPATH   = CERN_FORTRANPATH)
 	env.AppendUnique(LIBPATH   = CERN_LIBPATH)
-	env.AppendUnique(LINKFLAGS = ['-rdynamic', '-Wl,--no-as-needed'])
+	env.AppendUnique(LINKFLAGS = ['-rdynamic', '-Wl,--no-as-needed', '-Wl,--allow-multiple-definition'])
 	env.AppendUnique(LIBS      = ['geant321', 'pawlib', 'lapack3', 'blas', 'graflib', 'grafX11', 'packlib', 'mathlib', 'kernlib', 'phtools', 'gfortran', 'X11', 'nsl', 'crypt', 'dl'])
 	env.SetOption('warn', 'no-fortran-cxx-mix')  # supress warnings about linking fortran with c++
 
@@ -1194,7 +1195,7 @@ def AddEvtGen(env):
 	else:
                 AddHepMC(env)
                 AddPhotos(env)
-                EVTGEN_CPPPATH = "%s/" % (EVTGEN_HOME)
+                EVTGEN_CPPPATH = "%s/include" % (EVTGEN_HOME)
                 EVTGEN_LIBPATH = [ "%s/lib" % (EVTGEN_HOME), "%s/lib64" % (EVTGEN_HOME) ]   # either of these could be true
                 EVTGEN_LIBS = [ "EvtGen", "EvtGenExternal" ] 
                 EVTGEN_LIBS += [ "EVTGEN_MODELS" ]

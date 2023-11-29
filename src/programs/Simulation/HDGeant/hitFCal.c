@@ -291,7 +291,7 @@ void hitForwardEMcal (float xin[4], float xout[4],
 	  dEcorr *= 0.976;
 	}
 	else {
-	  double beta = pin[5] / pin[4];
+	  double beta = pin[4] / pin[3];
 	  if (beta > 0.6)
             dEcorr *= 1.35;
 	  else

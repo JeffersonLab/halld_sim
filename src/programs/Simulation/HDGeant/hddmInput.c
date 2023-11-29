@@ -647,7 +647,7 @@ void gaussian_beam_spot_(const char *spec)
 {
    if (beam_spot == 0) {
       beam_spot = calloc(1, sizeof(struct beam_spot_t));
-      strncpy(beam_spot->spec, spec, 80);
+      strncpy(beam_spot->spec, spec, 79);
       // Come back later and do a beam_spot parameter
       // assignment after ccdb has been connected.
       return;
