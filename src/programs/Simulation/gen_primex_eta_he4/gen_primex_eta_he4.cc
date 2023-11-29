@@ -162,39 +162,7 @@ int main( int argc, char* argv[] ){
     cout << "No generator configuration file: run gen_primex_eta_he4 -h for help " << endl;
     exit(1);
   }
-
   
-  // Get generator config file
-  MyReadConfig * ReadFile = new MyReadConfig();
-  ReadFile->ReadConfigFile(genconfigfile);
-  TString m_rfile = ReadFile->GetConfigName("rfile"); 
-  TString m_histo = ReadFile->GetConfigName("histo"); 
-  TString m_meson = ReadFile->GetConfigName("meson"); 
-  TString m_target = ReadFile->GetConfigName("target"); 
-  TString m_Fermi_file = ReadFile->GetConfigName("fermi_file"); 
-  TString m_Participant = ReadFile->GetConfigName("participant");
-  TString m_Spectator = ReadFile->GetConfigName("spectator"); 
-  // Double_t * m_binning = ReadFile->GetConfig6Par("binning");
-  /*if (m_meson != 0) {
-    bin_egam = (int) m_binning[0];
-    egam_min = m_binning[1];
-    egam_max = m_binning[2]; 
-    bin_theta = (int) m_binning[3]; 
-    theta_min = m_binning[4]; 
-    theta_max = m_binning[5];
-    }*/
-  cout << "rfile " << m_rfile << endl;
-  cout << "histo " << m_histo << endl;
-  cout << "meson " << m_meson << endl;
-  if (m_meson == "eta") m_meson = "Eta";
-  if (m_meson == "eta'") m_meson = "EtaPrime";
-  if (m_meson != "Eta" || m_meson != "EtaPrime" || m_meson != "Pi0" || m_meson == "") {
-    cout <<"Wrong meson choice, please choose between Eta, EtaPrime, or Pi0"<<endl;
-    exit(1);
-  }
-  cout << "target " << m_target << endl;
-  
-
   // random number initialization (set to 0 by default)
   gRandom->SetSeed(seed);
   
@@ -207,24 +175,74 @@ int main( int argc, char* argv[] ){
   ofstream *asciiWriter = nullptr;
   if (outname != "")
     asciiWriter = new ofstream(outname.c_str());
-  
-  // Assume a beam energy spectrum of 1/E(gamma)
-  TF1 ebeam_spectrum("beam_spectrum","1/x",beamLowE,beamHighE);
-  
+    
   // Get beam properties from configuration file
   TH1D * cobrem_vs_E = 0;
   if (beamconfigfile != "") {
     BeamProperties beamProp( beamconfigfile );
     cobrem_vs_E = (TH1D*)beamProp.GetFlux();
   }
+    
+  // Get generator config file
+  MyReadConfig * ReadFile = new MyReadConfig();
+  ReadFile->ReadConfigFile(genconfigfile);
+  TString m_rfile = "";
+  TString m_histo = "";
+  TString m_meson = "";
+  TString m_target = "";
+  TString m_Fermi_file = "";
+  TString m_Participant = "";
+  TString m_Spectator = "";
   
-  //cout << "Fermi_file " << m_Fermi_file << endl;
+  if (ReadFile->GetConfigName("rfile") != "") {
+    m_rfile = ReadFile->GetConfigName("rfile"); 
+    cout << "rfile " << m_rfile << endl;
+  } else {
+    cout <<"Please add full to root file w/ xs"<<endl; 
+    exit(1);
+  }
+  if (ReadFile->GetConfigName("histo") != "") {
+    m_histo = ReadFile->GetConfigName("histo"); 
+    cout << "histo " << m_histo << endl;
+  } else if (m_histo == "") {
+    cout <<"Please add histo name" << endl;
+    exit(1);
+  }
+  if (ReadFile->GetConfigName("meson") != "") {
+    m_meson = ReadFile->GetConfigName("meson");
+    cout << "meson " << m_meson << endl;
+    if (m_meson == "pi0") m_meson = "Pi0";
+    if (m_meson == "eta") m_meson = "Eta";
+    if (m_meson == "eta'") m_meson = "EtaPrime";
+    if (m_meson != "Eta" && m_meson != "EtaPrime" && m_meson != "Pi0") {
+      cout <<"Wrong meson choice, please choose between Eta, EtaPrime, or Pi0"<<endl;
+      exit(1);
+    }
+  } else if (m_meson == "") {
+    cout <<"Please choose between Eta, EtaPrime, or Pi0"<<endl;
+    exit(1);
+  }
+  if (ReadFile->GetConfigName("target") != "") {
+    m_target = ReadFile->GetConfigName("target");
+    cout << "target " << m_target << endl;
+  } else if (m_target == "") {
+    cout <<"Add target" << endl;
+    exit(1);
+  }
+  
+  // Assume a beam energy spectrum of 1/E(gamma)
+  TF1 ebeam_spectrum("beam_spectrum","1/x",beamLowE,beamHighE);
+
   TH1F * m_h_PFermi;
   Particle_t t_target;
   Particle_t t_meson;
   Particle_t t_spectator; 
   Particle_t t_participant;
-  if (m_Fermi_file != "") {
+  if (ReadFile->GetConfigName("fermi_file") != "" && ReadFile->GetConfigName("participant") != "" && ReadFile->GetConfigName("spectator") != "") {
+    m_Fermi_file = ReadFile->GetConfigName("fermi_file");
+    cout << "Fermi_file " << m_Fermi_file << endl;
+    m_Participant = ReadFile->GetConfigName("participant");
+    m_Spectator = ReadFile->GetConfigName("spectator"); 
     cout <<"Target is made of " << m_target << " with the participant " << m_Participant << " and spectator " << m_Spectator << endl;
     cout <<"Nucleon Fermi motion is located in " << m_Fermi_file << endl;
     m_h_PFermi = new TH1F("PFermi", "", 1000, 0.0, 1.0);
