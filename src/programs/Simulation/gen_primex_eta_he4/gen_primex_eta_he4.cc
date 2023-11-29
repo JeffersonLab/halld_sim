@@ -162,6 +162,39 @@ int main( int argc, char* argv[] ){
     cout << "No generator configuration file: run gen_primex_eta_he4 -h for help " << endl;
     exit(1);
   }
+
+  
+  // Get generator config file
+  MyReadConfig * ReadFile = new MyReadConfig();
+  ReadFile->ReadConfigFile(genconfigfile);
+  TString m_rfile = ReadFile->GetConfigName("rfile"); 
+  TString m_histo = ReadFile->GetConfigName("histo"); 
+  TString m_meson = ReadFile->GetConfigName("meson"); 
+  TString m_target = ReadFile->GetConfigName("target"); 
+  TString m_Fermi_file = ReadFile->GetConfigName("fermi_file"); 
+  TString m_Participant = ReadFile->GetConfigName("participant");
+  TString m_Spectator = ReadFile->GetConfigName("spectator"); 
+  // Double_t * m_binning = ReadFile->GetConfig6Par("binning");
+  /*if (m_meson != 0) {
+    bin_egam = (int) m_binning[0];
+    egam_min = m_binning[1];
+    egam_max = m_binning[2]; 
+    bin_theta = (int) m_binning[3]; 
+    theta_min = m_binning[4]; 
+    theta_max = m_binning[5];
+    }*/
+  cout << "rfile " << m_rfile << endl;
+  cout << "histo " << m_histo << endl;
+  cout << "meson " << m_meson << endl;
+  if (m_meson == "eta") m_meson = "Eta";
+  if (m_meson == "eta'") m_meson = "EtaPrime";
+  if (m_meson != "Eta" || m_meson != "EtaPrime" || m_meson != "Pi0" || m_meson == "") {
+    cout <<"Wrong meson choice, please choose between Eta, EtaPrime, or Pi0"<<endl;
+    exit(1);
+  }
+  cout << "target " << m_target << endl;
+  
+
   // random number initialization (set to 0 by default)
   gRandom->SetSeed(seed);
   
@@ -184,32 +217,6 @@ int main( int argc, char* argv[] ){
     BeamProperties beamProp( beamconfigfile );
     cobrem_vs_E = (TH1D*)beamProp.GetFlux();
   }
-  
-  // Get generator config file
-  MyReadConfig * ReadFile = new MyReadConfig();
-  ReadFile->ReadConfigFile(genconfigfile);
-  TString m_rfile = ReadFile->GetConfigName("rfile"); 
-  TString m_histo = ReadFile->GetConfigName("histo"); 
-  TString m_decay = ReadFile->GetConfigName("decay"); 
-  TString m_target = ReadFile->GetConfigName("target"); 
-  TString m_Fermi_file = ReadFile->GetConfigName("fermi_file"); 
-  TString m_Participant = ReadFile->GetConfigName("participant");
-  TString m_Spectator = ReadFile->GetConfigName("spectator"); 
-  // Double_t * m_binning = ReadFile->GetConfig6Par("binning");
-  /*if (m_decay != 0) {
-    bin_egam = (int) m_binning[0];
-    egam_min = m_binning[1];
-    egam_max = m_binning[2]; 
-    bin_theta = (int) m_binning[3]; 
-    theta_min = m_binning[4]; 
-    theta_max = m_binning[5];
-    }*/
-  cout << "rfile " << m_rfile << endl;
-  cout << "histo " << m_histo << endl;
-  cout << "decay " << m_decay << endl;
-  if (m_decay == "eta") m_decay = "Eta";
-  if (m_decay == "eta'") m_decay = "EtaPrime";
-  cout << "target " << m_target << endl;
   
   //cout << "Fermi_file " << m_Fermi_file << endl;
   TH1F * m_h_PFermi;
@@ -234,7 +241,7 @@ int main( int argc, char* argv[] ){
     }
     in.close();
     t_target = ParticleEnum(m_target.Data());
-    t_meson = ParticleEnum(m_decay.Data());
+    t_meson = ParticleEnum(m_meson.Data());
     t_spectator = ParticleEnum(m_Spectator.Data());
     t_participant = ParticleEnum(m_Participant.Data());
     cout << "Target mass " << ParticleMass(t_target) << " pdg " << PDGtype(t_target) << endl;
@@ -243,7 +250,7 @@ int main( int argc, char* argv[] ){
     cout << "Participant mass " << ParticleMass(t_participant) << " pdg " << PDGtype(t_participant) << endl;
   } else {
     t_target = ParticleEnum(m_target.Data());
-    t_meson = ParticleEnum(m_decay.Data());
+    t_meson = ParticleEnum(m_meson.Data());
     cout << "Target mass " << ParticleMass(t_target) << " pdg " << PDGtype(t_target) << endl;
     cout << "Meson mass " << ParticleMass(t_meson) << " pdg " << PDGtype(t_meson) << endl;
   }
@@ -366,7 +373,7 @@ int main( int argc, char* argv[] ){
     for (int i = 0; i < 3; i ++) pi0_4Vec[i] = TLorentzVector(0, 0, 0, 0);
     for (int i = 0; i < 6; i ++) photon_4Vec[i] = TLorentzVector(0, 0, 0, 0);
     int ng_max = 0;
-    if (m_decay == "pi0->2g") {
+    if (m_meson == "pi0->2g") {
       ng_max = 2;
       double masses[] = {M_gamma, M_gamma};
       if (decayGen.SetDecay(eta_LAB_4Vec, 2, masses)) {
@@ -374,7 +381,7 @@ int main( int argc, char* argv[] ){
 	photon_4Vec[0] = * decayGen.GetDecay(0);
 	photon_4Vec[1] = * decayGen.GetDecay(1);
       } 
-    } else if (m_decay == "eta->2g") {
+    } else if (m_meson == "eta->2g") {
       ng_max = 2;
       double masses[] = {M_gamma, M_gamma};
       if (decayGen.SetDecay(eta_LAB_4Vec, 2, masses)) {
@@ -382,7 +389,7 @@ int main( int argc, char* argv[] ){
 	photon_4Vec[0] = * decayGen.GetDecay(0);
 	photon_4Vec[1] = * decayGen.GetDecay(1);
       }
-    } else if (m_decay == "eta->6g") {
+    } else if (m_meson == "eta->6g") {
       ng_max = 6;
       double masses[] = {M_pi0, M_pi0, M_pi0};
       if (decayGen.SetDecay(eta_LAB_4Vec, 3, masses)) {
@@ -434,17 +441,17 @@ int main( int argc, char* argv[] ){
       tmpEvt.target = Target_4Vec;
       tmpEvt.t_targ = t_target;
       tmpEvt.t_meso = t_meson;
-      if (m_decay == "pi0->2g") {
+      if (m_meson == "pi0->2g") {
 	tmpEvt.q1 = photon_4Vec[0];
 	tmpEvt.q2 = photon_4Vec[1];
 	tmpEvt.q3 = He4_LAB_4Vec;
 	tmpEvt.nGen = 3;
-      } else if (m_decay == "eta->2g") {
+      } else if (m_meson == "eta->2g") {
 	tmpEvt.q1 = photon_4Vec[0];
 	tmpEvt.q2 = photon_4Vec[1];
 	tmpEvt.q3 = He4_LAB_4Vec;
 	tmpEvt.nGen = 3;
-      } else if (m_decay == "eta->6g") {
+      } else if (m_meson == "eta->6g") {
 	tmpEvt.q1 = photon_4Vec[0];
 	tmpEvt.q2 = photon_4Vec[1];
 	tmpEvt.q3 = photon_4Vec[2];
@@ -454,12 +461,12 @@ int main( int argc, char* argv[] ){
 	tmpEvt.q7 = He4_LAB_4Vec;
 	tmpEvt.nGen = 7;
       } else if (ng_max == 0 && m_Fermi_file == "") {
-	tmpEvt.str_meson = m_decay;
+	tmpEvt.str_meson = m_meson;
 	tmpEvt.q1 = eta_LAB_4Vec;
 	tmpEvt.q2 = He4_LAB_4Vec;
 	tmpEvt.nGen = 2;
       } else if (ng_max == 0 && m_Fermi_file != "") {
-	tmpEvt.str_meson = m_decay;
+	tmpEvt.str_meson = m_meson;
 	tmpEvt.str_spectator = m_Spectator;
 	tmpEvt.str_participant = m_Participant;
 	tmpEvt.q1 = eta_LAB_4Vec;
