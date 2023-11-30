@@ -47,6 +47,8 @@ vector< TVector3 > getGJAxes(TVector3 parentCM, TVector3 inverseCM, TVector3 inv
 // Calculate production plane angle
 double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
 {
+	cout << "Running getPhiProd..." << endl;
+
 	// whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
 
@@ -81,9 +83,20 @@ double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beam
 
 	TVector3 y = locxyz[1];
 
-	TVector3 eps( cos( polAngle ), sin( polAngle ), 0.0 );
+	TVector3 eps( cos( polAngle*TMath::DegToRad() ), sin( polAngle*TMath::DegToRad() ), 0.0 );
 
-	double phiProd = atan2( y.Dot( eps ), inverseCM.Vect().Unit().Dot( eps.Cross( y ) ) );
+	double phiProd = atan2( y.Dot( eps ), beamLab.Vect().Unit().Dot( eps.Cross( y ) ) );
+
+
+	// debug couts:
+	cout << "x_GJ: ";
+	locxyz[0].Print();
+	cout << "y_GJ: ";
+	y.Print();
+	cout << "z_GJ: ";
+	locxyz[2].Print();
+
+	cout << "phiProd = " << phiProd << endl;
 
 	return phiProd;	
 } 
@@ -92,6 +105,8 @@ double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beam
 // Calculate angles for a one-step decay. If only one of the daughter particles has spin, that one should be used in this calculation 
 vector< double > getOneStepAngles(TLorentzVector parentLab, TLorentzVector daughterLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
 {
+//	cout << "Running getOneStepAngles..." << endl;
+
 	// whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
 
@@ -143,6 +158,20 @@ vector< double > getOneStepAngles(TLorentzVector parentLab, TLorentzVector daugh
 
 	vector< double > thetaPhi{theta, phi};
 
+/*	// debug couts:
+	cout << "x_GJ: ";
+	x.Print();
+	cout << "y_GJ: ";
+	y.Print();
+	cout << "z_GJ: ";
+	z.Print();
+	cout << "angles: ";
+	angles.Print();
+
+	cout << "theta = " << theta << endl;
+	cout << "phi = " << phi << endl;
+*/	
+
 	return thetaPhi;
 }
 
@@ -150,6 +179,8 @@ vector< double > getOneStepAngles(TLorentzVector parentLab, TLorentzVector daugh
 // Calculate angles for a two-step decay. This has been tested for photoproduction of a resonance decaying to omega and pi, with the omega subequently decaying to three pions. If the second step of the decay is a two-body decay, the input for granddaughter2Lab should be TLorentzVector(0,0,0,0)  
 vector< double > getTwoStepAngles(TLorentzVector parentLab, TLorentzVector daughterLab, TLorentzVector granddaughter1Lab, TLorentzVector granddaughter2Lab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
 {
+//	cout << "Running getTwoStepAngles..." << endl;
+
 	// whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
 
@@ -235,7 +266,19 @@ vector< double > getTwoStepAngles(TLorentzVector parentLab, TLorentzVector daugh
 	double thetaH = anglesH.Theta();
 	double phiH = anglesH.Phi();	
 
+/*	// debug couts:
+	cout << "x_GJ: ";
+	x.Print();
+	cout << "y_GJ: ";
+	y.Print();
+	cout << "z_GJ: ";
+	z.Print();
+	cout << "angles: ";
+	angles.Print();
 
+	cout << "theta = " << theta << endl;
+	cout << "phi = " << phi << endl;
+*/
   	// compute omega dalitz decay variable lambda
   	double m0 = 0.1349766;
   	double mq = 0.1395702;
