@@ -102,6 +102,7 @@ C---      Particle selection
 C
       DO i=1,MXEVSEL
          KFEVSEL(i)=0      ! types
+         NFEVSEL(i)=0      ! types
       ENDDO
       PAREVSEL(1)=0.       ! Pmin
       PAREVSEL(2)=99999.   ! Pmax
@@ -197,7 +198,9 @@ C
       ENDDO
       CALL FFKEY('REACENER'  , ELREAC(1)  , MXPNTR+3,'MIXED')
       CALL FFKEY('SELECTEV'  , KFEVSEL(1) , MXEVSEL,'INTEGER')
+      CALL FFKEY('SELECTEVN' , NFEVSEL(1) , MXEVSEL,'INTEGER')
       CALL FFKEY('SELECTKIN' , PAREVSEL(1),  4,'REAL')
+      CALL FFKEY('NPARFINAL' , NFEFINAL   ,  1,'INTEGER')
       CALL FFKEY('PARTICLE'  , K_PTMP(1)  , 16,'MIXED')
       CALL FFKEY('PYTMOD'    , KPYTMP(1)  ,  8,'MIXED')
       CALL FFKEY('NBEAMEXT'  , NBMEXT     ,  4,'MIXED')

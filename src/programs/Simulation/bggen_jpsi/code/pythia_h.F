@@ -3283,7 +3283,10 @@ C...Commonblocks.
 CC     &SFMIX(16,4),
 C      COMMON/PYINTS/XXM(20)
       COMPLEX*16 CXC
-      COMMON/PYINTC/XXC(10),CXC(8)
+C      COMMON/PYINTC/XXC(10),CXC(8)
+      COMMON/PYINTC/XXC(18)
+      dimension CXC(8)
+      equivalence (XXC(11),CXC(1))
       SAVE /PYDAT1/,/PYDAT2/,/PYMSSM/,/PYSSMT/,/PYINTC/
  
 C...Local variables
@@ -13548,7 +13551,10 @@ C...Commonblocks.
 CC     &SFMIX(16,4),
 C      COMMON/PYINTS/XXM(20)
       COMPLEX*16 CXC
-      COMMON/PYINTC/XXC(10),CXC(8)
+C      COMMON/PYINTC/XXC(10),CXC(8)
+      COMMON/PYINTC/XXC(18)
+      dimension CXC(8)
+      equivalence (XXC(11),CXC(1))
       SAVE /PYDAT1/,/PYDAT2/,/PYMSSM/,/PYSSMT/,/PYINTC/
  
 C...Local variables
@@ -23908,7 +23914,10 @@ c     &SFMIX(16,4)
      &SFMIX(16,4),ZMIXI(4,4),UMIXI(2,2),VMIXI(2,2)
 C      COMMON/PYINTS/XXM(20)
       COMPLEX*16 CXC
-      COMMON/PYINTC/XXC(10),CXC(8)
+C      COMMON/PYINTC/XXC(10),CXC(8)
+      COMMON/PYINTC/XXC(18)
+      dimension CXC(8)
+      equivalence (XXC(11),CXC(1))
       SAVE /PYDAT1/,/PYDAT2/,/PYMSSM/,/PYSSMT/,/PYINTC/
  
 C...Local variables.
@@ -61836,7 +61845,10 @@ C...Commonblocks.
       COMMON/PYDAT1/MSTU(200),PARU(200),MSTJ(200),PARJ(200)
 C      COMMON/PYINTS/XXM(20)
       COMPLEX*16 CXC
-      COMMON/PYINTC/XXC(10),CXC(8)
+C      COMMON/PYINTC/XXC(10),CXC(8)
+      COMMON/PYINTC/XXC(18)
+      dimension CXC(8)
+      equivalence (XXC(11),CXC(1))
       SAVE /PYDAT1/,/PYINTC/
  
 C...Local variables.

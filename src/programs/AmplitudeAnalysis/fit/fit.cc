@@ -6,6 +6,7 @@
 #include <vector>
 #include <utility>
 #include <map>
+#include <limits>
 
 #include "TSystem.h"
 
@@ -45,6 +46,8 @@
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
+#include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/SinglePS.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -106,7 +109,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
   // keep track of best fit (mininum log-likelihood)
-  double minLL = 0;
+  double minLL = numeric_limits<double>::max();
   int minFitTag = -1;
 
   for(int i=0; i<numRnd; i++) {
@@ -335,6 +338,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( ComplexCoeff() );
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
+   AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+   AmpToolsInterface::registerAmplitude( SinglePS() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );

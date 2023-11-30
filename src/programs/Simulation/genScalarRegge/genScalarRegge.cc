@@ -43,6 +43,8 @@ int Nevents=10000;
 int runNo=30300;
 bool debug=false;
 
+TString str_nucleon = "";
+
 // Diagnostic histograms
 TH1D *thrown_t;
 TH1D *thrown_mass;
@@ -228,6 +230,11 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
 			      double gsq_rho_S=0,double gsq_omega_S=0,
 			      double phase=0 
 			      ){ 
+  m_p=ParticleMass(Proton); // GeV
+  if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
+  
+  m_p_sq=m_p*m_p;			      
+
   int two_particles=particle_types[0]+particle_types[1];
   double Csq=1.,zetasq=1./2.; // pi0 pi0
   if (two_particles==(7+17)){ // pi0 eta
@@ -238,7 +245,9 @@ double BackgroundCrossSection(double s, double t,TLorentzVector &q /* beam */,
     Csq=4./9.;
   }
  
-  TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  if (str_nucleon == "Neutron") p1 = TLorentzVector(0,0,0.,ParticleMass(Neutron));
+
   TLorentzVector p2=particles[2];
   TLorentzVector p=p1-p2;
   TLorentzVector v1=particles[0]-q;
@@ -931,10 +940,15 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
 			  vector<Particle_t>&particle_types,
 			  vector<TLorentzVector>&particles,
 			  double gR,double ReB, double ImB,double gT_sq){
-  //  int two_particles=particle_types[0]+particle_types[1];
+  m_p=ParticleMass(Proton); // GeV
+  if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
+  
+  m_p_sq=m_p*m_p;  
   
   // Four vectors
   TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  if (str_nucleon == "Neutron") p1 = TLorentzVector(0,0,0.,ParticleMass(Neutron));
+
   TLorentzVector p2=particles[2];
   TLorentzVector dp=p2-p1;
   
@@ -995,9 +1009,15 @@ double TensorBackgroundInterference(TLorentzVector &q /* beam */,
 				    double gT_sq,double g0_sq,
 				    double phase){
   int two_particles=particle_types[0]+particle_types[1];
+
+  if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
+  
+  m_p_sq=m_p*m_p;
   
   // Four vectors
   TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  if (str_nucleon == "Neutron") p1 = TLorentzVector(0,0,0.,ParticleMass(Neutron));
+
   TLorentzVector p2=particles[2];
   TLorentzVector dp=p2-p1;
   TLorentzVector v1=particles[0]-q;
@@ -1240,8 +1260,15 @@ double TensorScalarInterference(TLorentzVector &q /* beam */,
   double m_rho=0.77;
   double m_rho_sq=m_rho*m_rho;
 
-  // Four vectors
+ m_p=ParticleMass(Proton); // GeV
+  if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
+  
+  m_p_sq=m_p*m_p;
+  
+// Four vectors
   TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  if (str_nucleon == "Neutron") p1 = TLorentzVector(0,0,0.,ParticleMass(Neutron));
+  
   TLorentzVector p2=particles[2];
   TLorentzVector dp=p2-p1;
   
@@ -1433,6 +1460,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam, float vert[3],
    // Target
    rs->in[0].target = ta = make_s_Target();
    ta->type = Proton;
+   if (str_nucleon == "Neutron") ta->type = Neutron;
    ta->properties = make_s_Properties();
    ta->properties->charge = ParticleCharge(ta->type);
    ta->properties->mass = ParticleMass(ta->type);
@@ -1821,6 +1849,10 @@ void GetDecayVectors(double m1, double m2, double p_rest, double theta_rest,
 void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
 		       int generate[],double coupling_constants[],
 		       double &xsec_max){
+		       m_p=ParticleMass(Proton); // GeV
+  if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
+  
+  m_p_sq=m_p*m_p; 
   TLorentzVector beam(0,0,EgammaPlot,EgammaPlot);
   TLorentzVector target(0,0,0,m_p);
   vector<TLorentzVector>particle_vectors(3);
@@ -1994,6 +2026,17 @@ int main(int narg, char *argv[])
     exit(-1);
   } 
 
+  // IA, get generator config file
+  MyReadConfig * ReadFile = new MyReadConfig();
+  ReadFile->ReadConfigFile(input_file_name);
+  str_nucleon = ReadFile->GetConfigName("nucleon");
+  cout << "Target nucleon = " << str_nucleon << endl;
+  
+  m_p=ParticleMass(Proton); // GeV
+  if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
+ 
+  m_p_sq=m_p*m_p;
+
   // Get beam properties configuration file
   string comment_line;
   getline(infile,comment_line);
@@ -2012,6 +2055,7 @@ int main(int narg, char *argv[])
   vector<Particle_t>particle_types(num_final_state_particles);
   double *decay_masses =new double[num_decay_particles];
   particle_types[last_index]=Proton;
+   if (str_nucleon == "Neutron") particle_types[last_index]=Neutron;
 
   // GEANT ids of decay particles
   getline(infile,comment_line);
