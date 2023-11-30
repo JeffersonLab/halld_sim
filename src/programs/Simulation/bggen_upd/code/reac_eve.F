@@ -58,6 +58,7 @@ C
       ENDDO
 C
 C      write(6,*) 'ami', ami,plab(4,1),plab(4,2)
+C      write(6,FMT='(3F12.4)') PIN,AMIN
       qq=plabi(4,1)*plabi(4,2)
       DO i=1,3
          qq=qq-plabi(i,1)*plabi(i,2)
@@ -136,10 +137,14 @@ C
       IF(qq.LE.0.) GO TO 999
       ppf =SQRT(qq)             ! final momentum in CM
       ppi =SQRT(pcmi(4,2)**2-ami(2)**2) ! initial momentum in CM
+C      write(6,*) ' ami,am(1),am(2),epf1,ppf,ppi '
+C     +           ,ami,am(1),am(2),epf1,ppf,ppi
 C
       qq=ami(1)**2+am(1)**2-2.*epf1*pcmi(4,1)
       tmx=qq+2.*ppf*ppi
       tmn=qq-2.*ppf*ppi
+      tt=1.    !   non-physical initialization
+C      write(6,*) ' ITDSING,TSLREAC,tt ',ITDSING,TSLREAC,tt
       IF(ITDSING.NE.0) THEN
          IF(TSLREAC.LT.0.001) THEN
             tt=tmn+(tmx-tmn)*RNDM(qq)
@@ -147,29 +152,43 @@ C
             tt=1./TSLREAC*ALOG(EXP(TSLREAC*tmn)
      +        +RNDM(qq)*(EXP(TSLREAC*tmx)-EXP(TSLREAC*tmn)))  ! random tt - a single exponential
          ENDIF
+C         write(6,*) 'TSLREAC,tt ',TSLREAC,tt
       ELSE      ! Find the proper energy range for the t-dep functions
          DO ir=1,MXTRNG
+C            write(6,*) ' ir,ITDRNG(ir),ebeam,TPAREAC(1,ir) '
+C     +                  ,ir,ITDRNG(ir),ebeam,TPAREAC(1,ir)   
             IF(ITDRNG(ir).GT.0) THEN
                IF(ebeam.LE.TPAREAC(1,ir)) THEN
                   ntry=0
  40               ntry=ntry+1
                   tt=HRNDM1(IDTDIST+10*ir) ! random tt - a stored function
+C                  write(6,*) 'ir,ebeam,tt ',ir,ebeam,tt
                   IF(tt.GE.tmn.AND.tt.LE.tmx) THEN
                      GO TO 50
                   ELSE
-                     IF(ntry.LT.1000) GO TO 40
+                     IF(ntry.LT.1000) GO TO 40 
                      WRITE(6,*) ' *** REAC_EVE t out of range',tt
-                     GO TO 999
+                    GO TO 999
                   ENDIF
                ENDIF
             ENDIF
          ENDDO
  50      CONTINUE
       ENDIF
+      IF(tt.GT.0.) THEN
+         WRITE(6,*) ' *** REAC_EVE t not simulated ',tt
+         GO TO 999
+      ENDIF
+C      write(6,*) ' tt,qq,ppf,ppi,tmn,tmx ',tt,qq,ppf,ppi,tmn,tmx
       ct=(tt-qq)/2./ppf/ppi
+      IF(ABS(ct).GT.1.) THEN
+         WRITE(6,*) ' *** REAC_EVE t--> cos(theta)>1 ',tt,ct
+         GO TO 999
+      ENDIF
 C
       st=SQRT(1.-ct**2)
       phi=twopi*RNDM(st)
+C      write(6,*) ' ct,st,phi,ppdf,epf1 ',ct,st,phi,ppf,epf1
 C
 C---    2-body
 C
@@ -183,11 +202,15 @@ C
          pcm(i,2)=-pcm(i,1)
       ENDDO
       pcm(4,2)=ecm-pcm(4,1)
+C      write(6,FMT='('' pcm '',4F12.4)') ((pcm(j,i),j=1,4),i=1,4)
 C
 C---       Boost to Lab
 C
+C      write(6,*) 'bet ',bet
       DO i=1,2
+C         write(6,*) 'pcm  ',i,( pcm(j,i),j=1,4)
          CALL GLOREN(bet,pcm(1,i),plab(1,i))
+C         write(6,*) 'plab ',i,(plab(j,i),j=1,4)
       ENDDO
 C
 C---       Decays?
@@ -232,6 +255,8 @@ C         write(6,*) 'ip,idgea,ndec ',ip,idgea,ND_PART(idgea)
                   pzfr(j)=plab(j,2)      ! Z = -recoil - Helicity frame
                ENDIF
             ENDDO
+C            write(6,*) ' ihel,PZFR ',ihel,pzfr,ip,np
+C            write(6,*) ' plab ',(plab(j,ip),j=1,4)
             CALL OMDECA2(plab(1,ip),amd(1,ip),ihel,pzfr(1),plab(1,np+1))
          ELSE IF(ND_PART(idgea).EQ.3) THEN
             CALL OMDECA3(plab(1,ip),amd(1,ip),0.,plab(1,np+1))

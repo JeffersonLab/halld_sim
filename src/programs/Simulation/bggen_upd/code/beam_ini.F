@@ -14,7 +14,7 @@ C
       EXTERNAL DNIDX,DNCDX,DIVDIF
 
       INTEGER i,ipol
-      REAL flxde,xsec,dx,de,e
+      REAL flxdp,xsec,dx,p,dp
 C
       IERR=1
 C
@@ -61,8 +61,8 @@ C
      +               ,'IBMEXT=',I4,' unknown')
                GO TO 999
             ELSE IF(IBMEXT.GT.0) THEN
-               EXT_LIM(1)=ENBMEXT(1)
-               EXT_LIM(2)=ENBMEXT(NBMEXT)
+               EXT_LIM(1)=PBEAEXT(1)
+               EXT_LIM(2)=PBEAEXT(NBMEXT)
                WRITE(6,*) ' --- Beam range EXT_LIM are set to ',EXT_LIM 
             ENDIF
             IF(EXT_LIM(1).GE.EXT_LIM(2)) THEN
@@ -96,10 +96,10 @@ C
 C---    The range and the number of bins
 C
       DO i=1,2
-         EHLIM(i)=EPH_LIM(i)
+         PHLIM(i)=EPH_LIM(i)
       ENDDO
-      de=MIN(0.005,EHLIM(2)-EHLIM(1))
-      NHBEA=INT((EHLIM(2)-EHLIM(1))/de+0.001) ! number of bins in the energy tables
+      dp=MIN(0.005,PHLIM(2)-PHLIM(1))
+      NHBEA=INT((PHLIM(2)-PHLIM(1))/dp+0.001) ! number of bins in the energy tables
 C
 C--- Exceptions
 C
@@ -108,10 +108,10 @@ C
       ELSE IF(IBEATYP.EQ.2) THEN                         ! Beam spectrum set by the user
          IF(IBMEXT.EQ.0) THEN
             DO i=1,2
-               EHLIM(i)=EXT_LIM(i)
+               PHLIM(i)=EXT_LIM(i)
             ENDDO
             NHBEA=NBMEXT
-            de=(EHLIM(2)-EHLIM(1))/NHBEA
+            dp=(PHLIM(2)-PHLIM(1))/NHBEA
          ENDIF
       ENDIF
 C
@@ -123,29 +123,30 @@ C
          
       IF(IBEATYP.GT.0) THEN
          CALL HBOOK1(IDBEAM+11
-     +              ,'Beam flux dn/dE' ,NHBEA,EHLIM(1),EHLIM(2),0.)
+     +              ,'Beam flux dn/dp' ,NHBEA,PHLIM(1),PHLIM(2),0.)
 C
          IF(IBEATYP.EQ.1) THEN
 C---   Initialize the coherent Bremsstrahlung 
             CALL COBREMS(EELEC,EPEAK,EEMIT,RADT,ZCOLL/100.,DCOLL,0) ! collimator distance in m
          ENDIF
 C
-         dx=de/EELEC
+         dx=dp/EELEC
          DO i=1,NHBEA
-            e=EHLIM(1)+(i-0.5)*de
+            p=PHLIM(1)+(i-0.5)*dp
             IF(IBEATYP.EQ.1) THEN
-               flxde=(DNIDX(e/EELEC)+DNCDX(e/EELEC))*dx/de ! dN/dx - photon rate per one incident electron
+               flxdp=(DNIDX(p/EELEC)+DNCDX(p/EELEC))*dx/dp ! dN/dx - photon rate per one incident electron (E=p)
             ELSE IF(IBEATYP.EQ.2) THEN
                IF(IBMEXT.EQ.0) THEN
-                  flxde=RABMEXT(i)     ! The bin contents
+                  flxdp=RBEAEXT(i)     ! The bin contents
                ELSE
                   ipol=3
-                  flxde=DIVDIF(RABMEXT(1),ENBMEXT(1),NBMEXT,e,ipol) ! interpolation between points
+                  flxdp=DIVDIF(RBEAEXT(1),PBEAEXT(1),NBMEXT,p,ipol) ! interpolation between points
                ENDIF
             ENDIF
-            CALL HF1(IDBEAM+11,e,flxde)
+            CALL HF1(IDBEAM+11,p,flxdp)
          ENDDO
 C
+         CALL HCOPY(IDBEAM+11,IDBEAM+12,'    ')  ! for HRNDM
       ENDIF
 
       IERR=0

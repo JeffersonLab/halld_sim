@@ -17,7 +17,7 @@ C
      +       ,ITDSING     ! = irng of the "single" exponential, if exists, or 0
 C
       REAL    ELREAC      ! (1:2) min,max of the beam energy (F)
-     +       ,ESREAC      ! energies ELREAC(1)+(ELREAC(2)-ELREAC(1))/(NPXREAC-1)*(i-1) 
+     +       ,ESREAC      ! beam energies ELREAC(1)+(ELREAC(2)-ELREAC(1))/(NPXREAC-1)*(i-1) 
      +       ,XSREAC      ! (1:NPXREAC) cross sections in the points ESREAC (F)
      +       ,TLREAC      ! (1:2) min max of the t range (t is negative!) (F)
      +       ,TPAREAC     ! (1,1) = EMX1 for beam energies <EMX1 range for the irt-th t-distribution (F)

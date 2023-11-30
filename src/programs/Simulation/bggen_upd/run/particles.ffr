@@ -52,4 +52,9 @@ C           #      KF  PY_dec  mass    width     decay_prod decay_angle
 *PARTICLE 128     2214    1    1.232     0.118   14   7   0     0   'Delta+'
 *PARTICLE 129     2114    1    1.232     0.118   14   9   0     0   'Delta0'
 *PARTICLE 130     1114    1    1.232     0.118   13   9   0     0   'Delta-'
+*PARTICLE 151 1000010020  0    1.8756    0.       0   0   0     0   'Deutron'
+*PARTICLE 152 1000020040  0    3.7274    0.       0   0   0     0   'He-4'
+*PARTICLE 153 1000060120  0   11.1779    0.       0   0   0     0   'C-12'
+*PARTICLE 154 1000260560  0   52.1031    0.       0   0   0     0   'Fe-56'
+*PARTICLE 155 1000822080  0  193.7291    0.       0   0   0     0   'Pb-208'
 END
