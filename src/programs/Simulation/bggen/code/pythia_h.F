@@ -61834,7 +61834,10 @@ C...Commonblocks.
       COMMON/PYDAT1/MSTU(200),PARU(200),MSTJ(200),PARJ(200)
 C      COMMON/PYINTS/XXM(20)
       COMPLEX*16 CXC
-      COMMON/PYINTC/XXC(10),CXC(8)
+C      COMMON/PYINTC/XXC(10),CXC(8)
+      COMMON/PYINTC/XXC(18)
+      dimension CXC(8)
+      equivalence (XXC(11),CXC(1))
       SAVE /PYDAT1/,/PYINTC/
  
 C...Local variables.
