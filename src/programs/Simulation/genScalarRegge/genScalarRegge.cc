@@ -17,13 +17,14 @@
 using namespace std;
 
 #include "UTILITIES/BeamProperties.h"
+#include "UTILITIES/MyReadConfig.h"
 
 // Photon beam energy for cross section plots
 double EgammaPlot=8.5; 
 
 // Masses
-const double m_p=0.93827; // GeV
-const double m_p_sq=m_p*m_p;
+double m_p=0.93827; // GeV
+double m_p_sq=m_p*m_p;
 // Width
 double width=0.;
 
