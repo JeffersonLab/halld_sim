@@ -788,7 +788,12 @@ double CrossSection(double s, double t,TLorentzVector &q /* beam */,
 		    double gsq_omega_S,
 		    double gR2=0,double ReB2=0,double ImB2=0,double gsq_rho_S2=0,
 		    double gsq_omega_S2=0,double phase=0){
-  TLorentzVector p1(0,0,0.,ParticleMass(Proton));
+  m_p=ParticleMass(Proton); // GeV
+  if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
+  
+  m_p_sq=m_p*m_p;
+
+  TLorentzVector p1(0,0,0.,m_p);
   TLorentzVector p2=particles[2];
   TLorentzVector p=p1-p2; 
   double p1_dot_p2=p1.Dot(p2);
@@ -1261,12 +1266,12 @@ double TensorScalarInterference(TLorentzVector &q /* beam */,
   double m_rho=0.77;
   double m_rho_sq=m_rho*m_rho;
 
- m_p=ParticleMass(Proton); // GeV
+  m_p=ParticleMass(Proton); // GeV
   if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
   
   m_p_sq=m_p*m_p;
   
-// Four vectors
+  // Four vectors
   TLorentzVector p1(0,0,0.,ParticleMass(Proton));
   if (str_nucleon == "Neutron") p1 = TLorentzVector(0,0,0.,ParticleMass(Neutron));
   
@@ -1853,7 +1858,8 @@ void GraphCrossSection(vector<Particle_t>&particle_types,double phase[],
 		       m_p=ParticleMass(Proton); // GeV
   if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
   
-  m_p_sq=m_p*m_p; 
+  m_p_sq=m_p*m_p;
+
   TLorentzVector beam(0,0,EgammaPlot,EgammaPlot);
   TLorentzVector target(0,0,0,m_p);
   vector<TLorentzVector>particle_vectors(3);
@@ -2013,9 +2019,6 @@ int main(int narg, char *argv[])
   // Initialize random number generator
   TRandom3 *myrand=new TRandom3(0);// If seed is 0, the seed is automatically computed via a TUUID object, according to TRandom3 documentation
 
-  // Fixed target
-  TLorentzVector target(0.,0.,0.,m_p);
- 
   //----------------------------------------------------------------------------
   // Get production (Egamma range) and decay parameters from input file
   //----------------------------------------------------------------------------
@@ -2035,7 +2038,9 @@ int main(int narg, char *argv[])
   
   m_p=ParticleMass(Proton); // GeV
   if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
- 
+  
+  // Fixed target
+  TLorentzVector target(0.,0.,0.,m_p);
   m_p_sq=m_p*m_p;
 
   // Get beam properties configuration file
@@ -2210,8 +2215,8 @@ int main(int narg, char *argv[])
 	// S4.Print();
          TVector3 v_S=(1./S4.E())*S4.Vect();
 
-	// Compute the 4-momentum for the recoil proton
-	TLorentzVector proton4=beam+target-S4;
+	// Compute the 4-momentum for the recoil nucleon
+	TLorentzVector nucleon4=beam+target-S4;
       
 	// Generate decay of S according to phase space
 	TGenPhaseSpace phase_space;
@@ -2220,7 +2225,7 @@ int main(int narg, char *argv[])
 	
 	// Gather the particles in the reaction and write out event in hddm 
 	// format
-	particle_vectors[last_index]=proton4;
+	particle_vectors[last_index]=nucleon4;
 	for (int j=0;j<num_decay_particles;j++){
 	  particle_vectors[j]=*phase_space.GetDecay(j);
 	}
