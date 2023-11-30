@@ -56,6 +56,8 @@ C
 C
 C---       Boost to CM
 C
+
+C      write(6,*) ' ecm, P0 ',ecm,P0
       bet(4)=p0(4)/ecm
       DO j=1,3
          bet(j)=P0(j)/P0(4)
@@ -125,10 +127,11 @@ C
             GO TO 100
          ENDIF
 C---       Boost PZFR to the decay frame
+C         write(6,*) ' OMDECA2 pzf bet ',pzf,bet
          CALL GLOREN(bet,pzf(1),pzfcm(1))
 C
          pzm=SQRT(pzfcm(1)**2+pzfcm(2)**2+pzfcm(3)**2)
-C         write(6,*) ' pzfr ',pzfr,pzm
+C         write(6,*) ' pzfr ',pzfr,pzfcm
          IF(pzm.GT.0.00001) THEN
 C
             DO i=1,3
