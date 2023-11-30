@@ -19,16 +19,16 @@ TwoPSMoment::TwoPSMoment( const vector< string >& args ) :
    m_maxL = atoi( args[0].c_str() );
    m_nMoments = atoi( args[1].c_str() );
    for(int imom = 0; imom < m_nMoments; imom++) { 
-	   H.push_back( AmpParameter( args[imom+2] ) );
+	   m_H.push_back( AmpParameter( args[imom+2] ) );
 	   
-	   string name = H[imom].name();
+	   string name = m_H[imom].name();
 	   m_alpha.push_back( atoi(name.substr(1,1).data()) );
 	   m_L.push_back( atoi(name.substr(3,1).data()) );
 	   m_M.push_back( atoi(name.substr(4,1).data()) );
    }
 
    for(int imom = 0; imom < m_nMoments; imom++) 
-	   registerParameter( H[imom] );
+	   registerParameter( m_H[imom] );
 
    // Three possibilities to initialize this amplitude:
    // (with <alpha>, <l>, <m> defining the polarized moments)
@@ -93,7 +93,7 @@ TwoPSMoment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
 	   // m = 0 only non-zero for alpha = 0, 1 but half the size of other m-projections
 	   if(M == 0 && alpha < 2) mom *= 0.5;
 	   	   
-	   total += H[imom]*mom;
+	   total += m_H[imom]*mom;
    }   
 	   
    return complex< GDouble >( sqrt(fabs(total)) );
@@ -166,6 +166,19 @@ TwoPSMoment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 void
 TwoPSMoment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-   GPUTwoPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, m_alpha, m_L, m_M, m_nMoments );
+   // convert vector to array for GPU
+   GDouble H[m_nMoments];
+   int alpha[m_nMoments];
+   int L[m_nMoments];
+   int M[m_nMoments];
+   for(int i=0; i<m_nMoments; i++){
+      H[i] = m_H[i];
+      alpha[i] = m_alpha[i];
+      L[i] = m_L[i];
+      M[i] = m_M[i];
+   }
+
+
+   GPUTwoPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, alpha, L, M, m_nMoments );
 }
 #endif

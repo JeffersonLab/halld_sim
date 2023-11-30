@@ -62,7 +62,7 @@ class TwoPSMoment : public UserAmplitude< TwoPSMoment >
 
       int m_maxL;
       int m_nMoments;
-      vector<AmpParameter> H;
+      vector<AmpParameter> m_H;
       vector<int> m_alpha, m_L, m_M;
 
       double m_polAngle;

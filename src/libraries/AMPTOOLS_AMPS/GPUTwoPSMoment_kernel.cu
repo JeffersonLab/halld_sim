@@ -3,33 +3,37 @@
 
 #include "GPUManager/GPUCustomTypes.h"
 #include "GPUManager/CUDA-Complex.cuh"
+
+#include "GPUUtils/wignerD.cuh"
+#include "GPUUtils/clebsch.cuh"
  
 __global__ void
 GPUTwoPSMoment_kernel(GPU_AMP_PROTO, GDouble *H, int *alpha, int *L, int *M, int nMoments )
 {
     int iEvent = GPU_THIS_EVENT;
 
-    GDouble pGamma = GPU_UVARS[kPgamma];
-    GDouble cosTheta = GPU_UVARS[kCosTheta];
-    GDouble phi = GPU_UVARS[kPhi];
-    GDouble bigPhi = GPU_UVARS[kBigPhi];
+    GDouble pGamma = GPU_UVARS(0);
+    GDouble cosTheta = GPU_UVARS(1);
+    GDouble phi = GPU_UVARS(2);
+    GDouble bigPhi = GPU_UVARS(3);
 
+    GDouble total = 0;
     for(int imom = 0; imom < nMoments; imom++) { 
 	   	   
-	    int alpha = alpha[imom];
-	    int L = L[imom];
-	    int M = M[imom];
+	    int Galpha = alpha[imom];
+	    int GL = L[imom];
+	    int GM = M[imom];
 	    
-	    GDouble mom = 2.0 * sqrt( (2*L + 1) / (4*TMath::Pi() ) );
-	    if(alpha == 0)
-		   mom *= Y( L, M, cosTheta, phi ).real();
-	    else if(alpha == 1) 
-		    mom *= pGamma * cos(2*bigPhi) * Y( L, M, cosTheta, phi ).real();
-	    else if(alpha == 2) 
-		    mom *= -1 * pGamma * sin(2*bigPhi) * Y( L, M, cosTheta, phi ).imag();
+	    GDouble mom = 2.0 * sqrt( (2*GL + 1) / (4*PI ) );
+	    if(Galpha == 0)
+		   mom *= Y( GL, GM, cosTheta, phi ).m_dRe;
+	    else if(Galpha == 1) 
+		    mom *= pGamma * cos(2*bigPhi) * Y( GL, GM, cosTheta, phi ).m_dRe;
+	    else if(Galpha == 2) 
+		    mom *= -1 * pGamma * sin(2*bigPhi) * Y( GL, GM, cosTheta, phi ).m_dIm;
 		    
 	    // m = 0 only non-zero for alpha = 0, 1 but half the size of other m-projections
-	    if(M == 0 && alpha < 2) mom *= 0.5;
+	    if(GM == 0 && Galpha < 2) mom *= 0.5;
 		    
 	    total += H[imom]*mom;
     }   
@@ -40,7 +44,7 @@ GPUTwoPSMoment_kernel(GPU_AMP_PROTO, GDouble *H, int *alpha, int *L, int *M, int
 }
 
 void
-GPUTwoPSMoment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, int* alpha, int* L int *M, int nMoments)
+GPUTwoPSMoment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, int* alpha, int* L, int *M, int nMoments)
 {
 
   // allocate memory and pass moment parameter array to GPU
