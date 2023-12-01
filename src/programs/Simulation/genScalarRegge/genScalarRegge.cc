@@ -2034,10 +2034,13 @@ int main(int narg, char *argv[])
   MyReadConfig * ReadFile = new MyReadConfig();
   ReadFile->ReadConfigFile(input_file_name);
   str_nucleon = ReadFile->GetConfigName("nucleon");
-  cout << "Target nucleon = " << str_nucleon << endl;
   
   m_p=ParticleMass(Proton); // GeV
-  if (str_nucleon == "Neutron") m_p=ParticleMass(Neutron); // GeV
+  if (str_nucleon == "Neutron"){
+    m_p=ParticleMass(Neutron); // GeV
+    cout << "Target nucleon = " << str_nucleon << endl;
+  }
+  else cout << "Target nucleon = Proton" << endl; 
   
   // Fixed target
   TLorentzVector target(0.,0.,0.,m_p);
