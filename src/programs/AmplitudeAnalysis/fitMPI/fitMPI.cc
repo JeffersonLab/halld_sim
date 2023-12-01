@@ -47,6 +47,7 @@
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
 #include "AMPTOOLS_AMPS/TwoPSMoment.h"
+#include "AMPTOOLS_AMPS/VecPSMoment.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -385,6 +386,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
    AmpToolsInterface::registerAmplitude( SinglePS() );
    AmpToolsInterface::registerAmplitude( TwoPSMoment() );
+   AmpToolsInterface::registerAmplitude( VecPSMoment() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
