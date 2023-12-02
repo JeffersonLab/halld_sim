@@ -63,4 +63,7 @@ GPUTwoPSMoment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, int*
 
   cudaDeviceSynchronize();
   cudaFree(d_H);
+  cudaFree(d_alpha);
+  cudaFree(d_L);
+  cudaFree(d_M);
 }
