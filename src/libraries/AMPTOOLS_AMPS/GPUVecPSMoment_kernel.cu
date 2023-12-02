@@ -8,7 +8,7 @@
 #include "GPUUtils/clebsch.cuh"
  
 __global__ void
-GPUTwoPSMoment_kernel(GPU_AMP_PROTO, GDouble *H, int *alpha, int *S, int *Lambda, int *J, int *M, int nMoments )
+GPUVecPSMoment_kernel(GPU_AMP_PROTO, GDouble *H, int *alpha, int *S, int *Lambda, int *J, int *M, int nMoments )
 {
     int iEvent = GPU_THIS_EVENT;
 
@@ -49,7 +49,7 @@ GPUTwoPSMoment_kernel(GPU_AMP_PROTO, GDouble *H, int *alpha, int *S, int *Lambda
 }
 
 void
-GPUTwoPSMoment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, int* alpha, int *S, int *Lambda, int *J, int *M, int nMoments)
+GPUVecPSMoment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, int* alpha, int *S, int *Lambda, int *J, int *M, int nMoments)
 {
 
   // allocate memory and pass moment parameter array to GPU
@@ -69,7 +69,7 @@ GPUTwoPSMoment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, int*
   cudaMemcpy(d_J, &J[0], nMoments * sizeof(int), cudaMemcpyHostToDevice );
   cudaMemcpy(d_M, &M[0], nMoments * sizeof(int), cudaMemcpyHostToDevice );
 
-  GPUTwoPSMoment_kernel<<< dimGrid, dimBlock >>>(GPU_AMP_ARGS, d_H, d_alpha, d_S, d_Lambda, d_J, d_M, nMoments);
+  GPUVecPSMoment_kernel<<< dimGrid, dimBlock >>>(GPU_AMP_ARGS, d_H, d_alpha, d_S, d_Lambda, d_J, d_M, nMoments);
 
   cudaDeviceSynchronize();
   cudaFree(d_H);
