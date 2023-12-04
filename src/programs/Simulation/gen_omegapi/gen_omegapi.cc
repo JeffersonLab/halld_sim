@@ -392,7 +392,17 @@ int main( int argc, char* argv[] ){
 	TH2F* MassCorr = new TH2F( "MassCorr", ";M(p#pi^{+}) (GeV);M(#omega#pi^{-}) (GeV)", 200, 1, 2, 200, lowMass, highMass );
 	TH2F* MassCorrW = new TH2F( "MassCorrW", ";M(p#pi^{+}) (GeV);M(#omega#pi^{-}) (GeV)", 200, 1, 2, 200, lowMass, highMass );
 
-	
+	// Plots of Lorentz invariants
+	TH1F* s = new TH1F( "s", "s Distribution;s (GeV^{2})", 200, 16., 18. );
+	TH1F* t_p = new TH1F( "t_p", "-t_{p} Distribution;-t_{p} (GeV^{2})", 200, 0., 4. );
+	TH1F* t_omega = new TH1F( "t_omega", "-t_{#omega} Distribution;-t_{#omega} (GeV^{2})", 200, 0., 2. );
+	TH1F* m2_omega = new TH1F( "m2_omega", "#omega Mass Squared;M(#omega)^{2} (GeV^{2})", 200, 0., 1. );
+	TH1F* m2_omegapi = new TH1F( "m2_omegapi", "#omega#pi^{-} Mass Squared;M(#omega#pi^{-})^{2} (GeV^{2})", 200, 1., 2. );
+	TH1F* m2_omegapipi = new TH1F( "m2_omegapipi", "#omega#pi^{-}#pi^{+} Mass Squared;M(#omega#pi^{-}#pi^{+})^{2} (GeV^{2})", 200, 0., 12. );
+	TH1F* m2_ppi = new TH1F( "m2_ppi", "p#pi^{+} Mass Squared;M(p#pi^{+})^{2} (GeV^{2})", 200, 0., 4. );
+	TH1F* m2_ppipi = new TH1F( "m2_ppipi", "p#pi^{+}#pi^{-} Mass Squared;M(p#pi^{+}#pi^{-})^{2} (GeV^{2})", 200, 0., 12. );
+
+
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
 		
@@ -606,7 +616,7 @@ int main( int argc, char* argv[] ){
 					// angles for recoil Delta++ -> p pi+ decay
 					if ( bwGenLowerVertex.size() == 1 ) {
 //						TLorentzRotation recoilBoost( -recoil.BoostVector() );
-//						TLorentzVector p6 = evt->particle ( 6 );
+						TLorentzVector p5 = evt->particle ( 6 );
 //						TLorentzVector target_recoilRF = recoilBoost * target;
 //						TLorentzVector beam_recoilRF = recoilBoost * beam;
 //						TLorentzVector resonance_recoilRF = recoilBoost * resonance;
@@ -623,7 +633,32 @@ int main( int argc, char* argv[] ){
 
 						MRecoil_CosThetaDelta->Fill( recoil.M(), cosThetaDelta );
 						MRecoil_PhiDelta->Fill( recoil.M(), phiDelta );
-						phiDelta_Phi_Prod->Fill(Phi, phiDelta);
+						phiDelta_Phi_Prod->Fill( Phi, phiDelta );
+
+						// calculate b1Delta invariants
+						TLorentzVector sqrt_s = p1 + p2 + p3 + p4 + p5 + nucleon;
+						s->Fill( sqrt_s.M2() );
+
+						TLorentzVector sqrt_tp = beam - p1 - p2 - p3 - p4 - p5;
+						t_p->Fill( -1.*sqrt_tp.M2() );
+
+						TLorentzVector sqrt_tomega = beam - p2 - p3 - p4;
+						t_omega->Fill( -1.*sqrt_tomega.M2() );
+
+						TLorentzVector omega = p2 + p3 + p4;
+						m2_omega->Fill( omega.M2() );
+
+						TLorentzVector omegapi = p1 + p2 + p3 + p4;
+						m2_omegapi->Fill( omegapi.M2() );
+
+						TLorentzVector omegapipi = p1 + p2 + p3 + p4 + p5;
+						m2_omegapipi->Fill( omegapipi.M2() );
+
+						TLorentzVector ppi = p5 + nucleon;
+						m2_ppi->Fill( ppi.M2() );
+
+						TLorentzVector ppipi = nucleon + p1 + p5;
+						m2_ppipi->Fill( ppipi.M2() );
 					}
 
 					// we want to save events with weight 1
@@ -682,6 +717,14 @@ int main( int argc, char* argv[] ){
 	phiDelta_Phi_Prod->Write();
 	MassCorr->Write();
 	MassCorrW->Write();
+	s->Write();
+	t_p->Write();
+	t_omega->Write();
+	m2_omega->Write();
+	m2_omegapi->Write();
+	m2_omegapipi->Write();
+	m2_ppi->Write();
+	m2_ppipi->Write();
 
 	diagOut->Close();
 	
