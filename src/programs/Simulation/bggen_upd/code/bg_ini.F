@@ -25,6 +25,7 @@ C
       INTEGER k_par(16)
       REAL    r_par(16)
       EQUIVALENCE (k_par(1),r_par(1))
+      INTEGER nucleon     ! =0 - proton target, =1 - neutron target (for nuclei Spectral Function)
 C
       lout=6
       IERR=1
@@ -57,7 +58,7 @@ C
       NHBEA=0
       IBEATYP=-1
       DO i=1,2
-         EHLIM(i)=0.
+         PHLIM(i)=0.
       ENDDO
 C
       NBMEXT=0       ! if>0 points/bins in an externaly set beam energy distribution
@@ -66,8 +67,8 @@ C
          EXT_LIM(i)=0.
       ENDDO
       DO i=1,MXBMPN
-         RABMEXT(i)=0.
-         ENBMEXT(i)=0.
+         RBEAEXT(i)=0.
+         PBEAEXT(i)=0.
       ENDDO
 C
 C---               Standalone exclusive reactions
@@ -104,6 +105,7 @@ C
          KFEVSEL(i)=0      ! types
          NFEVSEL(i)=0      ! types
       ENDDO
+      NFEFINAL=0           ! # of particles in the final state KS=1
       PAREVSEL(1)=0.       ! Pmin
       PAREVSEL(2)=99999.   ! Pmax
       PAREVSEL(3)=0.       ! theta_min
@@ -160,6 +162,10 @@ C
          CALL UCTOH('    ',KPYTMP(i),4,4)
       ENDDO
 C
+      NUCLTARG=0     ! nuclear target A for quasielastic processes
+      IGNUCLT=0
+      SFSCALE=1.     ! scale factor for the spectral distribution
+C
 C---    Redefine FFREAD settings
 C
       CALL FFINIT(mxffr)
@@ -204,8 +210,10 @@ C
       CALL FFKEY('PARTICLE'  , K_PTMP(1)  , 16,'MIXED')
       CALL FFKEY('PYTMOD'    , KPYTMP(1)  ,  8,'MIXED')
       CALL FFKEY('NBEAMEXT'  , NBMEXT     ,  4,'MIXED')
-      CALL FFKEY('RBEAMEXT'  , RABMEXT(1) , MXBMPN,'REAL')
-      CALL FFKEY('EBEAMEXT'  , ENBMEXT(1) , MXBMPN,'REAL')
+      CALL FFKEY('RBEAMEXT'  , RBEAEXT(1) , MXBMPN,'REAL')
+      CALL FFKEY('PBEAMEXT'  , PBEAEXT(1) , MXBMPN,'REAL')
+      CALL FFKEY('TNUCLEUS'  , NUCLTARG   ,  1,'INTEGER')
+      CALL FFKEY('TNUSCALE'  , SFSCALE    ,  1,'REAL')
 C
       CALL FFGO
 C
@@ -251,19 +259,35 @@ C
          ENDIF
       ENDDO
 C
+      IF(NUCLTARG.GT.0) THEN  ! find the target nuclei (optional)
+         DO ig=1,MXPART
+            IF(KF_PART(ig).GT.1000000000) THEN   ! nuclei definitions
+               i=MOD(KF_PART(ig),10000)/10  ! KF code is 100ZZZAAAI
+               IF(i.EQ.NUCLTARG) IGNUCLT=ig
+            ENDIF
+         ENDDO
+         IF(IGNUCLT.GT.0) THEN
+            AMNUCLS=AM_PART(IGNUCLT)
+            AMNUCLN=AMNUCLS/NUCLTARG
+         ELSE
+            AMNUCLN=0.931  ! average nucleon mass inside a nucleus
+            AMNUCLS=AMNUCLN*NUCLTARG
+         ENDIF
+      ENDIF
+C
 C---      Print particle table
 C
       WRITE(lout,1000) 
  1000 FORMAT(1X,80('='),/,' Particle list locally defined '
      +      ,'  ID_GEant<33 are also defined in the GEANT3 code'
-     +      ,/,' ID_Geant KF PY_dec N_dec  ID_decays'
+     +      ,/,' ID_Geant    KF PY_dec N_dec  ID_decays'
      +      ,' dec_flg     mass     width     name')
       DO ig=1,MXPART
          IF(KF_PART(ig).NE.0) THEN
             WRITE(lout,1002) ig,KF_PART(ig),LD_PART(ig),ND_PART(ig)
      +                ,(KD_PART(i,ig),i=1,4),AM_PART(ig),WG_PART(ig)
      +                ,CH_PART(ig) 
- 1002       FORMAT(1X,I3,1X,I7,3X,I3,3X,I2,2X,3I4,3X,I2,3X,F10.6,2X
+ 1002       FORMAT(1X,I3,1X,I10,3X,I3,3X,I2,2X,3I4,3X,I2,3X,F10.6,2X
      +            ,F7.4,5X,A16)
          ENDIF
       ENDDO
@@ -272,12 +296,36 @@ C
       CALL RND_INI(IRND_SEQ)  ! random number initialization
 C
       IDBEAM=9000
-      CALL BEAM_INI(ier)      ! initialize the beam flux (to be multilied by the cross section later)
+      CALL BEAM_INI(ier)      ! initialize the beam flux (to be multiplied by the cross section later)
       IF(ier.NE.0) GO TO 999
 C
       IFPYTH=0   ! PYTHIA flag
       IDLOWEN=0  ! low energy BG reactions flag
       IDTDIST=0  ! Excl. reaction ID for hist
+C
+C---     A nuclear target: read the spectral function
+C
+      IF(NUCLTARG.GT.0) THEN
+         IDNUCLT=11000
+         kf=KF_PART(IPINIT(2))  
+         IF(kf.EQ.2212) THEN
+            nucleon=0   ! proton
+         ELSE IF(kf.EQ.2112) THEN
+            nucleon=1   ! neutron
+         ELSE
+            ier=1
+            WRITE(lout,1010) NUCLTARG,IPINIT(2)
+ 1010       FORMAT(' *** BG_INIT error: nucleus target A=',I4
+     +          ,' interation on ig=',I4,' not proton or neutron')
+            GO TO 999
+         ENDIF
+         CALL SF_INIT(NUCLTARG,IDNUCLT,nucleon,ier)
+         IF(ier.NE.0) GO TO 999
+      ENDIF
+      IF(NUCLTARG.GT.0) THEN
+         WRITE(lout,*) ' --- Target nucleus A=',NUCLTARG
+     +                ,' GEANT type=',IGNUCLT,' ID=',IDNUCLT
+      ENDIF
 C
 C---    Check the type of simulation - PYTHIA versus exclusive reactions
 C
@@ -346,6 +394,7 @@ C
          IF(ier.NE.0) GO TO 999
       ENDIF
 C
+      flush(6)
       IERR=0
  999  RETURN
       END

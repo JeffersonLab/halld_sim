@@ -8,4 +8,6 @@ C
       INTEGER NEVSTAT  ! (1) - number of initial events simulated
      +                 ! (2) - successfully simulated events
      +                 ! (3) - selected events  
-     +                 ! (4) - written events  
+     +                 ! (4) - written HDDM events  
+     +                 ! (5) - written NTUPLE events  
+     +                 ! (6) - total number of beam particles simulated 

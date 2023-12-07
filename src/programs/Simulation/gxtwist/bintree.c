@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 #include <assert.h>
-#include <bintree.h>
+#include "bintree.h"
 
 void** getTwig(binTree_t** tree, int mark)
 {
