@@ -9,6 +9,7 @@
 
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/VecPSMoment.h"
+#include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 
 #include "TFile.h"
@@ -61,6 +62,9 @@ VecPSMoment::VecPSMoment( const vector< string >& args ) :
       m_polFrac_vs_E = (TH1D*)f->Get( args[m_nMoments+5].c_str() );
       assert( m_polFrac_vs_E != NULL );
    }
+
+   // default is 3-body vector decay (omega->3pi)
+   m_3pi = true; 
 }
 
 
@@ -116,41 +120,58 @@ VecPSMoment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
    }
 
    TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
-   TLorentzVector p1     ( pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0] ); 
-   TLorentzVector p2     ( pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0] ); 
-
-   TLorentzVector resonance = p1 + p2;
-
-   TLorentzRotation resRestBoost( -resonance.BoostVector() );
-
-   TLorentzVector beam_res   = resRestBoost * beam;
-   TLorentzVector recoil_res = resRestBoost * recoil;
-   TLorentzVector p1_res = resRestBoost * p1;
-
-   // Helicity frame
-   TVector3 z = -1. * recoil_res.Vect().Unit();
-   // or GJ frame?
-   // TVector3 z = beam_res.Vect().Unit();
-
-   // normal to the production plane
-   TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();
-
-   TVector3 x = y.Cross(z);
-
-   TVector3 angles( (p1_res.Vect()).Dot(x),
-         (p1_res.Vect()).Dot(y),
-         (p1_res.Vect()).Dot(z) );
-
-   userVars[kCosTheta] = angles.CosTheta();
-   userVars[kPhi] = angles.Phi();
-
-   // place holders
-   userVars[kCosThetaH] = 0;
-   userVars[kPhiH] = 0;
-
-   userVars[kBigPhi] = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
-
-
+   
+   // common vector and pseudoscalar P4s
+   TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); // 1st after proton
+   TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
+   
+   // omega ps proton, omega -> 3pi (6 particles)
+   // omega pi- Delta++, omega -> 3pi (7 particles)
+   if(m_3pi) {
+	   TLorentzVector pi0(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+	   TLorentzVector pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+	   TLorentzVector pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
+	   vec = pi0 + pip + pim;
+	   vec_daught1 = pip;
+	   vec_daught2 = pim;
+   }
+   else {
+	   // omega ps proton, omega -> pi0 g (4 particles)
+	   // omega pi- Delta++, omega -> pi0 g (5 particles)
+	   
+	   // (vec 2-body) ps proton, vec 2-body -> pipi, KK (5 particles)
+	   // (vec 2-body) pi- Delta++, vec 2-body -> pipi, KK (6 particles)
+	   // (vec 2-body) K+ Lambda, vec 2-body -> Kpi (6 particles)
+	   vec_daught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+	   vec_daught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+	   vec = vec_daught1 + vec_daught2;
+   }
+   
+   // final meson system P4
+   TLorentzVector X = vec + ps;
+   
+   //////////////////////// Boost Particles and Get Angles//////////////////////////////////
+   
+   TLorentzVector target(0,0,0,0.938);
+   //Helicity coordinate system
+   TLorentzVector Gammap = beam + target;
+   
+   // Calculate decay angles in helicity frame (same for all vectors)
+   vector <double> locthetaphi = getomegapiAngles(eps.Phi(), vec, X, beam, Gammap);
+   
+   // Calculate vector decay angles (unique for each vector)
+   vector <double> locthetaphih;
+   if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
+   else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
+   
+   userVars[kCosTheta] = TMath::Cos(locthetaphi[0]);
+   userVars[kPhi] = locthetaphi[1];
+   
+   userVars[kCosThetaH] = TMath::Cos(locthetaphih[0]);
+   userVars[kPhiH] = locthetaphih[1];
+   
+   userVars[kBigPhi] = locthetaphi[2];
+   
    GDouble pGamma;
    if(m_polInTree) {
       pGamma = eps.Mag();
@@ -180,7 +201,6 @@ VecPSMoment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const
       H[i] = m_H[i];
       indices[i] = m_indices[i];
    }
-
 
    GPUVecPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, indices, m_nMoments );
 }

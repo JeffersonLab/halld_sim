@@ -58,6 +58,7 @@ class VecPSMoment : public UserAmplitude< VecPSMoment >
 
    private:
 
+      bool m_3pi;
       int m_maxJ;
       int m_nMoments;
       vector<AmpParameter> m_H;

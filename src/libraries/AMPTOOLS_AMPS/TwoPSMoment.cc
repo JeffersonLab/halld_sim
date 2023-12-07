@@ -164,7 +164,6 @@ TwoPSMoment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
    userVars[kBigPhi] = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 
-
    GDouble pGamma;
    if(m_polInTree) {
       pGamma = eps.Mag();
