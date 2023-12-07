@@ -14,7 +14,7 @@
 #ifdef GPU_ACCELERATION
 void
 GPUTwoPSMoment_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
-		     GDouble* H, int* alpha, int* L, int *M, int nMoments );
+		     GDouble* H, int* indices, int nMoments, int maxL );
 #endif // GPU_ACCELERATION
 
 
@@ -63,7 +63,7 @@ class TwoPSMoment : public UserAmplitude< TwoPSMoment >
       int m_maxL;
       int m_nMoments;
       vector<AmpParameter> m_H;
-      vector<int> m_alpha, m_L, m_M;
+      vector<int> m_indices;
 
       double m_polAngle;
       double m_polFraction;

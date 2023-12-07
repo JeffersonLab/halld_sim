@@ -14,7 +14,7 @@
 #ifdef GPU_ACCELERATION
 void
 GPUVecPSMoment_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
-		     GDouble* H, int* alpha, int *S, int *Lambda, int *J, int *M, int nMoments );
+		     GDouble* H, int* indices, int nMoments );
 #endif // GPU_ACCELERATION
 
 
@@ -61,7 +61,7 @@ class VecPSMoment : public UserAmplitude< VecPSMoment >
       int m_maxJ;
       int m_nMoments;
       vector<AmpParameter> m_H;
-      vector<int> m_alpha, m_S, m_Lambda, m_J, m_M;
+      vector<int> m_indices;
 
       double m_polAngle;
       double m_polFraction;

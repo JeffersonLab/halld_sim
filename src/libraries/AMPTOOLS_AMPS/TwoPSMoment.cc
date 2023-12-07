@@ -22,9 +22,13 @@ TwoPSMoment::TwoPSMoment( const vector< string >& args ) :
 	   m_H.push_back( AmpParameter( args[imom+2] ) );
 	   
 	   string name = m_H[imom].name();
-	   m_alpha.push_back( atoi(name.substr(1,1).data()) );
-	   m_L.push_back( atoi(name.substr(3,1).data()) );
-	   m_M.push_back( atoi(name.substr(4,1).data()) );
+	   
+	   int index = atoi(name.substr(1,1).data()) * 100;
+	   index += atoi(name.substr(3,1).data()) * 10;
+	   index += atoi(name.substr(4,1).data()); 
+	   	   
+	   // global moment indices
+	   m_indices.push_back( index );
    }
 
    for(int imom = 0; imom < m_nMoments; imom++) 
@@ -66,33 +70,50 @@ TwoPSMoment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
    GDouble phi = userVars[kPhi];
    GDouble bigPhi = userVars[kBigPhi];
 
-   GDouble total = 0;
+   GDouble cos2bigPhi = cos(2*bigPhi);
+   GDouble sin2bigPhi = sin(2*bigPhi);
+   GDouble theta = acos(cosTheta) * 180./TMath::Pi(); 
 
-   // calls to Y(L,M) aren't needed for each alpha (3x speedup)
-   complex<GDouble> sphericalHarmonics[m_maxL+1][m_maxL+1];
+   // compute required wignerDSmall values
+   GDouble wigner[10*(m_maxL+1)];
    for(int iL = 0; iL <= m_maxL; iL++) {
 	   for(int iM = 0; iM <= iL; iM++) {
-		   sphericalHarmonics[iL][iM] = Y( iL, iM, cosTheta, phi );
+		   wigner[iL*10 + iM] = wignerDSmall( iL, iM, 0, theta );
 	   }
    }
 
+   GDouble total = 0;
    for(int imom = 0; imom < m_nMoments; imom++) { 
 	   	   
-	   int alpha = m_alpha[imom];
-	   int L = m_L[imom];
-	   int M = m_M[imom];
+	   int alpha = m_indices[imom] / 100;
+	   int L = m_indices[imom] / 10 % 10;
+	   int M = m_indices[imom] % 10;
+	   int LM = m_indices[imom] % 100;
 
-	   GDouble mom = 2.0 * sqrt( (2*L + 1) / (4*TMath::Pi() ) );
+	   GDouble mom = 0;
+#if 0
+	   mom = 2.0 * sqrt( (2*L + 1) / (4*TMath::Pi()) );
 	   if(alpha == 0)
 		   mom *= sphericalHarmonics[L][M].real();
 	   else if(alpha == 1) 
-		   mom *= pGamma * cos(2*bigPhi) * sphericalHarmonics[L][M].real();
+		   mom *= pGamma * cos2bigPhi * sphericalHarmonics[L][M].real();
 	   else if(alpha == 2) 
-		   mom *= -1 * pGamma * sin(2*bigPhi) * sphericalHarmonics[L][M].imag();
+		   mom *= -1.0 * pGamma * sin2bigPhi * sphericalHarmonics[L][M].imag();	   
+#endif
+
+#if 1
+	   mom = 2.0 * (2*L + 1) / (4*TMath::Pi());
+	   if(alpha == 0)
+		   mom *= wigner[LM] * cos( M*phi );
+	   else if(alpha == 1) 
+		   mom *= pGamma * cos2bigPhi * wigner[LM] * cos( M*phi );
+	   else if(alpha == 2) 
+		   mom *= -1.0 * pGamma * sin2bigPhi * wigner[LM] * sin( M*phi );
+#endif
 	   
 	   // m = 0 only non-zero for alpha = 0, 1 but half the size of other m-projections
 	   if(M == 0 && alpha < 2) mom *= 0.5;
-	   	   
+	   
 	   total += m_H[imom]*mom;
    }   
 	   
@@ -168,17 +189,12 @@ TwoPSMoment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const
 
    // convert vector to array for GPU
    GDouble H[m_nMoments];
-   int alpha[m_nMoments];
-   int L[m_nMoments];
-   int M[m_nMoments];
+   int indices[m_nMoments];
    for(int i=0; i<m_nMoments; i++){
       H[i] = m_H[i];
-      alpha[i] = m_alpha[i];
-      L[i] = m_L[i];
-      M[i] = m_M[i];
+      indices[i] = m_indices[i];
    }
 
-
-   GPUTwoPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, alpha, L, M, m_nMoments );
+   GPUTwoPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, indices, m_nMoments, m_maxL );
 }
 #endif

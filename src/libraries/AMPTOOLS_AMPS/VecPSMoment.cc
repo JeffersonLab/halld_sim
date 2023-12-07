@@ -22,11 +22,15 @@ VecPSMoment::VecPSMoment( const vector< string >& args ) :
 	   m_H.push_back( AmpParameter( args[imom+2] ) );
 	   
 	   string name = m_H[imom].name();
-	   m_alpha.push_back( atoi(name.substr(1,1).data()) );
-	   m_S.push_back( atoi(name.substr(3,1).data()) );
-	   m_Lambda.push_back( atoi(name.substr(4,1).data()) );
-	   m_J.push_back( atoi(name.substr(5,1).data()) );
-	   m_M.push_back( atoi(name.substr(6,1).data()) );
+
+	   int index = atoi(name.substr(1,1).data()) * 10000;
+	   index += atoi(name.substr(3,1).data()) * 1000;
+	   index += atoi(name.substr(4,1).data()) * 100;
+	   index += atoi(name.substr(5,1).data()) * 10;
+	   index += atoi(name.substr(6,1).data());
+	   	   
+	   // global moment indices
+	   m_indices.push_back( index );
    }
 
    for(int imom = 0; imom < m_nMoments; imom++) 
@@ -70,25 +74,27 @@ VecPSMoment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
    GDouble phiH = userVars[kPhiH];
    GDouble bigPhi = userVars[kBigPhi];
 
+   GDouble cos2bigPhi = cos(2*bigPhi);
+   GDouble sin2bigPhi = sin(2*bigPhi);
    GDouble theta = acos(cosTheta) * 180./TMath::Pi(); 
    GDouble thetaH = acos(cosThetaH) * 180./TMath::Pi(); 
 
    GDouble total = 0;
    for(int imom = 0; imom < m_nMoments; imom++) { 
 	   	   
-	   int alpha = m_alpha[imom];
-	   int S = m_S[imom];
-	   int Lambda = m_Lambda[imom];
-	   int J = m_J[imom];
-	   int M = m_M[imom];
+	   int alpha = m_indices[imom] / 10000;
+	   int S = m_indices[imom] / 1000 % 10;
+	   int Lambda = m_indices[imom] / 100 % 10;
+	   int J = m_indices[imom] / 10 % 10;
+	   int M = m_indices[imom] %10;
 
-	   GDouble mom = sqrt( (2*J + 1) / (4*TMath::Pi() ) ) * sqrt( (2*S + 1) / (4*TMath::Pi() ) );
+	   GDouble mom = (2*J + 1) / (4*TMath::Pi()) * (2*S + 1) / (4*TMath::Pi());
 	   if(alpha == 0)
 		   mom *= wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( S, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
 	   else if(alpha == 1) 
-		   mom *= -1.0 * pGamma * cos(2*bigPhi) * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( S, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
+		   mom *= -1.0 * pGamma * cos2bigPhi * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( S, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
 	   else if(alpha == 2) 
-		   mom *= -1.0 * pGamma * sin(2*bigPhi) * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( S, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
+		   mom *= -1.0 * pGamma * sin2bigPhi * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( S, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
 	   	   
 	   total += mom*m_H[imom];
    }   
@@ -169,21 +175,13 @@ VecPSMoment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const
 
    // convert vector to array for GPU
    GDouble H[m_nMoments];
-   int alpha[m_nMoments];
-   int S[m_nMoments];
-   int Lambda[m_nMoments];
-   int J[m_nMoments];
-   int M[m_nMoments];
+   int indices[m_nMoments];
    for(int i=0; i<m_nMoments; i++){
       H[i] = m_H[i];
-      alpha[i] = m_alpha[i];
-      S[i] = m_S[i];
-      Lambda[i] = m_Lambda[i];
-      J[i] = m_J[i];
-      M[i] = m_M[i];
+      indices[i] = m_indices[i];
    }
 
 
-   GPUVecPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, alpha, S, Lambda, J, M, m_nMoments );
+   GPUVecPSMoment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, indices, m_nMoments );
 }
 #endif
