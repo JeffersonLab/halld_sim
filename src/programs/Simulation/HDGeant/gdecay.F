@@ -115,7 +115,12 @@ C--                 (M.Guckes)
             GO TO 99
  40         DMASS = RMASS
 #else
-            DMASS = SQRT(GETOT**2 - VECT(7)**2)
+            DMASS = GETOT**2 - VECT(7)**2
+            IF (DMASS > 0) THEN
+               DMASS = SQRT(DMASS)
+            ELSE
+               DMASS = 0
+            ENDIF
 #endif
          END IF
          CALL GDECA2(DMASS,XM(1),XM(2),PCM)
@@ -144,7 +149,12 @@ C--  (via integral-transformation of Lorentz-distribution)
             GO TO 99
  41         DMASS = RMASS
 #else
-            DMASS = SQRT(GETOT**2 - VECT(7)**2)
+            DMASS = GETOT**2 - VECT(7)**2
+            IF (DMASS > 0) THEN
+               DMASS = SQRT(DMASS)
+            ELSE
+               DMASS = 0
+            ENDIF
 #endif
          END IF
          CALL GDECA3(DMASS,XM(1),XM(2),XM(3),PCM)
@@ -188,6 +198,8 @@ C
 #endif
 C
   99  RETURN
+#ifdef GDECAY_RANDOMIZE_DECAY_ENERGY
  1000 FORMAT(' ***** GDECAY ERROR : Not enough energy available for ',
      +       'decay of resonance',I3,' to',3I3,'; no decay.')
+#endif
       END
