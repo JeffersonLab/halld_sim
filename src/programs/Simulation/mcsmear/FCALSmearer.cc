@@ -1,5 +1,9 @@
 #include "FCALSmearer.h"
 
+#include <dilog.h>
+#include <sstream>
+#include <hddm_s_merger.h>
+
 //-----------
 // fcal_config_t  (constructor)
 //-----------
@@ -254,9 +258,21 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
  	 double adcCounts = 0;
 	        
 	 if (row<DFCALGeometry::kBlocksTall&&column<DFCALGeometry::kBlocksWide){
+{
+  std::stringstream msg;
+  std::stringstream evt;
+  evt << record->getPhysicsEvents()(0).getEventNo();
+  msg << "looking at fcalTruthHit in row,col " << row << "," << column;
+  dilog::get(evt.str().c_str()).printf("%s", msg.str().c_str());
+}
 	   // correct simulation efficiencies 
 	   if (config->APPLY_EFFICIENCY_CORRECTIONS
 	       && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(row, column))) {
+{
+  std::stringstream evt;
+  evt << record->getPhysicsEvents()(0).getEventNo();
+  dilog::get(evt.str().c_str()).printf("hit dropped by efficiency cut");
+}
 	     continue;
 	   }
 	 
@@ -307,7 +323,14 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 			     + pow(sigEfloor,2));
 	   E *= (1.0 + gDRandom.SampleGaussian(sigma));
 	 }
-	 	 
+
+{
+  std::stringstream msg;
+  std::stringstream evt;
+  evt << record->getPhysicsEvents()(0).getEventNo();
+  msg << "smeared hit E=" << E << ", t=" << t << ", Ethreshold=" << Ethreshold;
+  dilog::get(evt.str().c_str()).printf("%s", msg.str().c_str());
+} 
 	 if (E > Erange)
 	   E = Erange;
          
@@ -318,6 +341,13 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	   hddm_s::FcalHitList hits = iter->addFcalHits();
 	   hits().setE(E);
 	   hits().setT(t);
+{
+  std::stringstream msg;
+  std::stringstream evt;
+  evt << record->getPhysicsEvents()(0).getEventNo();
+  msg << "added fcalHit with E=" << E << ", t=" << t << ", total fcalHits=" << iter->getFcalHits().size();
+  dilog::get(evt.str().c_str()).printf("%s", msg.str().c_str());
+}
 	 }
       }
       
@@ -330,4 +360,78 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
       if (fcals.size() > 0)
          fcals().deleteFcalTruthShowers();
    }
+ {
+  std::stringstream msg;
+  std::stringstream evt;
+  evt << record->getPhysicsEvents()(0).getEventNo();
+  msg << "exit from FCALSmearer::SmearEvent with the following blocks: ";
+  blocks = record->getFcalBlocks();
+  for (iter = blocks.begin(); iter != blocks.end(); ++iter) {
+    msg << "block(r=" << iter->getRow() << ",c=" << iter->getColumn() << "): ";
+    hddm_s::FcalHitList hits = iter->getFcalHits();
+    hddm_s::FcalHitList::iterator hiter;
+    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
+      msg << "hit(E=" << hiter->getE() << ", t=" << hiter->getT() << "),";
+    }
+    hddm_s::FcalTruthHitList thits = iter->getFcalTruthHits();
+    hddm_s::FcalTruthHitList::iterator titer;
+    for (titer = thits.begin(); titer != thits.end(); ++titer) {
+      msg << "thit(E=" << titer->getE() << ", t=" << titer->getT() << "),";
+    }
+  }
+  msg << ",t_shift_ns=" << hddm_s_merger::get_t_shift_ns();
+  msg << ",get_cdc_merging=" << hddm_s_merger::get_cdc_merging();
+  msg << ",get_cdc_max_hits=" << hddm_s_merger::get_cdc_max_hits();
+  msg << ",get_cdc_integration_window_ns=" << hddm_s_merger::get_cdc_integration_window_ns();
+  msg << ",get_fdc_merging=" << hddm_s_merger::get_fdc_merging();
+  msg << ",get_fdc_wires_max_hits=" << hddm_s_merger::get_fdc_wires_max_hits();
+  msg << ",get_fdc_wires_min_delta_t_ns=" << hddm_s_merger::get_fdc_wires_min_delta_t_ns();
+  msg << ",get_fdc_strips_max_hits=" << hddm_s_merger::get_fdc_strips_max_hits();
+  msg << ",get_fdc_strips_integration_window_ns=" << hddm_s_merger::get_fdc_strips_integration_window_ns();
+  msg << ",get_stc_merging=" << hddm_s_merger::get_stc_merging();
+  msg << ",get_stc_adc_max_hits=" << hddm_s_merger::get_stc_adc_max_hits();
+  msg << ",get_stc_tdc_max_hits=" << hddm_s_merger::get_stc_tdc_max_hits();
+  msg << ",get_stc_min_delta_t_ns=" << hddm_s_merger::get_stc_min_delta_t_ns();
+  msg << ",get_stc_integration_window_ns=" << hddm_s_merger::get_stc_integration_window_ns();
+  msg << ",get_bcal_merging=" << hddm_s_merger::get_bcal_merging();
+  msg << ",get_bcal_adc_max_hits=" << hddm_s_merger::get_bcal_adc_max_hits();
+  msg << ",get_bcal_tdc_max_hits=" << hddm_s_merger::get_bcal_tdc_max_hits();
+  msg << ",get_bcal_min_delta_t_ns=" << hddm_s_merger::get_bcal_min_delta_t_ns();
+  msg << ",get_bcal_integration_window_ns=" << hddm_s_merger::get_bcal_integration_window_ns();
+  msg << ",get_bcal_fadc_counts_per_ns=" << hddm_s_merger::get_bcal_fadc_counts_per_ns();
+  msg << ",get_bcal_tdc_counts_per_ns=" << hddm_s_merger::get_bcal_tdc_counts_per_ns();
+  msg << ",get_ftof_merging=" << hddm_s_merger::get_ftof_merging();
+  msg << ",get_ftof_adc_max_hits=" << hddm_s_merger::get_ftof_adc_max_hits();
+  msg << ",get_ftof_tdc_max_hits=" << hddm_s_merger::get_ftof_tdc_max_hits();
+  msg << ",get_ftof_min_delta_t_ns=" << hddm_s_merger::get_ftof_min_delta_t_ns();
+  msg << ",get_ftof_integration_window_ns=" << hddm_s_merger::get_ftof_integration_window_ns();
+  msg << ",get_fcal_merging=" << hddm_s_merger::get_fcal_merging();
+  msg << ",get_fcal_max_hits=" << hddm_s_merger::get_fcal_max_hits();
+  msg << ",get_fcal_min_delta_t_ns=" << hddm_s_merger::get_fcal_min_delta_t_ns();
+  msg << ",get_fcal_integration_window_ns=" << hddm_s_merger::get_fcal_integration_window_ns();
+  msg << ",get_ccal_merging=" << hddm_s_merger::get_ccal_merging();
+  msg << ",get_ccal_max_hits=" << hddm_s_merger::get_ccal_max_hits();
+  msg << ",get_ccal_min_delta_t_ns=" << hddm_s_merger::get_ccal_min_delta_t_ns();
+  msg << ",get_ccal_integration_window_ns=" << hddm_s_merger::get_ccal_integration_window_ns();
+  msg << ",get_ps_merging=" << hddm_s_merger::get_ps_merging();
+  msg << ",get_ps_max_hits=" << hddm_s_merger::get_ps_max_hits();
+  msg << ",get_ps_integration_window_ns=" << hddm_s_merger::get_ps_integration_window_ns();
+  msg << ",get_psc_merging=" << hddm_s_merger::get_psc_merging();
+  msg << ",get_psc_adc_max_hits=" << hddm_s_merger::get_psc_adc_max_hits();
+  msg << ",get_psc_tdc_max_hits=" << hddm_s_merger::get_psc_tdc_max_hits();
+  msg << ",get_psc_min_delta_t_ns=" << hddm_s_merger::get_psc_min_delta_t_ns();
+  msg << ",get_psc_integration_window_ns=" << hddm_s_merger::get_psc_integration_window_ns();
+  msg << ",get_tag_merging=" << hddm_s_merger::get_tag_merging();
+  msg << ",get_tag_adc_max_hits=" << hddm_s_merger::get_tag_adc_max_hits();
+  msg << ",get_tag_tdc_max_hits=" << hddm_s_merger::get_tag_tdc_max_hits();
+  msg << ",get_tag_min_delta_t_ns=" << hddm_s_merger::get_tag_min_delta_t_ns();
+  msg << ",get_tag_integration_window_ns=" << hddm_s_merger::get_tag_integration_window_ns();
+  msg << ",get_tpol_merging=" << hddm_s_merger::get_tpol_merging();
+  msg << ",get_tpol_max_hits=" << hddm_s_merger::get_tpol_max_hits();
+  msg << ",get_tpol_integration_window_ns=" << hddm_s_merger::get_tpol_integration_window_ns();
+  msg << ",get_fmwpc_merging=" << hddm_s_merger::get_fmwpc_merging();
+  msg << ",get_fmwpc_max_hits=" << hddm_s_merger::get_fmwpc_max_hits();
+  msg << ",get_fmwpc_min_delta_t_ns=" << hddm_s_merger::get_fmwpc_min_delta_t_ns();
+  dilog::get(evt.str().c_str()).printf("%s", msg.str().c_str());
+ }
 }
