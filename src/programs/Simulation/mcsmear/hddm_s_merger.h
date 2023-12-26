@@ -10,6 +10,11 @@
 #include <HDDM/hddm_s.hpp>
 
 namespace hddm_s_merger {
+   // run number currently loaded in config
+   int get_config_run_loaded();
+   void set_config_run_loaded(int run);
+
+   // global trigger time shift for event
    double get_t_shift_ns();
    void set_t_shift_ns(double dt_ns);
 
@@ -30,7 +35,7 @@ namespace hddm_s_merger {
    void set_fdc_wires_min_delta_t_ns(double dt_ns);
    int get_fdc_strips_max_hits();
    void set_fdc_strips_max_hits(int maxhits);
-   double get_fdc_strips_integraton_window_ns();
+   double get_fdc_strips_integration_window_ns();
    void set_fdc_strips_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the STC

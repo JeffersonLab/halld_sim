@@ -29,6 +29,8 @@
 const double fadc125_period_ns(8.);
 const double fadc250_period_ns(4.);
 
+static thread_local int    config_run_loaded(0);
+
 static thread_local double t_shift_ns(0);
 
 static thread_local bool   enable_cdc_merging(true);
@@ -104,6 +106,14 @@ namespace hddm_s_merger {
    
    void set_cdc_merging(bool merging_status) {
       enable_cdc_merging = merging_status;
+   }
+
+   int get_config_run_loaded() {
+      return config_run_loaded;
+   }
+
+   void set_config_run_loaded(int run) {
+      config_run_loaded = run;
    }
 
    double get_t_shift_ns() {

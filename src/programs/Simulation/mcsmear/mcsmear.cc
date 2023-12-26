@@ -52,7 +52,7 @@ using namespace jana;
 // TRandom2 constructor) No argument, or an argument 
 // greater than zero will result in the same seeds 
 // being set every time mcsmear is run.
-DRandom2 gDRandom(0); // declared extern in DRandom2.h
+thread_local DRandom2 gDRandom(0); // declared extern in DRandom2.h
 
 const mcsmear_config_t *mcsmear_config;
 
