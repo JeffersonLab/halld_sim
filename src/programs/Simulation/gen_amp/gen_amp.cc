@@ -240,6 +240,15 @@ int main( int argc, char* argv[] ){
 	case Pb208:
 	  recoil = ProductionMechanism::kZ;
 	  break;
+	case Deuteron:
+	  recoil = ProductionMechanism::kZ;
+	  break;
+	case Helium:
+	  recoil = ProductionMechanism::kZ;
+	  break;
+	case C12:
+	  recoil = ProductionMechanism::kZ;
+	  break;
 	case PiPlus:
 	case PiMinus: // works like an OR statement
 	  recoil = ProductionMechanism::kPion;
