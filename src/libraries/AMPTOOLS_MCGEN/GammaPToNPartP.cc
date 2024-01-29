@@ -47,6 +47,13 @@ GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass,
   cobrem_vs_E = (TH1D*)beamProp.GetFlux();
   cobrem_vs_E->GetName();
 
+  if (recoil != ProductionMechanism::kProton) {
+    if (recoil == ProductionMechanism::kNeutron) m_target = TLorentzVector( 0, 0, 0, ParticleMass(Neutron));
+    if (recoil == ProductionMechanism::kDeuteron) m_target = TLorentzVector( 0, 0, 0, ParticleMass(Deuteron));
+    if (recoil == ProductionMechanism::kHelium) m_target = TLorentzVector( 0, 0, 0, ParticleMass(Helium));
+    if (recoil == ProductionMechanism::kC12) m_target = TLorentzVector( 0, 0, 0, ParticleMass(C12));
+  }
+
 }
 
 /**
