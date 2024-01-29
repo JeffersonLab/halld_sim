@@ -52,6 +52,7 @@ GammaPToNPartP::GammaPToNPartP( float lowMass, float highMass,
     if (recoil == ProductionMechanism::kDeuteron) m_target = TLorentzVector( 0, 0, 0, ParticleMass(Deuteron));
     if (recoil == ProductionMechanism::kHelium) m_target = TLorentzVector( 0, 0, 0, ParticleMass(Helium));
     if (recoil == ProductionMechanism::kC12) m_target = TLorentzVector( 0, 0, 0, ParticleMass(C12));
+    if (recoil == ProductionMechanism::kZ) m_target = TLorentzVector( 0, 0, 0, ParticleMass(Pb208));
   }
 
 }
