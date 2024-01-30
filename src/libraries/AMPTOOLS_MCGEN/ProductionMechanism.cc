@@ -26,6 +26,9 @@ m_lastWeight( 1. )
   kMneutron=ParticleMass(Neutron);
   // kMZ = 108.;      //  mass of Sn116 
   kMZ = 208.*0.931494;      //  use mass of Pb as it is in the particle table
+  kMDeuteron = ParticleMass(Deuteron);
+  kMHelium = ParticleMass(Helium);
+  kMC12 = ParticleMass(C12);
   kMPion = ParticleMass(PiPlus);
   kMPi0 = ParticleMass(Pi0);
   kMKaon = ParticleMass(KPlus);
@@ -35,15 +38,48 @@ m_lastWeight( 1. )
   // initialize pseudo-random generator
   gRandom->SetSeed(seed);
 
+  
   switch( recoil ){
     // I'm sure the distinction between these doesn't matter!  
-  case kProton:  m_recMass = kMproton; break; //old value: 0.9382
-  case kNeutron: m_recMass = kMneutron; break; //old value: 0.9395
-  case kZ: m_recMass = kMZ; break; //default to Sn116/Pb
-  case kPion: m_recMass = kMPion; isBaryonResonance = true; break;
-  case kPi0: m_recMass = kMPi0; isBaryonResonance = true; break;
-  case kKaon: m_recMass = kMKaon; isBaryonResonance = true; break;
-  default:       m_recMass = kMproton; break; //old value: 0.9382
+  case kProton:  
+    m_recMass = kMproton; 
+    break; //old value: 0.9382
+  case kNeutron: 
+    m_recMass = kMneutron; 
+    kMTarget = kMneutron;
+    break; //old value: 0.9395
+  case kZ: 
+    m_recMass = kMZ; 
+    kMTarget = kMZ;
+    break; //default to Sn116/Pb
+  case kDeuteron:
+    m_recMass = kMDeuteron;
+    kMTarget = kMDeuteron;
+    break;
+  case kHelium:
+    m_recMass = kMHelium;
+    kMTarget = kMHelium;
+    break;
+  case kC12:
+    m_recMass = kMC12;
+    kMTarget = kMC12;
+    break;
+  case kPion: 
+    m_recMass = kMPion; 
+    isBaryonResonance = true; 
+    break;
+  case kPi0: 
+    m_recMass = kMPi0; 
+    isBaryonResonance = true; 
+    break;
+  case kKaon:
+    m_recMass = kMKaon; 
+    isBaryonResonance = true; 
+    break;
+  default:
+    m_recMass = kMproton; 
+    kMTarget = ParticleMass(Proton);
+    break; //old value: 0.9382
   }
 }
 
@@ -76,7 +112,7 @@ ProductionMechanism::setRecoilMass( double recMass ){
 TLorentzVector
 ProductionMechanism::produceResonance( const TLorentzVector& beam ){
 
-  TLorentzVector target( 0, 0, 0, kMproton );
+  TLorentzVector target( 0, 0, 0, kMTarget );
   
   TLorentzRotation lab2cmBoost( -( target + beam ).BoostVector() );
   TLorentzRotation cm2labBoost( ( target + beam ).BoostVector() );

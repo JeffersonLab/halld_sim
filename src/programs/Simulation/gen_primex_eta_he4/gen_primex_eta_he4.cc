@@ -2,8 +2,8 @@
 * HallD software                                                          * 
 * Copyright(C) 2019       GlueX and PrimEX-D Collaborations               * 
 *                                                                         *                                                                                                                               
-* Author: The GlueX and PrimEX-D Collaborations                           *                                                                                                                                
-* Contributors: Igal Jaegle                                               *                                                                                                                               
+* Author: The GlueX and PrimEX-D Collaborations                           *  
+*
 *                                                                         *                                                                                                                               
 * This software is provided "as is" without any warranty.                 *
 **************************************************************************/
@@ -57,6 +57,8 @@ using namespace std;
 #define Proton_TYPE 14
 #define Neutron_TYPE 13
 
+Double_t* m_flat_coh_angle_min_max_cut;//!
+
 int main( int argc, char* argv[] ){
   
   string  beamconfigfile("");
@@ -74,9 +76,9 @@ int main( int argc, char* argv[] ){
   const double M_Be9 = 8.39479;
   const double M_p = 0.93827208816;
   const double M_n = 0.93956542052;
-  const double M_eta = 0.54730;
-  const double M_etapr = 0.95778;
-  const double M_pi0 = 0.13497685;
+  //const double M_eta = 0.54730;
+  //const double M_etapr = 0.95778;
+  //const double M_pi0 = 0.13497685;
   const double M_gamma = 0.0;
   
   int runNum = 9001;
@@ -175,14 +177,14 @@ int main( int argc, char* argv[] ){
   ofstream *asciiWriter = nullptr;
   if (outname != "")
     asciiWriter = new ofstream(outname.c_str());
-    
+  
   // Get beam properties from configuration file
   TH1D * cobrem_vs_E = 0;
   if (beamconfigfile != "") {
     BeamProperties beamProp( beamconfigfile );
     cobrem_vs_E = (TH1D*)beamProp.GetFlux();
   }
-    
+  
   // Get generator config file
   MyReadConfig * ReadFile = new MyReadConfig();
   ReadFile->ReadConfigFile(genconfigfile);
@@ -193,20 +195,28 @@ int main( int argc, char* argv[] ){
   TString m_Fermi_file = "";
   TString m_Participant = "";
   TString m_Spectator = "";
-  
+  Bool_t do_flat_coh = false;
+  if (ReadFile->GetConfigName("flat_coh") != "") {
+    do_flat_coh = true;
+    m_flat_coh_angle_min_max_cut = ReadFile->GetConfig2Par("flat_coh");
+    cout << "Swith to flat coherent" << endl;
+  } else if (m_target == "") {
+    cout <<"Add something to produce flat coherent" << endl;
+    //exit(1);
+  }
   if (ReadFile->GetConfigName("rfile") != "") {
     m_rfile = ReadFile->GetConfigName("rfile"); 
     cout << "rfile " << m_rfile << endl;
   } else {
     cout <<"Please add full to root file w/ xs"<<endl; 
-    exit(1);
+    if (!do_flat_coh) exit(1);
   }
   if (ReadFile->GetConfigName("histo") != "") {
     m_histo = ReadFile->GetConfigName("histo"); 
     cout << "histo " << m_histo << endl;
   } else if (m_histo == "") {
     cout <<"Please add histo name" << endl;
-    exit(1);
+    if (!do_flat_coh) exit(1);
   }
   if (ReadFile->GetConfigName("meson") != "") {
     m_meson = ReadFile->GetConfigName("meson");
@@ -229,9 +239,14 @@ int main( int argc, char* argv[] ){
     cout <<"Add target" << endl;
     exit(1);
   }
-  
+    
   // Assume a beam energy spectrum of 1/E(gamma)
   TF1 ebeam_spectrum("beam_spectrum","1/x",beamLowE,beamHighE);
+  cout << "rfile " << m_rfile << endl;
+  cout << "histo " << m_histo << endl;
+  cout << "meson " << m_meson << endl;
+  cout << "target " << m_target << endl;
+  cout << "Fermi_file " << m_Fermi_file << endl;
 
   TH1F * m_h_PFermi;
   Particle_t t_target;
@@ -276,33 +291,41 @@ int main( int argc, char* argv[] ){
   double M_target = ParticleMass(t_target);
   
   TLorentzVector Target_4Vec(0, 0, 0, ParticleMass(t_target));
-
+  
   // Load eta-meson differential cross-section based on Ilya Larin's calculation, see the *.F program in this directory 
-  TFile * ifile = new TFile(m_rfile);
-  TH2F * h_dxs = (TH2F *) ifile->Get(m_histo);
-  bin_egam = h_dxs->GetNbinsX();
-  egam_min = h_dxs->GetXaxis()->GetXmin();
-  egam_max = h_dxs->GetXaxis()->GetXmax();                                                                                                                                                   
-  bin_theta = h_dxs->GetNbinsY();                                                                                                                                                                         
-  theta_min = h_dxs->GetYaxis()->GetXmin();
-  theta_max = h_dxs->GetYaxis()->GetXmax();   
+  TFile * ifile;
+  TH2F * h_dxs;
+  if (!do_flat_coh) { 
+    ifile = new TFile(m_rfile);
+    h_dxs = (TH2F *) ifile->Get(m_histo);
+    bin_egam = h_dxs->GetNbinsX();
+    egam_min = h_dxs->GetXaxis()->GetXmin();
+    egam_max = h_dxs->GetXaxis()->GetXmax();                                                                                                                                                   
+    bin_theta = h_dxs->GetNbinsY();                                                                                                                                                                      
+    theta_min = h_dxs->GetYaxis()->GetXmin();
+    theta_max = h_dxs->GetYaxis()->GetXmax();   
+  } else {
+    bin_egam = 700;
+    egam_min = 5.0;
+    egam_max = 12.0;
+    theta_min = m_flat_coh_angle_min_max_cut[0];
+    theta_max = m_flat_coh_angle_min_max_cut[1];
+    double s_t = 0.001;
+    bin_theta = (int) ((theta_max - theta_min) / s_t);
+    cout <<"Flat bin_theta " << bin_theta << " theta_min " << theta_min << " theta_max " << theta_max << endl;
+  }
 
   double M_meson = ParticleMass(t_meson);
-  // Create decayGen
-  TGenPhaseSpace decayGen;
-  TGenPhaseSpace decayGenTMP1;
-  TGenPhaseSpace decayGenTMP2;
-  TGenPhaseSpace decayGenTMP3;
   
   TFile* diagOut = new TFile( "gen_primex_eta_he4_diagnostic.root", "recreate" );
   TH2F* h_Tkin_eta_vs_egam = new TH2F("Tkin_eta_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{#eta} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 12.0);
   TH2F* h_Tkin_photon_vs_egam = new TH2F("Tkin_photon_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{#gamma} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 12.0);
   TH2F* h_Tkin_recoilA_vs_egam = new TH2F("Tkin_recoilA_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{A} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 1.0);
   TH2F* h_theta_eta_vs_egam = new TH2F("theta_eta_vs_egam", ";E_{#gamma} [GeV];#theta_{#eta} [GeV];Count [a.u.]", bin_egam, egam_min, egam_max, bin_theta, theta_min, theta_max);
-  TH2F* h_theta_photon_vs_egam = new TH2F("theta_photon_vs_egam", ";E_{#gamma} [GeV];#theta_{#gamma} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0., 180.);
+  //TH2F* h_theta_photon_vs_egam = new TH2F("theta_photon_vs_egam", ";E_{#gamma} [GeV];#theta_{#gamma} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0., 180.);
   TH2F* h_theta_recoilA_vs_egam = new TH2F("theta_recoilA_vs_egam", ";E_{#gamma} [GeV];#theta_{A} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0., 180.);
   TH1F *thrown_FermiP = new TH1F("thrown_FermiP",";p_{F} [GeV/c];",250,0.,1.);;
-  
+
   for (int i = 0; i < nEvents; ++i) {
     if (i%1000 == 1)
       cout << "event " << i <<endl;
@@ -319,15 +342,27 @@ int main( int argc, char* argv[] ){
     
     // Initial state 4Vec
     TLorentzVector IS_4Vec = InGamma_4Vec + Target_4Vec;
-      
-    // Histo. creation that will store the calculated diff. xs. vs. LAB polar angle
-    int ebeam_bin = h_dxs->GetXaxis()->FindBin(ebeam);
-    TH1F * h_ThetaLAB = (TH1F *) h_dxs->ProjectionY("h_ThetaLAB", ebeam_bin, ebeam_bin);
-    if (h_ThetaLAB->GetEntries() == 0) continue;
     
-    // Generate eta-meson theta in LAB
-    double ThetaLAB = h_ThetaLAB->GetRandom();
-    ThetaLAB *= TMath::DegToRad();
+    // Mass in the centre-of-mass frame
+    // double sqrt_s = IS_4Vec.M();
+    // double s = pow(sqrt_s, 2);
+    
+    double ThetaLAB = 0;
+    if (!do_flat_coh) {
+      // Histo. creation that will store the calculated diff. xs. vs. LAB polar angle
+      int ebeam_bin = h_dxs->GetXaxis()->FindBin(ebeam);
+      TH1F * h_ThetaLAB = (TH1F *) h_dxs->ProjectionY("h_ThetaLAB", ebeam_bin, ebeam_bin);
+      if (h_ThetaLAB->GetEntries() == 0) continue;
+      // Generate eta-meson theta in LAB
+      ThetaLAB = h_ThetaLAB->GetRandom();
+      ThetaLAB *= TMath::DegToRad();
+      // deletion
+      delete h_ThetaLAB;
+    } else {
+      // Generate eta-meson theta in LAB
+      ThetaLAB = gRandom->Uniform(theta_min, theta_max);
+      ThetaLAB *= TMath::DegToRad();
+    }
     
     // Generate eta-meson phi in LAB
     double PhiLAB = gRandom->Uniform(-TMath::Pi(), TMath::Pi());
@@ -357,7 +392,7 @@ int main( int argc, char* argv[] ){
     
     // Calculate eta-meson momentun im LAB
     double P_LAB_eta = sqrt(pow(E_LAB_eta, 2) - pow(M_meson, 2));
-    
+        
     // Calculate the momentum for each direction
     double Px_LAB_eta = P_LAB_eta * sin(ThetaLAB) * cos(PhiLAB);
     double Py_LAB_eta = P_LAB_eta * sin(ThetaLAB) * sin(PhiLAB);
@@ -365,7 +400,9 @@ int main( int argc, char* argv[] ){
     
     // Store the results in TLorentzVector for the eta-meson
     TLorentzVector eta_LAB_4Vec(Px_LAB_eta, Py_LAB_eta, Pz_LAB_eta, E_LAB_eta);
-        
+    //TLorentzVector eta_COM_4Vec = eta_LAB_4Vec;
+    //eta_COM_4Vec.Boost(-IS_4Vec.BoostVector());
+    
     // IA variables
     double p_Fermi = 0, p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
     TLorentzVector SpectatorP4(0, 0, 0, 0);
@@ -384,56 +421,7 @@ int main( int argc, char* argv[] ){
       ParticipantP4 = p_mass / w_mass * ParticipantP4;
     }
         
-    // Make the eta-meson decay into two photons
-    
-    TLorentzVector photon_4Vec[6];
-    TLorentzVector pi0_4Vec[3];
-    for (int i = 0; i < 3; i ++) pi0_4Vec[i] = TLorentzVector(0, 0, 0, 0);
-    for (int i = 0; i < 6; i ++) photon_4Vec[i] = TLorentzVector(0, 0, 0, 0);
     int ng_max = 0;
-    if (m_meson == "pi0->2g") {
-      ng_max = 2;
-      double masses[] = {M_gamma, M_gamma};
-      if (decayGen.SetDecay(eta_LAB_4Vec, 2, masses)) {
-	decayGen.Generate();
-	photon_4Vec[0] = * decayGen.GetDecay(0);
-	photon_4Vec[1] = * decayGen.GetDecay(1);
-      } 
-    } else if (m_meson == "eta->2g") {
-      ng_max = 2;
-      double masses[] = {M_gamma, M_gamma};
-      if (decayGen.SetDecay(eta_LAB_4Vec, 2, masses)) {
-	decayGen.Generate();
-	photon_4Vec[0] = * decayGen.GetDecay(0);
-	photon_4Vec[1] = * decayGen.GetDecay(1);
-      }
-    } else if (m_meson == "eta->6g") {
-      ng_max = 6;
-      double masses[] = {M_pi0, M_pi0, M_pi0};
-      if (decayGen.SetDecay(eta_LAB_4Vec, 3, masses)) {
-	decayGen.Generate();
-	pi0_4Vec[0] = * decayGen.GetDecay(0);
-	pi0_4Vec[1] = * decayGen.GetDecay(1);
-	pi0_4Vec[2] = * decayGen.GetDecay(2);
-	//for (int j = 0; j < 3; j ++) {
-	double mass[] = {M_gamma, M_gamma};
-	if (decayGenTMP1.SetDecay(pi0_4Vec[0], 2, mass)) {
-	  decayGenTMP1.Generate();
-	  photon_4Vec[0] = * decayGenTMP1.GetDecay(0);
-	  photon_4Vec[1] = * decayGenTMP1.GetDecay(1);
-	}
-	if (decayGenTMP2.SetDecay(pi0_4Vec[1], 2, mass)) {
-	  decayGenTMP2.Generate();
-	  photon_4Vec[2] = * decayGenTMP2.GetDecay(0);
-	  photon_4Vec[3] = * decayGenTMP2.GetDecay(1);
-	}
-	if (decayGenTMP3.SetDecay(pi0_4Vec[2], 2, mass)) {
-	  decayGenTMP3.Generate();
-	  photon_4Vec[4] = * decayGenTMP3.GetDecay(0);
-	  photon_4Vec[5] = * decayGenTMP3.GetDecay(1);
-	}
-      }
-    }
         
     // Deduce by energy and mass conservation the recoil nucleus 4Vec
     TLorentzVector He4_LAB_4Vec = IS_4Vec - eta_LAB_4Vec;
@@ -446,48 +434,23 @@ int main( int argc, char* argv[] ){
     h_theta_recoilA_vs_egam->Fill(ebeam, He4_LAB_4Vec.Theta() * TMath::RadToDeg());
     h_Tkin_eta_vs_egam->Fill(ebeam, eta_LAB_4Vec.E() - eta_LAB_4Vec.M());
     h_theta_eta_vs_egam->Fill(ebeam, eta_LAB_4Vec.Theta() * TMath::RadToDeg());
-    for (int j = 0; j < ng_max; j ++) {
-      h_Tkin_photon_vs_egam->Fill(ebeam, photon_4Vec[j].E());
-      h_theta_photon_vs_egam->Fill(ebeam, photon_4Vec[j].Theta() * TMath::RadToDeg());
-    }
-        
+            
     if (hddmWriter) {
       // ======= HDDM output =========
       tmpEvt_t tmpEvt;
       tmpEvt.str_target = m_target;
       tmpEvt.beam = InGamma_4Vec;
       tmpEvt.target = Target_4Vec;
+      tmpEvt.str_meson = m_meson;
       tmpEvt.t_targ = t_target;
       tmpEvt.t_meso = t_meson;
-      if (m_meson == "pi0->2g") {
-	tmpEvt.q1 = photon_4Vec[0];
-	tmpEvt.q2 = photon_4Vec[1];
-	tmpEvt.q3 = He4_LAB_4Vec;
-	tmpEvt.nGen = 3;
-      } else if (m_meson == "eta->2g") {
-	tmpEvt.q1 = photon_4Vec[0];
-	tmpEvt.q2 = photon_4Vec[1];
-	tmpEvt.q3 = He4_LAB_4Vec;
-	tmpEvt.nGen = 3;
-      } else if (m_meson == "eta->6g") {
-	tmpEvt.q1 = photon_4Vec[0];
-	tmpEvt.q2 = photon_4Vec[1];
-	tmpEvt.q3 = photon_4Vec[2];
-	tmpEvt.q4 = photon_4Vec[3];
-	tmpEvt.q5 = photon_4Vec[4];
-	tmpEvt.q6 = photon_4Vec[5];
-	tmpEvt.q7 = He4_LAB_4Vec;
-	tmpEvt.nGen = 7;
-      } else if (ng_max == 0 && m_Fermi_file == "") {
-	tmpEvt.str_meson = m_meson;
-	tmpEvt.q1 = eta_LAB_4Vec;
+      tmpEvt.q1 = eta_LAB_4Vec;
+      if (ng_max == 0 && m_Fermi_file == "") {
 	tmpEvt.q2 = He4_LAB_4Vec;
 	tmpEvt.nGen = 2;
       } else if (ng_max == 0 && m_Fermi_file != "") {
-	tmpEvt.str_meson = m_meson;
 	tmpEvt.str_spectator = m_Spectator;
 	tmpEvt.str_participant = m_Participant;
-	tmpEvt.q1 = eta_LAB_4Vec;
 	tmpEvt.q2 = ParticipantP4;
 	tmpEvt.q3 = SpectatorP4;
 	tmpEvt.t_part = t_participant;
@@ -501,26 +464,24 @@ int main( int argc, char* argv[] ){
       // ======= ASCII output =========
       (*asciiWriter)<<runNum<<" "<<i<<" 3"<<endl;
       // photons from the eta
-      (*asciiWriter)<<"0 "<<gamma_TYPE<<" "<<M_gamma<<endl;
-      (*asciiWriter)<<"   "<<0<<" "<<photon_4Vec[0].Px()<<" "<<photon_4Vec[0].Py()<<" "<<photon_4Vec[0].Pz()<<" "<<photon_4Vec[0].E()<<endl;			
-      (*asciiWriter)<<"1 "<<gamma_TYPE<<" "<<M_gamma<<endl;
-      (*asciiWriter)<<"   "<<0<<" "<<photon_4Vec[1].Px()<<" "<<photon_4Vec[1].Py()<<" "<<photon_4Vec[1].Pz()<<" "<<photon_4Vec[1].E()<<endl;			
+      //(*asciiWriter)<<"0 "<<gamma_TYPE<<" "<<M_gamma<<endl;
+      //(*asciiWriter)<<"   "<<0<<" "<<photon_4Vec[0].Px()<<" "<<photon_4Vec[0].Py()<<" "<<photon_4Vec[0].Pz()<<" "<<photon_4Vec[0].E()<<endl;			
+      //(*asciiWriter)<<"1 "<<gamma_TYPE<<" "<<M_gamma<<endl;
+      //(*asciiWriter)<<"   "<<0<<" "<<photon_4Vec[1].Px()<<" "<<photon_4Vec[1].Py()<<" "<<photon_4Vec[1].Pz()<<" "<<photon_4Vec[1].E()<<endl;			
       // Nucleus recoil
-      if (m_target == "He4") (*asciiWriter)<<"2 "<<Helium_TYPE<<" "<<M_He4<<endl;
-      if (m_target == "Be4") (*asciiWriter)<<"2 "<<Be9_TYPE<<" "<<M_Be9<<endl;
+      if (m_target == "He4" || m_target == "Helium") (*asciiWriter)<<"2 "<<Helium_TYPE<<" "<<M_He4<<endl;
+      if (m_target == "Be9" || m_target == "Beryllium-9") (*asciiWriter)<<"2 "<<Be9_TYPE<<" "<<M_Be9<<endl;
       if (m_target == "Proton") (*asciiWriter)<<"2 "<<Proton_TYPE<<" "<<M_p<<endl;
       if (m_target == "Neutron") (*asciiWriter)<<"2 "<<Neutron_TYPE<<" "<<M_n<<endl;
       (*asciiWriter)<<"   "<<1<<" "<<He4_LAB_4Vec.Px()<<" "<<He4_LAB_4Vec.Py()<<" "<<He4_LAB_4Vec.Pz()<<" "<<He4_LAB_4Vec.E()<<endl;			
     }
     
-    // deletion
-    delete h_ThetaLAB;
   }
   h_Tkin_eta_vs_egam->Write();
   h_Tkin_photon_vs_egam->Write();
   h_Tkin_recoilA_vs_egam->Write();
   h_theta_eta_vs_egam->Write();
-  h_theta_photon_vs_egam->Write();
+  //h_theta_photon_vs_egam->Write();
   h_theta_recoilA_vs_egam->Write();
   thrown_FermiP->Write();
   //h_dxs->Write();
