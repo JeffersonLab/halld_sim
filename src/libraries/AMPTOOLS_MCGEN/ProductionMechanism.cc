@@ -38,11 +38,11 @@ m_lastWeight( 1. )
   // initialize pseudo-random generator
   gRandom->SetSeed(seed);
 
-  
+  kMTarget = kMproton;
   switch( recoil ){
     // I'm sure the distinction between these doesn't matter!  
   case kProton:  
-    m_recMass = kMproton; 
+    m_recMass = kMproton;
     break; //old value: 0.9382
   case kNeutron: 
     m_recMass = kMneutron; 
