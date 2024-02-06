@@ -38,9 +38,7 @@ public:
 private:
   
   static const double kPi;
-  double kMproton,kMneutron,kMZ, kMPion, kMKaon, kMPi0;
-  double kMDeuteron, kMHelium, kMC12;
-  double kMTarget;
+  double kMZ, m_targetMass; 
   double generateMass();
   
 	double cmMomentum( double M, double m1, double m2 ) const;
