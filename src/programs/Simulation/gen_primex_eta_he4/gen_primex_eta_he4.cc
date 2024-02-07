@@ -79,7 +79,7 @@ int main( int argc, char* argv[] ){
   //const double M_eta = 0.54730;
   //const double M_etapr = 0.95778;
   //const double M_pi0 = 0.13497685;
-  const double M_gamma = 0.0;
+  //const double M_gamma = 0.0;
   
   int runNum = 9001;
   int seed = 0;
@@ -248,11 +248,11 @@ int main( int argc, char* argv[] ){
   cout << "target " << m_target << endl;
   cout << "Fermi_file " << m_Fermi_file << endl;
 
-  TH1F * m_h_PFermi;
+  TH1F * m_h_PFermi = new TH1F("PFermi", "", 1000, 0.0, 1.0);
   Particle_t t_target;
   Particle_t t_meson;
-  Particle_t t_spectator; 
-  Particle_t t_participant;
+  Particle_t t_spectator = Unknown;
+  Particle_t t_participant = Unknown;
   if (ReadFile->GetConfigName("fermi_file") != "" && ReadFile->GetConfigName("participant") != "" && ReadFile->GetConfigName("spectator") != "") {
     m_Fermi_file = ReadFile->GetConfigName("fermi_file");
     cout << "Fermi_file " << m_Fermi_file << endl;
@@ -260,7 +260,6 @@ int main( int argc, char* argv[] ){
     m_Spectator = ReadFile->GetConfigName("spectator"); 
     cout <<"Target is made of " << m_target << " with the participant " << m_Participant << " and spectator " << m_Spectator << endl;
     cout <<"Nucleon Fermi motion is located in " << m_Fermi_file << endl;
-    m_h_PFermi = new TH1F("PFermi", "", 1000, 0.0, 1.0);
     ifstream in;
     in.open(m_Fermi_file);
     int i = 0;
@@ -294,7 +293,7 @@ int main( int argc, char* argv[] ){
   
   // Load eta-meson differential cross-section based on Ilya Larin's calculation, see the *.F program in this directory 
   TFile * ifile;
-  TH2F * h_dxs;
+  TH2F * h_dxs = new TH2F();
   if (!do_flat_coh) { 
     ifile = new TFile(m_rfile);
     h_dxs = (TH2F *) ifile->Get(m_histo);
