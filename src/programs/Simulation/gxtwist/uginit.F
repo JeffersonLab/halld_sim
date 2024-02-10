@@ -21,6 +21,7 @@
 #include "geant321/gcphys.inc"
 #include "hdtrackparams.inc"
 #include "halo.inc"
+#include "moller.inc"
 *
       integer iskip
       integer infile(20)
@@ -46,6 +47,12 @@
       data fhalo/0.0/
       data bfield/-999.0/
       data nosecondaries/0/
+
+      data motar_angle_deg/0.0/
+      data motar_thick_cm/0.0/
+      data motar_z_cm/0.0/
+      data motar_zlimit_cm/65.5,290.7/
+      data motar_xydim_cm/1.0,1.0/
 
 C  Use this parameter to set up a minimum photon energy 
 C  for the coherent bremsstrahlung beam generator - see beamgen.F
@@ -98,6 +105,7 @@ C..geant..
       call ffkey('bfield', bfield,1,'REAL')
       call ffkey('nosecondaries', nosecondaries,1,'INTEGER')
       call ffkey('halo',fhalo,1,'REAL')
+      call ffkey('femollertarget',mollerpar,3,'REAL')
       call gtgamaff()
       CALL GFFGO
 *
@@ -171,6 +179,9 @@ C..geant..
 *             Initialize the Hall D geometry
 *
       call HDDSgeant3
+      if (motar_thick_cm .gt. 0) then
+        call Moller_geometry_mods
+      endif
       call Goptimize
 *
 *             Open the HBOOK file for output
