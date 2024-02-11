@@ -42,11 +42,11 @@
       real vertx(3),tofgx,ubuf(99)
       integer ntbeamx,nttargx,nubuf
 
-      integer ptype
+      integer eventno,ptype
       real xin(4),xout(4),pin(5),pout(5),dEsum,x0(4),p0(5),p1(5),ppol
-      common /nt1/ ptype,xin,xout,pin,pout,dEsum,x0,p0,p1,ppol
+      common /nt1/ eventno,ptype,xin,xout,pin,pout,dEsum,x0,p0,p1,ppol
       character*180 ntform
-      parameter (ntform='kind:i,xin(4):r,xout(4):r,'
+      parameter (ntform='eventno:i,kind:i,xin(4):r,xout(4):r,'
      +                //'pin(5):r,pout(5):r,dEsum:r,'
      +                //'x0(4):r,p0(5):r,p1(5):r,ppol:r')
 
@@ -55,17 +55,31 @@
 
       if (.not.hexist(1)) then
           call hbnt(1,'microscope hits',' ')
-          call hbname(1,'hits',ptype,ntform)
+          call hbname(1,'hits',eventno,ntform)
           call hbnt(2,'fixed array hits',' ')
-          call hbname(2,'hits',ptype,ntform)
+          call hbname(2,'hits',eventno,ntform)
           call hbnt(3,'endpoint array hits',' ')
-          call hbname(3,'hits',ptype,ntform)
+          call hbname(3,'hits',eventno,ntform)
           call hbnt(4,'microscope readout hits',' ')
-          call hbname(4,'hits',ptype,ntform)
+          call hbname(4,'hits',eventno,ntform)
           call hbnt(5,'DET7 pseudovolume hits',' ')
-          call hbname(5,'hits',ptype,ntform)
+          call hbname(5,'hits',eventno,ntform)
           call hbnt(6,'DET8 pseudovolume hits',' ')
-          call hbname(6,'hits',ptype,ntform)
+          call hbname(6,'hits',eventno,ntform)
+          call hbnt(7,'DET0 pseudovolume hits',' ')
+          call hbname(7,'hits',eventno,ntform)
+          call hbnt(8,'DET1 pseudovolume hits',' ')
+          call hbname(8,'hits',eventno,ntform)
+          call hbnt(9,'DET2 pseudovolume hits',' ')
+          call hbname(9,'hits',eventno,ntform)
+          call hbnt(10,'DET3 pseudovolume hits',' ')
+          call hbname(10,'hits',eventno,ntform)
+          call hbnt(11,'DET4 pseudovolume hits',' ')
+          call hbname(11,'hits',eventno,ntform)
+          call hbnt(12,'DET5 pseudovolume hits',' ')
+          call hbname(12,'hits',eventno,ntform)
+          call hbnt(13,'DET6 pseudovolume hits',' ')
+          call hbname(13,'hits',eventno,ntform)
       endif
  
       CALL GDEBUG
@@ -138,6 +152,7 @@ c     endif
 
 c     if (NTMULT.eq.1.and.NSTEP.eq.0) then
       if (NSTEP.eq.0) then
+        eventno = idevt
         x0(1) = VECT(1)
         x0(2) = VECT(2)
         x0(3) = VECT(3)
@@ -206,6 +221,20 @@ c     if (NTMULT.eq.1.and.NSTEP.eq.0) then
         call hfnt(5)
       elseif (CNAMES(NLEVEL)(1:4).eq.'DET8') then
         call hfnt(6)
+      elseif (CNAMES(NLEVEL)(1:4).eq.'DET0') then
+        call hfnt(7)
+      elseif (CNAMES(NLEVEL)(1:4).eq.'DET1') then
+        call hfnt(8)
+      elseif (CNAMES(NLEVEL)(1:4).eq.'DET2') then
+        call hfnt(9)
+      elseif (CNAMES(NLEVEL)(1:4).eq.'DET3') then
+        call hfnt(10)
+      elseif (CNAMES(NLEVEL)(1:4).eq.'DET4') then
+        call hfnt(11)
+      elseif (CNAMES(NLEVEL)(1:4).eq.'DET5') then
+        call hfnt(12)
+      elseif (CNAMES(NLEVEL)(1:4).eq.'DET6') then
+        call hfnt(13)
       elseif (CNAMES(NLEVEL).eq.'XTAL') then
         x0(1) = VECT(1)
         x0(2) = VECT(2)
