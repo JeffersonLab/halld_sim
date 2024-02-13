@@ -69,7 +69,9 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    }
 
    TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
-   double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc, dalitzx, dalitzy; //initialize with 0?
+   double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc;
+   double dalitzx = 0;
+   double dalitzy = 0;
 
    if(m_3pi) {
 	  // omega ps proton, omega -> 3pi (6 particles)
@@ -106,6 +108,8 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
           vec_daught2 = kin->particle( 4 );
           vec = vec_daught1 + vec_daught2;
 	  min_recoil = 5;
+	  dalitzx = 0.;
+	  dalitzy = 0.;
    }
 
    // final meson system P4

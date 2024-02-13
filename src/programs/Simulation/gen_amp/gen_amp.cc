@@ -240,6 +240,15 @@ int main( int argc, char* argv[] ){
 	case Pb208:
 	  recoil = ProductionMechanism::kZ;
 	  break;
+	case Deuteron:
+	  recoil = ProductionMechanism::kDeuteron;
+	  break;
+	case Helium:
+	  recoil = ProductionMechanism::kHelium;
+	  break;
+	case C12:
+	  recoil = ProductionMechanism::kC12;
+	  break;
 	case PiPlus:
 	case PiMinus: // works like an OR statement
 	  recoil = ProductionMechanism::kPion;
@@ -348,8 +357,12 @@ int main( int argc, char* argv[] ){
 	}
 
 	double targetMass = ParticleMass(ParticleEnum("Proton"));
-	if(recoil == ProductionMechanism::kZ)
-		targetMass = ParticleMass(Particles[1]);
+	if (recoil == ProductionMechanism::kZ || 
+	    recoil == ProductionMechanism::kDeuteron ||
+	    recoil == ProductionMechanism::kHelium || 
+	    recoil == ProductionMechanism::kC12 || 
+	    recoil == ProductionMechanism::kNeutron)
+	  targetMass = ParticleMass(Particles[1]);
 	double recMass = ParticleMass(Particles[1]);
 	double cmEnergy = sqrt(targetMass*(targetMass + 2*beamLowE));
 	if ( cmEnergy < minMass + recMass ){
@@ -376,7 +389,7 @@ int main( int argc, char* argv[] ){
 	for (unsigned int i=0; i<Particles.size(); i++)
 	  pTypes.push_back( Particles[i] );
 	for (unsigned int i=0; i<ParticlesLowerVertex.size(); i++) {
-	  if(ParticlesLowerVertex[i] == Proton || ParticlesLowerVertex[i] == Neutron) continue;
+	  if(ParticlesLowerVertex[i] == Proton || ParticlesLowerVertex[i] == Neutron) continue;//FOR WHAT THIS FOR?
           pTypes.push_back( ParticlesLowerVertex[i] );
 	}
 
@@ -412,7 +425,7 @@ int main( int argc, char* argv[] ){
 	TH2F* EvsM = new TH2F( "EvsM", "Beam Energy vs Mass", 120, 0, 12, 180, lowMass, highMass );
 
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
-	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 200, 0, 2 );
+	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 3000, 0, 300 );
 
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);

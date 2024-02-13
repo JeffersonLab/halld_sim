@@ -87,9 +87,9 @@ int main( int argc, char* argv[] ){
 
     string arg(argv[i]);
 
-    if (arg == "-g"){
-      showGui = true;
-    }
+    // if (arg == "-g"){
+    //   showGui = true;
+    // }
     if (arg == "-o"){
       outName = argv[++i];
     }
@@ -99,7 +99,7 @@ int main( int argc, char* argv[] ){
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
       cout << "\t -o <file>\t output file path" << endl;
-      cout << "\t -g \t show GUI" << endl;
+      // cout << "\t -g \t show GUI" << endl;
       cout << "\t -n \t don't make plots "<< endl;
       exit(1);
     }

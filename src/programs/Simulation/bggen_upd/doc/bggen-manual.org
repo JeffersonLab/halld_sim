@@ -513,9 +513,9 @@ C ZCOLLIM     7600.       # distance to the collimator in cm
 C DCOLLIM        0.005    # collimator diameter in m
 C RADTHICK      20.E-6    # thickness of the radiator in m
 C
-C          bins flg   Emin  Emax         flg=0 - bins of same width
+C          bins flg   Pmin  Pmax         flg=0 - bins of same width
 NBEAMEXT    107  1    0.   0.   #  User's beam spectrum setting
-C  --- spectrum dN/dE
+C  --- spectrum dN/dp
 RBEAMEXT  3.9669  3.7209  3.5036  3.3103  3.1373  2.9814  2.8402  2.7119  2.5946  2.4870
           2.3881  2.2967  2.2120  2.1333  2.0601  1.9917  1.9277  1.8677  1.8113  1.7582
           1.7082  1.6609  1.6162  1.5947  1.5842  1.5738  1.5635  1.5534  1.5434  1.5335
@@ -528,7 +528,7 @@ RBEAMEXT  3.9669  3.7209  3.5036  3.3103  3.1373  2.9814  2.8402  2.7119  2.5946
           1.1034  1.0984  1.0934  1.0884  1.0835  1.0787  1.0738  1.0690  1.0643  1.0596
           1.0549  1.0503  1.0458  1.0412  1.0367  1.0323  1.0278
 C  ---  energy values
-EBEAMEXT  3.0250  3.2250  3.4250  3.6250  3.8250  4.0250  4.2250  4.4250  4.6250  4.8250
+PBEAMEXT  3.0250  3.2250  3.4250  3.6250  3.8250  4.0250  4.2250  4.4250  4.6250  4.8250
           5.0250  5.2250  5.4250  5.6250  5.8250  6.0250  6.2250  6.4250  6.6250  6.8250
           7.0250  7.2250  7.4250  7.5250  7.5750  7.6250  7.6750  7.7250  7.7750  7.8250
           7.8750  7.9250  7.9750  8.0250  8.0750  8.1250  8.1750  8.2250  8.2750  8.3250
@@ -541,6 +541,35 @@ EBEAMEXT  3.0250  3.2250  3.4250  3.6250  3.8250  4.0250  4.2250  4.4250  4.6250
          11.3750 11.4250 11.4750 11.5250 11.5750 11.6250 11.6750 
 #+end_example
 
+The target particle fined in two ways:
+1. A free perticle (a nucleon for typical processes)
+2. A qausi-free nucleon in a nucleus 
+
+The proper spectral functions are defined for A=4 
+    (helium), 12 (carbon), 56 (iron) and 197 (gold). The data for these spectral functions are located in the direcory
+#+begin_example
+gen@genl2 run]$ ll spec_fun/
+total 684
+-rw-r--r-- 1 gen halld-3 195296 Nov 17 11:36 sf_Benhar_12.dat
+-rw-r--r-- 1 gen halld-3 195298 Nov 17 11:36 sf_Benhar_197.dat
+-rw-r--r-- 1 gen halld-3 106844 Nov 21 13:57 sf_Benhar_4.dat
+-rw-r--r-- 1 gen halld-3 195296 Nov 17 11:36 sf_Benhar_56.dat
+#+end_example
+    This is an example of commands used for scattering on protons in Carbon nucleus: 
+#+begin_example
+PARTINIT  1  14         # GEANT types of the interacting particles: gamma proton
+TNUCLEUS     12         # Carbon target for quasielastic reactions
+TNUSCALE      1.        # scale [down] the "Fermi" motion by this factor for testing purposes
+#+end_example
+The momentum and energy of the struck quasi-free nucleon are simulated using the spectral functions. 
+This nucleon can be strongly virtual (off-shell). Since PYTHIA only allows on-shell particles
+in the initial state, for PYTHIA and low-energy simulation /SIMUL 0/ the struck nucleon is
+artificially put on the mass shell. For /SIMUL 1/ simulation
+off-shell nucleons are used. It is assumed that the cross section of the simulated process
+depends on the W (the CM energy) of the initial state. The reactions are simulated
+in the frame where the struck nucleon is at rest, and the momenta of
+the secondary particles are translated into the Lab frame.
+
 On the technical side, the beam spectrum is simulated using the /HRNDM1/ function
 of /HBOOK/, which provides a smooth continuous distribution within the histogram limits.
 The appropriate histogram is filled in the following way:
@@ -549,9 +578,13 @@ The appropriate histogram is filled in the following way:
 2. User-defined, /ifl=0/: the limits and number of bins are defined by the key /NBEAMEXT/. Only the values within /EPHLIM/ limits are accepted (up to 1000 tries).
 3. User-defined, /ifl=1/. The histogram is booked as in the item 1 and filled using the 3-rd degree polynomial interpolation.
 
-A note: for the beam energy simulation the beam energy spectrum is multiplied by the cross section
-of the process at the given energy. For /SIMUL 0/ it is the full photoproduction cross section,
-for exclusive reactions /SIMUL 1/ the user-defined cross section table is used. 
+All the simulated events have the same weight.
+The reaction cross section is taken into account in two ways:
+ 1. For free target nucleons the beam energy spectrum is multiplied by the cross section
+   of the process at the given beam energy. For /SIMUL 0/ it is the full photoproduction cross section,
+  for exclusive reactions /SIMUL 1/ the user-defined cross section table is used.
+ 2. For quasi-free target nucleons the beam and the target particles are simulated and the combinations
+    are randomly selected with a probability calculated using the cross section value at the given W. 
   
 *** Setting for the minimum bias events simulation: PYTHIA+low energy
 #+begin_example 
@@ -685,7 +718,6 @@ Simulation is done in the proper interval for the given beam energy in the event
 | Key       | Variable to fill | # of words | Type    |          Default | Function                                                     |
 |-----------+------------------+------------+---------+------------------+--------------------------------------------------------------|
 | DCOLLIM   | DCOLL            |          1 | REAL    |           0.0050 | Diameter of the collimator, m                                |
-| EBEAMEXT  | ENBMEXT          |       1000 | REAL    |                0 | User-defined beam spectrum: array of values of dN/dE         |
 | EELEC     | EELEC            |          1 | REAL    |              12. | Electron beam energy, GeV                                    |
 | EEMIT     | EEMIT            |          1 | REAL    |            1.E-8 | Beam emittance r * m                                         |
 | ELOWMIN   | ELOWMIN          |          1 | REAL    |             0.15 | Minimal beam energy for low energy background generator, GeV |
@@ -694,14 +726,17 @@ Simulation is done in the proper interval for the given beam energy in the event
 | EPYTHMIN  | EPYMIN           |          1 | REAL    |               3. | Minimal beam energy for PYTHIA                               |
 | LISTPYTH  | LISTPYTH         |          1 | INTEGER |                0 | =1 print PYTHIA particle list, =2 + decay channels           |
 | LISTMLIM  | AMLIST           |          1 | REAL    |               6. | Print particles info if mass<AMLIST                          |
-| NBEAMEXT  | NBMEXT           |          4 | MIXED   |                0 | User-defined beam spectrum: number of bins                   |
+| NBEAMEXT  | NBMEXT           |          4 | MIXED   |                0 | User-defined beam spectrum: number of bins or points         |
+|           | IBMEXT           |          1 |         |                0 | =0 - equidistant points (bins), =1 not-equid. points         |
+|           | EXT_LIM(1)       |          2 |         |             2*0. | E limits for IBMEXT=0                                        |
 | NPRIEV    | NPRIEV           |          1 | INTEGER |                0 | Number of events to print                                    |
 | *PARTICLE | K_PTMP(1)        |         16 | MIXED   |             16*0 | Particles parameters, used as *PARTICLE                      |
 | PARTINIT  | IPINIT(1)        |          2 | INTEGER |            1  14 | Geant particle IDs for the beam and target                   |
 | *PYTMOD   | KPYMOD(1)        |          8 | MIXED   |            8*' ' | Commands to PYTHIA, as *PYTMOD 'PARP(2)=3.'                  |
+| PBEAMEXT  | PBEAEXT          |       1000 | REAL    |                0 | User-defined beam spectrum: array of values of dN/dE         |
 | RADCORR   | IRADCORR(1)      |         10 | INTEGER |                0 | Do rad corrections for decays of particles with KF listed    |
 | RADTHICK  | RADT             |          1 | REAL    |           50.E-6 | Radiator thickness in m                                      |
-| RBEAMEXT  | RABMEXT          |       1000 | REAL    |                0 | User-defined beam spectrum: array of values of the energy    |
+| RBEAMEXT  | RBEAEXT          |       1000 | REAL    |                0 | User-defined beam spectrum: array of values of the energy    |
 | REACENER  | ELREAC(1)        |       3003 | MIXED   | -1. -1. 0 3000*0 | Binary reaction energy dependence: range, N points, xsection |
 | REACPART  | IPREAC(1)        |          2 | INTEGER |           -1  -1 | Geant particle IDs for the exclusive binary reaction         |
 | REACTDIS1 | TPAREAC(1,1)     |         11 | REAL    |            11*0. | /t/ distr: E_{max}, parameters of the function               |
@@ -712,7 +747,10 @@ Simulation is done in the proper interval for the given beam energy in the event
 | REACTLIM  | TLREAC(1)        |          2 | REAL    |           0.  0. | /t/ range                                                    |
 | RNDMSEQ   | IRND_SEQ         |          1 | INTEGER |                0 | Random number seed (RLUX generator), any integer number      |
 | RUNNO     | RUNNO            |          1 | INTEGER |                2 | Run number - arbitrary                                       |
-| SELECTEV  | KFEVSEL(1)       |          5 | INTEGER |              5*0 | Select events with all non zero KF1 .. KF5 particles         |
+|           |                  |            |         |                  | 3 commands for PYTHIA:                                       |
+| SELECTEV  | KFEVSEL(1)       |          5 | INTEGER |              5*0 | Select events with all non zero KF1 .. KF5 particles (AND)   |
+| SELECTEVN | NFEVSEL(1)       |          5 | INTEGER |              5*0 | (i)>0 - the exact number of particles of type SELECTEV (i)   |
+| NPARFINAL | NFEFINAL         |          1 | INTEGER |                0 | >0 - the number of KS=1 particles in the final state         |
 | SIMUL     | ISIMUL           |          1 | INTEGER |                0 | \=0 - /PYTHIA/ + low energy; =1 - binary reaction            |
 | TRIG      | NEVENT           |          1 | INTEGER |                0 | Number of events to simulate                                 |
 | VERTEX    | VERTEX(1)        |          3 | REAL    |             3*0. | Vertex position (not used)                                   |

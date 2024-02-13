@@ -819,6 +819,7 @@ def AddXERCES(env):
 def AddCERNLIB(env):
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore'])
 	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic'])
+	env.PrependUnique(FORTRANFLAGS = ['-std=legacy'])
 	gccver = gcc_major_version()
 	if gccver >= 10:
 		env.PrependUnique(FORTRANFLAGS = ['-fallow-argument-mismatch'])
@@ -826,12 +827,14 @@ def AddCERNLIB(env):
 	cern = os.getenv('CERN', '/usr/local/cern/PRO')
 	cern_level = os.getenv('CERN_LEVEL', '2006')
 	cern_root = '%s/%s' % (cern, cern_level)
-	CERN_FORTRANPATH = "%s/include" % cern_root
+	CERN_FORTRANPATH = ["%s/include" % cern_root]
+	CERN_FORTRANPATH += ["%s/src/pawlib/paw/ntuple" % cern_root]
 	CERN_LIBPATH = "%s/lib" % cern_root
-	env.AppendUnique(FORTRANPATH   = [CERN_FORTRANPATH])
+	env.AppendUnique(FORTRANPATH   = CERN_FORTRANPATH)
 	env.AppendUnique(CPPPATH   = CERN_FORTRANPATH)
 	env.AppendUnique(LIBPATH   = CERN_LIBPATH)
-	env.AppendUnique(LINKFLAGS = ['-rdynamic', '-Wl,--no-as-needed'])
+	env.AppendUnique(CFLAGS    = ["-DgFortran"])
+	env.AppendUnique(LINKFLAGS = ['-rdynamic', '-Wl,--no-as-needed', '-Wl,--allow-multiple-definition'])
 	env.AppendUnique(LIBS      = ['geant321', 'pawlib', 'lapack3', 'blas', 'graflib', 'grafX11', 'packlib', 'mathlib', 'kernlib', 'phtools', 'gfortran', 'X11', 'nsl', 'crypt', 'dl'])
 	env.SetOption('warn', 'no-fortran-cxx-mix')  # supress warnings about linking fortran with c++
 

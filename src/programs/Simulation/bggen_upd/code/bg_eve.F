@@ -13,16 +13,45 @@ C
       INCLUDE 'bg_reac.inc'
       INCLUDE 'bg_statc.inc'
 C
-      REAL HRNDM1,HXI
+      REAL HRNDM1,HX,RNDM
       LOGICAL HEXIST
-      EXTERNAL HRNDM1,HXI,HEXIST
+      EXTERNAL HRNDM1,HX,HEXIST,RNDM
 C
-      INTEGER i,j,ip,ier,lout,idnt,lenc(2),nkfsel,ntry
-      REAL ebeam,de,ecent,thdg,ptot,pt2
+      INTEGER i,j,ip,lout,idnt,lenc(2),nkfsel,ntry0,ntry,npfinal
+     +       ,itransl   ! >0 - for "Fermi motion" the frame changed
+      REAL pbeam,thdg,ptot,pt2
       CHARACTER cent(2)*6,centt(2)*12
+C
+      REAL pilab(4,2)   ! beam and target in Lab (for Fermi motion)
+     +    ,bettar(4)    ! beta of the target rest frame
+     +    ,pitar(4,2)   ! beam and target in the target rest frame
+     +    ,pitarr(4,2)  ! beam and target in the target rest frame beam along Z
+     +    ,rotz(3,3)    ! rotation matrix tar -> tar, beam along Z
+     +    ,psf,esf      ! generated (spectral func): nucleon momentum and the removal energy
+     +    ,eneff,ameff  ! energy and effective mass of the struck nucleon
+     +    ,ct,st,phi,twopi       ! angles
+     +    ,xsec         ! cross section
+     +    ,ww           ! CM energy
+     +    ,xsrnd        ! random value
+     +    ,potarr(4)    ! auxil 
+     +    ,potar(4)     ! auxil 
+     +    ,polab(4)     ! auxil 
+     +    ,amtarini     ! the mass of the target nucleon on-shell 
 C
       REAL ptmp1(4,2),ptmp2(4,MXTRA)   ! auxill. arrays to simplify the HDDM mapping
       INTEGER ifl1(6,2),ifl2(6,MXTRA)
+C
+      CHARACTER tit*80
+      REAL p1,p2,e1,e2          ! Parameters of the IDNUCLT fine histogram
+      SAVE p1,p2,e1,e2
+      INTEGER np,ne,nwt,lloc
+C
+      REAL gmetr(4)
+      SAVE gmetr
+      INTEGER ifirst
+      SAVE    ifirst
+      DATA gmetr/-1.,-1.,-1.,1./
+      DATA    ifirst/0/
 C
 C     ------------------------------------------------------------------
 C
@@ -34,26 +63,10 @@ C
       cent(1)='beam  '
       cent(2)='target'
       CPROCNAM='?'
+      twopi=ACOS(0.)*4.
+      itransl=0
 C
       NEVSTAT(1)=NEVSTAT(1)+1
-C
-C---    Beam energy
-C
-      IF(IDBEAM.EQ.0.OR..NOT.HEXIST(IDBEAM+1)) GO TO 999
-C
-      IF(IBEATYP.EQ.0) THEN
-         ebeam=EPH_LIM(1)             !   fixed energy
-      ELSE
-         ntry=0
- 100     ntry=ntry+1
-         ebeam=HRNDM1(IDBEAM+1)
-         IF(ebeam.LT.EPH_LIM(1).OR.ebeam.GT.EPH_LIM(2)) THEN  ! check the boundaries
-            IF(ntry.LT.1000) GO TO 100
-            WRITE(lout,1000) ebeam,EPH_LIM
- 1000       FORMAT(' *** ERROR: Beam energy out of range ',3F9.3)
-            GO TO 999
-         ENDIF
-      ENDIF
 C
 C---   Beam/target definitions
 C
@@ -69,7 +82,148 @@ C
          PIN(i,1)=0.
          PIN(i,2)=0.
       ENDDO
-      PIN(3,1)=ebeam
+      amtarini=AMIN(2)
+C
+C---    The beam energy and the target 4-momenta
+C
+C---        No Fermi motion
+C
+      IF(NUCLTARG.EQ.0) THEN
+         IF(IDBEAM.EQ.0.OR..NOT.HEXIST(IDBEAM+1)) GO TO 999
+C
+         IF(IBEATYP.EQ.0) THEN
+            pbeam=EPH_LIM(1)    !   fixed energy
+         ELSE
+            ntry=0
+ 100        ntry=ntry+1
+            pbeam=HRNDM1(IDBEAM+1)   ! beam spectrum * cross section
+            IF(pbeam.LT.EPH_LIM(1).OR.pbeam.GT.EPH_LIM(2)) THEN ! check the boundaries
+               IF(ntry.LT.1000) GO TO 100
+               WRITE(lout,1000) pbeam,EPH_LIM
+ 1000          FORMAT(' *** ERROR: Beam energy out of range ',3F9.3)
+               GO TO 999
+            ENDIF
+         ENDIF
+         PIN(3,1)=pbeam
+         NEVSTAT(6)=NEVSTAT(6)+1
+      ELSE     !           Fermi motion (spectral functions)
+         IF(IDBEAM.EQ.0.OR..NOT.HEXIST(IDBEAM+12)) GO TO 999
+         IF(IDNUCLT.EQ.0.OR..NOT.HEXIST(IDNUCLT+11)
+     +                  .OR..NOT.HEXIST(IDNUCLT+12)) GO TO 999
+         IF(ifirst.EQ.0) THEN
+            CALL HGIVE(IDNUCLT+12,tit,np,p1,p2,ne,e1,e2,nwt,lloc)
+            ifirst=1
+         ENDIF
+C---       Simulate the momenta of the beam the target nucleon and randomly select the 
+C---             combination duing the cross section energy dependence
+         ntry0=0
+ 200     ntry0=ntry0+1
+         DO i=1,2
+            DO j=1,4
+               pilab(j,i)=0.
+            ENDDO
+         ENDDO
+         IF(IBEATYP.EQ.0) THEN
+            pbeam=EPH_LIM(1)    !  beam  fixed energy
+         ELSE
+            pbeam=HRNDM1(IDBEAM+12)  ! beam random energy
+         ENDIF
+         pilab(3,1)=pbeam
+         pilab(4,1)=SQRT(pbeam**2+AMIN(1)**2)
+ 210     CALL HRNDM2(IDNUCLT+11,psf,esf) ! coarse grid
+         IF(psf.LT.p2.AND.esf.LT.e2) CALL HRNDM2(IDNUCLT+12,psf,esf) ! fine grid
+         NEVSTAT(6)=NEVSTAT(6)+1
+         psf=psf*0.001*SFSCALE   ! Mev --> GeV and scaling for tests
+         esf=esf*0.001*SFSCALE   ! Mev --> GeV and scaling for tests
+         eneff=AMNUCLS-SQRT((AMNUCLS-amtarini+esf)**2+psf**2)   ! energy of the struck nucleon
+         ameff=eneff**2-psf**2
+         if(ameff.LE.0.01) THEN    ! target mass >100 MeV - an arbitrary cut to avoid too large boosts to the target rest frame
+            IF(ntry0.LT.2000) GO TO 210
+            WRITE(lout,*) ' *** ERROR bg_eve low xsec, tries= ',ntry0
+            GO TO 999
+         ENDIF
+         ameff=SQRT(ameff)
+C
+C---      PYTHIA only uses on-shell initial particles. We have to assume the struck proton is on shell
+C
+         IF(ISIMUL.EQ.0) THEN 
+            ameff=AMIN(2)
+            eneff=SQRT(ameff**2+psf**2)
+         ENDIF
+C
+         pilab(4,2)=eneff
+         ct=-1.+2.*RNDM(ct)
+         st=SQRT(1.-ct**2)
+         phi=twopi*RNDM(st)
+         pilab(1,2)=psf*st*COS(phi)
+         pilab(2,2)=psf*st*SIN(phi)
+         pilab(3,2)=psf*ct
+         ww=0.
+         DO i=1,4
+            ww=ww+gmetr(i)*(pilab(i,1)+pilab(i,2))**2
+         ENDDO
+         IF(ww.GT.0.) ww=SQRT(ww)
+         xsec=HX(IDBEAM+13,ww)  ! cross section for this W (max element=1)
+         xsrnd=RNDM(ww)
+C         write(6,*) ' ===== ',pbeam,psf,esf
+C         write(6,FMT='(4F12.4)') pilab
+C         write(6,*) ww,xsec,ntry0
+         IF(xsrnd.GT.xsec) THEN 
+            IF(ntry0.LT.2000) GO TO 200
+            WRITE(lout,*) ' *** ERROR bg_eve low xsec, tries= ',ntry0
+            GO TO 999
+         ENDIF
+         AMIN(2)=ameff
+C
+C---       Go to the frame with the struck nucleon at rest 
+C
+         DO i=1,3
+            bettar(i)=pilab(i,2)/pilab(4,2)
+         ENDDO
+         bettar(4)=pilab(4,2)/ameff
+         CALL GLOREN(bettar,pilab(1,1),pitar(1,1))
+C         CALL GLOREN(bettar,pilab(1,2),pitar(1,2))
+         DO i=1,3
+            pitar(i,2)=0.
+            ptmp1(i,1)=pitar(i,1)   ! auxil - direction of beam in XY plane
+         ENDDO
+         pitar(4,2)=ameff
+         ptmp1(3,1)=0.  ! auxil - direction of beam in XY plane
+         
+         CALL OMROTS1(pitar(1,1),ptmp1(1,1),rotz)  ! calculate rotation matrix, to beam alongz
+         CALL OMROTV1(1,pitar(1,1),rotz,pitarr(1,1))
+         pitarr(4,1)=pitar(4,1)
+         DO i=1,4
+            pitarr(i,2)=pitar(i,2)
+         ENDDO
+         itransl=1
+C
+C         write(6,FMT='('' pilab  '',4F12.4)') pilab
+C         write(6,FMT='('' bettar '',4F12.4)') bettar
+C         write(6,FMT='('' pitar  '',4F12.4)') pitar
+C         write(6,FMT='('' pitarr '',4F12.4)') pitarr
+C
+C         DO i=1,3
+C            bettar(i)=-bettar(i)
+C         ENDDO
+C         CALL OMROTV1(0,pitarr(1,1),rotz,pitar(1,1))
+C         pitar(4,1)=pitarr(4,1)
+C         DO i=1,4
+C            pitar(i,2)=pitarr(i,2)
+C         ENDDO
+C         DO i=1,2
+C            CALL GLOREN(bettar,pitar(1,i),pilab(1,i))
+C         ENDDO
+C         write(6,FMT='('' pitarr '',4F12.4)') pitarr
+C         write(6,FMT='('' pitar  '',4F12.4)') pitar
+C         write(6,FMT='('' pilab  '',4F12.4)') pilab
+C
+         DO i=1,2
+            DO j=1,3
+               PIN(j,i)=pitarr(j,i)
+            ENDDO
+         ENDDO
+      ENDIF
 C
       NTRA=0
 C
@@ -77,7 +231,7 @@ C---   Choose the package
 C
       ierr=0
       IF(ISIMUL.EQ.0) THEN
-         IF(ebeam.LT.EPYMIN) THEN
+         IF(pbeam.LT.EPYMIN) THEN
 C
             CALL LOWEN_EVE(ierr)
             IF(IEVPROC.GT.0) CPROCNAM=CNPROC(IEVPROC)
@@ -100,11 +254,49 @@ C
       ENDIF
       IF(ierr.NE.0) GO TO 999
 C
+C---     Rotate and boost into the Lab frame for the "Fermi" case
+C
+      IF(itransl.NE.0) THEN
+         DO i=1,3
+            bettar(i)=-bettar(i)
+         ENDDO
+         DO i=1,2
+            DO j=1,3
+               PIN(j,i)=pilab(j,i)
+            ENDDO
+         ENDDO
+         DO ip=1,NTRA
+            ww=AMTRA(ip)**2
+            DO i=1,3
+               potarr(i)=PTRA(i,ip)
+               ww=ww+potarr(i)**2
+            ENDDO
+            potarr(4)=SQRT(ww)
+            CALL OMROTV1(0,potarr(1),rotz,potar(1))
+            potar(4)=potarr(4)
+            CALL GLOREN(bettar,potar(1),polab(1))
+            DO i=1,3
+               PTRA(i,ip)=polab(i)
+            ENDDO
+         ENDDO
+      ENDIF
+C
       NEVSTAT(2)=NEVSTAT(2)+1
 C
 C---    Event selection (if needed)
 C
       ierr=0
+      IF(NFEFINAL.GT.0) THEN
+         npfinal=0
+         DO ip=1,NTRA
+            IF(ITPTRA(2,ip).EQ.1) npfinal=npfinal+1 ! number of undecayed (final) particles
+         ENDDO
+         IF(npfinal.NE.NFEFINAL) THEN
+            ierr=1
+            GO TO 999
+         ENDIF
+      ENDIF
+C
       DO i=1,MXEVSEL
          nkfsel=0
          IF(KFEVSEL(i).NE.0) THEN
@@ -121,7 +313,8 @@ C
                 ENDIF
               ENDIF 
             ENDDO
-            IF(nkfsel.EQ.0) THEN
+            IF(nkfsel.EQ.0.OR.
+     +        (NFEVSEL(i).GT.0.AND.nkfsel.NE.NFEVSEL(i))) THEN
                ierr=1           ! required particle not found in the record
                GO TO 999
             ENDIF
@@ -199,7 +392,7 @@ C
 C
       IERR=0
  999  CONTINUE
-C      write(6,*) ebeam,IEVPROC,ibin,xstot,xssum,NTRA
+C      write(6,*) pbeam,IEVPROC,ibin,xstot,xssum,NTRA
 C
       END
 C

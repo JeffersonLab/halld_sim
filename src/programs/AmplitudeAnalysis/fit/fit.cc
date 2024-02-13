@@ -6,6 +6,7 @@
 #include <vector>
 #include <utility>
 #include <map>
+#include <limits>
 
 #include "TSystem.h"
 
@@ -59,14 +60,6 @@
 using std::complex;
 using namespace std;
 
-double getLikelihood( ConfigurationInfo* cfgInfo ){
-    AmpToolsInterface ati( cfgInfo );
-    double likelihood = ati.likelihood();
-
-    cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << likelihood << endl;
-    return likelihood;
-}
-
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
   AmpToolsInterface ati( cfgInfo );
 
@@ -118,7 +111,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
   // keep track of best fit (minimum log-likelihood)
-  double minLL = 1000000;
+  double minLL = numeric_limits<double>::max();
   int minFitTag = -1;
 
   for(int i=0; i<numRnd; i++) {
@@ -257,6 +250,12 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   }
 }
 
+void getLikelihood( ConfigurationInfo* cfgInfo ){
+    AmpToolsInterface ati( cfgInfo );
+    cout << "LIKELIHOOD WITHOUT MINIMIZATION:  " << ati.likelihood() << endl;
+    return;
+}
+
 int main( int argc, char* argv[] ){
 
    // set default parameters
@@ -295,6 +294,7 @@ int main( int argc, char* argv[] ){
          else  maxIter = atoi(argv[++i]); }
       if (arg == "-n") useMinos = true;
       if (arg == "-H") hesse = true;
+      if (arg == "-l") noFit = true;
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
@@ -309,7 +309,7 @@ int main( int argc, char* argv[] ){
          cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
          cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
-         cout << "   -l \t\t\t\t Calculate likelihood and exit without running fit" << endl; 
+         cout << "   -l \t\t\t\t Calculate likelihood and exit without running a fit" << endl; 
          exit(1);}
    }
 
@@ -363,22 +363,20 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( FSRootDataReaderTEM() );
 
 
+   if(noFit)
+      getLikelihood(cfgInfo);
+   else if(numRnd==0){
+      if(scanPar=="")
+         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
+      else
+         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
+   } else {
+      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+      AmpToolsInterface::setRandomSeed(randomSeed);
+      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
+   }
 
-    if( noFit )
-        getLikelihood( cfgInfo );
-    else if(numRnd==0){
-        if(scanPar=="")
-            runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
-        else
-            runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
-    } 
-    else {
-        cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
-        AmpToolsInterface::setRandomSeed(randomSeed);
-        runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
-    }
-
-    return 0;
+  return 0;
 }
 
 

@@ -65,13 +65,14 @@ C
 C
       WRITE(6,1980) 
  1980 FORMAT(///1X,100('='))
-      WRITE(6,1990) (NEVSTAT(i),i=1,5),RATESEC/1000.
+      WRITE(6,1990) (NEVSTAT(i),i=1,6),RATESEC/1000.
  1990 FORMAT(
      +     3X,I12,' events initialy simulated in the full energy range'
      +  ,/,3X,I12,' events successfully simulated'
      +  ,/,3X,I12,' events selected'
      +  ,/,3X,I12,' events written out to HDDM'
      +  ,/,3X,I12,' events written out to HBOOK NTuple'
+     +  ,/,3X,I12,' number of beam particles simulated'
      +  ,/,3X,F12.2,' reference interaction rate, kHz')
       IF(IEVENT.GT.0) THEN
          cnam(0)='PYTHIA '

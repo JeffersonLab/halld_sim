@@ -390,8 +390,8 @@ c        endif
 *             Get beam properties from ccdb if needed
 *
       if (beamE0.eq.0) then
-         beamE0 = get_endpoint_energy();
-         beamEpeak = get_peak_energy();
+         beamE0 = get_endpoint_energy(IDRUN);
+         beamEpeak = get_peak_energy(IDRUN);
          beamEmin = beamE0 * 0.25;
          print *, 'reading photon beam properties from ccdb:',
      +            'endpoint=', beamE0, 'GeV,',
