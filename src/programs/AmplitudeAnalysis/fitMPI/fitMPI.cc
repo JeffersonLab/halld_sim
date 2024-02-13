@@ -285,8 +285,10 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
 void getLikelihood( ConfigurationInfo* cfgInfo ){
     AmpToolsInterfaceMPI ati( cfgInfo );
-    cout << "LIKELIHOOD WITHOUT MINIMIZATION:  " << ati.likelihood() << endl;
-    return;
+    if( rank_mpi == 0 )
+        cout << "LIKELIHOOD WITHOUT MINIMIZATION:  " << ati.likelihood() << endl;
+    ati.exitMPI();
+    MPI_Finalize();
 }
 
 int main( int argc, char* argv[] ){
