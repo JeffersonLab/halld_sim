@@ -49,6 +49,8 @@ double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beam
 {
 	// whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
+	// reject unpolarized datasets
+	assert( polAngle != -1 );
 
 	// Boost all P4 from lab to CM rest frame
 	TLorentzVector cmLab = beamLab + targetLab;

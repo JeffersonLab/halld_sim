@@ -107,7 +107,7 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	userVars[kSin2Theta]	= TMath::Sin( 2.*thetaPhi[0] );
 	userVars[kPhi]		= thetaPhi[1];
 
-	double phiProd = getPhiProd( 0, pDelta, beam, target, 2, false );
+	double phiProd = getPhiProd( polAngle, pDelta, beam, target, 2, false );
 	userVars[kBigPhi]	= phiProd;
 
 
@@ -120,8 +120,8 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 		p3 += ptemp;
 		ptot += ptemp;
 	}
-*/
-/*	TLorentzVector lowerVertexResonance = p1 + p2;
+
+	TLorentzVector lowerVertexResonance = p1 + p2;
 	TLorentzRotation lowerVertexBoost( -lowerVertexResonance.BoostVector() );
 
 	TLorentzVector target_lowerVertexRF = lowerVertexBoost * target;
