@@ -59,10 +59,12 @@
 using std::complex;
 using namespace std;
 
-double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
+double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, bool noFit) {
   AmpToolsInterface ati( cfgInfo );
 
   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+
+  if( noFit ) return ati.likelihood();
 
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
@@ -255,6 +257,7 @@ int main( int argc, char* argv[] ){
 
    bool useMinos = false;
    bool hesse = false;
+   bool noFit = false;
 
    string configfile;
    string seedfile;
@@ -289,6 +292,7 @@ int main( int argc, char* argv[] ){
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
+      if (arg == "-l") noFit = true;
       if (arg == "-h"){
          cout << endl << " Usage for: " << argv[0] << endl << endl;
          cout << "   -n \t\t\t\t use MINOS instead of MIGRAD" << endl;
@@ -299,6 +303,7 @@ int main( int argc, char* argv[] ){
          cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
          cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
+         cout << "   -l \t\t\t\t Calculate likelihood and exit without running fit" << endl; 
          exit(1);}
    }
 
@@ -353,7 +358,7 @@ int main( int argc, char* argv[] ){
 
    if(numRnd==0){
       if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
+         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile, noFit);
       else
          runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
    } else {
