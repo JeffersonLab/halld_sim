@@ -59,12 +59,18 @@
 using std::complex;
 using namespace std;
 
-double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, bool noFit) {
+double getLikelihood( ConfigurationInfo* cfgInfo ){
+    AmpToolsInterface ati( cfgInfo );
+    double likelihood = ati.likelihood();
+
+    cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << likelihood << endl;
+    return likelihood;
+}
+
+double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
   AmpToolsInterface ati( cfgInfo );
 
   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
-
-  if( noFit ) return ati.likelihood();
 
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
@@ -356,18 +362,23 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( FSRootDataReader() );
    AmpToolsInterface::registerDataReader( FSRootDataReaderTEM() );
 
-   if(numRnd==0){
-      if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile, noFit);
-      else
-         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
-   } else {
-      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
-      AmpToolsInterface::setRandomSeed(randomSeed);
-      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
-   }
 
-  return 0;
+
+    if( noFit )
+        getLikelihood( cfgInfo );
+    else if(numRnd==0){
+        if(scanPar=="")
+            runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
+        else
+            runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
+    } 
+    else {
+        cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+        AmpToolsInterface::setRandomSeed(randomSeed);
+        runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
+    }
+
+    return 0;
 }
 
 
