@@ -74,4 +74,24 @@
       chonly = 'ONLY'
       call gspos(chname,nr,chmoth,xmotar,ymotar,zmotar,irot,chonly)
 
+      motar_imate = imat
+      motar_itmed = itmed
+      motar_ivolu = ivolu
+      motar_irot = irot
+      end
+
+      subroutine Moller_target_report
+#include "moller.inc"
+#include "geant321/gcbank.inc"
+      character*20 chnama
+      real A,Z,dens,radl,absl,ubuf(99)
+      
+      call GFMATE(motar_imate,chnama,A,Z,dens,radl,absl,ubuf,nwbuf)
+      print *, 'Moller target report:'
+      print *, ' * material ', chnama
+      print *, '    A =', A
+      print *, '    Z =', Z
+      print *, '    dens =', dens
+      print *, '    radl =', radl
+      print *, '    absl =', absl
       end

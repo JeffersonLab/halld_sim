@@ -53,6 +53,9 @@
       logical hexist
       external hexist   
 
+      real Emaxcut
+      parameter (Emaxcut = 9.0)
+
       if (.not.hexist(1)) then
           call hbnt(1,'microscope hits',' ')
           call hbname(1,'hits',eventno,ntform)
@@ -222,6 +225,14 @@ c     if (NTMULT.eq.1.and.NSTEP.eq.0) then
       elseif (CNAMES(NLEVEL)(1:4).eq.'DET8') then
         call hfnt(6)
       elseif (CNAMES(NLEVEL)(1:4).eq.'DET0') then
+
+* If a beam electron reaches the entrance to the tagger dipole
+* with more than Emaxcut of its energy remaining, abort event.
+        if (ipart.eq.3.and.GETOT.gt.Emaxcut) then
+           ISTOP = 1
+           return
+        endif
+
         call hfnt(7)
       elseif (CNAMES(NLEVEL)(1:4).eq.'DET1') then
         call hfnt(8)

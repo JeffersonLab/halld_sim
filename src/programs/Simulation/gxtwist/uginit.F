@@ -194,6 +194,7 @@ C..geant..
       CALL GGCLOS
       CALL GPART
       CALL GPHYSI
+      call Moller_target_report
       CALL GRFILE(3,'gxtwist.rz','ON')
       CALL HCDIR('//RZfile',' ')
 
