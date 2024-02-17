@@ -94,7 +94,9 @@
       <posXYZ volume="electronDump"  X_Y_Z="-0.75  0.0  633.1" 
                                    rot="0  -13.4  0" unit_angle="deg"/> 
 
-      <posXYZ volume="DET7" X_Y_Z="-129.05453  0.0  836.89"
+      <!--posXYZ volume="DET7" X_Y_Z="-129.05453  0.0  836.89"
+                                   rot="0 -8.05 0" unit_angle="deg" /-->  
+      <posXYZ volume="DET7" X_Y_Z="-126.411  0.0  837.264"
                                    rot="0 -8.05 0" unit_angle="deg" />  
       <posXYZ volume="DET8" X_Y_Z="0.0  -150.0  600.0" />
 
