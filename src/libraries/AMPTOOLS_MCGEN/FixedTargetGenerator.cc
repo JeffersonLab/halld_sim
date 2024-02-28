@@ -240,8 +240,8 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
   // concatenate the lists together
   vector< TLorentzVector > allP4;
   if( includeBeam ) allP4.push_back( m_beam );
-  allP4.insert( allP4.end(), uvP4.begin(), uvP4.end() );
   allP4.insert( allP4.end(), lvP4.begin(), lvP4.end() );
+  allP4.insert( allP4.end(), uvP4.begin(), uvP4.end() );
     
   return new Kinematics( allP4, seedWeight );
 }
