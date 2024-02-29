@@ -170,6 +170,18 @@ int main( int argc, char* argv[] ){
     if (arg == "-uvMax"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  uvMax = atof( argv[++i] ); }
+    if (arg == "-m"){
+      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+      else  beamMaxE = atof( argv[++i] ); }
+    if (arg == "-p"){
+      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+      else beamPeakE = atof( argv[++i] ); }
+    if (arg == "-a"){
+      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+      else  beamLowE = atof( argv[++i] ); }
+    if (arg == "-b"){
+      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+      else  beamHighE = atof( argv[++i] ); }   
     if (arg == "-t"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  tSlope = atof( argv[++i] ); }
@@ -203,6 +215,10 @@ int main( int argc, char* argv[] ){
       cout << "\t -lvMax <value>\t Lower vertex max mass (GeV) [optional]" << endl;
       cout << "\t -uvMin <value>\t Upper vertex min mass (GeV) [optional]" << endl;
       cout << "\t -uvMax <value>\t Upper vertex max mass (GeV) [optional]" << endl;
+      cout << "\t -m     <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
+      cout << "\t -p  <value>\t Coherent peak photon energy [optional]" << endl;
+      cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
+      cout << "\t -b  <value>\t Maximum photon energy to simulate events [optional]" << endl;
       cout << "\t -t     <value>\t Momentum transfer slope [optional]" << endl;
       cout << "\t -tMin  <value>\t Minimum momentum transfer [optional]" << endl;
       cout << "\t -tMax  <value>\t Maximum momentum transfer [optional]" << endl;
@@ -230,7 +246,6 @@ int main( int argc, char* argv[] ){
 
   vector< int > lvIndices = parseString( lvString );
   vector< int > uvIndices = parseString( uvString );
-  vector< int > pTypes;
   /// get the masses for each.....
 
   vector< double > lvMasses;
@@ -248,7 +263,6 @@ int main( int argc, char* argv[] ){
     else{
       cout << "This is particle indices " << lvIndices[i] << " with name " 
            <<  reaction->particleList()[lvIndices[i]] << endl; 
-      pTypes.push_back( particle );
       lvMasses.push_back( ParticleMass( particle ) );
     }
   }
@@ -265,13 +279,32 @@ int main( int argc, char* argv[] ){
     else{
       cout << "This is upper vertex particle indices " << uvIndices[i] << " with name "
            <<  reaction->particleList()[uvIndices[i]] << endl;
-      pTypes.push_back( particle );
       uvMasses.push_back( ParticleMass( particle ) );
     }
   }
 
+  // add particle type of reaction into vector 
+  vector< int > pTypes;
+  // add recoil proton particle first
+  for( int i= 0; i < 1; ++i){
+	 
+    Particle_t particle = ParticleEnum( reaction->particleList()[lvIndices[i]].c_str() );
+    pTypes.push_back( particle );
+    
+  }
+  // add upper vertex particles
+  for( unsigned int i = 0; i< uvIndices.size(); ++i){
+    Particle_t particle = ParticleEnum( reaction->particleList()[uvIndices[i]].c_str() );
+    pTypes.push_back( particle );
+  }
+  // add the rest of the lower vertex if any
+  for( unsigned int i = 1; i< lvIndices.size(); ++i){
+    Particle_t particle = ParticleEnum( reaction->particleList()[lvIndices[i]].c_str() );
+    pTypes.push_back( particle );
+  }
 
-  
+
+
   // random number initialization (set to 0 by default)
   TRandom3* gRandom = new TRandom3();
   gRandom->SetSeed(seed);
