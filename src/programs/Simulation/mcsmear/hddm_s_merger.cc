@@ -68,6 +68,12 @@ static thread_local int    fcal_max_hits(3);
 static thread_local double fcal_min_delta_t_ns(70.);
 static thread_local double fcal_integration_window_ns(64.);
 
+static thread_local bool   enable_ecal_merging(true);
+static thread_local int    ecal_max_hits(3);
+static thread_local double ecal_min_delta_t_ns(70.);
+static thread_local double ecal_integration_window_ns(64.);
+
+
 static thread_local bool   enable_ccal_merging(true);
 static thread_local int    ccal_max_hits(3);
 static thread_local double ccal_min_delta_t_ns(70.);
@@ -348,6 +354,38 @@ namespace hddm_s_merger {
       fcal_integration_window_ns = dt_ns;
    }
 
+   bool get_ecal_merging() {
+      return enable_ecal_merging;
+   }
+
+   void set_ecal_merging(bool merging_status) {
+      enable_ecal_merging = merging_status;
+   }
+
+   int get_ecal_max_hits() {
+      return ecal_max_hits;
+   }
+
+   void set_ecal_max_hits(int maxhits) {
+      ecal_max_hits = maxhits;
+   }
+
+   double get_ecal_min_delta_t_ns() {
+      return ecal_min_delta_t_ns;
+   }
+
+   void set_ecal_min_delta_t_ns(double dt_ns) {
+      ecal_min_delta_t_ns = dt_ns;
+   }
+
+   double get_ecal_integration_window_ns() {
+      return ecal_integration_window_ns;
+   }
+
+   void set_ecal_integration_window_ns(double dt_ns) {
+      ecal_integration_window_ns = dt_ns;
+   }
+
    bool get_ccal_merging() {
       return enable_ccal_merging;
    }
@@ -559,6 +597,7 @@ hddm_s::HitViewList &operator+=(hddm_s::HitViewList &dst,
       if(enable_stc_merging) dst(0).getStartCntrs() += iter->getStartCntrs();
       if(enable_bcal_merging) dst(0).getBarrelEMcals() += iter->getBarrelEMcals();
       if(enable_fcal_merging) dst(0).getForwardEMcals() += iter->getForwardEMcals();
+      if(enable_ecal_merging) dst(0).getCrystalEcals() += iter->getCrystalEcals();
       if(enable_ftof_merging) dst(0).getForwardTOFs() += iter->getForwardTOFs();
       if(enable_ccal_merging) dst(0).getComptonEMcals() += iter->getComptonEMcals();
       if(enable_tag_merging) dst(0).getTaggers() += iter->getTaggers();
@@ -1437,6 +1476,100 @@ hddm_s::FcalHitList &operator+=(hddm_s::FcalHitList &dst,
    return dst;
 }
 
+hddm_s::CrystalEcalList &operator+=(hddm_s::CrystalEcalList &dst,
+                                     hddm_s::CrystalEcalList &src)
+{
+   if (src.size() > 0 && dst.size() == 0)
+      dst.add(1);
+   hddm_s::CrystalEcalList::iterator iter;
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      dst(0).getEcalBlocks() += iter->getEcalBlocks();
+   }
+   return dst;
+}
+
+hddm_s::EcalBlockList &operator+=(hddm_s::EcalBlockList &dst,
+                                  hddm_s::EcalBlockList &src)
+{
+   // order first by column, then row
+   int iord = 0;
+   hddm_s::EcalBlockList::iterator iter;
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      int row = iter->getRow();
+      int column = iter->getColumn();
+      while (iord > 0) {
+         if (iord == dst.size() || dst(iord).getColumn() > column ||
+             (dst(iord).getColumn() == column && dst(iord).getRow() > row))
+         {
+            --iord;
+         }
+         else
+            break;
+      }
+      while (iord < dst.size()) {
+         if (dst(iord).getColumn() < column ||
+             (dst(iord).getColumn() == column && dst(iord).getRow() < row))
+         {
+            ++iord;
+         }
+         else
+            break;
+      }
+      if (iord == dst.size() ||
+          dst(iord).getColumn() != column || 
+          dst(iord).getRow() != row)
+      {
+         dst.add(1, (iord < dst.size())? iord : -1);
+         dst(iord).setColumn(column);
+         dst(iord).setRow(row);
+      }
+      dst(iord).getEcalHits() += iter->getEcalHits();
+   }
+   return dst;
+}
+
+hddm_s::EcalHitList &operator+=(hddm_s::EcalHitList &dst,
+                                hddm_s::EcalHitList &src)
+{
+   // order by t, merge with existing hit if close enough
+   int iord = 0;
+   hddm_s::EcalHitList::iterator iter;
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      double t = iter->getT() + t_shift_ns;
+      double ti = ecal_integration_window_ns;
+      double dt = ti + 2*fadc250_period_ns;
+      double newE = iter->getE();
+      while (iord > 0 && dst(iord).getT() > t)
+         --iord;
+      while (iord < dst.size() && dst(iord).getT() < t)
+         ++iord;
+      if (iord > 0 && t - dst(iord - 1).getT() < dt) {
+         --iord;
+         double oldE = dst(iord).getE();
+         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
+         if (pulse_fraction > 0)
+            dst(iord).setE(oldE + newE * pulse_fraction);
+      }
+      else if (iord < dst.size() && dst(iord).getT() - t < dt) {
+         double oldE = dst(iord).getE();
+         double pulse_fraction = 1 - (dst(iord).getT() - t) / ti;
+         if (pulse_fraction > 0)
+            dst(iord).setE(newE + oldE * pulse_fraction);
+         else
+            dst(iord).setE(newE);
+         dst(iord).setT(t);
+      }
+      else {
+         dst.add(1, (iord < dst.size())? iord : -1);
+         dst(iord).setE(newE);
+         dst(iord).setT(t);
+      }
+   }
+   return dst;
+}
+
+
+
 hddm_s::ComptonEMcalList &operator+=(hddm_s::ComptonEMcalList &dst,
                                      hddm_s::ComptonEMcalList &src)
 {
@@ -2090,6 +2223,12 @@ void hddm_s_merger::truncate_hits(hddm_s::HDDM &record) {
       truncate_fcal_hits(iblock->getFcalHits());
    }
 
+   hddm_s::EcalBlockList ecal_modules = record.getEcalBlocks();
+   hddm_s::EcalBlockList::iterator ecal_imod;
+   for (ecal_imod = ecal_modules.begin(); ecal_imod != ecal_modules.end(); ++ecal_imod) {
+      truncate_ecal_hits(ecal_imod->getEcalHits());
+   }
+
    hddm_s::CcalBlockList modules = record.getCcalBlocks();
    hddm_s::CcalBlockList::iterator imod;
    for (imod = modules.begin(); imod != modules.end(); ++imod) {
@@ -2292,6 +2431,15 @@ void hddm_s_merger::truncate_fcal_hits(hddm_s::FcalHitList &hits) {
       printf("found %d fcal hits, truncating to %d\n", hits.size(), fcal_max_hits);
 #endif
       hits.del(-1, fcal_max_hits);
+   }
+}
+
+void hddm_s_merger::truncate_ecal_hits(hddm_s::EcalHitList &hits) {
+   if (hits.size() > ecal_max_hits) {
+#if VERBOSE_TRUNCATION
+      printf("found %d ecal hits, truncating to %d\n", hits.size(), ecal_max_hits);
+#endif
+      hits.del(-1, ecal_max_hits);
    }
 }
 
