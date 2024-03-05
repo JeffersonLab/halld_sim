@@ -416,8 +416,8 @@ int main( int argc, char* argv[] ){
 	TH1F* mass = new TH1F( "M", locHistTitle.c_str(), 180, lowMass, highMass );
 	TH1F* massW = new TH1F( "M_W", ("Weighted "+locHistTitle).c_str(), 180, lowMass, highMass );
 	massW->Sumw2();
-	TH1F* intenW = new TH1F( "intenW", "True PDF / Gen. PDF", 1000, 0, 100 );
-	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, lowMass, highMass, 1000, 0, 10 );
+	TH1F* intenW = new TH1F( "intenW", "True PDF / Gen. PDF", 1000, -0.1e-03, 0.8e-03 );
+	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, lowMass, highMass, 1000, -0.1e-03, .8e-03 );
 	
 	TH1F* t = new TH1F( "t", "-t Distribution", 200, 0, 2 );
 

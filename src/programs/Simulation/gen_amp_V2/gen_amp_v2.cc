@@ -429,11 +429,14 @@ int main( int argc, char* argv[] ){
   TH1F* tW = new TH1F( "tW", "-t Distribution", 200, 0, 2 ); 
   TH1F* E = new TH1F( "E", "Beam Energy", 120, 0, 12 );
   TH1F* EW = new TH1F( "EW", "Beam Energy", 120, 0, 12 );
-
-  TH1F* M_Meson = new TH1F( "M_Meson", locHistTitle.c_str(), 200, 0, 2 );
-  TH1F* MW_Meson = new TH1F( "MW_Meson", locHistTitle.c_str(), 200, 0, 2 );
-  TH1F* M_recoil = new TH1F( "M_recoil", locRecoilTitle.c_str(), 200, 0, 2 );
-  TH1F* MW_recoil = new TH1F( "MW_recoil", locRecoilTitle.c_str(), 200, 0, 2 );
+  TH1F* EWI = new TH1F( "EWI", "Beam Energy", 120, 0, 12 );
+  TH1F* intenW = new TH1F("intenW", "True PDF/ Gen. PDF", 1000, -0.1e-03, 0.8e-03);
+  TH2F* intenWVsE = new TH2F("intenWVsE","Ratio vs. M", 100, 0, 12, 1000, -0.1e-03, 0.8e-03);
+  
+  TH1F* M_Meson = new TH1F( "M_Meson", locHistTitle.c_str(), 200, uvMin, uvMax );
+  TH1F* MW_Meson = new TH1F( "MW_Meson", locHistTitle.c_str(), 200, uvMin, uvMax );
+  TH1F* M_recoil = new TH1F( "M_recoil", locRecoilTitle.c_str(), 200, lvMin, lvMax );
+  TH1F* MW_recoil = new TH1F( "MW_recoil", locRecoilTitle.c_str(), 200, lvMin, lvMax );
 
 	
   int eventCounter = 0;
@@ -502,13 +505,17 @@ int main( int argc, char* argv[] ){
 	  
 	  MW_recoil->Fill( recoil.M(), genWeight );
 									
-	  t->Fill(-1*(recoil-target).M2());
+	  t->Fill( -1*(recoil-target).M2() );
 
-   	  tW->Fill(-1*(recoil-target).M2(),genWeight);	  
+   	  tW->Fill( -1*(recoil-target).M2(),genWeight );	  
   
-	  E->Fill(beam.E());
+	  E->Fill( beam.E() );
 
-	  EW->Fill(beam.E(),genWeight);
+	  EW->Fill( beam.E(),genWeight );
+
+	  intenW->Fill( weightedInten );
+
+	  intenWVsE->Fill( beam.E(), weightedInten );
 	
 	  M_Meson->Fill( resonance.M() );
 	  
@@ -532,11 +539,14 @@ int main( int argc, char* argv[] ){
 	M_Meson->Fill( resonance.M() );
 	MW_Meson->Fill( resonance.M(), genWeight );
 				
-	t->Fill(-1*(recoil-target).M2());
-	tW->Fill(-1*(recoil-target).M2(),genWeight);
-	E->Fill(beam.E());	
-	EW->Fill(beam.E(),genWeight);
-				
+	t->Fill( -1*(recoil-target).M2() );
+	tW->Fill( -1*(recoil-target).M2(),genWeight );
+	E->Fill( beam.E() );	
+	EW->Fill( beam.E(),genWeight );
+	EWI->Fill( beam.E(), weightedInten );
+	intenW->Fill( weightedInten );
+	intenWVsE->Fill( beam.E(), weightedInten );	
+			
 	++eventCounter;
       }
 			
@@ -554,6 +564,9 @@ int main( int argc, char* argv[] ){
   tW->Write();
   E->Write();
   EW->Write();
+  EWI->Write();
+  intenW->Write();
+  intenWVsE->Write();
 
   diagOut->Close();
 	
