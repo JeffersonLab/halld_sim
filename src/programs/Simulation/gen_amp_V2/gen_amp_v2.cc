@@ -75,6 +75,9 @@ int main( int argc, char* argv[] ){
   bool genFlatBW = false;
   bool fsRootFormat = false;
   bool diag = false;
+  bool uvPSRange = false;
+  bool lvPSRange = false;
+  bool tRange = false;
 	
   vector<double> uvBW;
   vector<double> lvBW;
@@ -94,7 +97,7 @@ int main( int argc, char* argv[] ){
 
   int runNum = 30731;
   unsigned int seed = 0;
-
+  unsigned int reWeight =7;
   double tMin = 0.0;
   double tMax = 15.0;
   double tSlope = 6.1;
@@ -125,7 +128,9 @@ int main( int argc, char* argv[] ){
 	uvBW.push_back(atof(argv[i+1])); 
         uvBW.push_back(atof(argv[i+2])); 
         uvBW.push_back(atof(argv[i+3])); 
-        uvCounter++;
+        reWeight -= FixedTargetGenerator::kUpperVtxMass;
+	uvCounter++;
+	
       }
     }
     if (arg == "-lvBW") {
@@ -135,7 +140,8 @@ int main( int argc, char* argv[] ){
         lvBW.push_back(atof(argv[i+1])); 
         lvBW.push_back(atof(argv[i+2])); 
         lvBW.push_back(atof(argv[i+3])); 
-        lvCounter++;
+        reWeight -= FixedTargetGenerator::kLowerVtxMass;
+	lvCounter++;
       }
     }
     if (arg == "-uv"){
@@ -159,15 +165,22 @@ int main( int argc, char* argv[] ){
     if (arg == "-s"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  seed = atoi( argv[++i] ); }
-    if (arg == "-lvMin"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  lvMin = atof( argv[++i] ); }
-    if (arg == "-lvMax"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  lvMax = atof( argv[++i] ); }
-    if (arg == "-uvMin"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  uvMin = atof( argv[++i] ); }
+    if (arg == "-lvRange"){
+      if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
+      else{  
+	lvMin = atof( argv[i+2] ); 
+        lvMax = atof( argv[i+2] ); 
+        lvPSRange = true;
+      }
+    }
+    if (arg == "-uvRange"){
+      if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
+      else{  
+	uvMin = atof( argv[i+1] ); 
+        uvMax = atof( argv[i+2] ); 
+        uvPSRange = true;
+      }
+    }
     if (arg == "-uvMax"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  uvMax = atof( argv[++i] ); }
@@ -185,10 +198,15 @@ int main( int argc, char* argv[] ){
       else  beamHighE = atof( argv[++i] ); }   
     if (arg == "-t"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  tSlope = atof( argv[++i] ); }
-    if (arg == "-tMin"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  tMin = atof( argv[++i] ); }
+      else  tSlope = atof( argv[++i] ); reWeight -= FixedTargetGenerator::kMomentumTransfer; }
+    if (arg == "-tRange"){
+      if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
+      else{  
+	tMin = atof( argv[i+1] ); 
+        tMax = atof( argv[i+2] ); 
+        tRange = true;
+      }
+    }	
     if (arg == "-tMax"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  tMax = atof( argv[++i] ); }
@@ -212,17 +230,14 @@ int main( int argc, char* argv[] ){
       cout << "\t -n     <value>\t Minimum number of events to generate [optional]" << endl;
       cout << "\t -r     <value>\t Run number assigned to generated events [optional]" << endl;
       cout << "\t -s     <value>\t Random number seed initialization [optional]" << endl;
-      cout << "\t -lvMin <value>\t Lower vertex min mass (GeV) [optional]" << endl;
-      cout << "\t -lvMax <value>\t Lower vertex max mass (GeV) [optional]" << endl;
-      cout << "\t -uvMin <value>\t Upper vertex min mass (GeV) [optional]" << endl;
-      cout << "\t -uvMax <value>\t Upper vertex max mass (GeV) [optional]" << endl;
+      cout << "\t -lvRange <value>\t Lower vertex mass range ( lowerLimit upperLimit ) (GeV) [optional]" << endl;
+      cout << "\t -uvRange <value>\t Upper vertex mass range  ( lowerLimit upperLimit ) (GeV) [optional]" << endl;
       cout << "\t -m     <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
       cout << "\t -p  <value>\t Coherent peak photon energy [optional]" << endl;
       cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
       cout << "\t -b  <value>\t Maximum photon energy to simulate events [optional]" << endl;
       cout << "\t -t     <value>\t Momentum transfer slope [optional]" << endl;
-      cout << "\t -tMin  <value>\t Minimum momentum transfer [optional]" << endl;
-      cout << "\t -tMax  <value>\t Maximum momentum transfer [optional]" << endl;
+      cout << "\t -tRange  <value>\t momentum transfer range (lowerLimit upperLimit) (Gev)^2 [optional]" << endl;
       cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl; 
      exit(1);
     }
@@ -356,18 +371,20 @@ int main( int argc, char* argv[] ){
 
   
   // Include optional kinematic ranges (working on including BW values)
-  if(0.0 < uvMin || uvMax < 5.0){ 
+  if( lvPSRange ){ 
     ftGen.setUpperVtxRange( uvMin, uvMax ); }
-  if(0.0 < lvMin || lvMax < 5.0){
+  if( uvPSRange ){
     ftGen.setLowerVtxRange( lvMin, lvMax ); }
-  if(0.0 < tMin || tMax < 15.0){
+  if( tRange ){
     ftGen.setMomentumTransferRange( tMin, tMax ); }
   if(tSlope < 6.1){
     ftGen.addMomentumTransfer( tSlope ); 
-    ftGen.setReweightMask( FixedTargetGenerator::kUpperVtxMass |
-           FixedTargetGenerator::kLowerVtxMass );
   }
   
+  // Sets reweighting based off of options given in command line
+  ftGen.setReweightMask( reWeight );
+  
+   
   // some checks to do before creating FixedTargetGenerator (will implement later)
   // CORRECTION FixedTargetGenerator does checks if kinematically correct
  
