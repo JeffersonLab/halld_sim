@@ -60,6 +60,7 @@ using namespace std;
 
 
 vector<int> parseString(string vertexString);
+string checkParticle(string particleString);
 int main( int argc, char* argv[] ){
   
   TString beamConfigFile("");
@@ -250,59 +251,46 @@ int main( int argc, char* argv[] ){
 
   vector< double > lvMasses;
   vector< double > uvMasses;
-  
+  vector< int > pTypes;
   for( unsigned int i = 0; i < lvIndices.size(); ++i ){
 
     Particle_t particle = ParticleEnum( reaction->particleList()[lvIndices[i]].c_str() );
     if( particle == 0 ){
-
-      cout << "ERROR:  unknown particle " << reaction->particleList()[lvIndices[i]]
-	   << " unable to configure generator." << endl;
-      exit( 1 );
+      // tempString will check if an identical particle is used dictated by % after particle name
+      // Will end script if no particle is found
+      string tempString = checkParticle( reaction->particleList()[lvIndices[i]] );
+      particle = ParticleEnum( tempString.c_str() );
+      cout << "This is particle indices " << lvIndices[i] << " with name "
+           <<  tempString << endl;
+      lvMasses.push_back( ParticleMass( particle ) );    
+      pTypes.push_back( particle );   
     }
     else{
       cout << "This is particle indices " << lvIndices[i] << " with name " 
            <<  reaction->particleList()[lvIndices[i]] << endl; 
       lvMasses.push_back( ParticleMass( particle ) );
+      pTypes.push_back( particle );
     }
   }
   
   for( unsigned int i = 0; i < uvIndices.size(); ++i ){
 
     Particle_t particle = ParticleEnum( reaction->particleList()[uvIndices[i]].c_str() );
-    if( particle == 0 ){
-
-      cout << "ERROR:  unknown particle " << reaction->particleList()[uvIndices[i]]
-	   << " unable to configure generator." << endl;
-      exit( 1 );
+    if( particle == 0 ){ 
+      string tempString = checkParticle( reaction->particleList()[lvIndices[i]] );
+      particle = ParticleEnum( tempString.c_str() );
+      cout << "This is particle indices " << uvIndices[i] << " with name "
+           <<  tempString << endl;
+      uvMasses.push_back( ParticleMass( particle ) );
+      pTypes.push_back( particle );
     }
     else{
       cout << "This is upper vertex particle indices " << uvIndices[i] << " with name "
            <<  reaction->particleList()[uvIndices[i]] << endl;
       uvMasses.push_back( ParticleMass( particle ) );
+      pTypes.push_back( particle );
     }
   }
-
-  // add particle type of reaction into vector 
-  vector< int > pTypes;
-  // add recoil proton particle first
-  for( int i= 0; i < 1; ++i){
-	 
-    Particle_t particle = ParticleEnum( reaction->particleList()[lvIndices[i]].c_str() );
-    pTypes.push_back( particle );
-    
-  }
-  // add upper vertex particles
-  for( unsigned int i = 0; i< uvIndices.size(); ++i){
-    Particle_t particle = ParticleEnum( reaction->particleList()[uvIndices[i]].c_str() );
-    pTypes.push_back( particle );
-  }
-  // add the rest of the lower vertex if any
-  for( unsigned int i = 1; i< lvIndices.size(); ++i){
-    Particle_t particle = ParticleEnum( reaction->particleList()[lvIndices[i]].c_str() );
-    pTypes.push_back( particle );
-  }
-
 
 
   // random number initialization (set to 0 by default)
@@ -356,7 +344,6 @@ int main( int argc, char* argv[] ){
   // to setup the generator
   double beamEnergy = cobrem_vs_E->GetRandom();
 
-  // this needs modification for nuclear targets
   double targetMass = ParticleMass( ParticleEnum( "Proton" ) );
 
   FixedTargetGenerator ftGen( beamEnergy, targetMass, uvMasses, lvMasses );
@@ -391,12 +378,6 @@ int main( int argc, char* argv[] ){
       ftGen.addLowerVtxBW( lvBW[3*i] , lvBW[3*i + 1] , lvBW[3*i + 2] );
     }
   }
-
-	//unsure what this block does, does not allow for neutron or proton
-  
-    //if(ParticlesLowerVertex[i] == Proton || ParticlesLowerVertex[i] == Neutron) continue;
-    //pTypes.push_back( ParticlesLowerVertex[i] );
-  
 
 
   HDDMDataWriter* hddmOut = NULL;
@@ -583,4 +564,18 @@ vector<int> parseString(string vertexString){
   }
   return Index;
 }// END OF parseString
-  
+
+string checkParticle(string particleString){
+  size_t found;
+  found = particleString.find( "%" );
+  if( found != std::string::npos ){
+    particleString = particleString.substr(0, particleString.find( "%" ) );
+    return particleString;
+  }
+  else{
+    cout << "ERROR:  unknown particle " << particleString 
+           << " unable to configure generator." << endl;
+      exit( 1 );
+  }
+    
+}//END of checkParticle
