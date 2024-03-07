@@ -252,6 +252,8 @@ int main( int argc, char* argv[] ){
   vector< double > lvMasses;
   vector< double > uvMasses;
   vector< int > pTypes;
+  ostringstream locStream;
+  ostringstream locRecoilStream;
   for( unsigned int i = 0; i < lvIndices.size(); ++i ){
 
     Particle_t particle = ParticleEnum( reaction->particleList()[lvIndices[i]].c_str() );
@@ -263,13 +265,15 @@ int main( int argc, char* argv[] ){
       cout << "This is particle indices " << lvIndices[i] << " with name "
            <<  tempString << endl;
       lvMasses.push_back( ParticleMass( particle ) );    
-      pTypes.push_back( particle );   
+      pTypes.push_back( particle );
+      locRecoilStream << ParticleName_ROOT( particle );      
     }
     else{
       cout << "This is particle indices " << lvIndices[i] << " with name " 
            <<  reaction->particleList()[lvIndices[i]] << endl; 
       lvMasses.push_back( ParticleMass( particle ) );
       pTypes.push_back( particle );
+      locRecoilStream << ParticleName_ROOT( particle );
     }
   }
   
@@ -283,12 +287,14 @@ int main( int argc, char* argv[] ){
            <<  tempString << endl;
       uvMasses.push_back( ParticleMass( particle ) );
       pTypes.push_back( particle );
+      locStream << ParticleName_ROOT( particle );
     }
     else{
       cout << "This is upper vertex particle indices " << uvIndices[i] << " with name "
            <<  reaction->particleList()[uvIndices[i]] << endl;
       uvMasses.push_back( ParticleMass( particle ) );
       pTypes.push_back( particle );
+      locStream << ParticleName_ROOT( particle );
     }
   }
 
@@ -390,17 +396,6 @@ int main( int argc, char* argv[] ){
 			  static_cast< DataWriter* >( new ROOTDataWriter( outName ) ) );
 	
   TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
-  ostringstream locStream;
-  ostringstream locRecoilStream;
-  for (unsigned int i=0; i<uvIndices.size(); i++){
-    Particle_t particle = ParticleEnum( reaction->particleList()[uvIndices[i]].c_str() );
-    locStream << ParticleName_ROOT( particle );
-  } 
-  
-  for (unsigned int i=0; i<lvIndices.size(); i++){ 
-    Particle_t particle = ParticleEnum( reaction->particleList()[lvIndices[i]].c_str() );
-    locRecoilStream << ParticleName_ROOT( particle );
-  }
   
   string locHistTitle = string("Meson Mass ;") + locStream.str() + string(" Invariant Mass (GeV/c^{2});");
   string locRecoilTitle = string("Baryon Mass ;") + locRecoilStream.str() + string(" Invariant Mass (GeV/c^{2});");
