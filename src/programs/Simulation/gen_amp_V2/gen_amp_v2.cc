@@ -269,19 +269,18 @@ int main( int argc, char* argv[] ){
   vector< int > pTypes;
   ostringstream locStream;
   ostringstream locRecoilStream;
+  
+  //Add beam to pTypes first  
+  pTypes.push_back( ParticleEnum(reaction->particleList()[0].c_str()) );	
   for( unsigned int i = 0; i < lvIndices.size(); ++i ){
-
-    Particle_t particle = ParticleEnum( reaction->particleList()[lvIndices[i]].c_str() );
+    // tempString will check if an identical particle is used dictated by % after particle name
+    // if non then will return the string unchanged
+    string tempString = checkParticle( reaction->particleList()[lvIndices[i]] );
+    Particle_t particle = ParticleEnum( tempString.c_str() );
     if( particle == 0 ){
-      // tempString will check if an identical particle is used dictated by % after particle name
-      // Will end script if no particle is found
-      string tempString = checkParticle( reaction->particleList()[lvIndices[i]] );
-      particle = ParticleEnum( tempString.c_str() );
-      cout << "This is particle indices " << lvIndices[i] << " with name "
-           <<  tempString << endl;
-      lvMasses.push_back( ParticleMass( particle ) );    
-      pTypes.push_back( particle );
-      locRecoilStream << ParticleName_ROOT( particle );      
+      cout << "ERROR:  unknown particle " << tempString 
+           << " unable to configure generator." << endl;
+      exit( 1 );
     }
     else{
       cout << "This is particle indices " << lvIndices[i] << " with name " 
@@ -293,16 +292,13 @@ int main( int argc, char* argv[] ){
   }
   
   for( unsigned int i = 0; i < uvIndices.size(); ++i ){
-
-    Particle_t particle = ParticleEnum( reaction->particleList()[uvIndices[i]].c_str() );
+      
+    string tempString = checkParticle( reaction->particleList()[uvIndices[i]] );
+    Particle_t particle = ParticleEnum( tempString.c_str() );
     if( particle == 0 ){ 
-      string tempString = checkParticle( reaction->particleList()[lvIndices[i]] );
-      particle = ParticleEnum( tempString.c_str() );
-      cout << "This is particle indices " << uvIndices[i] << " with name "
-           <<  tempString << endl;
-      uvMasses.push_back( ParticleMass( particle ) );
-      pTypes.push_back( particle );
-      locStream << ParticleName_ROOT( particle );
+      cout << "ERROR:  unknown particle " << tempString
+           << " unable to configure generator." << endl;
+      exit( 1 );
     }
     else{
       cout << "This is upper vertex particle indices " << uvIndices[i] << " with name "
@@ -585,9 +581,6 @@ string checkParticle(string particleString){
     return particleString;
   }
   else{
-    cout << "ERROR:  unknown particle " << particleString 
-           << " unable to configure generator." << endl;
-      exit( 1 );
+    return particleString;
   }
-    
 }//END of checkParticle
