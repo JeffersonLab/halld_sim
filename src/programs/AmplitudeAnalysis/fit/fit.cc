@@ -63,6 +63,8 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
 
   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
 
+  return ati.likelihood(); // DEBUG: DONT WANT TO MINIMIZE, JUST NEED L
+
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
 

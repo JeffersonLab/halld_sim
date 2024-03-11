@@ -83,8 +83,8 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   TLorentzVector beam;
   TVector3 eps;
-  double beam_polFraction;
-  double beam_polAngle;
+  GDouble beam_polFraction;
+  GDouble beam_polAngle;
 
   if(m_polInTree){
     beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
@@ -155,41 +155,15 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
   else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
 
-  userVars[uv_cosTheta] = TMath::Cos(locthetaphi[0]);
-  userVars[uv_Phi] = locthetaphi[1];
 
-  userVars[uv_cosThetaH] = TMath::Cos(locthetaphih[0]);
-  userVars[uv_PhiH] = locthetaphih[1];
-
-  userVars[uv_prod_Phi] = locthetaphi[2];
-
-  userVars[uv_MX] = X.M();
-  userVars[uv_MVec] = vec.M();
-  userVars[uv_MPs] = ps.M();
-
-  userVars[uv_beam_polFraction] = beam_polFraction;
-  userVars[uv_beam_polAngle] = beam_polAngle;
-
-  return;
-}
-
-
-////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
-
-complex< GDouble >
-Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
-{
-
-  GDouble cosTheta = userVars[uv_cosTheta];
-  GDouble Phi = userVars[uv_Phi];
-  GDouble cosThetaH = userVars[uv_cosThetaH];
-  GDouble PhiH = userVars[uv_PhiH];
-  GDouble prod_angle = userVars[uv_prod_Phi];
-  GDouble MX = userVars[uv_MX];
-  GDouble MVec = userVars[uv_MVec];
-  GDouble MPs = userVars[uv_MPs];
-  GDouble beam_polFraction = userVars[uv_beam_polFraction];
-  GDouble beam_polAngle = userVars[uv_beam_polAngle];
+  GDouble cosTheta = TMath::Cos(locthetaphi[0]);
+  GDouble Phi = locthetaphi[1];
+  GDouble cosThetaH = TMath::Cos(locthetaphih[0]);
+  GDouble PhiH = locthetaphih[1];
+  GDouble prod_angle = locthetaphi[2];
+  GDouble MX = X.M();
+  GDouble MVec = vec.M();
+  GDouble MPs = ps.M();
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
@@ -217,7 +191,19 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
   Factor *= kinFactor;
 
-  return complex< GDouble >( static_cast< GDouble>( Factor ) * zjm );
+  userVars[uv_ampRe] = ( Factor * zjm ).real();
+  userVars[uv_ampIm] = ( Factor * zjm ).imag();
+
+  return;
+}
+
+
+////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
+
+complex< GDouble >
+Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
+{
+  return complex< GDouble >( userVars[uv_ampRe], userVars[uv_ampIm] );
 }
 
 
