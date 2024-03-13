@@ -463,13 +463,13 @@ int main( int argc, char* argv[] ){
 			
       Kinematics* evt = ati.kinematics( i );
       TLorentzVector recoil;
-      for (unsigned int j=1; j < lvIndices.size()+1; j++){
-	      recoil += evt->particle( j );
+      for (unsigned int j=0; j < lvIndices.size(); j++){
+	      recoil += evt->particle( lvIndices[j] );
        
       }
       TLorentzVector resonance;
-      for (unsigned int j= lvIndices.size()+1; j < uvIndices.size()+lvIndices.size()+1; j++){
-	      resonance += evt->particle( j );
+      for (unsigned int j= 0; j < uvIndices.size(); j++){
+	      resonance += evt->particle( uvIndices[j] );
 
       }
 
