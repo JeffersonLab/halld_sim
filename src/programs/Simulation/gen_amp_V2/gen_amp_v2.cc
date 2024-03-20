@@ -122,25 +122,25 @@ int main( int argc, char* argv[] ){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  outName = argv[++i]; }
     if (arg == "-uvBW") {
-      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (argv[i+1][0] == '-' || argv[i+2][0] == '-' || argv[i+3][0] == '-')) arg = "-h";
+      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (i+4 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-') || (argv[i+3][0] == '-')) arg = "-h";
       else{ 
         genFlatBW = true;
 	uvBW.push_back(atof(argv[i+1])); 
         uvBW.push_back(atof(argv[i+2])); 
         uvBW.push_back(atof(argv[i+3])); 
-        reWeight -= FixedTargetGenerator::kUpperVtxMass;
+        if(!argv[i+4]) reWeight -= FixedTargetGenerator::kUpperVtxMass;
 	uvCounter++;
 	
       }
     }
     if (arg == "-lvBW") {
-      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (argv[i+1][0] == '-' || argv[i+2][0] == '-' || argv[i+3][0] == '-')) arg = "-h";
+      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (i+4 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-') || (argv[i+4][0] == '-')) arg = "-h";
       else{ 
 	genFlatBW = true;
         lvBW.push_back(atof(argv[i+1])); 
         lvBW.push_back(atof(argv[i+2])); 
         lvBW.push_back(atof(argv[i+3])); 
-        reWeight -= FixedTargetGenerator::kLowerVtxMass;
+        if(!argv[i+4]) reWeight -= FixedTargetGenerator::kLowerVtxMass;
 	lvCounter++;
       }
     }
@@ -150,9 +150,7 @@ int main( int argc, char* argv[] ){
     if (arg == "-lv"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  lvString = argv[++i]; }
-    if (arg == "-fsroot"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else fsRootFormat = true; }
+    if (arg == "-fsroot") fsRootFormat = true; 
     if (arg == "-hd"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  hddmName = argv[++i]; }
@@ -197,8 +195,12 @@ int main( int argc, char* argv[] ){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  beamHighE = atof( argv[++i] ); }   
     if (arg == "-t"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  tSlope = atof( argv[++i] ); reWeight -= FixedTargetGenerator::kMomentumTransfer; }
+      if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
+      else{  
+	tSlope = atof( argv[++i] ); 
+	if(!argv[i+2]) reWeight -= FixedTargetGenerator::kMomentumTransfer;
+      }
+    }
     if (arg == "-tRange"){
       if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
       else{  
@@ -210,35 +212,32 @@ int main( int argc, char* argv[] ){
     if (arg == "-tMax"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  tMax = atof( argv[++i] ); }
-    if (arg == "-f"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else genFlat = true; }
-    if (arg == "-d"){
-      diag = true;}
+    if (arg == "-f") genFlat = true; 
+    if (arg == "-d") diag = true;
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
-      cout << "\t -ac    <file>\t AmpTools config file" << endl;
-      cout << "\t -bc    <file>\t beam config file (will generate local file within coherent peak if not included) " << endl;
-      cout << "\t -o     <name>\t ROOT file output name" << endl;
-      cout << "\t -uv    <string>\t upper-vertex indices (0 is first) in AmpTools reaction" << endl;
-      cout << "\t -lv    <string>\t lower-vertex indices (0 is first) in AmpTools reaction" << endl;
-      cout << "\t -fsroot  \t Enable output in FSRoot format [optional]" << endl;
-      cout << "\t -hd    <name>\t HDDM file output name [optional]" << endl;
-      cout << "\t -f \t\t Generate flat in phase space [optional]" << endl;
-      cout << "\t -uvBW    <value>\t concentrate events around one or more upper vertex resonances (Mass Width Scale) [optional]" << endl; 
-      cout << "\t -lvBW    <value>\t concentrate events around one or more lower vertex resonances (Mass Width Scale) [optional]" << endl; 
-      cout << "\t -n     <value>\t Minimum number of events to generate [optional]" << endl;
-      cout << "\t -r     <value>\t Run number assigned to generated events [optional]" << endl;
-      cout << "\t -s     <value>\t Random number seed initialization [optional]" << endl;
+      cout << "\t -ac      <file>\t AmpTools config file" << endl;
+      cout << "\t -bc      <file>\t beam config file (will generate local file within coherent peak if not included) " << endl;
+      cout << "\t -o       <name>\t ROOT file output name" << endl;
+      cout << "\t -uv      <string>\t upper-vertex indices (0 is first) in AmpTools reaction" << endl;
+      cout << "\t -lv      <string>\t lower-vertex indices (0 is first) in AmpTools reaction" << endl;
+      cout << "\t -fsroot          \t Enable output in FSRoot format [optional]" << endl;
+      cout << "\t -hd      <name>\t HDDM file output name [optional]" << endl;
+      cout << "\t -f              \t Generate flat in phase space [optional]" << endl;
+      cout << "\t -uvBW    <value>\t concentrate events around one or more upper vertex resonances (Mass Width Scale PS) [optional]" << endl; 
+      cout << "\t -lvBW    <value>\t concentrate events around one or more lower vertex resonances (Mass Width Scale PS) [optional]" << endl; 
+      cout << "\t -n       <value>\t Minimum number of events to generate [optional]" << endl;
+      cout << "\t -r       <value>\t Run number assigned to generated events [optional]" << endl;
+      cout << "\t -s       <value>\t Random number seed initialization [optional]" << endl;
       cout << "\t -lvRange <value>\t Lower vertex mass range ( lowerLimit upperLimit ) (GeV) [optional]" << endl;
       cout << "\t -uvRange <value>\t Upper vertex mass range  ( lowerLimit upperLimit ) (GeV) [optional]" << endl;
-      cout << "\t -m     <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
-      cout << "\t -p  <value>\t Coherent peak photon energy [optional]" << endl;
-      cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
-      cout << "\t -b  <value>\t Maximum photon energy to simulate events [optional]" << endl;
-      cout << "\t -t     <value>\t Momentum transfer slope [optional]" << endl;
+      cout << "\t -m       <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
+      cout << "\t -p       <value>\t Coherent peak photon energy [optional]" << endl;
+      cout << "\t -a       <value>\t Minimum photon energy to simulate events [optional]" << endl;
+      cout << "\t -b       <value>\t Maximum photon energy to simulate events [optional]" << endl;
+      cout << "\t -t       <value>\t Momentum transfer slope ( t PS ) [optional]" << endl;
       cout << "\t -tRange  <value>\t momentum transfer range (lowerLimit upperLimit) (Gev)^2 [optional]" << endl;
-      cout << "\t -d \t\t Plot only diagnostic histograms [optional]" << endl << endl; 
+      cout << "\t -d              \t Plot only diagnostic histograms [optional]" << endl << endl; 
      exit(1);
     }
   }
