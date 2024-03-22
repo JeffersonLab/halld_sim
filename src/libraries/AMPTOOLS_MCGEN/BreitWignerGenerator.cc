@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include "AMPTOOLS_MCGEN/BreitWignerGenerator.h"
+#include "TRandom3.h"
 
 const double BreitWignerGenerator::kPi = 3.14159;
 
@@ -12,10 +13,12 @@ m_mass( 0 ),
 m_width( 0 )
 {}
 
-BreitWignerGenerator::BreitWignerGenerator( double mass, double width ) :
+BreitWignerGenerator::BreitWignerGenerator( double mass, double width, int seed ) :
 m_mass( mass ),
 m_width( width )
-{}
+{
+    gRandom->SetSeed( seed );
+}
 
 pair< double, double >
 BreitWignerGenerator::operator()() const
@@ -61,5 +64,5 @@ BreitWignerGenerator::pdf( double s ) const {
 double
 BreitWignerGenerator::random( double low, double hi ) const {
 	
-	return( ( hi - low ) * drand48() + low );
+	return( ( hi - low ) * gRandom->Uniform() + low );
 }

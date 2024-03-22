@@ -53,6 +53,8 @@ private:
 	double m_highT;
   
 	double m_recMass;
+
+	int m_seed;
 	
 	bool isBaryonResonance;
   

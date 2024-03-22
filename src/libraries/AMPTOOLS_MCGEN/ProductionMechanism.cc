@@ -20,7 +20,8 @@ m_highMass( 0 ),
 m_slope( slope ),
 m_lowT( 0 ),
 m_highT( 12 ),
-m_lastWeight( 1. )
+m_lastWeight( 1. ),
+m_seed( seed )
 {	
   // kMZ = 108.;      //  mass of Sn116 
   kMZ = 208.*0.931494;      //  use mass of Pb as it is in the particle table
@@ -210,7 +211,7 @@ void
 ProductionMechanism::addResonance( double mass, double width, double crossSec ){
   
   m_decGen.addChannel( m_bwGen.size(), crossSec );
-  m_bwGen.push_back( BreitWignerGenerator( mass, width ) );
+  m_bwGen.push_back( BreitWignerGenerator( mass, width, m_seed ) );
 }
 
 double
