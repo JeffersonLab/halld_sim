@@ -41,8 +41,10 @@ public:
 	// Use this for indexing a user-defined data array and notifying
 	// the framework of the number of user-defined variables.
 		
-	//enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_Phi = 4, uv_MX = 5, uv_MVec = 6, uv_MPs = 7, uv_beam_polFraction = 8, uv_beam_polAngle = 9, kNumUserVars };
-	enum UserVars { uv_ampRe = 0, uv_ampIm = 1, kNumUserVars };
+	//enum UserVars { uv_cosTheta = 0, uv_Phi, uv_cosThetaH, uv_PhiH,
+	//                uv_prod_Phi, uv_MX, uv_MVec, uv_MPs, uv_beam_polFraction,
+	//                uv_beam_polAngle, kNumUserVars };
+	enum UserVars { uv_ampRe = 0, uv_ampIm, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	// This function needs to be defined -- see comments and discussion
@@ -60,7 +62,7 @@ public:
 	// grows dramatically as UserVars values are stored for each instance
 	// of the amplitude.  NOTE: To use this make sure that UserVars only 
 	// depend on kinematics and no arguments provided to the amplitude!
-	bool areUserVarsStatic() const { return true; }
+	bool areUserVarsStatic() const { return false; }
 
 	void updatePar( const AmpParameter& par );
 
