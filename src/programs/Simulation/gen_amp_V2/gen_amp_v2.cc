@@ -298,50 +298,10 @@ int main( int argc, char* argv[] ){
         }
       }
       // add particle to pTypes
-      pTypes.push_back( ParticleEnum(reaction->particleList()[i].c_str()) );
+      pTypes.push_back( particle );
     }
   }
 
-  /* 
-  //Add beam to pTypes first  
-  pTypes.push_back( ParticleEnum(reaction->particleList()[0].c_str()) );	
-  for( unsigned int i = 0; i < lvIndices.size(); ++i ){
-    // tempString will check if an identical particle is used dictated by % after particle name
-    // if non then will return the string unchanged
-    string tempString = checkParticle( reaction->particleList()[lvIndices[i]] );
-    Particle_t particle = ParticleEnum( tempString.c_str() );
-    if( particle == 0 ){
-      cout << "ERROR:  unknown particle " << tempString 
-           << " unable to configure generator." << endl;
-      exit( 1 );
-    }
-    else{
-      cout << "This is particle indices " << lvIndices[i] << " with name " 
-           <<  tempString << endl; 
-      lvMasses.push_back( ParticleMass( particle ) );
-      pTypes.push_back( particle );
-      locRecoilStream << ParticleName_ROOT( particle );
-    }
-  }
-  
-  for( unsigned int i = 0; i < uvIndices.size(); ++i ){
-      
-    string tempString = checkParticle( reaction->particleList()[uvIndices[i]] );
-    Particle_t particle = ParticleEnum( tempString.c_str() );
-    if( particle == 0 ){ 
-      cout << "ERROR:  unknown particle " << tempString
-           << " unable to configure generator." << endl;
-      exit( 1 );
-    }
-    else{
-      cout << "This is upper vertex particle indices " << uvIndices[i] << " with name "
-           <<  tempString << endl;
-      uvMasses.push_back( ParticleMass( particle ) );
-      pTypes.push_back( particle );
-      locStream << ParticleName_ROOT( particle );
-    }
-  }
-  */
 
   // random number initialization (set to 0 by default)
   TRandom3* gRandom = new TRandom3();
@@ -476,7 +436,7 @@ int main( int argc, char* argv[] ){
       // Rearranging indices in kinematics class to mimic reactionList
       // Starting with beam
       for(unsigned int k = 0; k < reaction->particleList().size(); k++){
-        if( k == 0 ) reactionVector.push_back(kin->particle( 0 ));
+        if( k == 0 ) reactionVector[k] = kin->particle( k );
         if( k > 0 && k <= lvIndices.size()){
 	  reactionVector[lvIndices[k-1]] = kin->particle( k ) ;
 	}
