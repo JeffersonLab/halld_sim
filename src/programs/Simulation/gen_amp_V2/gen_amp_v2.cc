@@ -72,16 +72,15 @@ int main( int argc, char* argv[] ){
 
 	
   bool genFlat = false;
-  bool genFlatBW = false;
   bool fsRootFormat = false;
   bool diag = false;
   bool uvPSRange = false;
   bool lvPSRange = false;
   bool tRange = false;
-	
   vector<double> uvBW;
   vector<double> lvBW;
-  
+  vector<double> tSlope;
+
   // default upper and lower bounds -- these
   // just need to be outside the kinematic bounds
   // of any reaction
@@ -100,12 +99,12 @@ int main( int argc, char* argv[] ){
   unsigned int reWeight =7;
   double tMin = 0.0;
   double tMax = 15.0;
-  double tSlope = 6.1;
 
   int nEvents = 10000;
   int batchSize = 10000;
   int uvCounter = 0;
   int lvCounter = 0;
+  int tSlopeCounter = 0;
 
   //parse command line:
   for (int i = 1; i < argc; i++){
@@ -122,25 +121,21 @@ int main( int argc, char* argv[] ){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  outName = argv[++i]; }
     if (arg == "-uvBW") {
-      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (i+4 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-') || (argv[i+3][0] == '-')) arg = "-h";
+      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-')) arg = "-h";
       else{ 
-        genFlatBW = true;
-	uvBW.push_back(atof(argv[i+1])); 
-        uvBW.push_back(atof(argv[i+2])); 
-        uvBW.push_back(atof(argv[i+3])); 
-        if(!argv[i+4]) reWeight -= FixedTargetGenerator::kUpperVtxMass;
+	uvBW.push_back( atof( argv[i+1] ) ); 
+        uvBW.push_back( atof( argv[i+2] ) ); 
+        uvBW.push_back( atof( argv[i+3] ) ); 
 	uvCounter++;
 	
       }
     }
     if (arg == "-lvBW") {
-      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (i+4 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-') || (argv[i+4][0] == '-')) arg = "-h";
+      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-')) arg = "-h";
       else{ 
-	genFlatBW = true;
-        lvBW.push_back(atof(argv[i+1])); 
-        lvBW.push_back(atof(argv[i+2])); 
-        lvBW.push_back(atof(argv[i+3])); 
-        if(!argv[i+4]) reWeight -= FixedTargetGenerator::kLowerVtxMass;
+        lvBW.push_back( atof( argv[i+1] ) ); 
+        lvBW.push_back( atof( argv[i+2] ) ); 
+        lvBW.push_back( atof( argv[i+3] ) ); 
 	lvCounter++;
       }
     }
@@ -166,7 +161,7 @@ int main( int argc, char* argv[] ){
     if (arg == "-lvRange"){
       if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
       else{  
-	lvMin = atof( argv[i+2] ); 
+	lvMin = atof( argv[i+1] ); 
         lvMax = atof( argv[i+2] ); 
         lvPSRange = true;
       }
@@ -179,9 +174,6 @@ int main( int argc, char* argv[] ){
         uvPSRange = true;
       }
     }
-    if (arg == "-uvMax"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  uvMax = atof( argv[++i] ); }
     if (arg == "-m"){
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  beamMaxE = atof( argv[++i] ); }
@@ -197,8 +189,9 @@ int main( int argc, char* argv[] ){
     if (arg == "-t"){
       if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
       else{  
-	tSlope = atof( argv[++i] ); 
-	if(!argv[i+2]) reWeight -= FixedTargetGenerator::kMomentumTransfer;
+	tSlope.push_back( atof( argv[i+1] ));
+	tSlope.push_back( atof( argv[i+2] ));
+	tSlopeCounter++;
       }
     }
     if (arg == "-tRange"){
@@ -208,10 +201,15 @@ int main( int argc, char* argv[] ){
         tMax = atof( argv[i+2] ); 
         tRange = true;
       }
+    }
+    if (arg == "-mask"){
+      if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-')) arg = "-h";
+      else{
+      	if( atoi( argv[i+1] ) == 0 ) reWeight -= FixedTargetGenerator::kUpperVtxMass;	
+      	if( atoi( argv[i+2] ) == 0 ) reWeight -= FixedTargetGenerator::kLowerVtxMass;
+	if( atoi( argv[i+3] ) == 0 ) reWeight -= FixedTargetGenerator::kMomentumTransfer;	
+      }
     }	
-    if (arg == "-tMax"){
-      if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  tMax = atof( argv[++i] ); }
     if (arg == "-f") genFlat = true; 
     if (arg == "-d") diag = true;
     if (arg == "-h"){
@@ -224,8 +222,8 @@ int main( int argc, char* argv[] ){
       cout << "\t -fsroot          \t Enable output in FSRoot format [optional]" << endl;
       cout << "\t -hd      <name>\t HDDM file output name [optional]" << endl;
       cout << "\t -f              \t Generate flat in phase space [optional]" << endl;
-      cout << "\t -uvBW    <value>\t concentrate events around one or more upper vertex resonances (Mass Width Scale PS) [optional]" << endl; 
-      cout << "\t -lvBW    <value>\t concentrate events around one or more lower vertex resonances (Mass Width Scale PS) [optional]" << endl; 
+      cout << "\t -uvBW    <value>\t concentrate events around one or more upper vertex resonances (Mass Width Scale) [optional]" << endl; 
+      cout << "\t -lvBW    <value>\t concentrate events around one or more lower vertex resonances (Mass Width Scale) [optional]" << endl; 
       cout << "\t -n       <value>\t Minimum number of events to generate [optional]" << endl;
       cout << "\t -r       <value>\t Run number assigned to generated events [optional]" << endl;
       cout << "\t -s       <value>\t Random number seed initialization [optional]" << endl;
@@ -235,10 +233,11 @@ int main( int argc, char* argv[] ){
       cout << "\t -p       <value>\t Coherent peak photon energy [optional]" << endl;
       cout << "\t -a       <value>\t Minimum photon energy to simulate events [optional]" << endl;
       cout << "\t -b       <value>\t Maximum photon energy to simulate events [optional]" << endl;
-      cout << "\t -t       <value>\t Momentum transfer slope ( t PS ) [optional]" << endl;
+      cout << "\t -t       <value>\t Momentum transfer slope ( t Scale ) [optional]" << endl;
       cout << "\t -tRange  <value>\t momentum transfer range (lowerLimit upperLimit) (Gev)^2 [optional]" << endl;
-      cout << "\t -d              \t Plot only diagnostic histograms [optional]" << endl << endl; 
-     exit(1);
+      cout << "\t -d              \t Plot only diagnostic histograms [optional]" << endl; 
+      cout << "\t -mask    <value>\t Remove weight to recover phase space for upper vertex mass, lower vertex, or momentum transfer t respectively ( uvM lvM t ) [optional]" << endl << endl; 
+    exit(1);
     }
   }
  	
@@ -268,7 +267,42 @@ int main( int argc, char* argv[] ){
   vector< int > pTypes;
   ostringstream locStream;
   ostringstream locRecoilStream;
-  
+ 
+  for( unsigned int i = 0; i < reaction->particleList().size(); ++i){
+    // checkParticle will check if an identical particle is used, dictated by % after particle name
+    // if none then will return string unchanged
+    string tempString = checkParticle( reaction->particleList()[i] );
+    Particle_t particle = ParticleEnum( tempString.c_str() );
+    if (particle == 0 && i > 0){
+      cout << "ERROR:  unknown particle " << tempString 
+           << " unable to configure generator." << endl;
+      exit( 1 );
+    }
+    else{
+      // this loop will check if particle is part of lower vertex according to user
+      for( unsigned int j = 0; j < lvIndices.size(); ++j){
+        if( lvIndices[j] > 0 && ((unsigned int)lvIndices[j] == i )){
+       	  cout << "This is lower vertex particle with indices " << lvIndices[j] 
+	  << " with name " <<  tempString << endl; 
+          lvMasses.push_back( ParticleMass( particle ) );	
+	  locRecoilStream << ParticleName_ROOT( particle );
+        }
+      }
+      // this loop will check if particle is part of upper vertex according to user
+      for( unsigned int k = 0; k < uvIndices.size(); ++k){
+        if( uvIndices[k] > 0 && ((unsigned int)uvIndices[k] == i )){
+          cout << "This is upper vertex particle with indices " << uvIndices[k] 
+          << " with name " <<  tempString << endl;
+          uvMasses.push_back( ParticleMass( particle ) ); 
+          locStream << ParticleName_ROOT( particle );     
+        }
+      }
+      // add particle to pTypes
+      pTypes.push_back( ParticleEnum(reaction->particleList()[i].c_str()) );
+    }
+  }
+
+  /* 
   //Add beam to pTypes first  
   pTypes.push_back( ParticleEnum(reaction->particleList()[0].c_str()) );	
   for( unsigned int i = 0; i < lvIndices.size(); ++i ){
@@ -283,7 +317,7 @@ int main( int argc, char* argv[] ){
     }
     else{
       cout << "This is particle indices " << lvIndices[i] << " with name " 
-           <<  reaction->particleList()[lvIndices[i]] << endl; 
+           <<  tempString << endl; 
       lvMasses.push_back( ParticleMass( particle ) );
       pTypes.push_back( particle );
       locRecoilStream << ParticleName_ROOT( particle );
@@ -301,13 +335,13 @@ int main( int argc, char* argv[] ){
     }
     else{
       cout << "This is upper vertex particle indices " << uvIndices[i] << " with name "
-           <<  reaction->particleList()[uvIndices[i]] << endl;
+           <<  tempString << endl;
       uvMasses.push_back( ParticleMass( particle ) );
       pTypes.push_back( particle );
       locStream << ParticleName_ROOT( particle );
     }
   }
-
+  */
 
   // random number initialization (set to 0 by default)
   TRandom3* gRandom = new TRandom3();
@@ -372,32 +406,25 @@ int main( int argc, char* argv[] ){
     ftGen.setLowerVtxRange( lvMin, lvMax ); }
   if( tRange ){
     ftGen.setMomentumTransferRange( tMin, tMax ); }
-  if(tSlope < 6.1){
-    ftGen.addMomentumTransfer( tSlope ); 
+  for(int i=0; i<tSlopeCounter; i++){
+    ftGen.addMomentumTransfer( tSlope[2*i], tSlope[2*i + 1] ); 
+  }
+   
+  // the lines below should be tailored by the user for the particular desired
+  // set of amplitudes -- doing so will improve efficiency.  Leaving as is
+  // won't make MC incorrect, it just won't be as fast as it could be
+		
+  for(int i=0; i< uvCounter; i++){
+    ftGen.addUpperVtxBW( uvBW[3*i] , uvBW[3*i + 1] , uvBW[3*i + 2] );
+  }
+  for(int i=0; i< lvCounter; i++){ 
+    ftGen.addLowerVtxBW( lvBW[3*i] , lvBW[3*i + 1] , lvBW[3*i + 2] );
   }
   
-  // Sets reweighting based off of options given in command line
+
+ // Sets reweighting based off of options given in command line
   ftGen.setReweightMask( reWeight );
   
-   
-  // some checks to do before creating FixedTargetGenerator (will implement later)
-  // CORRECTION FixedTargetGenerator does checks if kinematically correct
- 
-  if( genFlatBW ){
-		
-    // the lines below should be tailored by the user for the particular desired
-    // set of amplitudes -- doing so will improve efficiency.  Leaving as is
-    // won't make MC incorrect, it just won't be as fast as it could be
-		
-    for(int i=0; i< uvCounter; i++){
-      ftGen.addUpperVtxBW( uvBW[3*i] , uvBW[3*i + 1] , uvBW[3*i + 2] );
-    }
-    for(int i=0; i< lvCounter; i++){ 
-      ftGen.addLowerVtxBW( lvBW[3*i] , lvBW[3*i + 1] , lvBW[3*i + 2] );
-    }
-  }
-
-
   HDDMDataWriter* hddmOut = NULL;
   if( hddmName.size() != 0 ) hddmOut = new HDDMDataWriter( hddmName, runNum, seed);
   
@@ -442,12 +469,25 @@ int main( int argc, char* argv[] ){
     int i=0;
     while( i < batchSize ){
 
-
+      vector<TLorentzVector> reactionVector(reaction->particleList().size());
       Kinematics* kin;
       ftGen.setBeamEnergy( cobrem_vs_E->GetRandom() );  // Resets value of beam energy
       kin = ftGen.generate(); 
-      ati.loadEvent( kin, i, batchSize );
+      // Rearranging indices in kinematics class to mimic reactionList
+      // Starting with beam
+      for(unsigned int k = 0; k < reaction->particleList().size(); k++){
+        if( k == 0 ) reactionVector.push_back(kin->particle( 0 ));
+        if( k > 0 && k <= lvIndices.size()){
+	  reactionVector[lvIndices[k-1]] = kin->particle( k ) ;
+	}
+	if( k > lvIndices.size() && k <= lvIndices.size() + uvIndices.size() ){
+	  reactionVector[uvIndices[k - lvIndices.size() - 1]] = kin->particle( k ) ;
+	}
+      }
+      Kinematics* sim = new Kinematics(reactionVector,kin->weight());
+      ati.loadEvent( sim, i, batchSize );
       delete kin;
+      delete sim;
       i++;
     }
 		
