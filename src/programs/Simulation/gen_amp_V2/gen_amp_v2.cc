@@ -71,23 +71,13 @@ int main( int argc, char* argv[] ){
   string  uvString("");
 
 	
-  bool genFlat = false;
+  bool fixedGen = false;
   bool fsRootFormat = false;
   bool diag = false;
-  bool uvPSRange = false;
-  bool lvPSRange = false;
-  bool tRange = false;
-  vector<double> uvBW;
-  vector<double> lvBW;
-  vector<double> tSlope;
 
   // default upper and lower bounds -- these
   // just need to be outside the kinematic bounds
   // of any reaction
-  double lvMin = 0.0;
-  double uvMin = 0.0;
-  double lvMax = 5.0;
-  double uvMax = 5.0;
   
   double beamMaxE   = 12.0;
   double beamPeakE  = 9.0;
@@ -97,14 +87,12 @@ int main( int argc, char* argv[] ){
   int runNum = 30731;
   unsigned int seed = 0;
   unsigned int reWeight =7;
-  double tMin = 0.0;
-  double tMax = 15.0;
 
   int nEvents = 10000;
   int batchSize = 10000;
-  int uvCounter = 0;
-  int lvCounter = 0;
-  int tSlopeCounter = 0;
+
+  // Initialization of FixedTargetGenerator
+  FixedTargetGenerator ftGen;
 
   //parse command line:
   for (int i = 1; i < argc; i++){
@@ -123,20 +111,13 @@ int main( int argc, char* argv[] ){
     if (arg == "-uvBW") {
       if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-')) arg = "-h";
       else{ 
-	uvBW.push_back( atof( argv[i+1] ) ); 
-        uvBW.push_back( atof( argv[i+2] ) ); 
-        uvBW.push_back( atof( argv[i+3] ) ); 
-	uvCounter++;
-	
+	ftGen.addUpperVtxBW( atof( argv[i+1] ), atof( argv[i+2] ), atof( argv[i+3] ) ); 
       }
     }
     if (arg == "-lvBW") {
       if ((i+1 == argc) || (i+2 == argc) || (i+3 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-') || (argv[i+3][0] == '-')) arg = "-h";
       else{ 
-        lvBW.push_back( atof( argv[i+1] ) ); 
-        lvBW.push_back( atof( argv[i+2] ) ); 
-        lvBW.push_back( atof( argv[i+3] ) ); 
-	lvCounter++;
+        ftGen.addLowerVtxBW( atof( argv[i+1] ), atof( argv[i+2] ), atof( argv[i+3] ) );	
       }
     }
     if (arg == "-uv"){
@@ -161,17 +142,13 @@ int main( int argc, char* argv[] ){
     if (arg == "-lvRange"){
       if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
       else{  
-	lvMin = atof( argv[i+1] ); 
-        lvMax = atof( argv[i+2] ); 
-        lvPSRange = true;
+	ftGen.setLowerVtxRange( atof( argv[i+1] ), atof( argv[i+2] ) ); 
       }
     }
     if (arg == "-uvRange"){
       if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
       else{  
-	uvMin = atof( argv[i+1] ); 
-        uvMax = atof( argv[i+2] ); 
-        uvPSRange = true;
+	ftGen.setUpperVtxRange( atof( argv[i+1] ), atof( argv[i+2] ) ); 
       }
     }
     if (arg == "-m"){
@@ -189,17 +166,13 @@ int main( int argc, char* argv[] ){
     if (arg == "-t"){
       if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
       else{  
-	tSlope.push_back( atof( argv[i+1] ));
-	tSlope.push_back( atof( argv[i+2] ));
-	tSlopeCounter++;
+        ftGen.addMomentumTransfer( atof( argv[i+1] ), atof( argv[i+2] ) );
       }
     }
     if (arg == "-tRange"){
       if ((i+1 == argc) || (i+2 == argc) || (argv[i+1][0] == '-') || (argv[i+2][0] == '-')) arg = "-h";
       else{  
-	tMin = atof( argv[i+1] ); 
-        tMax = atof( argv[i+2] ); 
-        tRange = true;
+        ftGen.setMomentumTransferRange( atof( argv[i+1] ), atof( argv[i+2] ) );
       }
     }
     if (arg == "-mask"){
@@ -210,7 +183,7 @@ int main( int argc, char* argv[] ){
 	if( atoi( argv[i+3] ) == 0 ) reWeight -= FixedTargetGenerator::kMomentumTransfer;	
       }
     }	
-    if (arg == "-f") genFlat = true; 
+    if (arg == "-f") fixedGen = true; 
     if (arg == "-d") diag = true;
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
@@ -221,7 +194,7 @@ int main( int argc, char* argv[] ){
       cout << "\t -lv      <string>\t lower-vertex indices (0 is first) in AmpTools reaction" << endl;
       cout << "\t -fsroot          \t Enable output in FSRoot format [optional]" << endl;
       cout << "\t -hd      <name>\t HDDM file output name [optional]" << endl;
-      cout << "\t -f              \t Generate flat in phase space [optional]" << endl;
+      cout << "\t -f              \t Option will skip AmpTools accept/reject process. Output information of FixedTargetGenerator [optional]" << endl;
       cout << "\t -uvBW    <value>\t concentrate events around one or more upper vertex resonances (Mass Width Scale) [optional]" << endl; 
       cout << "\t -lvBW    <value>\t concentrate events around one or more lower vertex resonances (Mass Width Scale) [optional]" << endl; 
       cout << "\t -n       <value>\t Minimum number of events to generate [optional]" << endl;
@@ -265,8 +238,8 @@ int main( int argc, char* argv[] ){
   vector< double > lvMasses;
   vector< double > uvMasses;
   vector< int > pTypes;
-  ostringstream locStream;
-  ostringstream locRecoilStream;
+  ostringstream upperVtxName;
+  ostringstream lowerVtxName;
  
   for( unsigned int i = 0; i < reaction->particleList().size(); ++i){
     // checkParticle will check if an identical particle is used, dictated by % after particle name
@@ -285,7 +258,7 @@ int main( int argc, char* argv[] ){
        	  cout << "This is lower vertex particle with indices " << lvIndices[j] 
 	  << " with name " <<  tempString << endl; 
           lvMasses.push_back( ParticleMass( particle ) );	
-	  locRecoilStream << ParticleName_ROOT( particle );
+	  lowerVtxName << ParticleName_ROOT( particle );
         }
       }
       // this loop will check if particle is part of upper vertex according to user
@@ -294,7 +267,7 @@ int main( int argc, char* argv[] ){
           cout << "This is upper vertex particle with indices " << uvIndices[k] 
           << " with name " <<  tempString << endl;
           uvMasses.push_back( ParticleMass( particle ) ); 
-          locStream << ParticleName_ROOT( particle );     
+          upperVtxName << ParticleName_ROOT( particle );     
         }
       }
       // add particle to pTypes
@@ -355,32 +328,10 @@ int main( int argc, char* argv[] ){
   double beamEnergy = cobrem_vs_E->GetRandom();
 
   double targetMass = ParticleMass( ParticleEnum( "Proton" ) );
-
-  FixedTargetGenerator ftGen( beamEnergy, targetMass, uvMasses, lvMasses );
-
-  
-  // Include optional kinematic ranges (working on including BW values)
-  if( lvPSRange ){ 
-    ftGen.setUpperVtxRange( uvMin, uvMax ); }
-  if( uvPSRange ){
-    ftGen.setLowerVtxRange( lvMin, lvMax ); }
-  if( tRange ){
-    ftGen.setMomentumTransferRange( tMin, tMax ); }
-  for(int i=0; i<tSlopeCounter; i++){
-    ftGen.addMomentumTransfer( tSlope[2*i], tSlope[2*i + 1] ); 
-  }
-   
-  // the lines below should be tailored by the user for the particular desired
-  // set of amplitudes -- doing so will improve efficiency.  Leaving as is
-  // won't make MC incorrect, it just won't be as fast as it could be
-		
-  for(int i=0; i< uvCounter; i++){
-    ftGen.addUpperVtxBW( uvBW[3*i] , uvBW[3*i + 1] , uvBW[3*i + 2] );
-  }
-  for(int i=0; i< lvCounter; i++){ 
-    ftGen.addLowerVtxBW( lvBW[3*i] , lvBW[3*i + 1] , lvBW[3*i + 2] );
-  }
-  
+  ftGen.setTargetMass( targetMass );
+  ftGen.setBeamEnergy( beamEnergy );
+  ftGen.setUpperVtxMasses( uvMasses );
+  ftGen.setLowerVtxMasses( lvMasses );
 
  // Sets reweighting based off of options given in command line
   ftGen.setReweightMask( reWeight );
@@ -396,22 +347,22 @@ int main( int argc, char* argv[] ){
 	
   TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
   
-  string locHistTitle = string("Meson Mass ;") + locStream.str() + string(" Invariant Mass (GeV/c^{2});");
-  string locRecoilTitle = string("Baryon Mass ;") + locRecoilStream.str() + string(" Invariant Mass (GeV/c^{2});");
+  string locHistTitle = string("Meson Mass ;") + upperVtxName.str() + string(" Invariant Mass (GeV/c^{2});");
+  string locRecoilTitle = string("Baryon Mass ;") + lowerVtxName.str() + string(" Invariant Mass (GeV/c^{2});");
 
 	
   TH1F* t = new TH1F( "t", "-t Distribution", 200, 0, 2 );
   TH1F* tW = new TH1F( "tW", "-t Distribution", 200, 0, 2 ); 
-  TH1F* E = new TH1F( "E", "Beam Energy", 120, 0, 12 );
-  TH1F* EW = new TH1F( "EW", "Beam Energy", 120, 0, 12 );
-  TH1F* EWI = new TH1F( "EWI", "Beam Energy", 120, 0, 12 );
+  TH1F* e = new TH1F( "e", "Beam Energy", 120, 0, 12 );
+  TH1F* eW = new TH1F( "eW", "Beam Energy", 120, 0, 12 );
+  TH1F* eWI = new TH1F( "eWI", "Beam Energy", 120, 0, 12 );
   TH1F* intenW = new TH1F("intenW", "True PDF/ Gen. PDF", 1000, -0.1e-03, 0.8e-03);
   TH2F* intenWVsE = new TH2F("intenWVsE","Ratio vs. M", 100, 0, 12, 1000, -0.1e-03, 0.8e-03);
   
-  TH1F* M_Meson = new TH1F( "M_Meson", locHistTitle.c_str(), 200, uvMin, uvMax );
-  TH1F* MW_Meson = new TH1F( "MW_Meson", locHistTitle.c_str(), 200, uvMin, uvMax );
-  TH1F* M_recoil = new TH1F( "M_recoil", locRecoilTitle.c_str(), 200, lvMin, lvMax );
-  TH1F* MW_recoil = new TH1F( "MW_recoil", locRecoilTitle.c_str(), 200, lvMin, lvMax );
+  TH1F* m_Meson = new TH1F( "m_Meson", locHistTitle.c_str(), 200, 0., 3. );
+  TH1F* mW_Meson = new TH1F( "mW_Meson", locHistTitle.c_str(), 200, 0., 3. );
+  TH1F* m_recoil = new TH1F( "m_recoil", locRecoilTitle.c_str(), 200, 0., 3. );
+  TH1F* mW_recoil = new TH1F( "mW_recoil", locRecoilTitle.c_str(), 200, 0., 3. );
 
 	
   int eventCounter = 0;
@@ -455,7 +406,7 @@ int main( int argc, char* argv[] ){
 		
     // include factor of 1.5 to be safe in case we miss peak -- avoid
     // intensity calculation of we are generating flat data
-    double maxInten = ( genFlat ? 1 : 1.5 * ati.processEvents( reaction->reactionName() ) );
+    double maxInten = ( fixedGen ? 1 : 1.5 * ati.processEvents( reaction->reactionName() ) );
 		
 		
     for( int i = 0; i < batchSize; ++i ){
@@ -478,7 +429,7 @@ int main( int argc, char* argv[] ){
       double genWeight = evt->weight();
 			
       // cannot ask for the intensity if we haven't called process events above
-      double weightedInten = ( genFlat ? 1 : ati.intensity( i ) ); 
+      double weightedInten = ( fixedGen ? 1 : ati.intensity( i ) ); 
       // cout << " i=" << i << "  intensity_i=" << weightedInten << endl;
 
       if( !diag ){
@@ -486,33 +437,33 @@ int main( int argc, char* argv[] ){
 	// obtain this by looking at the maximum value of intensity * genWeight
 	double rand = gRandom->Uniform() * maxInten;
 				
-	if( weightedInten > rand || genFlat ){
+	if( weightedInten > rand || fixedGen ){
 
 
-	  M_recoil->Fill( recoil.M() );
+	  m_recoil->Fill( recoil.M() );
 	  
-	  MW_recoil->Fill( recoil.M(), genWeight );
+	  mW_recoil->Fill( recoil.M(), genWeight );
 									
 	  t->Fill( -1*(recoil-target).M2() );
 
    	  tW->Fill( -1*(recoil-target).M2(),genWeight );	  
   
-	  E->Fill( beam.E() );
+	  e->Fill( beam.E() );
 
-	  EW->Fill( beam.E(),genWeight );
+	  eW->Fill( beam.E(),genWeight );
 
 	  intenW->Fill( weightedInten );
 
 	  intenWVsE->Fill( beam.E(), weightedInten );
 	
-	  M_Meson->Fill( resonance.M() );
+	  m_Meson->Fill( resonance.M() );
 	  
-	  MW_Meson->Fill( resonance.M(), genWeight );
+	  mW_Meson->Fill( resonance.M(), genWeight );
  
 	
 	  
 	  // we want to save events with weight 1
-	  evt->setWeight( 1.0 );
+	  if( !fixedGen ) evt->setWeight( 1.0 );
 					
 	  if( hddmOut ) hddmOut->writeEvent( *evt, pTypes);
 	  rootOut->writeEvent( *evt );
@@ -522,16 +473,16 @@ int main( int argc, char* argv[] ){
       }
       else{
 				
-	M_recoil->Fill( recoil.M() );
-	MW_recoil->Fill( recoil.M(), genWeight );
-	M_Meson->Fill( resonance.M() );
-	MW_Meson->Fill( resonance.M(), genWeight );
+	m_recoil->Fill( recoil.M() );
+	mW_recoil->Fill( recoil.M(), genWeight );
+	m_Meson->Fill( resonance.M() );
+	mW_Meson->Fill( resonance.M(), genWeight );
 				
 	t->Fill( -1*(recoil-target).M2() );
 	tW->Fill( -1*(recoil-target).M2(),genWeight );
-	E->Fill( beam.E() );	
-	EW->Fill( beam.E(),genWeight );
-	EWI->Fill( beam.E(), weightedInten );
+	e->Fill( beam.E() );	
+	eW->Fill( beam.E(),genWeight );
+	eWI->Fill( beam.E(), weightedInten );
 	intenW->Fill( weightedInten );
 	intenWVsE->Fill( beam.E(), weightedInten );	
 			
@@ -544,15 +495,15 @@ int main( int argc, char* argv[] ){
     cout << eventCounter << " events were processed." << endl;
   }
 	
-  M_recoil->Write();
-  MW_recoil->Write();
-  M_Meson->Write();
-  MW_Meson->Write();
+  m_recoil->Write();
+  mW_recoil->Write();
+  m_Meson->Write();
+  mW_Meson->Write();
   t->Write();
   tW->Write();
-  E->Write();
-  EW->Write();
-  EWI->Write();
+  e->Write();
+  eW->Write();
+  eWI->Write();
   intenW->Write();
   intenWVsE->Write();
 
