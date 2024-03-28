@@ -113,6 +113,9 @@
 #include "backgrounds.inc"
 #include "cobrems.inc"
 *
+      integer beamgen_disable
+      common /internal_beamgen/beamgen_disable
+
       DIMENSION VERTEX(4),PLAB(5)
       DIMENSION RNDM(20)
 
@@ -256,7 +259,7 @@ c         print *, ngen,' background photons generated this event'
 *
 *              Try coherent bremsstrahlung beam generation next
 *
-      elseif (E.gt.0) then
+      elseif (beamgen_disable.eq.0) then
          call beamgen(0.)
          call storeInput(IDRUN,IDEVT,1);
 *
