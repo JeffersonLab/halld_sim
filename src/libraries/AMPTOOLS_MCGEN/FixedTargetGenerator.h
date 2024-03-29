@@ -18,15 +18,16 @@ public:
   
   enum { kMomentumTransfer = 1, kUpperVtxMass = 2, kLowerVtxMass = 4 };
   
-  FixedTargetGenerator();
+  FixedTargetGenerator( int seed = 0 );
   
   // this constructor assumes the beam is a photon (go GlueX!)  --
   // more general cases can be handled by setBeamP4 below
   FixedTargetGenerator( double photonBeamEnergy, double targetMass,
                         const vector< double >& uvMasses,
-                        const vector< double >& lvMasses );
+                        const vector< double >& lvMasses,
+                        int seed = 0 );
 
-  void setSeed( unsigned int seed ){ m_randGen.SetSeed( seed ); }
+  void setSeed( int seed );
   
   // by default include the beam four-vector as the first item
   // in the generated kinematics object -- passing false
@@ -107,6 +108,7 @@ private:
        decay( const TLorentzVector& p4Initial, double m1, double m2, double cosThetaCM ) const;
   
   mutable TRandom m_randGen;
+  int m_seed;
   
   TLorentzVector m_beam;
   TLorentzVector m_target;
