@@ -6,12 +6,14 @@
 
 #include "AMPTOOLS_MCGEN/DecayChannelGenerator.h"
 
-DecayChannelGenerator::DecayChannelGenerator() :
+DecayChannelGenerator::DecayChannelGenerator( int seed ) :
 m_bfTotal( 0 ),
 m_probRenormalized( false ),
 m_upperBound( 0 ),
 m_index( 0 )
-{}
+{
+  m_randGen.SetSeed( seed );
+}
 
 using namespace std;
 
@@ -60,7 +62,7 @@ DecayChannelGenerator::operator()() const {
         m_probRenormalized = true;
     }
     
-    double rand = drand48();
+    double rand = m_randGen.Uniform();
     for( unsigned int i = 0; i < m_upperBound.size(); ++i ){
         
         if( rand < m_upperBound[i] ){

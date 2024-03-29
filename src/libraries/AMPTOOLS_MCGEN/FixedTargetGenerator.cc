@@ -10,7 +10,8 @@
 
 using namespace std;
 
-FixedTargetGenerator::FixedTargetGenerator() :
+FixedTargetGenerator::FixedTargetGenerator( int seed ) :
+m_seed( seed ),
 m_lvMinUser( 0 ),
 m_lvMaxUser( 1E9 ),
 m_uvMinUser( 0 ),
@@ -21,11 +22,15 @@ m_tMagMaxUser( 1E9 ),
 // to recover phase space
 m_reweightMask( kUpperVtxMass | kLowerVtxMass | kMomentumTransfer ),
 m_limitsValid( false )
-{}
+{
+  setSeed( seed );
+}
 
 FixedTargetGenerator::FixedTargetGenerator( double photonBeamEnergy, double targetMass,
                                             const vector< double >& uvMasses,
-                                            const vector< double >& lvMasses ) :
+                                            const vector< double >& lvMasses,
+                                            int seed ) :
+m_seed( seed ),
 m_uvMasses( uvMasses ),
 m_lvMasses( lvMasses ),
 m_lvMinUser( 0 ),
@@ -42,8 +47,39 @@ m_limitsValid( false )
 
   setBeamEnergy( photonBeamEnergy );
   setTargetMass( targetMass );
+  setSeed( seed );
   
   calculateLimits();
+}
+
+void
+FixedTargetGenerator::setSeed( int seed ){
+  
+  // save the seed in case we create more generators
+  // that need to be seeded
+  m_seed = seed;
+  
+  // now seed every generator that this class is
+  // is responsible for
+  m_randGen.SetSeed( seed );
+
+  m_upperDecayChannel.setSeed( seed );
+  m_lowerDecayChannel.setSeed( seed );
+  m_tSlopeChannel.setSeed( seed );
+  
+  for( vector< BreitWignerGenerator >::iterator bwGen =
+      m_upperBWGen.begin(); bwGen != m_upperBWGen.end();
+      ++bwGen ){
+    
+    (*bwGen).setSeed( seed );
+  }
+
+  for( vector< BreitWignerGenerator >::iterator bwGen =
+      m_lowerBWGen.begin(); bwGen != m_lowerBWGen.end();
+      ++bwGen ){
+    
+    (*bwGen).setSeed( seed );
+  }
 }
 
 void
@@ -63,14 +99,14 @@ FixedTargetGenerator::setLowerVtxMasses( const vector< double >& lvMasses ){
 void
 FixedTargetGenerator::addUpperVtxBW( double mass, double width, double fraction ){
   
-  m_upperBWGen.push_back( BreitWignerGenerator( mass, width ) );
+  m_upperBWGen.push_back( BreitWignerGenerator( mass, width, m_seed ) );
   m_upperDecayChannel.addChannel( m_upperBWGen.size()-1, fraction );
 }
 
 void
 FixedTargetGenerator::addLowerVtxBW( double mass, double width, double fraction ){
   
-  m_lowerBWGen.push_back( BreitWignerGenerator( mass, width ) );
+  m_lowerBWGen.push_back( BreitWignerGenerator( mass, width, m_seed ) );
   m_lowerDecayChannel.addChannel( m_lowerBWGen.size()-1, fraction );
 }
 
