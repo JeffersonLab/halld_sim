@@ -3,6 +3,8 @@ Darwin_*
 SunOS_*
 src/.*
 src/SBMS/*.pyc
+*.map
+*.map.gz
 *~
 *.os
 *.so

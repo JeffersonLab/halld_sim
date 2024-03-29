@@ -12,7 +12,7 @@ class BreitWignerGenerator
         
         BreitWignerGenerator();
         
-        BreitWignerGenerator( double mass, double width );
+        BreitWignerGenerator( double mass, double width, int seed = 0 );
         
         // output of the generation is a pair of doubles
         // the first is the mass and the second is the weight
