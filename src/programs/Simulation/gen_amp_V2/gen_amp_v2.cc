@@ -187,30 +187,53 @@ int main( int argc, char* argv[] ){
     if (arg == "-d") diag = true;
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
-      cout << "\t -ac      <file>\t AmpTools config file" << endl;
-      cout << "\t -bc      <file>\t beam config file (will generate local file within coherent peak if not included) " << endl;
-      cout << "\t -o       <name>\t ROOT file output name" << endl;
-      cout << "\t -uv      <string>\t upper-vertex indices (0 is first) in AmpTools reaction" << endl;
-      cout << "\t -lv      <string>\t lower-vertex indices (0 is first) in AmpTools reaction" << endl;
-      cout << "\t -fsroot          \t Enable output in FSRoot format [optional]" << endl;
-      cout << "\t -hd      <name>\t HDDM file output name [optional]" << endl;
-      cout << "\t -f              \t Option will skip AmpTools accept/reject process. Output information of FixedTargetGenerator [optional]" << endl;
-      cout << "\t -uvBW    <value>\t concentrate events around one or more upper vertex resonances (Mass Width Scale) [optional]" << endl; 
-      cout << "\t -lvBW    <value>\t concentrate events around one or more lower vertex resonances (Mass Width Scale) [optional]" << endl; 
-      cout << "\t -n       <value>\t Minimum number of events to generate [optional]" << endl;
-      cout << "\t -r       <value>\t Run number assigned to generated events [optional]" << endl;
-      cout << "\t -s       <value>\t Random number seed initialization [optional]" << endl;
-      cout << "\t -lvRange <value>\t Lower vertex mass range ( lowerLimit upperLimit ) (GeV) [optional]" << endl;
-      cout << "\t -uvRange <value>\t Upper vertex mass range  ( lowerLimit upperLimit ) (GeV) [optional]" << endl;
-      cout << "\t -m       <value>\t Electron beam energy (or photon energy endpoint) [optional]" << endl;
-      cout << "\t -p       <value>\t Coherent peak photon energy [optional]" << endl;
-      cout << "\t -a       <value>\t Minimum photon energy to simulate events [optional]" << endl;
-      cout << "\t -b       <value>\t Maximum photon energy to simulate events [optional]" << endl;
-      cout << "\t -t       <value>\t Momentum transfer slope ( t Scale ) [optional]" << endl;
-      cout << "\t -tRange  <value>\t momentum transfer range (lowerLimit upperLimit) (Gev)^2 [optional]" << endl;
-      cout << "\t -d              \t Plot only diagnostic histograms [optional]" << endl; 
-      cout << "\t -mask    <value>\t Remove weight to recover phase space for upper vertex mass, lower vertex, or momentum transfer t respectively ( uvM lvM t ) [optional]" << endl << endl; 
-    exit(1);
+      cout << "\t -ac       <file>" << endl;
+      cout << "\t           AmpTools config file" << endl;
+      cout << "\t -bc       <file>" << endl;
+      cout << "\t           beam config file (will generate local file within coherent peak if not included) " << endl;
+      cout << "\t -o        <name>" << endl;
+      cout << "\t           ROOT file output name" << endl;
+      cout << "\t -uv       <string>" << endl;
+      cout << "\t           upper-vertex indices (0 is first) in AmpTools reaction" << endl;
+      cout << "\t -lv       <string>" << endl;
+      cout << "\t           lower-vertex indices (0 is first) in AmpTools reaction" << endl;
+      cout << "\t -fsroot"         << endl;
+      cout << "\t           Enable output in FSRoot format [optional]" << endl;
+      cout << "\t -hd       <name> " << endl;
+      cout << "\t           HDDM file output name [optional]" << endl;
+      cout << "\t -f " << endl;
+      cout << "\t           Option will skip AmpTools accept/reject process. Output information of FixedTargetGenerator [optional]" << endl;
+      cout << "\t -d "            << endl; 
+      cout << "\t           Plot only diagnostic histograms [optional]" << endl; 
+      cout << "\t -n        <number>" << endl;
+      cout << "\t           Minimum number of events to generate [optional]" << endl;
+      cout << "\t -r        <run number>" << endl;
+      cout << "\t           Run number assigned to generated events [optional]" << endl;
+      cout << "\t -s        <number>" << endl;
+      cout << "\t           Random number seed initialization [optional]" << endl;
+      cout << "\t -lvRange  <min> <max> " << endl;
+      cout << "\t           Lower vertex mass range ( lowerLimit upperLimit ) (GeV) [optional]" << endl;
+      cout << "\t -uvRange  <min> <max> " << endl; 
+      cout << "\t           Upper vertex mass range  ( lowerLimit upperLimit ) (GeV) [optional]" << endl;
+      cout << "\t -t        <tSlope> <scale>" << endl;
+      cout << "\t           Momentum transfer slope ( t Scale ) [optional]" << endl;
+      cout << "\t -tRange   <min> <max>" << endl;
+      cout << "\t           Momentum transfer range (lowerLimit upperLimit) (Gev)^2 [optional]" << endl;
+      cout << "\t -uvBW     <mass> <width> <scale> " << endl;
+      cout << "\t           Concentrate events around one or more upper vertex resonances (Mass Width Scale) [optional]" << endl;
+      cout << "\t -lvBW     <mass> <width> <scale> " << endl;
+      cout << "\t           Concentrate events around one or more lower vertex resonances (Mass Width Scale) [optional]" << endl;
+      cout << "\t -mask     <upper vertex mass> <lower vertex mass> <t distribution>" << endl;
+      cout << "\t           Remove weight to recover phase space for upper vertex mass, lower vertex, or momentum transfer t respectively ( uvM lvM t ) [optional]" << endl; 
+      cout << "\t -m        <energy> " << endl;
+      cout << "\t           Electron beam energy (or photon energy endpoint) [optional]" << endl;
+      cout << "\t -p        <peak> " << endl;
+      cout << "\t           Coherent peak photon energy [optional]" << endl;
+      cout << "\t -a        <min E beam>" << endl;
+      cout << "\t           Minimum photon energy to simulate events [optional]" << endl;
+      cout << "\t -b        <max E beam>" << endl;
+      cout << "\t           Maximum photon energy to simulate events [optional]" << endl << endl;
+      exit(1);
     }
   }
  	
@@ -406,7 +429,7 @@ int main( int argc, char* argv[] ){
 		
     // include factor of 1.5 to be safe in case we miss peak -- avoid
     // intensity calculation of we are generating flat data
-    double maxInten = ( fixedGen ? 1 : 1.5 * ati.processEvents( reaction->reactionName() ) );
+    double maxInten = ( fixedGen ? 0 : 1.5 * ati.processEvents( reaction->reactionName() ) );
 		
 		
     for( int i = 0; i < batchSize; ++i ){
@@ -437,7 +460,7 @@ int main( int argc, char* argv[] ){
 	// obtain this by looking at the maximum value of intensity * genWeight
 	double rand = gRandom->Uniform() * maxInten;
 				
-	if( weightedInten > rand || fixedGen ){
+	if( weightedInten > rand){
 
 
 	  m_recoil->Fill( recoil.M() );
