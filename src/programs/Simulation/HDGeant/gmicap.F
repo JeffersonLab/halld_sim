@@ -1,3 +1,4 @@
+#include "cernlib_defines.inc"
 *
 * $Id: gmicap.F,v 1.1.1.1 1995/10/24 10:21:52 cernlib Exp $
 *
