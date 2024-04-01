@@ -355,7 +355,8 @@ int main( int argc, char* argv[] ){
   ftGen.setBeamEnergy( beamEnergy );
   ftGen.setUpperVtxMasses( uvMasses );
   ftGen.setLowerVtxMasses( lvMasses );
-
+  ftGen.setSeed(seed);
+ 
  // Sets reweighting based off of options given in command line
   ftGen.setReweightMask( reWeight );
   
