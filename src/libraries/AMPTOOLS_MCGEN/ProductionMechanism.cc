@@ -20,8 +20,8 @@ m_highMass( 0 ),
 m_slope( slope ),
 m_lowT( 0 ),
 m_highT( 12 ),
-m_lastWeight( 1. ),
-m_seed( seed )
+m_seed( seed ),
+m_lastWeight( 1. )
 {	
   // kMZ = 108.;      //  mass of Sn116 
   kMZ = 208.*0.931494;      //  use mass of Pb as it is in the particle table
