@@ -101,7 +101,6 @@ ROOTDataReaderWithTCut::ROOTDataReaderWithTCut( const vector< string >& args ):
 
    // Reset event counter back to 0 since we incremented it in the above loop
    resetSource(); 
-ROOTDataReaderWithTCut.cc
 }
 
 ROOTDataReaderWithTCut::~ROOTDataReaderWithTCut()
