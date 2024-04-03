@@ -28,9 +28,10 @@ ROOTDataReaderFilter::ROOTDataReaderFilter( const vector< string >& args ):
    //    a *SELECTION* on the Mass branch between 1.0 and 1.1. An exclamation point before
    //    the variable name will perform a *CUT*, in this case removing everything below 8.2.
    //    The -999 unphysical lower bound is there to essentially indicate no lower bound.
+   // 
    // data reaction ROOTDataReaderFilter mydata.root Mass 1.0 1.1 !EBeam -999 8.2
 
-   set<int> availbleNargs={1};
+   std::set<int> availbleNargs={1};
    for(int i=1; i<maxselects+1; ++i){ 
        availbleNargs.insert(1+3*i); }
    nargs=(int)args.size();
