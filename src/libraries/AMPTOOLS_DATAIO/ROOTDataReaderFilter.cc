@@ -23,13 +23,15 @@ ROOTDataReaderFilter::ROOTDataReaderFilter( const vector< string >& args ):
 {
     
    // arguments must come in triplets (variable, min, max) with a maximum number designated by maxselects
-   //    any additional multiple of 3 is possible, i.e. 1,4,7,10..., maxvar where there is an additional +1 is needed to shift to the first actual argument
+   //    any additional multiple of 3 is possible, i.e. 1,4,7,10..., maxvar (defined in header file) 
+   //    where there is an additional +1 is needed to shift to the first actual argument
 
    // USAGE IN AMPTOOLS CFG FILES:
    // The following amptools config line will load the data from mydata.root and perform
    //    a *SELECTION* on the Mass branch between 1.0 and 1.1. An exclamation point before
    //    the variable name will perform a *CUT*, in this case removing everything below 8.2.
    //    The -999 unphysical lower bound is there to essentially indicate no lower bound.
+   //    Of course this number depends on the actual values...
    // 
    // data reaction ROOTDataReaderFilter mydata.root Mass 1.0 1.1 !EBeam -999 8.2
 
@@ -91,7 +93,7 @@ ROOTDataReaderFilter::ROOTDataReaderFilter( const vector< string >& args ):
    }
 
    m_RangeSpecified=false;
-   if ( nselects >0 ){
+   if ( nselects > 0 ){
       m_RangeSpecified=true;
 
       for (auto &p: mapVars){
@@ -149,6 +151,9 @@ ROOTDataReaderFilter::ROOTDataReaderFilter( const vector< string >& args ):
       cout << "[" << args[0] << "] Weight Integral    = " << m_weightIntegral << endl;
       cout << "*********************************************" << endl;
    }
+
+   // Reset event counter back to 0 since we incremented it in the above loop
+   resetSource(); 
 }
 
 ROOTDataReaderFilter::~ROOTDataReaderFilter()
