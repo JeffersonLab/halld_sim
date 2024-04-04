@@ -223,28 +223,8 @@ int main( int argc, char* argv[] ){
 	  for (unsigned int ivar  = 0; ivar  < OmegaPiPlotGenerator::kNumHists; ivar++){
 	  
 	    // set unique histogram name for each plot (could put in directories...)
-	    string histname =  "";
-	    if (ivar == OmegaPiPlotGenerator::kOmegaPiMass)  histname += "MOmegaPi";
-	    else if (ivar == OmegaPiPlotGenerator::kCosTheta)  histname += "CosTheta";
-	    else if (ivar == OmegaPiPlotGenerator::kPhi)  histname += "Phi";
-	    else if (ivar == OmegaPiPlotGenerator::kCosThetaH)  histname += "CosTheta_H";
-	    else if (ivar == OmegaPiPlotGenerator::kPhiH)  histname += "Phi_H";
-	    else if (ivar == OmegaPiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
-	    else if (ivar == OmegaPiPlotGenerator::kt)  histname += "t";
-	    else if (ivar == OmegaPiPlotGenerator::kRecoilMass)  histname += "MRecoil";
-	    else if (ivar == OmegaPiPlotGenerator::kProtonPiMass)  histname += "MProtonPi";
-	    else if (ivar == OmegaPiPlotGenerator::kRecoilPiMass)  histname += "MRecoilPi";
-	    else if (ivar == OmegaPiPlotGenerator::kLambda)  histname += "Lambda";
-	    else if (ivar == OmegaPiPlotGenerator::kDalitz)  histname += "Dalitz";
-	    //	  else if (ivar == OmegaPiPlotGenerator::kThetaDelta)  histname += "ThetaDelta";
-	    else if (ivar == OmegaPiPlotGenerator::kCosThetaDelta)  histname += "CosThetaDelta";
-	    else if (ivar == OmegaPiPlotGenerator::kPhiDelta)  histname += "PhiDelta";
-	    //	  else if (ivar == OmegaPiPlotGenerator::kSinSqThetaDelta)  histname += "SinSqThetaDelta";
-	    //	  else if (ivar == OmegaPiPlotGenerator::kCosSqThetaDelta)  histname += "CosSqThetaDelta";
-	    //	  else if (ivar == OmegaPiPlotGenerator::kSin2ThetaDelta)  histname += "Sin2ThetaDelta";
+	    string histname =  plotGen.getHistogram( ivar )->name();
 
-	    else continue;
-	  
 	    if (iplot == PlotGenerator::kData) histname += "dat";
 	    if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
 	    if (iplot == PlotGenerator::kAccMC) histname += "acc";
