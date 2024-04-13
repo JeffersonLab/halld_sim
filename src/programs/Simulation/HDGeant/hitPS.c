@@ -162,7 +162,7 @@ void hitPS(float xin[4], float xout[4],float pin[5], float pout[5], float dEsum,
       {
          fprintf(stderr,"HDGeant error in hitPS: ");
          fprintf(stderr,"max hit count %d exceeded, truncating!\n",MAX_HITS);
-         exit(2);
+         //exit(2);
       }
    }
 }
