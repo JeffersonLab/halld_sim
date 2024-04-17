@@ -53,7 +53,7 @@ BreitWigner3body::calcAmplitude( GDouble** pKin ) const
 }
 
 complex< GDouble >
-BreitWigner::calcAmplitudeFromMasses( GDouble mass ) const
+BreitWigner3body::calcAmplitudeFromMasses( GDouble mass ) const
 {
   // this first factor just gets normalization right for BW's that have
   // no additional s-dependence from orbital L
