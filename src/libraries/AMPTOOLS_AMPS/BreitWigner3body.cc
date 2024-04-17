@@ -48,7 +48,13 @@ BreitWigner3body::calcAmplitude( GDouble** pKin ) const
   
   GDouble width = m_width0;
   //GDouble width = m_width0;
-  
+
+  return calcAmplitudeFromMasses( mass );
+}
+
+complex< GDouble >
+BreitWigner::calcAmplitudeFromMasses( GDouble mass ) const
+{
   // this first factor just gets normalization right for BW's that have
   // no additional s-dependence from orbital L
   complex<GDouble> bwtop( sqrt( m_mass0 * m_width0 / 3.1416 ), 0.0 );

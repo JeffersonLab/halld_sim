@@ -61,7 +61,13 @@ BreitWigner::calcAmplitude( GDouble** pKin ) const
   GDouble mass  = Ptot.M();
   GDouble mass1 = P1.M();
   GDouble mass2 = P2.M();
-  
+
+  return calcAmplitudeFromMasses( mass, mass1, mass2 );
+}
+
+complex< GDouble >
+BreitWigner::calcAmplitudeFromMasses( GDouble mass, GDouble mass1, GDouble mass2 ) const
+{
   // assert positive breakup momenta     
   GDouble q0 = fabs( breakupMomentum(m_mass0, mass1, mass2) );
   GDouble q  = fabs( breakupMomentum(mass,    mass1, mass2) );
