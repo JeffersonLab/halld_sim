@@ -19,6 +19,7 @@ using namespace jana;
 #include <FDCSmearer.h>
 #include <BCALSmearer.h>
 #include <FCALSmearer.h>
+#include <ECALSmearer.h>
 #include <CCALSmearer.h>
 #include <TOFSmearer.h>
 #include <SCSmearer.h>
