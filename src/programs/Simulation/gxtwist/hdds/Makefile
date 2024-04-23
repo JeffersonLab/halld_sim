@@ -1,4 +1,4 @@
-OS_RELEASE = $(shell $(HALLD_HOME)/src/BMS/osrelease.pl)
+OS_RELEASE = $(BMS_OSNAME)
 
 HDDS_GEANT = $(HDDS_HOME)/$(OS_RELEASE)/bin/hdds-geant
 

@@ -3,5 +3,5 @@ PACKAGES := CERNLIB
 
 FFLAGS += -DCERNLIB_MOTIF -D_GELH_ -DCERNLIB_TYPE -I..
 
-include $(HALLD_HOME)/src/BMS/Makefile.lib
+include $(HALLD_SIM_HOME)/src/BMS/Makefile.lib
 

@@ -11,8 +11,11 @@
 
 #include "particleType.h"
 
+
+#include "AMPTOOLS_DATAIO/DataWriter.h"
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
-#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_DATAIO/FSRootDataWriter.h"
+#include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 
 #include "AMPTOOLS_AMPS/ThreePiAngles.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -22,17 +25,21 @@
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/TwoPiAnglesRadiative.h"
+#include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/Lambda1520tdist.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
-#include "AMPTOOLS_AMPS/dblRegge.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
+#include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/Hist2D.h"
-#include "AMPTOOLS_AMPS/dblReggeMod.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
+#include "AMPTOOLS_AMPS/Uniform.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/SinglePS.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -62,6 +69,7 @@ int main( int argc, char* argv[] ){
 	bool centeredVertex = true;
 	bool diag = false;
 	bool genFlat = false;
+	bool fsRootFormat = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 0.2;
@@ -81,6 +89,7 @@ int main( int argc, char* argv[] ){
 
 	int nEvents = 10000;
 	int batchSize = 10000;
+
 	
 	//parse command line:
 	for (int i = 1; i < argc; i++){
@@ -138,10 +147,13 @@ int main( int argc, char* argv[] ){
 			centeredVertex = false; }
 		if (arg == "-f"){
 			genFlat = true; }
+		if (arg == "-fsroot"){
+		        fsRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
 			cout << "\t -o    <name>\t ROOT file output name" << endl;
+			cout << "\t -fsroot \t Enable output in FSRoot format" << endl;
 			cout << "\t -hd   <name>\t HDDM file output name [optional]" << endl;
 			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
@@ -228,6 +240,15 @@ int main( int argc, char* argv[] ){
 	case Pb208:
 	  recoil = ProductionMechanism::kZ;
 	  break;
+	case Deuteron:
+	  recoil = ProductionMechanism::kDeuteron;
+	  break;
+	case Helium:
+	  recoil = ProductionMechanism::kHelium;
+	  break;
+	case C12:
+	  recoil = ProductionMechanism::kC12;
+	  break;
 	case PiPlus:
 	case PiMinus: // works like an OR statement
 	  recoil = ProductionMechanism::kPion;
@@ -280,17 +301,21 @@ int main( int argc, char* argv[] ){
 	AmpToolsInterface::registerAmplitude( BreitWigner() );
 	AmpToolsInterface::registerAmplitude( BreitWigner3body() );
 	AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-	AmpToolsInterface::registerAmplitude( TwoPiAnglesRadiative() );
+	AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
 	AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
 	AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
-	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
 	AmpToolsInterface::registerAmplitude( Ylm() );
 	AmpToolsInterface::registerAmplitude( Zlm() );
-	AmpToolsInterface::registerAmplitude( dblRegge() );
 	AmpToolsInterface::registerAmplitude( Hist2D() );
-	AmpToolsInterface::registerAmplitude( dblReggeMod() );
+	AmpToolsInterface::registerAmplitude( DblRegge_FastEta() );
+	AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
 	AmpToolsInterface::registerAmplitude( Flatte() );
+	AmpToolsInterface::registerAmplitude( Uniform() );
+	AmpToolsInterface::registerAmplitude( ComplexCoeff() );
+	AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+	AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+	AmpToolsInterface::registerAmplitude( SinglePS() );
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
 	// loop to look for beam configuration file
@@ -332,8 +357,12 @@ int main( int argc, char* argv[] ){
 	}
 
 	double targetMass = ParticleMass(ParticleEnum("Proton"));
-	if(recoil == ProductionMechanism::kZ)
-		targetMass = ParticleMass(Particles[1]);
+	if (recoil == ProductionMechanism::kZ || 
+	    recoil == ProductionMechanism::kDeuteron ||
+	    recoil == ProductionMechanism::kHelium || 
+	    recoil == ProductionMechanism::kC12 || 
+	    recoil == ProductionMechanism::kNeutron)
+	  targetMass = ParticleMass(Particles[1]);
 	double recMass = ParticleMass(Particles[1]);
 	double cmEnergy = sqrt(targetMass*(targetMass + 2*beamLowE));
 	if ( cmEnergy < minMass + recMass ){
@@ -360,13 +389,18 @@ int main( int argc, char* argv[] ){
 	for (unsigned int i=0; i<Particles.size(); i++)
 	  pTypes.push_back( Particles[i] );
 	for (unsigned int i=0; i<ParticlesLowerVertex.size(); i++) {
-	  if(ParticlesLowerVertex[i] == Proton || ParticlesLowerVertex[i] == Neutron) continue;
+	  if(ParticlesLowerVertex[i] == Proton || ParticlesLowerVertex[i] == Neutron) continue;//FOR WHAT THIS FOR?
           pTypes.push_back( ParticlesLowerVertex[i] );
 	}
 
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
-	ROOTDataWriter rootOut( outname );
+  
+	// the first argument to the FSRootDataWriter is the number of particles *in addition to* the beam
+	// particle, which is typically the first in the list in GlueX reaction definitions
+	DataWriter* rootOut = ( fsRootFormat ?
+				static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
+				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 	
 	TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
 	ostringstream locStream;
@@ -382,8 +416,8 @@ int main( int argc, char* argv[] ){
 	TH1F* mass = new TH1F( "M", locHistTitle.c_str(), 180, lowMass, highMass );
 	TH1F* massW = new TH1F( "M_W", ("Weighted "+locHistTitle).c_str(), 180, lowMass, highMass );
 	massW->Sumw2();
-	TH1F* intenW = new TH1F( "intenW", "True PDF / Gen. PDF", 1000, 0, 100 );
-	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, lowMass, highMass, 1000, 0, 10 );
+	TH1F* intenW = new TH1F( "intenW", "True PDF / Gen. PDF", 1000, -0.1e-03, 0.8e-03 );
+	TH2F* intenWVsM = new TH2F( "intenWVsM", "Ratio vs. M", 100, lowMass, highMass, 1000, -0.1e-03, .8e-03 );
 	
 	TH1F* t = new TH1F( "t", "-t Distribution", 200, 0, 2 );
 
@@ -391,7 +425,7 @@ int main( int argc, char* argv[] ){
 	TH2F* EvsM = new TH2F( "EvsM", "Beam Energy vs Mass", 120, 0, 12, 180, lowMass, highMass );
 
 	TH1F* M_isobar = new TH1F( "M_isobar", locIsobarTitle.c_str(), 200, 0, 2 );
-	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 200, 0, 2 );
+	TH1F* M_recoil = new TH1F( "M_recoil", "; Recoil mass (GeV)", 3000, 0, 300 );
 
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
@@ -562,7 +596,7 @@ int main( int argc, char* argv[] ){
 					evt->setWeight( 1.0 );
 					
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes, centeredVertex );
-					rootOut.writeEvent( *evt );
+					rootOut->writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
 				}
@@ -602,6 +636,7 @@ int main( int argc, char* argv[] ){
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;
+	delete rootOut;
 	
 	return 0;
 }

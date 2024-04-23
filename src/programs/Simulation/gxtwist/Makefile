@@ -11,9 +11,26 @@ DIRS += gelhad hdds
 all install clean pristine relink env: $(DIRS) current_dir
 
 $(DIRS):
-	if test ! -d gelhad ; then ln -s $(HALLD_HOME)/src/programs/Simulation/HDGeant/gelhad . ; fi
+	if test ! -d gelhad ; then ln -s ../HDGeant/gelhad . ; fi
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 current_dir:
+	$(MAKE) -- -lHDDM
+	$(MAKE) -- -lHDGEOMETRY
 	$(MAKE) -f Makefile.bms $(MAKECMDGOALS)
 
+-lHDDM:
+	touch -- $@
+	true
+
+-lHDGEOMETRY:
+	touch -- $@
+	true
+
+clean:
+	rm -rf paw.metafile flukaerr.dat geant.hbook gxtwist.rz gelhad hdgeant.hddm
+	rm -f hddsGeant3_tagger.F hdds/hddsGeant4_tagger.F
+	rm -f -- -lHDDM -lHDGEOMETRY
+
+#
+# DO NOT DELETE

@@ -1,0 +1,39 @@
+MACRO sizes_set type=0
+*
+* Sizes: type=0 - projector
+*
+
+  graph/set hwid 4
+  graph/set bwid 4
+  graph/set pwid 2
+  graph/set fwid 2
+  graph/set xwid 2
+  graph/set ywid 2
+  graph/set vfon -40
+  graph/set lfon -40
+  graph/set cfon -40
+  graph/set tfon -40
+  graph/set gfon -40
+  graph/set tfon -40
+
+  igset txfp -40 
+  igset chhe 0.35
+
+  graph/set csiz 0.42
+  graph/set asiz 0.52
+  graph/set vsiz 0.48
+
+  graph/set csiz 0.40
+  graph/set asiz 0.40
+  graph/set vsiz 0.40
+  graph/set gsiz 0.40
+
+if [type]=0 then
+*   Projector
+
+elseif [type]=1 then
+  graph/set vsiz 0.28
+  graph/set asiz 0.28
+endif
+
+RETURN

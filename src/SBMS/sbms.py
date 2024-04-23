@@ -632,7 +632,7 @@ def AddDANA(env):
 	AddMySQL(env)   # needed for EventStore
 	DANA_LIBS  = "DANA ANALYSIS KINFITTER PID TAGGER TRACKING START_COUNTER"
 	DANA_LIBS += " CERE DIRC CDC TRIGGER PAIR_SPECTROMETER RF"
-	DANA_LIBS += " FDC TOF BCAL FCAL CCAL TPOL HDGEOMETRY TTAB FMWPC TAC"
+	DANA_LIBS += " FDC TOF BCAL FCAL ECAL CCAL TPOL HDGEOMETRY TTAB FMWPC TAC"
 	DANA_LIBS += " DAQ JANA EVENTSTORE TRD"
 	DANA_LIBS += " expat"
 	env.PrependUnique(LIBS = DANA_LIBS.split())
@@ -819,6 +819,7 @@ def AddXERCES(env):
 def AddCERNLIB(env):
 	env.PrependUnique(FORTRANFLAGS = ['-ffixed-line-length-0', '-fno-second-underscore'])
 	env.PrependUnique(FORTRANFLAGS = ['-fno-automatic'])
+	env.PrependUnique(FORTRANFLAGS = ['-std=legacy'])
 	gccver = gcc_major_version()
 	if gccver >= 10:
 		env.PrependUnique(FORTRANFLAGS = ['-fallow-argument-mismatch'])
@@ -826,12 +827,14 @@ def AddCERNLIB(env):
 	cern = os.getenv('CERN', '/usr/local/cern/PRO')
 	cern_level = os.getenv('CERN_LEVEL', '2006')
 	cern_root = '%s/%s' % (cern, cern_level)
-	CERN_FORTRANPATH = "%s/include" % cern_root
+	CERN_FORTRANPATH = ["%s/include" % cern_root]
+	CERN_FORTRANPATH += ["%s/src/pawlib/paw/ntuple" % cern_root]
 	CERN_LIBPATH = "%s/lib" % cern_root
-	env.AppendUnique(FORTRANPATH   = [CERN_FORTRANPATH])
+	env.AppendUnique(FORTRANPATH   = CERN_FORTRANPATH)
 	env.AppendUnique(CPPPATH   = CERN_FORTRANPATH)
 	env.AppendUnique(LIBPATH   = CERN_LIBPATH)
-	env.AppendUnique(LINKFLAGS = ['-rdynamic', '-Wl,--no-as-needed'])
+	env.AppendUnique(CFLAGS    = ["-DgFortran"])
+	env.AppendUnique(LINKFLAGS = ['-rdynamic', '-Wl,--no-as-needed', '-Wl,--allow-multiple-definition'])
 	env.AppendUnique(LIBS      = ['geant321', 'pawlib', 'lapack3', 'blas', 'graflib', 'grafX11', 'packlib', 'mathlib', 'kernlib', 'phtools', 'gfortran', 'X11', 'nsl', 'crypt', 'dl'])
 	env.SetOption('warn', 'no-fortran-cxx-mix')  # supress warnings about linking fortran with c++
 
@@ -1036,12 +1039,23 @@ def AddSWIG(env):
 ##################################
 def AddCUDA(env):
 	CUDA = os.getenv('CUDA_INSTALL_PATH')
+	AMPTOOLS = os.getenv('AMPTOOLS')
 	if CUDA != None	:
 		
 		# Create Builder that can compile .cu file into object files
 		NVCC = '%s/bin/nvcc' % CUDA
 #		CUDAFLAGS = '-I%s/include -arch=compute_13 -code=compute_13' % CUDA
 		CUDAFLAGS = ['-g', '-I%s/include' % CUDA]
+	
+		# set to floating point precision if built in AmpTools
+		FP32 = False
+		try:
+			FP32 = subprocess.check_output("nm -u --demangle %s/lib/libAmpTools_GPU.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True)
+			if FP32:
+				CUDAFLAGS.append('-DAMPTOOLS_GDOUBLE_FP32')
+		except:
+			pass
+
 		try:
 			CUDAFLAGS.extend(env['CUDAFLAGS'])
 		except:
@@ -1061,8 +1075,11 @@ def AddCUDA(env):
 		env.AppendUnique(LIBPATH=['%s/lib' % CUDA, '%s/lib64' % CUDA])
 		env.AppendUnique(LIBS=['cublas', 'cudart'])
 		env.AppendUnique(CPPPATH=['%s/include' % CUDA])
-		env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION'])
-		
+		if FP32:
+			env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION', '-DAMPTOOLS_GDOUBLE_FP32'])
+		else:
+			env.AppendUnique(CXXFLAGS=['-DGPU_ACCELERATION'])
+
 		# Temporarily change to source directory and add all .cu files
 		curpath = os.getcwd()
 		srcpath = env.Dir('.').srcnode().abspath
@@ -1101,7 +1118,18 @@ def AddAmpTools(env):
 			AMPTOOLS_LIBS = 'AmpTools_GPU'
 			print('Using GPU enabled AMPTOOLS library')
 
-		env.AppendUnique(CXXFLAGS = ['-DHAVE_AMPTOOLS_MCGEN'])
+		CXXFLAGSLIST = ["-DHAVE_AMPTOOLS_MCGEN"]
+		# set to floating point precision if built in AmpTools
+		try:
+			if os.getenv('CUDA_INSTALL_PATH')==None:
+				if subprocess.check_output("nm -u --demangle %s/lib/libAmpTools.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
+					CXXFLAGSLIST.append("-DAMPTOOLS_GDOUBLE_FP32")
+			elif subprocess.check_output("nm -u --demangle %s/lib/libAmpTools_GPU.a | grep calcUserVarsAll | grep -c float" % AMPTOOLS , shell=True):
+				CXXFLAGSLIST.append("-DAMPTOOLS_GDOUBLE_FP32")
+		except:
+			pass
+
+		env.AppendUnique(CXXFLAGS = CXXFLAGSLIST)
 		env.AppendUnique(CPPPATH = AMPTOOLS_CPPPATH)
 		env.AppendUnique(LIBPATH = AMPTOOLS_LIBPATH)
 		env.AppendUnique(LIBS    = AMPTOOLS_LIBS)
@@ -1169,7 +1197,7 @@ def AddEvtGen(env):
 	else:
                 AddHepMC(env)
                 AddPhotos(env)
-                EVTGEN_CPPPATH = "%s/" % (EVTGEN_HOME)
+                EVTGEN_CPPPATH = "%s/include" % (EVTGEN_HOME)
                 EVTGEN_LIBPATH = [ "%s/lib" % (EVTGEN_HOME), "%s/lib64" % (EVTGEN_HOME) ]   # either of these could be true
                 EVTGEN_LIBS = [ "EvtGen", "EvtGenExternal" ] 
                 EVTGEN_LIBS += [ "EVTGEN_MODELS" ]

@@ -167,10 +167,10 @@ LIBNAME = $(LIB_DIR)/lib$(MODULE_NAME)$(DEBUG_SUFFIX).a
 
 # For GNU compilers, add verbose warnings
 ifeq ($(FC),$(FC_GNU))
-  FFLAGS   += -Wall
+  FFLAGS   += -Wall -std=legacy
 endif
 ifeq ($(CC),gcc)
-  CFLAGS   += -Wall
+  CFLAGS   += -Wall -DgFortran
 endif
 ifeq ($(CXX),g++)
   CXXFLAGS += -Wall

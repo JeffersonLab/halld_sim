@@ -10,6 +10,11 @@
 #include <HDDM/hddm_s.hpp>
 
 namespace hddm_s_merger {
+   // run number currently loaded in config
+   int get_config_run_loaded();
+   void set_config_run_loaded(int run);
+
+   // global trigger time shift for event
    double get_t_shift_ns();
    void set_t_shift_ns(double dt_ns);
 
@@ -30,7 +35,7 @@ namespace hddm_s_merger {
    void set_fdc_wires_min_delta_t_ns(double dt_ns);
    int get_fdc_strips_max_hits();
    void set_fdc_strips_max_hits(int maxhits);
-   double get_fdc_strips_integraton_window_ns();
+   double get_fdc_strips_integration_window_ns();
    void set_fdc_strips_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the STC
@@ -82,6 +87,17 @@ namespace hddm_s_merger {
    void set_fcal_min_delta_t_ns(double dt_ns);
    double get_fcal_integration_window_ns();
    void set_fcal_integration_window_ns(double dt_ns);
+
+   // hits merging / truncation parameters for the ECAL
+   bool get_ecal_merging();
+   void set_ecal_merging(bool merging_status);
+   int get_ecal_max_hits();
+   void set_ecal_max_hits(int maxhits);
+   double get_ecal_min_delta_t_ns();
+   void set_ecal_min_delta_t_ns(double dt_ns);
+   double get_ecal_integration_window_ns();
+   void set_ecal_integration_window_ns(double dt_ns);
+
 
    // hits merging / truncation parameters for the CCAL
    bool get_ccal_merging();
@@ -159,6 +175,7 @@ namespace hddm_s_merger {
    void truncate_bcal_tdc_digihits(hddm_s::BcalTDCDigiHitList &hits);
    void truncate_ftof_hits(hddm_s::FtofHitList &hits);
    void truncate_fcal_hits(hddm_s::FcalHitList &hits);
+   void truncate_ecal_hits(hddm_s::EcalHitList &hits);
    void truncate_ccal_hits(hddm_s::CcalHitList &hits);
    void truncate_tag_hits(hddm_s::TaggerHitList &hits);
    void truncate_ps_hits(hddm_s::PsHitList &hits);
@@ -221,6 +238,12 @@ hddm_s::FcalBlockList &operator+=(hddm_s::FcalBlockList &dst,
                                   hddm_s::FcalBlockList &src);
 hddm_s::FcalHitList &operator+=(hddm_s::FcalHitList &dst,
                                 hddm_s::FcalHitList &src);
+hddm_s::CrystalEcalList &operator+=(hddm_s::CrystalEcalList &dst,
+                                     hddm_s::CrystalEcalList &src);
+hddm_s::EcalBlockList &operator+=(hddm_s::EcalBlockList &dst,
+                                  hddm_s::EcalBlockList &src);
+hddm_s::EcalHitList &operator+=(hddm_s::EcalHitList &dst,
+                                hddm_s::EcalHitList &src);
 hddm_s::ComptonEMcalList &operator+=(hddm_s::ComptonEMcalList &dst,
                                      hddm_s::ComptonEMcalList &src);
 hddm_s::CcalBlockList &operator+=(hddm_s::CcalBlockList &dst,

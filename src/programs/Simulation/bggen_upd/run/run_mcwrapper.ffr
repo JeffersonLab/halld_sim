@@ -1,0 +1,10 @@
+C  ---       Variables to be substituted by MCwrapper
+C
+TRIG       TEMPTRIG         # number of events to simulate
+RUNNO      TEMPRUNNO        # run number of generated events, default is two
+RNDMSEQ    TEMPRAND         # random number sequence     integer values
+EELEC      TEMPELECE        # electron beam energy
+EPEAK      TEMPCOHERENT     # coherent peak energy
+DCOLLIM    TEMPCOLD         # collimator diameter in m
+C
+END

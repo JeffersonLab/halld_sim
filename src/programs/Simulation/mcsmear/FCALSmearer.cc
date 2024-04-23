@@ -3,7 +3,7 @@
 //-----------
 // fcal_config_t  (constructor)
 //-----------
-fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom) 
+fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mcsmear_config_t *in_config) 
 {
 	// default values
 	FCAL_PHOT_STAT_COEF     = 0.0; // 0.05;
@@ -16,17 +16,48 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
 	FCAL_THRESHOLD          = 0.0; // 108
 	FCAL_THRESHOLD_SCALING  = 0.0; // (110/108)
 	FCAL_ENERGY_WIDTH_FLOOR = 0.0; // 0.03
+	FCAL_ENERGY_RANGE       = 8.0; // 8 GeV for E_{e^-} = 12GeV
+
+	FCAL_TIME_A = 0.0;   // 5.550
+  	FCAL_TIME_B = 0.0;   // 0.5
+  	FCAL_TIME_C = 0.0;   // 4.2722e+04
+  	FCAL_TIME_D = 0.0;   // -4.32
+  	FCAL_TIME_E = 0.0;   // 0.014
+	
+    FCAL_ADD_LIGHTGUIDE_HITS = in_config->FCAL_ADD_LIGHTGUIDE_HITS;
+    FCAL_LIGHTGUIDE_SCALE_FACTOR = in_config->FCAL_LIGHTGUIDE_SCALE_FACTOR;
 
 	// Get values from CCDB
-	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
-    map<string, double> fcalparms;
-    if(loop->GetCalib("FCAL/fcal_parms", fcalparms)) { 
-     	jerr << "Problem loading FCAL/fcal_parms from CCDB!" << endl;
-    } else {
-       	FCAL_PHOT_STAT_COEF   = fcalparms["FCAL_PHOT_STAT_COEF"]; 
-       	FCAL_BLOCK_THRESHOLD  = fcalparms["FCAL_BLOCK_THRESHOLD"];
+	cout << "Get PHOTON_BEAM/endpoint_energy from CCDB ..." << endl;
+	map<string, float> beam_parms;
+	if (loop->GetCalib("PHOTON_BEAM/endpoint_energy", beam_parms)) {
+	  jerr << "Problem loading PHOTON_BEAM/endpoint_energy from CCDB!" << endl;
+	} else {
+	  double endpoint_energy = beam_parms["PHOTON_BEAM_ENDPOINT_ENERGY"];
+	  if (endpoint_energy > 12) FCAL_ENERGY_RANGE = 8. / 12. * endpoint_energy;
 	}
-		
+	
+	cout << "Get FCAL/fcal_mc_timing_parms parameters from CCDB..." << endl;
+        map<string, double> fcaltimingparms;
+        if(loop->GetCalib("FCAL/fcal_mc_timing_parms", fcaltimingparms)) {
+          jerr << "Problem loading FCAL/fcal_mc_timing_parms from CCDB!" << endl;
+        } else {
+        FCAL_TIME_A   = fcaltimingparms["FCAL_TIME_A"];
+        FCAL_TIME_B   = fcaltimingparms["FCAL_TIME_B"];
+        FCAL_TIME_C   = fcaltimingparms["FCAL_TIME_C"];
+        FCAL_TIME_D   = fcaltimingparms["FCAL_TIME_D"];
+        FCAL_TIME_E   = fcaltimingparms["FCAL_TIME_E"];
+        }
+	
+	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
+	map<string, double> fcalparms;
+	if(loop->GetCalib("FCAL/fcal_parms", fcalparms)) { 
+	  jerr << "Problem loading FCAL/fcal_parms from CCDB!" << endl;
+	} else {
+	  FCAL_PHOT_STAT_COEF   = fcalparms["FCAL_PHOT_STAT_COEF"]; 
+	  FCAL_BLOCK_THRESHOLD  = fcalparms["FCAL_BLOCK_THRESHOLD"];
+	}
+	
 	cout<<"get FCAL/gains from calibDB"<<endl;
     vector <double> FCAL_GAINS_TEMP;
     if(loop->GetCalib("FCAL/gains", FCAL_GAINS_TEMP)) {
@@ -111,7 +142,18 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
         FCAL_TSIGMA = fcalmctimingsmear["FCAL_TSIGMA"];
     }
 
-
+	// allow for setting this value on the command line - presumably
+	// the user will set it to some non-zero value
+	// this should override the CCDB setting
+	if(FCAL_LIGHTGUIDE_SCALE_FACTOR < 0.) {  
+		cout<<"get FCAL/fcal_lightguide_scale_factor parameters from calibDB"<<endl;
+		map<string, double> fcallightguidescale;
+		if(loop->GetCalib("FCAL/fcal_lightguide_scale_factor", fcallightguidescale)) {
+			jerr << "Problem loading FCAL/fcal_lightguide_scale_factor from CCDB!" << endl;
+		} else {
+			FCAL_LIGHTGUIDE_SCALE_FACTOR = fcallightguidescale["factor"];
+		}
+	}
 
     // initialize 2D matrix of efficiencies, indexed by (row,column)
     vector< vector<double > > new_block_efficiencies(DFCALGeometry::kBlocksTall, 
@@ -172,6 +214,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom)
 //-----------
 void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 {
+
    /// Smear the FCAL hits using the nominal resolution of the individual blocks.
    /// The way this works is a little funny and warrants a little explanation.
    /// The information coming from hdgeant is truth information indexed by 
@@ -207,14 +250,15 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	 double Ethreshold=fcal_config->FCAL_BLOCK_THRESHOLD;
 	 double sigEfloor=fcal_config->FCAL_ENERGY_WIDTH_FLOOR;
 	 double sigEstat=fcal_config->FCAL_PHOT_STAT_COEF;
-	 double Erange = 8.0;
-         
+	 double Erange = fcal_config->FCAL_ENERGY_RANGE;
+ 	 double adcCounts = 0;
+	        
 	 if (row<DFCALGeometry::kBlocksTall&&column<DFCALGeometry::kBlocksWide){
 	   // correct simulation efficiencies 
 	   if (config->APPLY_EFFICIENCY_CORRECTIONS
 	       && !gDRandom.DecideToAcceptHit(fcal_config->GetEfficiencyCorrectionFactor(row, column))) {
 	     continue;
-	   } 
+	   }
 	 
 	   // Get gain constant per block	      
 	   int channelnum = fcalGeom->channel(row, column); 
@@ -232,11 +276,12 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 	     hddm_s::FcalTruthLightGuideList lghits = titer->getFcalTruthLightGuides();
 	     hddm_s::FcalTruthLightGuideList::iterator lgiter;
 	     for (lgiter = lghits.begin(); lgiter != lghits.end(); lgiter++) {
-	       E += lgiter->getE();
+             E += lgiter->getDE() * fcal_config->FCAL_LIGHTGUIDE_SCALE_FACTOR;
 	     }
 	   }
 	   // Apply constant scale factor to MC energy. 06/22/2016 A. Subedi
 	   E *= fcal_config->FCAL_MC_ESCALE;
+	   adcCounts += E/(FCAL_gain*integral_peak*MeV_FADC);
 	 }
 	 else { // deal with insert
 	   sigEfloor=fcal_config->INSERT_ENERGY_WIDTH_FLOOR;
@@ -247,7 +292,15 @@ void FCALSmearer::SmearEvent(hddm_s::HDDM *record)
 
          if(config->SMEAR_HITS) {
 	   // Smear the timing and energy of the hit
-	   t += gDRandom.SampleGaussian(fcal_config->FCAL_TSIGMA);
+	double tSigma = 0.;
+    	if(fcal_config->FCAL_NEW_TIME_SMEAR){
+      	  tSigma = fcal_config->FCAL_TIME_A/pow(adcCounts,fcal_config->FCAL_TIME_B)
+         + fcal_config->FCAL_TIME_C*pow(adcCounts,fcal_config->FCAL_TIME_D) + fcal_config->FCAL_TIME_E;
+    	}
+    	else {
+      	  tSigma = fcal_config->FCAL_TSIGMA;
+    	}
+    	t += gDRandom.SampleGaussian(tSigma);   
 	   
 	   // Energy width has stochastic and floor terms
 	   double sigma = sqrt( pow(sigEstat,2)/titer->getE() 

@@ -20,20 +20,14 @@
 
 #include "AMPTOOLS_DATAIO/ThreePiPlotGeneratorSchilling.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
-#include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_AMPS/ThreePiAnglesSchilling.h"
-#include "AMPTOOLS_AMPS/BreitWigner.h"
-#include "AMPTOOLS_AMPS/BreitWigner3body.h"
 
 typedef ThreePiPlotGeneratorSchilling PlotGen;
 
 void atiSetup(){
   
   AmpToolsInterface::registerAmplitude( ThreePiAnglesSchilling() );
-  AmpToolsInterface::registerAmplitude( BreitWigner() );
-  AmpToolsInterface::registerAmplitude( BreitWigner3body() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
-  AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );
 }
 
 using namespace std;
@@ -138,14 +132,7 @@ int main( int argc, char* argv[] ){
       for (unsigned int ivar  = 0; ivar  < ThreePiPlotGeneratorSchilling::kNumHists; ivar++){
 
         // set unique histogram name for each plot (could put in directories...)
-        string histname =  "";
-        if (ivar == ThreePiPlotGeneratorSchilling::k3PiMass)  histname += "M3pi";
-	     else if (ivar == ThreePiPlotGeneratorSchilling::kCosTheta)  histname += "cosTheta";
-        else if (ivar == ThreePiPlotGeneratorSchilling::kPhi)  histname += "Phi";
-        else if (ivar == ThreePiPlotGeneratorSchilling::kphi)  histname += "phi";
-        else if (ivar == ThreePiPlotGeneratorSchilling::kPsi)  histname += "psi";
-        else if (ivar == ThreePiPlotGeneratorSchilling::kt)  histname += "t";
-        else continue;
+        string histname =  plotGen.getHistogram( ivar )->name();
 
         if (iplot == PlotGenerator::kData) histname += "dat";
         if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
@@ -153,10 +140,8 @@ int main( int argc, char* argv[] ){
         if (iplot == PlotGenerator::kGenMC) histname += "gen";
 
         if (isum < sums.size()){
-          //ostringstream sdig;  sdig << (isum + 1);
-          //histname += sdig.str();
 
-	  // get name of sum for naming histogram
+          // get name of sum for naming histogram
           string sumName = sums[isum];
           histname += "_";
           histname += sumName;

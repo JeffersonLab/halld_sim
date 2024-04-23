@@ -26,7 +26,11 @@ mcsmear_config_t::mcsmear_config_t()
 	DUMP_RCDB_CONFIG = false;
 	APPLY_EFFICIENCY_CORRECTIONS = true;
 	APPLY_HITS_TRUNCATION  = true;
-	FCAL_ADD_LIGHTGUIDE_HITS = false;
+
+	FCAL_ADD_LIGHTGUIDE_HITS = true;
+    FCAL_LIGHTGUIDE_SCALE_FACTOR = -1.;
+	FCAL_NEW_TIME_SMEAR = false;
+
 	SKIP_READING_RCDB = false;
 	MERGE_TAGGER_HITS = true;
 
@@ -58,7 +62,8 @@ mcsmear_config_t::mcsmear_config_t()
 //-----------
 mcsmear_config_t::~mcsmear_config_t() {
 #ifdef HAVE_RCDB
-	delete rcdb_connection;
+    if (rcdb_connection != NULL)
+	    delete rcdb_connection;
 #endif //HAVE_RCDB
 }
 
@@ -141,7 +146,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
     }
 
     // Parse CODA config file 
-    vector<string> SectionNames = {"TRIGGER", "GLOBAL", "FCAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
+    vector<string> SectionNames = {"TRIGGER", "GLOBAL", "FCAL", "ECAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
                                          "TAGM", "PS", "PSC", "TPOL", "CDC", "FDC"};
     string fileContent = file->GetContent();                               // Get file content
     auto result = rcdb::ConfigParser::Parse(fileContent, SectionNames);    // Parse it!
@@ -182,7 +187,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
     double dvalue;
     std::stringstream deco;
     vector<string>::iterator iter;
-    vector<string> fadc250_sys = {"FCAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
+    vector<string> fadc250_sys = {"FCAL", "ECAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
                                   "TAGM", "PS", "PSC", "TPOL"};
     for (iter = fadc250_sys.begin(); iter != fadc250_sys.end(); ++iter) {
 

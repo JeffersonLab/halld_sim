@@ -12,16 +12,21 @@
 
 #include "particleType.h"
 
+#include "AMPTOOLS_DATAIO/DataWriter.h"
 #include "AMPTOOLS_DATAIO/ROOTDataWriter.h"
-#include "AMPTOOLS_DATAIO/HDDMDataWriter.h"
+#include "AMPTOOLS_DATAIO/FSRootDataWriter.h"
+#include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
-#include "AMPTOOLS_AMPS/omegapiAngAmp.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/PhaseOffset.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
+#include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 
 #include "AMPTOOLS_MCGEN/ProductionMechanism.h"
 #include "AMPTOOLS_MCGEN/GammaPToNPartP.h"
@@ -53,7 +58,8 @@ int main( int argc, char* argv[] ){
         string  asciiname("");
 	
 	bool diag = false;
-	bool genFlat = false;
+        bool genFlat = false;
+        bool fsRootFormat = false;
 	
 	// default upper and lower bounds 
 	double lowMass = 1.0;//To take over threshold with a BW omega mass
@@ -145,6 +151,8 @@ int main( int argc, char* argv[] ){
 			diag = true; }
 		if (arg == "-f"){
 			genFlat = true; }
+		if (arg == "-fsroot"){
+		        fsRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
@@ -252,11 +260,13 @@ int main( int argc, char* argv[] ){
 
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
-	AmpToolsInterface::registerAmplitude( omegapiAngAmp() );
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
-
+        AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+        AmpToolsInterface::registerAmplitude( PhaseOffset() );
+	AmpToolsInterface::registerAmplitude( ComplexCoeff() );
+	AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
 
 	AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
@@ -318,7 +328,12 @@ int main( int argc, char* argv[] ){
 
 	HDDMDataWriter* hddmOut = NULL;
 	if( hddmname.size() != 0 ) hddmOut = new HDDMDataWriter( hddmname, runNum, seed);
-	ROOTDataWriter rootOut( outname );
+
+	// the first argument to the FSRootDataWriter is the number of particles *in addition to* the beam
+	// particle, which is typically the first in the list in GlueX reaction definitions
+	DataWriter* rootOut = ( fsRootFormat ?
+				static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outname ) ) :
+				static_cast< DataWriter* >( new ROOTDataWriter( outname ) ) );
 	
 	ASCIIDataWriter* asciiOut = NULL;
         if( asciiname.size() != 0 ) asciiOut = new ASCIIDataWriter( asciiname );
@@ -354,6 +369,7 @@ int main( int argc, char* argv[] ){
 	TH1F* M_p4 = new TH1F( "M_p4", "p4", 200, 0, 2 );
 
         TH2F* M_dalitz = new TH2F( "M_dalitz", "dalitzxy", 200, -2, 2, 200, -2, 2);
+	TH1F* lambda = new TH1F( "lambda", "#lambda_{#omega}", 120, 0.0, 1.2);
 
 	TH2F* CosTheta_psi = new TH2F( "CosTheta_psi", "cos#theta vs. #psi", 180, -3.14, 3.14, 100, -1, 1);
 	TH2F* M_CosTheta = new TH2F( "M_CosTheta", "M vs. cos#vartheta", 180, lowMass, highMass, 200, -1, 1);
@@ -361,7 +377,10 @@ int main( int argc, char* argv[] ){
 	TH2F* M_CosThetaH = new TH2F( "M_CosThetaH", "M vs. cos#vartheta_{H}", 180, lowMass, highMass, 200, -1, 1);
 	TH2F* M_PhiH = new TH2F( "M_PhiH", "M vs. #varphi_{H}", 180, lowMass, highMass, 200, -3.14, 3.14);
 	TH2F* M_Phi_Prod = new TH2F( "M_Phi_Prod", "M vs. #Phi_{Prod}", 180, lowMass, highMass, 200, -3.14, 3.14);
-
+	TH2F* phi_Phi_Prod = new TH2F( "phi_Phi_Prod", "#phi vs. #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
+	TH2F* PhiH_Psi = new TH2F( "PhiH_Psi", "#phi_{H} vs. #phi - #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
+	TH2F* PhiH_PsiPrime = new TH2F( "PhiH_PsiPrime", "#phi_{H} vs. #phi + #Phi_{Prod}", 180, -3.14, 3.14, 180, -3.14, 3.14);
+	
 	int eventCounter = 0;
 	while( eventCounter < nEvents ){
 		
@@ -468,16 +487,16 @@ int main( int argc, char* argv[] ){
 			
 			Kinematics* evt = ati.kinematics( i );
 			TLorentzVector resonance;
-			for (unsigned int i=2; i<Particles.size(); i++)
-			  resonance += evt->particle( i );
+			for (unsigned int j=2; j<Particles.size(); j++)
+			  resonance += evt->particle( j );
 
 			TLorentzVector isobar;
-			for (unsigned int i=3; i<Particles.size(); i++)
-			  isobar += evt->particle( i );
+			for (unsigned int j=3; j<Particles.size(); j++)
+			  isobar += evt->particle( j );
 			
 			TLorentzVector isobar2;
-			for (unsigned int i=4; i<Particles.size(); i++)
-			  isobar2 += evt->particle( i );
+			for (unsigned int j=4; j<Particles.size(); j++)
+			  isobar2 += evt->particle( j );
 			
 			TLorentzVector recoil = evt->particle( 1 );
                         if(bwGenLowerVertex.size()) {
@@ -548,21 +567,31 @@ int main( int argc, char* argv[] ){
 					M_CosThetaH->Fill( resonance.M(), cosThetaH);
 					M_PhiH->Fill( resonance.M(), phiH);
 
+					double lambda_omega = loccosthetaphih[2];
+					lambda->Fill(lambda_omega);
+
                                         double Phi = loccosthetaphi[2];
 					M_Phi_Prod->Fill( resonance.M(), Phi);
 
                                         GDouble psi = phi - Phi;
                                         if(psi < -1*PI) psi += 2*PI;
                                         if(psi > PI) psi -= 2*PI;
+
+					GDouble psiprime = phi + Phi;
+                                        if(psiprime < -1*PI) psiprime += 2*PI;
+                                        if(psiprime > PI) psiprime -= 2*PI;
 					
 					CosTheta_psi->Fill( psi, cosTheta);
-										
+					PhiH_Psi->Fill(psi, phiH);
+					PhiH_PsiPrime->Fill(psiprime, phiH);
+					phi_Phi_Prod->Fill(Phi, phi);
+
 					// we want to save events with weight 1
 					evt->setWeight( 1.0 );
 					
 					if( hddmOut ) hddmOut->writeEvent( *evt, pTypes );
                                         if( asciiOut ) asciiOut->writeEvent( *evt, pTypes );
-					rootOut.writeEvent( *evt );
+					rootOut->writeEvent( *evt );
 					++eventCounter;
 					if(eventCounter >= nEvents) break;
 				}
@@ -597,6 +626,7 @@ int main( int argc, char* argv[] ){
         M_p3->Write();
         M_p4->Write();
         M_dalitz->Write();
+	lambda->Write();
 	t->Write();
 	CosTheta_psi->Write();
 	M_CosTheta->Write();
@@ -604,10 +634,14 @@ int main( int argc, char* argv[] ){
 	M_CosThetaH->Write();
 	M_PhiH->Write();
 	M_Phi_Prod->Write();
+	phi_Phi_Prod->Write();
+	PhiH_Psi->Write();
+	PhiH_PsiPrime->Write();
 
 	diagOut->Close();
 	
 	if( hddmOut ) delete hddmOut;
+	delete rootOut;
 	
 	return 0;
 }
