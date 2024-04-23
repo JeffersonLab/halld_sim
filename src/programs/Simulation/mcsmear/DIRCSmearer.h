@@ -12,6 +12,7 @@ class dirc_config_t
 
         double DIRC_TSIGMA;
 	double DIRC_EFFIC_SCALE;
+	double DIRC_EFFIC_DEGRADE;
 
 	int DIRC_MAX_CHANNELS;
 	vector< vector <int> > dChannelStatus;

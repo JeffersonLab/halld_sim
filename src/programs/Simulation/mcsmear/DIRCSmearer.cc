@@ -7,7 +7,8 @@ dirc_config_t::dirc_config_t(JEventLoop *loop)
 {
         // default values
 	DIRC_EFFIC_SCALE      = 1.5;
-        DIRC_TSIGMA           = 0.7; // 0.7 ns 
+        DIRC_TSIGMA           = 0.7; // 0.7 ns
+	DIRC_EFFIC_DEGRADE    = 1.0;
 	DIRC_MAX_CHANNELS     = 108*64; 
 
 	// get time smearing from CCDB
@@ -18,6 +19,7 @@ dirc_config_t::dirc_config_t(JEventLoop *loop)
 	} else {
 		DIRC_EFFIC_SCALE = mc_parms["PAR0"];
 		DIRC_TSIGMA = mc_parms["PAR1"];
+		//DIRC_EFFIC_DEGRADE = mc_parms["PAR2"];
 	}
 
 	// get DIRC channel status and efficiency from DB
@@ -67,9 +69,11 @@ void DIRCSmearer::SmearEvent(hddm_s::HDDM *record)
 			}
 
 			// Add per-pixel efficiencies from MAPMT test data
-			if (config->APPLY_EFFICIENCY_CORRECTIONS && !gDRandom.DecideToAcceptHit(dirc_config->dChannelEffic[box][channel]/dirc_config->DIRC_EFFIC_SCALE)) {
+			if (config->APPLY_EFFICIENCY_CORRECTIONS && !gDRandom.DecideToAcceptHit(dirc_config->dChannelEffic[box][channel] / dirc_config->DIRC_EFFIC_SCALE * dirc_config->DIRC_EFFIC_DEGRADE)) {
                                 continue;
                         }
+
+			
 		}
 		
 		hddm_s::DircPmtHitList hits = dirc().addDircPmtHits();
