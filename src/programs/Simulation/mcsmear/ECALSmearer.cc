@@ -119,7 +119,7 @@ void ECALSmearer::SmearEvent(hddm_s::HDDM *record){
 
       //         if (E > ecal_config->ECAL_BLOCK_THRESHOLD) {
       hddm_s::EcalHitList hits = iter->addEcalHits();
-      hits().setE(E*1000.);
+      hits().setE(E);
       hits().setT(t);
       //         }
     }
