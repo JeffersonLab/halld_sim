@@ -63,6 +63,12 @@ static thread_local int    ftof_tdc_max_hits(64);
 static thread_local double ftof_min_delta_t_ns(25.);
 static thread_local double ftof_integration_window_ns(104.);
 
+static thread_local bool   enable_ctof_merging(true);
+static thread_local int    ctof_adc_max_hits(3);
+static thread_local int    ctof_tdc_max_hits(64);
+static thread_local double ctof_min_delta_t_ns(25.);
+static thread_local double ctof_integration_window_ns(104.);
+
 static thread_local bool   enable_fcal_merging(true);
 static thread_local int    fcal_max_hits(3);
 static thread_local double fcal_min_delta_t_ns(70.);
@@ -320,6 +326,46 @@ namespace hddm_s_merger {
 
    void set_ftof_integration_window_ns(double dt_ns) {
       ftof_integration_window_ns = dt_ns;
+   }
+
+   bool get_ctof_merging() {
+      return enable_ctof_merging;
+   }
+   
+   void set_ctof_merging(bool merging_status) {
+      enable_ctof_merging = merging_status;
+   }
+
+   int get_ctof_adc_max_hits() {
+      return ctof_adc_max_hits;
+   }
+
+   void set_ctof_adc_max_hits(int maxhits) {
+      ctof_adc_max_hits = maxhits;
+   }
+
+   int get_ctof_tdc_max_hits() {
+      return ctof_tdc_max_hits;
+   }
+
+   void set_ctof_tdc_max_hits(int maxhits) {
+      ctof_tdc_max_hits = maxhits;
+   }
+
+   double get_ctof_min_delta_t_ns() {
+      return ctof_min_delta_t_ns;
+   }
+
+   void set_ctof_min_delta_t_ns(double dt_ns) {
+      ctof_min_delta_t_ns = dt_ns;
+   }
+
+   double get_ctof_integration_window_ns() {
+      return ctof_integration_window_ns;
+   }
+
+   void set_ctof_integration_window_ns(double dt_ns) {
+      ctof_integration_window_ns = dt_ns;
    }
 
    bool get_fcal_merging() {
@@ -599,6 +645,7 @@ hddm_s::HitViewList &operator+=(hddm_s::HitViewList &dst,
       if(enable_fcal_merging) dst(0).getForwardEMcals() += iter->getForwardEMcals();
       if(enable_ecal_merging) dst(0).getCrystalEcals() += iter->getCrystalEcals();
       if(enable_ftof_merging) dst(0).getForwardTOFs() += iter->getForwardTOFs();
+      if(enable_ctof_merging) dst(0).getCppTOFs() += iter->getCppTOFs();
       if(enable_ccal_merging) dst(0).getComptonEMcals() += iter->getComptonEMcals();
       if(enable_tag_merging) dst(0).getTaggers() += iter->getTaggers();
       if(enable_ps_merging) dst(0).getPairSpectrometerFines() += iter->getPairSpectrometerFines();
@@ -1319,6 +1366,128 @@ hddm_s::FtofHitList &operator+=(hddm_s::FtofHitList &dst,
       double t = iter->getT() + t_shift_ns;
       double ti = ftof_integration_window_ns;
       double dt = ftof_min_delta_t_ns;
+      double newDE = iter->getDE();
+      int end = iter->getEnd();
+      while (iord > 0) {
+         if (iord == dst.size() ||
+             dst(iord).getEnd() > end || dst(iord).getT() > t)
+         {
+            --iord;
+         }
+         else
+            break;
+      }
+      while (iord < dst.size()) {
+         if (dst(iord).getEnd() < end || dst(iord).getT() < t) {
+            ++iord;
+         }
+         else
+            break;
+      }
+      if (iord > 0 && 
+          dst(iord - 1).getEnd() == end && t - dst(iord - 1).getT() < dt)
+      {
+         double oldDE = dst(iord - 1).getDE();
+         double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+         if (pulse_fraction > 0)
+            dst(iord - 1).setDE(oldDE + newDE * pulse_fraction);
+      }
+      else if (iord < dst.size() && 
+               dst(iord).getEnd() == end && dst(iord).getT() - t < dt)
+      {
+         double oldDE = dst(iord).getDE();
+         double pulse_fraction = 1 - (dst(iord).getT() - t) / ti;
+         if (pulse_fraction > 0)
+            dst(iord).setDE(newDE + oldDE * pulse_fraction);
+         else
+            dst(iord).setDE(newDE);
+         dst(iord).setT(t);
+      }
+      else {
+         dst.add(1, (iord < dst.size())? iord : -1);
+         dst(iord).setEnd(end);
+         if (iord > 0 && dst(iord - 1).getEnd() == end &&
+                         t - dst(iord - 1).getT() < ti)
+         {
+            double oldDE = dst(iord - 1).getDE();
+            double pulse_fraction = 1 - (t - dst(iord - 1).getT()) / ti;
+            dst(iord - 1).setDE(oldDE + newDE * pulse_fraction);
+            dst(iord).setDE(0);
+         }
+         else if (iord < dst.size() - 1 && dst(iord + 1).getEnd() == end &&
+                                           dst(iord + 1).getT() - t < ti)
+         {
+            double oldDE = dst(iord + 1).getDE();
+            double pulse_fraction = 1 - (dst(iord + 1).getT() - t) / ti;
+            dst(iord).setDE(newDE + oldDE * pulse_fraction);
+            dst(iord + 1).setDE(0);
+         }
+         else {
+            dst(iord).setDE(newDE);
+         }
+         dst(iord).setT(t);
+      }
+   }
+   return dst;
+}
+
+hddm_s::CppTOFList &operator+=(hddm_s::CppTOFList &dst,
+                               hddm_s::CppTOFList &src)
+{
+   if (src.size() > 0 && dst.size() == 0)
+      dst.add(1);
+   hddm_s::CppTOFList::iterator iter;
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      dst(0).getCtofCounters() += iter->getCtofCounters();
+   }
+   return dst;
+}
+
+hddm_s::CtofCounterList &operator+=(hddm_s::CtofCounterList &dst,
+                                    hddm_s::CtofCounterList &src)
+{
+   // order by bar number
+   int iord = 0;
+   hddm_s::CtofCounterList::iterator iter;
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      int bar = iter->getBar();
+      while (iord > 0) {
+         if (iord == dst.size() || dst(iord).getBar() > bar)
+         {
+            --iord;
+         }
+         else
+            break;
+      }
+      while (iord < dst.size()) {
+         if (dst(iord).getBar() < bar)
+         {
+            ++iord;
+         }
+         else
+            break;
+      }
+      if (iord == dst.size() ||
+          dst(iord).getBar() != bar)
+      {
+         dst.add(1, (iord < dst.size())? iord : -1);
+         dst(iord).setBar(bar);
+      }
+      dst(iord).getCtofHits() += iter->getCtofHits();
+   }
+   return dst;
+}
+
+hddm_s::CtofHitList &operator+=(hddm_s::CtofHitList &dst,
+                                hddm_s::CtofHitList &src)
+{
+   // order by end, t, merge with existing hit if close enough
+   int iord = 0;
+   hddm_s::CtofHitList::iterator iter;
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      double t = iter->getT() + t_shift_ns;
+      double ti = ctof_integration_window_ns;
+      double dt = ctof_min_delta_t_ns;
       double newDE = iter->getDE();
       int end = iter->getEnd();
       while (iord > 0) {
@@ -2217,6 +2386,12 @@ void hddm_s_merger::truncate_hits(hddm_s::HDDM &record) {
       truncate_ftof_hits(icntr->getFtofHits());
    }
 
+   hddm_s::CtofCounterList cppcounters = record.getCtofCounters();
+   hddm_s::CtofCounterList::iterator icppcntr;
+   for (icppcntr = cppcounters.begin(); icppcntr != cppcounters.end(); ++icppcntr) {
+      truncate_ctof_hits(icppcntr->getCtofHits());
+   }
+
    hddm_s::FcalBlockList blocks = record.getFcalBlocks();
    hddm_s::FcalBlockList::iterator iblock;
    for (iblock = blocks.begin(); iblock != blocks.end(); ++iblock) {
@@ -2422,6 +2597,32 @@ void hddm_s_merger::truncate_ftof_hits(hddm_s::FtofHitList &hits) {
       printf("found %d ftof adc end=0 hits, truncating to %d\n", nadc[0], ftof_adc_max_hits);
    if (nadc[1] > ftof_adc_max_hits)
       printf("found %d ftof adc end=1 hits, truncating to %d\n", nadc[1], ftof_adc_max_hits);
+#endif
+}
+
+void hddm_s_merger::truncate_ctof_hits(hddm_s::CtofHitList &hits) {
+   int nadc[2] = {0,0};
+   int ntdc[2] = {0,0};
+   hddm_s::CtofHitList::iterator iter;
+   int n=0;
+   for (iter = hits.begin(); iter != hits.end(); ++iter, ++n) {
+      if (++ntdc[iter->getEnd()] > ctof_tdc_max_hits) {
+         --iter;
+         hits.del(1, n--);
+      }
+      else if (iter->getDE() > 0 && ++nadc[iter->getEnd()] > ctof_adc_max_hits) {
+         iter->setDE(0);
+      }
+   }
+#if VERBOSE_TRUNCATION
+   if (ntdc[0] > ctof_tdc_max_hits)
+      printf("found %d ctof tdc end=0 hits, truncating to %d\n", ntdc[0], ctof_tdc_max_hits);
+   if (ntdc[1] > ctof_tdc_max_hits)
+      printf("found %d ctof tdc end=1 hits, truncating to %d\n", ntdc[1], ctof_tdc_max_hits);
+   if (nadc[0] > ctof_adc_max_hits)
+      printf("found %d ctof adc end=0 hits, truncating to %d\n", nadc[0], ctof_adc_max_hits);
+   if (nadc[1] > ctof_adc_max_hits)
+      printf("found %d ctof adc end=1 hits, truncating to %d\n", nadc[1], ctof_adc_max_hits);
 #endif
 }
 
