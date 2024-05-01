@@ -72,6 +72,11 @@ extern "C" {
 #include "calibDB.h"
 }
 
+#ifndef _DBG_
+#define _DBG_ cout<<__FILE__<<":"<<__LINE__<<" "
+#define _DBG__ cout<<__FILE__<<":"<<__LINE__<<endl
+#endif
+
 #include <DHistogram.h>
 
 // The time histogram write-out algorithms have been removed.
