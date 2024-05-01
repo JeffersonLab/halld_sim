@@ -1,9 +1,10 @@
 #include "CDCSmearer.h"
+#include "DANA/DEvent.h"
 
 //-----------
 // cdc_config_t  (constructor)
 //-----------
-cdc_config_t::cdc_config_t(JEventLoop *loop) 
+cdc_config_t::cdc_config_t(const std::shared_ptr<const JEvent>& event) 
 {
 	// default values
 	CDC_TDRIFT_SIGMA      = 0.0;
@@ -18,7 +19,7 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
  	// load data from CCDB
  	jout << "get CDC/cdc_parms parameters from CCDB..." << endl;
     map<string, double> cdcparms;
-    if(loop->GetCalib("CDC/cdc_parms", cdcparms)) {
+    if(DEvent::GetCalib(event, "CDC/cdc_parms", cdcparms)) {
     	jerr << "Problem loading CDC/cdc_parms from CCDB!" << endl;
     } else {
      	CDC_TDRIFT_SIGMA   = cdcparms["CDC_TDRIFT_SIGMA"]; 
@@ -29,7 +30,7 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
  	
     jout << "get CDC/diffusion_parms parameters from CCDB..." << endl;
     map<string, double> diffusionparms;
-    if(loop->GetCalib("CDC/diffusion_parms", diffusionparms)) {
+    if(DEvent::GetCalib(event, "CDC/diffusion_parms", diffusionparms)) {
       jerr << "Problem loading CDC/diffusion_parms from CCDB!" << endl;
     } else {
       CDC_DIFFUSION_PAR1  = diffusionparms["d1"];
@@ -39,7 +40,7 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
 	
  	jout << "get CDC/digi_scales parameters from CCDB..." << endl;
     map<string, double> digi_scales;
-    if(loop->GetCalib("CDC/digi_scales", cdcparms)) {
+    if(DEvent::GetCalib(event, "CDC/digi_scales", cdcparms)) {
     	jerr << "Problem loading CDC/digi_scales from CCDB!" << endl;
     } else {
      	CDC_ASCALE = cdcparms["CDC_ADC_ASCALE"]; 
@@ -48,13 +49,13 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
 
       // CDC correction for gain drop from progressive gas deterioration in spring 2018
       jout << "get CDC/gain_doca_correction parameters from CCDB..." << endl;
-      if(loop->GetCalib("CDC/gain_doca_correction", CDC_GAIN_DOCA_PARS))
+      if(DEvent::GetCalib(event, "CDC/gain_doca_correction", CDC_GAIN_DOCA_PARS))
 		jout << "Error loading CDC/gain_doca_correction !" << endl;
 
 
       // CDC correction for gain drop from progressive gas deterioration in spring 2018
       jout << "get CDC/gain_doca_corr_ext parameters from CCDB..." << endl;
-      if(loop->GetCalib("CDC/gain_doca_corr_ext", CDC_GAIN_DOCA_EXT))
+      if(DEvent::GetCalib(event, "CDC/gain_doca_corr_ext", CDC_GAIN_DOCA_EXT))
 		jout << "Error loading CDC/gain_doca_corr_ext !" << endl;
 
 
@@ -63,13 +64,13 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
 
 	// first load some geometry information
 	vector<unsigned int> Nstraws;
-	int32_t runnumber = loop->GetJEvent().GetRunNumber();
-    CalcNstraws(loop, runnumber, Nstraws);
+	int32_t runnumber = event->GetRunNumber();
+    CalcNstraws(event, runnumber, Nstraws);
     //unsigned int Nrings = Nstraws.size();
 
 	// then load the CCDB table
 	vector<double> raw_table;
-	if(loop->GetCalib("CDC/wire_mc_efficiency", raw_table)) {
+	if(DEvent::GetCalib(event, "CDC/wire_mc_efficiency", raw_table)) {
     	jerr << "Problem loading CDC/wire_mc_efficiency from CCDB!" << endl;
     } else {
 		// now fill the table
@@ -90,7 +91,7 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
     }
 
 
-	if(loop->GetCalib("CDC/hit_thresholds", raw_table)) {
+	if(DEvent::GetCalib(event, "CDC/hit_thresholds", raw_table)) {
     	jerr << "Problem loading CDC/hit_thresholds from CCDB!" << endl;
     } else {
 		// now fill the table
@@ -115,14 +116,13 @@ cdc_config_t::cdc_config_t(JEventLoop *loop)
 //------------------
 // CalcNstraws
 //------------------
-void cdc_config_t::CalcNstraws(jana::JEventLoop *eventLoop, int32_t runnumber, vector<unsigned int> &Nstraws)
+void cdc_config_t::CalcNstraws(const std::shared_ptr<const JEvent>& event, int32_t runnumber, vector<unsigned int> &Nstraws)
 {
     DGeometry *dgeom;
     vector<vector<DCDCWire *> >cdcwires;
 
     // Get pointer to DGeometry object
-    DApplication* dapp=dynamic_cast<DApplication*>(eventLoop->GetJApplication());
-    dgeom  = dapp->GetDGeometry(runnumber);
+    dgeom  = DEvent::GetDGeometry(event);
 
     // Get the CDC wire table from the XML
     dgeom->GetCDCWires(cdcwires);

@@ -10,7 +10,7 @@
 class sc_config_t 
 {
   public:
-	sc_config_t(JEventLoop *loop);
+	sc_config_t(const std::shared_ptr<const JEvent>& event);
 
     double GetPaddleTimeResolution(int sector, double sc_local_z);
 
@@ -46,8 +46,8 @@ class sc_config_t
 class SCSmearer : public Smearer
 {
   public:
-	SCSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		sc_config = new sc_config_t(loop);
+	SCSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		sc_config = new sc_config_t(event);
 	}
 	~SCSmearer() {
 		delete sc_config;

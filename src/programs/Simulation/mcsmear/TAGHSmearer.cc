@@ -1,4 +1,5 @@
 #include "TAGHSmearer.h"
+#include "DANA/DEvent.h"
 
 tagh_config_t *tagh_config_instance(0);
 
@@ -7,7 +8,7 @@ static int RANDOMIZE_ETAG_IN_EBIN(0);
 //-----------
 // tagh_config_t  (constructor)
 //-----------
-tagh_config_t::tagh_config_t(JEventLoop *loop) 
+tagh_config_t::tagh_config_t(const std::shared_ptr<const JEvent>& event) 
 {
 	// default values
 	TAGH_TSIGMA = 0.350;        // ns
@@ -15,7 +16,8 @@ tagh_config_t::tagh_config_t(JEventLoop *loop)
 	TAGH_NPE_PER_GEV = 5.e5;
 
     RANDOMIZE_ETAG_IN_EBIN = false;
-    gPARMS->SetDefaultParameter("TAGH:RANDOMIZE_ETAG_IN_EBIN",
+    auto app = event->GetJApplication();
+    app->SetDefaultParameter("TAGH:RANDOMIZE_ETAG_IN_EBIN",
                                 RANDOMIZE_ETAG_IN_EBIN,
                                 "Turn on/off randomization of tagged photon energy"
                                 " within the given energy bin for hits in the hodoscope."
@@ -23,7 +25,7 @@ tagh_config_t::tagh_config_t(JEventLoop *loop)
 
    // enable on-the-fly bzip2 compression on output stream
     std::vector<std::map<std::string, double> > quality;
-    if (loop->GetCalib("/PHOTON_BEAM/hodoscope/counter_quality", quality)) {
+    if (DEvent::GetCalib(event, "/PHOTON_BEAM/hodoscope/counter_quality", quality)) {
 	   jout << "/PHOTON_BEAM/hodoscope/counter_quality not used for this run" << endl;
     }
     for (int i=0; i < (int)quality.size(); ++i) {
@@ -32,16 +34,16 @@ tagh_config_t::tagh_config_t(JEventLoop *loop)
     }
 
    std::map<string, float> beam_parms;
-   loop->GetCalib("PHOTON_BEAM/endpoint_energy", beam_parms);
+   DEvent::GetCalib(event, "PHOTON_BEAM/endpoint_energy", beam_parms);
    endpoint_energy_GeV = beam_parms.at("PHOTON_BEAM_ENDPOINT_ENERGY");
    std::map<string, float> beam_calib;
-   loop->GetCalib("PHOTON_BEAM/hodoscope/endpoint_calib", beam_calib);
+   DEvent::GetCalib(event, "PHOTON_BEAM/hodoscope/endpoint_calib", beam_calib);
    endpoint_calib_GeV = endpoint_energy_GeV;
    if (beam_calib.find("TAGGER_CALIB_ENERGY") != beam_calib.end()) {
       endpoint_calib_GeV = beam_calib.at("TAGGER_CALIB_ENERGY");
    }
    std::vector<std::map<string, float> > hodo_parms;
-   loop->GetCalib("PHOTON_BEAM/hodoscope/scaled_energy_range", hodo_parms);
+   DEvent::GetCalib(event, "PHOTON_BEAM/hodoscope/scaled_energy_range", hodo_parms);
    for (unsigned int i=0; i < hodo_parms.size(); ++i) {
       int col = hodo_parms[i]["counter"];
       double Emin = hodo_parms[i]["xlow"] * endpoint_calib_GeV

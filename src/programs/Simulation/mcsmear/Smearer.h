@@ -7,13 +7,10 @@
 #include "HDDM/hddm_s.hpp"
 #include "DRandom2.h"
 
-#include <JANA/JEventLoop.h>
-using namespace jana;
-
 class Smearer
 {
   public:
-	Smearer(JEventLoop *loop, mcsmear_config_t *in_config) {
+	Smearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) {
 		config = in_config;
 	};
     virtual ~Smearer() {}
