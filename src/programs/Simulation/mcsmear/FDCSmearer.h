@@ -9,7 +9,7 @@
 class fdc_config_t 
 {
   public:
-	fdc_config_t(JEventLoop *loop);
+	fdc_config_t(const std::shared_ptr<const JEvent>& event);
 
 	double FDC_TDRIFT_SIGMA;
 	double FDC_CATHODE_SIGMA;
@@ -69,8 +69,8 @@ class fdc_config_t
 class FDCSmearer : public Smearer
 {
   public:
-	FDCSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		fdc_config = new fdc_config_t(loop);
+	FDCSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		fdc_config = new fdc_config_t(event);
 	}
 	~FDCSmearer() {
 		delete fdc_config;

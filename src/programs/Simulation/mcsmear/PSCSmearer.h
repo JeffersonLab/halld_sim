@@ -9,7 +9,7 @@
 class psc_config_t 
 {
   public:
-	psc_config_t(JEventLoop *loop);
+	psc_config_t(const std::shared_ptr<const JEvent>& event);
 
 	double PSC_SIGMA;
 	double PSC_PHOTONS_PERMEV;
@@ -21,8 +21,8 @@ class psc_config_t
 class PSCSmearer : public Smearer
 {
   public:
-	PSCSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		psc_config = new psc_config_t(loop);
+	PSCSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		psc_config = new psc_config_t(event);
 	}
 	~PSCSmearer() {
 		delete psc_config;

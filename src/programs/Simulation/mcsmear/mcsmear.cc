@@ -66,21 +66,17 @@ int main(int narg,char* argv[])
    mcsmear_config = config;
 
    // Create DApplication object
-   DApplication dapp(narg, argv);
-   dapp.AddFactoryGenerator(new JFactoryGenerator_ThreadCancelHandler());
+   japp->Add(new JFactoryGenerator_ThreadCancelHandler());
 
    TFile *hfile = new TFile("smear.root","RECREATE","smearing histograms");  // note: not used for anything right now
 
-   MyProcessor myproc(config);   
-   jerror_t error_code = dapp.Run(&myproc);
+   japp->Add(new MyProcessor(config));  
+   japp->Run();
 
    hfile->Write();
    hfile->Close();
-
-   if(error_code != NOERROR) 
-       return static_cast<int>(error_code);
-   else
-       return dapp.GetExitCode();
+   
+   return japp->GetExitCode();
 }
 
 //-----------

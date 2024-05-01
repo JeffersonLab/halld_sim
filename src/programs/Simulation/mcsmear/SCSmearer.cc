@@ -1,9 +1,11 @@
 #include "SCSmearer.h"
+#include "DANA/DEvent.h"
+
 
 //-----------
 // sc_config_t  (constructor)
 //-----------
-sc_config_t::sc_config_t(JEventLoop *loop) 
+sc_config_t::sc_config_t(const std::shared_ptr<const JEvent>& event) 
 {
 	// default values
 	START_SIGMA           = 0.0; // 300ps
@@ -11,12 +13,7 @@ sc_config_t::sc_config_t(JEventLoop *loop)
 	START_PADDLE_THRESHOLD  = 0.0;
 
     // Get the geometry
-    DApplication* dapp = dynamic_cast<DApplication*>(loop->GetJApplication());
-    if(!dapp){
-        jerr << "Cannot get DApplication from JEventLoop!" << endl;
-        return;
-    }
-    DGeometry* locGeometry = dapp->GetDGeometry(loop->GetJEvent().GetRunNumber());
+    DGeometry* locGeometry = DEvent::GetDGeometry(event);
 
     // Get start counter geometry
     unsigned int MAX_SECTORS=0;
@@ -33,7 +30,7 @@ sc_config_t::sc_config_t(JEventLoop *loop)
 	// Load data from CCDB
     cout << "Get START_COUNTER/start_parms parameters from CCDB..." << endl;
     map<string, double> startparms;
-    if(loop->GetCalib("START_COUNTER/start_parms", startparms)) {
+    if(DEvent::GetCalib(event, "START_COUNTER/start_parms", startparms)) {
 		jerr << "Problem loading START_COUNTER/start_parms from CCDB!" << endl;
 	} else {
      	START_SIGMA = startparms["START_SIGMA"] ;
@@ -41,13 +38,13 @@ sc_config_t::sc_config_t(JEventLoop *loop)
 	}
 	
 	cout<<"get START_COUNTER/paddle_mc_efficiency from calibDB"<<endl;
-    if(loop->GetCalib("START_COUNTER/paddle_mc_efficiency", paddle_efficiencies)) {
+    if(DEvent::GetCalib(event, "START_COUNTER/paddle_mc_efficiency", paddle_efficiencies)) {
     	jerr << "Problem loading START_COUNTER/paddle_mc_efficiency from CCDB!" << endl;
     }
 
     // Start counter individual paddle resolutions
     vector< vector<double> > sc_paddle_resolution_params;
-    if(loop->GetCalib("START_COUNTER/TRvsPL", sc_paddle_resolution_params))
+    if(DEvent::GetCalib(event, "START_COUNTER/TRvsPL", sc_paddle_resolution_params))
         jout << "Error in loading START_COUNTER/TRvsPL !" << endl;
     else {
         if(sc_paddle_resolution_params.size() != MAX_SECTORS)
@@ -71,7 +68,7 @@ sc_config_t::sc_config_t(JEventLoop *loop)
     }
 
     map<string,double> sc_mc_correction_factors;
-    if(loop->GetCalib("START_COUNTER/mc_time_resol_corr", sc_mc_correction_factors)) {
+    if(DEvent::GetCalib(event, "START_COUNTER/mc_time_resol_corr", sc_mc_correction_factors)) {
         jout << "Error in loading START_COUNTER/mc_time_resol_corr !" << endl;
     } else {
         SC_MC_CORRECTION_P0 = sc_mc_correction_factors["P0"];

@@ -8,6 +8,8 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include <JANA/Compatibility/JGeometryManager.h>
+
 
 using namespace std;
 
@@ -15,11 +17,12 @@ using namespace std;
 
 #include "MyProcessor.h"
 #include "hddm_s_merger.h"
+#include "DANA/DEvent.h"
 
 #include <JANA/JEvent.h>
 
 #include <HDDM/DEventSourceHDDM.h>
-#include <JANA/JGeometryXML.h>
+#include <JANA/Compatibility/JGeometryXML.h>
 #include <TRACKING/DMCThrown.h>
 #include <DRandom2.h>
 #include <FDCSmearer.h>
@@ -34,7 +37,7 @@ static pthread_t output_file_mutex_last_owner;
 static pthread_mutex_t input_file_mutex;
 static pthread_t input_file_mutex_last_owner;
 
-#include <JANA/JCalibration.h>
+#include <JANA/Calibrations/JCalibration.h>
 //static JCalibration *jcalib=NULL;
 static bool locCheckCCDBContext = true;
 
@@ -89,9 +92,9 @@ void mcsmear_thread_HUP_sighandler(int sig)
 
 
 //------------------------------------------------------------------
-// init   -Open output file 
+// Init   -Open output file 
 //------------------------------------------------------------------
-jerror_t MyProcessor::init(void)
+void MyProcessor::Init(void)
 {
    // open HDDM file
    ofs = new ofstream(OUTFILENAME);
@@ -103,11 +106,12 @@ jerror_t MyProcessor::init(void)
    Nevents_written = 0;
 
    HDDM_USE_COMPRESSION = 2;
-   gPARMS->SetDefaultParameter("HDDM:USE_COMPRESSION", HDDM_USE_COMPRESSION,
+   auto app = GetApplication();
+   app->SetDefaultParameter("HDDM:USE_COMPRESSION", HDDM_USE_COMPRESSION,
                           "Turn on/off compression of the output HDDM stream."
                           " \"0\"=no compression, \"1\"=bz2 compression, \"2\"=z compression (default)");
    HDDM_USE_INTEGRITY_CHECKS = true;
-   gPARMS->SetDefaultParameter("HDDM:USE_INTEGRITY_CHECKS",
+   app->SetDefaultParameter("HDDM:USE_INTEGRITY_CHECKS",
                                 HDDM_USE_INTEGRITY_CHECKS,
                           "Turn on/off automatic integrity checking on the"
                           " output HDDM stream."
@@ -158,15 +162,15 @@ jerror_t MyProcessor::init(void)
    // By default, the empirical fdc DOCA-dependent efficiency
    // is applied to fdc wire hits in FDCSmearer. This can be
    // disabled by this commandline option.
-   gPARMS->SetDefaultParameter("FDC:USE_EFFVSDOCA", fdc_config_t::FDC_EFFVSDOCA,
+   app->SetDefaultParameter("FDC:USE_EFFVSDOCA", fdc_config_t::FDC_EFFVSDOCA,
                           "Turn on/off fdc doca-dependent wire hit efficiency,"
                           " \"0\"=no efficiency correction,"
                           " \"1\"=standard efficiency correction (default)");
 
-   return NOERROR;
+   return; //NOERROR;
 }
 
-jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
+void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 {
     // Generally, simulations should be generated and analyzed with a non-default
     // set of calibrations, since the calibrations needed for simulations are
@@ -176,14 +180,15 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
     // we check to see if the variation is set and if it contains the string "mc".
     // Note that for now, we only print a warning and do not exit immediately.
     // It might be advisable to apply some tougher love.
-
+   auto locRunNumber = event->GetRunNumber();
     if(locCheckCCDBContext) {
         // only do this once per brun record
         locCheckCCDBContext = true;
 
         // load the CCDB context
-        DApplication* locDApp = dynamic_cast<DApplication*>(japp);
-        JCalibration* jcalib = locDApp->GetJCalibration(locRunNumber);
+        auto app =  event->GetJApplication();
+        auto run_number = event->GetRunNumber();
+        JCalibration* jcalib = app->GetService<JCalibrationManager>()->GetJCalibration(run_number);
     
         string context = jcalib->GetContext();
       
@@ -216,7 +221,7 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 
 	if(smearer != NULL)
 		delete smearer;
-	smearer = new Smear(config, loop, config->DETECTORS_TO_LOAD);
+	smearer = new Smear(config, event, config->DETECTORS_TO_LOAD);
 
 #ifdef HAVE_RCDB
 	// Pull configuration parameters from RCDB
@@ -489,39 +494,36 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 
     hddm_s_merger::set_config_run_loaded(locRunNumber);
     pthread_mutex_unlock(&smearer_mutex);
-    return NOERROR;
+    return; //NOERROR;
 }
 
 //------------------------------------------------------------------
-// evnt - Do processing for each event here
+// Process - Do processing for each event here
 //------------------------------------------------------------------
-jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
+void MyProcessor::Process(const std::shared_ptr<const JEvent>& event)
 {
-   JEvent& event = loop->GetJEvent();
-   JEventSource *source = event.GetJEventSource();
+   JEventSource *source = event->GetJEventSource();
    DEventSourceHDDM *hddm_source = dynamic_cast<DEventSourceHDDM*>(source);
    if (!hddm_source) {
       cerr << " This program MUST be used with an HDDM file as input!" << endl;
       exit(-1);
    }
-   hddm_s::HDDM *record = (hddm_s::HDDM*)event.GetRef();
+   hddm_s::HDDM *record = const_cast<hddm_s::HDDM*>(event->GetSingle<hddm_s::HDDM>());
    if (!record)
-      return NOERROR;
+      return; //NOERROR;
  
    // Make sure the run-dependent config has been loaded for this run
    hddm_s::PhysicsEventList pev = record->getPhysicsEvents();
    if (pev.size() > 0) {
       if (hddm_s_merger::get_config_run_loaded() != pev(0).getRunNo()) {
-         brun(loop, pev(0).getRunNo());
+         BeginRun(event);
       }
    }
 
    // Handle geometry records
    hddm_s::GeometryList geom = record->getGeometrys();
    if (geom.size() > 0) {
-      DApplication* dapp = dynamic_cast<DApplication*>(loop->GetJApplication());
-      DGeometry *dgeom = dapp->GetDGeometry(loop->GetJEvent().GetRunNumber());
-      JGeometryXML *jgeom = dynamic_cast<JGeometryXML*>(dgeom->GetJGeometry());
+   JGeometryXML *jgeom = dynamic_cast<JGeometryXML*>(DEvent::GetDGeometry(event)->GetJGeometry());
       geom(0).setMd5smear(jgeom->GetChecksum());
       if (geom(0).getMd5smear() != geom(0).getMd5simulation()) {
          std::cerr << "Warning: simulation geometry checksum does not match"
@@ -579,13 +581,13 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
    Nevents_written++;
    //pthread_mutex_unlock(&output_file_mutex);
 
-   return NOERROR;
+   return; //NOERROR;
 }
 
 //------------------------------------------------------------------
-// fini   -Close output file here
+// Finish   -Close output file here
 //------------------------------------------------------------------
-jerror_t MyProcessor::fini(void)
+void MyProcessor::Finish(void)
 {
    if (fout)
       delete fout;
@@ -596,5 +598,5 @@ jerror_t MyProcessor::fini(void)
    cout << " " << Nevents_written << " event written to " << OUTFILENAME
         << endl;
    
-   return NOERROR;
+   return; //NOERROR;
 }

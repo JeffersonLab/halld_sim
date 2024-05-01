@@ -1,12 +1,14 @@
 
 #include "CCALSmearer.h"
+#include "DANA/DEvent.h"
+
 
 DCCALGeometry *ccalGeom = NULL;
 
 //-----------
 // ccal_config_t  (constructor)
 //-----------
-ccal_config_t::ccal_config_t(JEventLoop *loop) {
+ccal_config_t::ccal_config_t(const std::shared_ptr<const JEvent>& event) {
 
   // Default Parameters
 
@@ -37,7 +39,7 @@ ccal_config_t::ccal_config_t(JEventLoop *loop) {
 
 	map<string, double> ccalparms;
 
-	if(loop->GetCalib("CCAL/mc_energy", ccalparms)) { 
+	if(DEvent::GetCalib(event, "CCAL/mc_energy", ccalparms)) { 
 	  jerr << "Problem loading CCAL/mc_energy from CCDB!" << endl;
 	} else {
 	  CCAL_EN_SCALE   = ccalparms["CCAL_EN_SCALE"]; 
@@ -54,7 +56,7 @@ ccal_config_t::ccal_config_t(JEventLoop *loop) {
 	cout<<"get CCAL/mc_time parameters from calibDB"<<endl;
 
 	map<string, double> ccaltime;
-	if(loop->GetCalib("CCAL/mc_time", ccaltime)) {
+	if(DEvent::GetCalib(event, "CCAL/mc_time", ccaltime)) {
 	  jerr << "Problem loading CCAL/mc_time from CCDB!" << endl;
 	} else {
 	  CCAL_TSIGMA = ccaltime["CCAL_TSIGMA"];

@@ -3,7 +3,7 @@
 //-----------
 // ctof_config_t  (constructor)
 //-----------
-ctof_config_t::ctof_config_t(JEventLoop *loop) 
+ctof_config_t::ctof_config_t(const std::shared_ptr<const JEvent>& event) 
 {
   // default values
   TSIGMA = 100.*k_psec;
