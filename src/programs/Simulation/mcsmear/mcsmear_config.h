@@ -4,12 +4,22 @@
 #define _MCSMEAR_CONFIG_H_
 
 #include "units.h"
+#include <DANA/DEvent.h>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+#include <DVector3.h>
 
-#include <DANA/DApplication.h>
-#include <JANA/JEventLoop.h>
+using std::string;
+using std::vector;
+using std::cout;
+
+// #include <DANA/DApplication.h>
 #include "DRandom2.h"
+#include <JANA/JEvent.h>
 
-using namespace jana;
 
 
 // external function definitions from SampleGaussian.cc
@@ -59,7 +69,7 @@ class mcsmear_config_t
 	double BCAL_NO_SIPM_SATURATION;
 
 	// list of detectors with hits to smear
-	string DETECTORS_TO_LOAD="all";
+	std::string DETECTORS_TO_LOAD="all";
 	
 	
 #ifdef HAVE_RCDB

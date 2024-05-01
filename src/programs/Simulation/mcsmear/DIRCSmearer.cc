@@ -1,9 +1,10 @@
 #include "DIRCSmearer.h"
+#include "DANA/DEvent.h"
 
 //-----------
 // dirc_config_t  (constructor)
 //-----------
-dirc_config_t::dirc_config_t(JEventLoop *loop)
+dirc_config_t::dirc_config_t(const std::shared_ptr<const JEvent>& event)
 {
         // default values
         DIRC_TSIGMA           = 0.5; // 0.5 ns 
@@ -13,7 +14,7 @@ dirc_config_t::dirc_config_t(JEventLoop *loop)
 	// Get values from CCDB
 	cout<<"get DIRC/mc_timing_smear parameters from calibDB"<<endl;
 	map<string, double> dircmctimingsmear;
-	if(loop->GetCalib("DIRC/mc_timing_smear", dircmctimingsmear)) {
+	if(DEvent::GetCalib(event, "DIRC/mc_timing_smear", dircmctimingsmear)) {
 		jerr << "Problem loading DIRC/mc_timing_smear from CCDB!" << endl;
 	} else {
 		DIRC_TSIGMA = dircmctimingsmear["DIRC_TSIGMA"];
@@ -24,9 +25,9 @@ dirc_config_t::dirc_config_t(JEventLoop *loop)
 	vector<int> new_status(DIRC_MAX_CHANNELS);
 	dChannelStatus.push_back(new_status); 
 	dChannelStatus.push_back(new_status);
-	if (loop->GetCalib("/DIRC/North/channel_status", dChannelStatus[0]))
+	if (DEvent::GetCalib(event, "/DIRC/North/channel_status", dChannelStatus[0]))
 		jout << "Error loading /DIRC/North/channel_status !" << endl;
-	if (loop->GetCalib("/DIRC/South/channel_status", dChannelStatus[1]))
+	if (DEvent::GetCalib(event, "/DIRC/South/channel_status", dChannelStatus[1]))
 		jout << "Error loading /DIRC/South/channel_status !" << endl;
 	
 	// get per-pixel efficiencies from CCDB

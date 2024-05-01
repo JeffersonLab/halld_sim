@@ -25,7 +25,7 @@ using namespace std;
 //-----------
 // Smear (constructor)
 //-----------
-Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_load) 
+Smear::Smear(mcsmear_config_t *in_config, const std::shared_ptr<const JEvent>& event, string detectors_to_load) 
 {   
 	// create configuration classes
 	config = in_config;
@@ -33,22 +33,22 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 	// Create smearing classes 
 	if(detectors_to_load == "all") {
 		// default to loading all subdetectors
-		smearers[SYS_BCAL]  = static_cast<Smearer*>(new BCALSmearer(loop,config));
-		smearers[SYS_FCAL]  = static_cast<Smearer*>(new FCALSmearer(loop,config));
-		smearers[SYS_ECAL]  = static_cast<Smearer*>(new ECALSmearer(loop,config));
-		smearers[SYS_CDC]   = static_cast<Smearer*>(new CDCSmearer(loop,config));
-		smearers[SYS_FDC]   = static_cast<Smearer*>(new FDCSmearer(loop,config));
-		smearers[SYS_TOF]   = static_cast<Smearer*>(new TOFSmearer(loop,config));
-		smearers[SYS_START] = static_cast<Smearer*>(new SCSmearer(loop,config));
-		smearers[SYS_TAGH]  = static_cast<Smearer*>(new TAGHSmearer(loop,config));
-		smearers[SYS_TAGM]  = static_cast<Smearer*>(new TAGMSmearer(loop,config));
-		smearers[SYS_PS]    = static_cast<Smearer*>(new PSSmearer(loop,config));
-		smearers[SYS_PSC]   = static_cast<Smearer*>(new PSCSmearer(loop,config));
-		smearers[SYS_TPOL]  = static_cast<Smearer*>(new TPOLSmearer(loop,config));
-		smearers[SYS_DIRC]  = static_cast<Smearer*>(new DIRCSmearer(loop,config));
-		smearers[SYS_CCAL]  = static_cast<Smearer*>(new CCALSmearer(loop,config));
-		smearers[SYS_FMWPC] = static_cast<Smearer*>(new FMWPCSmearer(loop,config));
-		smearers[SYS_CTOF] = static_cast<Smearer*>(new CTOFSmearer(loop,config));
+		smearers[SYS_BCAL]  = static_cast<Smearer*>(new BCALSmearer(event,config));
+		smearers[SYS_FCAL]  = static_cast<Smearer*>(new FCALSmearer(event,config));
+		smearers[SYS_ECAL]  = static_cast<Smearer*>(new ECALSmearer(event,config));
+		smearers[SYS_CDC]   = static_cast<Smearer*>(new CDCSmearer(event,config));
+		smearers[SYS_FDC]   = static_cast<Smearer*>(new FDCSmearer(event,config));
+		smearers[SYS_TOF]   = static_cast<Smearer*>(new TOFSmearer(event,config));
+		smearers[SYS_START] = static_cast<Smearer*>(new SCSmearer(event,config));
+		smearers[SYS_TAGH]  = static_cast<Smearer*>(new TAGHSmearer(event,config));
+		smearers[SYS_TAGM]  = static_cast<Smearer*>(new TAGMSmearer(event,config));
+		smearers[SYS_PS]    = static_cast<Smearer*>(new PSSmearer(event,config));
+		smearers[SYS_PSC]   = static_cast<Smearer*>(new PSCSmearer(event,config));
+		smearers[SYS_TPOL]  = static_cast<Smearer*>(new TPOLSmearer(event,config));
+		smearers[SYS_DIRC]  = static_cast<Smearer*>(new DIRCSmearer(event,config));
+		smearers[SYS_CCAL]  = static_cast<Smearer*>(new CCALSmearer(event,config));
+		smearers[SYS_FMWPC] = static_cast<Smearer*>(new FMWPCSmearer(event,config));
+		smearers[SYS_CTOF] = static_cast<Smearer*>(new CTOFSmearer(event,config));
 		
 	} else {
 		// Parse string of system names
@@ -58,22 +58,22 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 	  DetectorSystem_t the_detector=NameToSystem(token.c_str());
 	  //cout << "Loading detector system "<< the_detector << ":" << token << " " << endl;
 			switch(the_detector) {
-				case SYS_BCAL:   smearers[the_detector] = static_cast<Smearer*>(new BCALSmearer(loop,config));  break;
-				case SYS_FCAL:   smearers[the_detector] = static_cast<Smearer*>(new FCALSmearer(loop,config));  break;
-			        case SYS_ECAL:   smearers[the_detector] = static_cast<Smearer*>(new ECALSmearer(loop,config));  break;
-				case SYS_CDC:    smearers[the_detector] = static_cast<Smearer*>(new CDCSmearer(loop,config));  break;
-				case SYS_FDC:    smearers[the_detector] = static_cast<Smearer*>(new FDCSmearer(loop,config));  break;
-				case SYS_TOF:    smearers[the_detector] = static_cast<Smearer*>(new TOFSmearer(loop,config));  break;
-				case SYS_START:  smearers[the_detector] = static_cast<Smearer*>(new SCSmearer(loop,config));  break;
-				case SYS_TAGH:   smearers[the_detector] = static_cast<Smearer*>(new TAGHSmearer(loop,config));  break;
-				case SYS_TAGM:   smearers[the_detector] = static_cast<Smearer*>(new TAGMSmearer(loop,config));  break;
-				case SYS_PS:     smearers[the_detector] = static_cast<Smearer*>(new PSSmearer(loop,config));  break;
-				case SYS_PSC:    smearers[the_detector] = static_cast<Smearer*>(new PSCSmearer(loop,config));  break;
-				case SYS_TPOL:   smearers[the_detector] = static_cast<Smearer*>(new TPOLSmearer(loop,config));  break;
-				case SYS_DIRC:   smearers[the_detector] = static_cast<Smearer*>(new DIRCSmearer(loop,config));  break;
-				case SYS_CCAL:   smearers[the_detector] = static_cast<Smearer*>(new CCALSmearer(loop,config));  break;
-				case SYS_FMWPC:  smearers[the_detector] = static_cast<Smearer*>(new FMWPCSmearer(loop,config));  break;
-				case SYS_CTOF:  smearers[the_detector] = static_cast<Smearer*>(new CTOFSmearer(loop,config));  break;
+				case SYS_BCAL:   smearers[the_detector] = static_cast<Smearer*>(new BCALSmearer(event,config));  break;
+				case SYS_FCAL:   smearers[the_detector] = static_cast<Smearer*>(new FCALSmearer(event,config));  break;
+			        case SYS_ECAL:   smearers[the_detector] = static_cast<Smearer*>(new ECALSmearer(event,config));  break;
+				case SYS_CDC:    smearers[the_detector] = static_cast<Smearer*>(new CDCSmearer(event,config));  break;
+				case SYS_FDC:    smearers[the_detector] = static_cast<Smearer*>(new FDCSmearer(event,config));  break;
+				case SYS_TOF:    smearers[the_detector] = static_cast<Smearer*>(new TOFSmearer(event,config));  break;
+				case SYS_START:  smearers[the_detector] = static_cast<Smearer*>(new SCSmearer(event,config));  break;
+				case SYS_TAGH:   smearers[the_detector] = static_cast<Smearer*>(new TAGHSmearer(event,config));  break;
+				case SYS_TAGM:   smearers[the_detector] = static_cast<Smearer*>(new TAGMSmearer(event,config));  break;
+				case SYS_PS:     smearers[the_detector] = static_cast<Smearer*>(new PSSmearer(event,config));  break;
+				case SYS_PSC:    smearers[the_detector] = static_cast<Smearer*>(new PSCSmearer(event,config));  break;
+				case SYS_TPOL:   smearers[the_detector] = static_cast<Smearer*>(new TPOLSmearer(event,config));  break;
+				case SYS_DIRC:   smearers[the_detector] = static_cast<Smearer*>(new DIRCSmearer(event,config));  break;
+				case SYS_CCAL:   smearers[the_detector] = static_cast<Smearer*>(new CCALSmearer(event,config));  break;
+				case SYS_FMWPC:  smearers[the_detector] = static_cast<Smearer*>(new FMWPCSmearer(event,config));  break;
+				case SYS_CTOF:  smearers[the_detector] = static_cast<Smearer*>(new CTOFSmearer(event,config));  break;
                 default:  break;   // don't smear any other detectors
 			}
 		}

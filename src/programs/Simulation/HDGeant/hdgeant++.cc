@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-
+#include <DANA/DApplication.h>
 #include <iostream>
 #include <string>
 using namespace std;
@@ -37,9 +37,8 @@ int main(int narg, char *argv[])
 	// This is needed so calibDB.cc can use it to get the
 	// JCalibration object pointer. We want this to be done
 	// in the same way as all other sim-recon software
-	// DApplication *dapp = new DApplication(narg, argv);
-	// dapp->Init();
-
+	DApplication *dapp = new DApplication(narg, argv);
+	dapp->GetJApp()->Initialize();
 	// Set some defaults. Note that most defaults related to the
 	// simulation are set in uginit.F
 	controlparams_.runtime_geom = 0;
