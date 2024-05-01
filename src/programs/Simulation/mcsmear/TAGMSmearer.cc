@@ -1,4 +1,6 @@
 #include "TAGMSmearer.h"
+#include "DANA/DEvent.h"
+
 
 tagm_config_t *tagm_config_instance(0);
 
@@ -7,14 +9,15 @@ static int RANDOMIZE_ETAG_IN_EBIN(0);
 //-----------
 // tagm_config_t  (constructor)
 //-----------
-tagm_config_t::tagm_config_t(JEventLoop *loop) {
+tagm_config_t::tagm_config_t(const std::shared_ptr<const JEvent>& event) {
 	// default values
 	TAGM_TSIGMA = 0.200;        // ns
 	TAGM_FADC_TSIGMA = 0.350;   // ns
 	TAGM_NPIX_PER_GEV = 1.e5;
 
     RANDOMIZE_ETAG_IN_EBIN = false;
-    gPARMS->SetDefaultParameter("TAGM:RANDOMIZE_ETAG_IN_EBIN",
+    auto app = event->GetJApplication();
+    app->SetDefaultParameter("TAGM:RANDOMIZE_ETAG_IN_EBIN",
                                 RANDOMIZE_ETAG_IN_EBIN,
                                 "Turn on/off randomization of tagged photon energy"
                                 " in smeared tagger microscope hits."
@@ -23,7 +26,7 @@ tagm_config_t::tagm_config_t(JEventLoop *loop) {
    // enable on-the-fly bzip2 compression on output stream
 
     std::vector<std::map<std::string, double> > quality;
-    if (loop->GetCalib("/PHOTON_BEAM/microscope/fiber_quality", quality)) {
+    if (DEvent::GetCalib(event, "/PHOTON_BEAM/microscope/fiber_quality", quality)) {
 	   jout << "/PHOTON_BEAM/microscope/fiber_quality not used for this run" << endl;
     }
     for (int i=0; i < (int)quality.size(); ++i) {
@@ -32,16 +35,16 @@ tagm_config_t::tagm_config_t(JEventLoop *loop) {
     }
 
    std::map<string, float> beam_parms;
-   loop->GetCalib("PHOTON_BEAM/endpoint_energy", beam_parms);
+   DEvent::GetCalib(event, "PHOTON_BEAM/endpoint_energy", beam_parms);
    endpoint_energy_GeV = beam_parms.at("PHOTON_BEAM_ENDPOINT_ENERGY");
    std::map<string, float> beam_calib;
-   loop->GetCalib("PHOTON_BEAM/hodoscope/endpoint_calib", beam_calib);
+   DEvent::GetCalib(event, "PHOTON_BEAM/hodoscope/endpoint_calib", beam_calib);
    endpoint_calib_GeV = endpoint_energy_GeV;
    if (beam_calib.find("TAGGER_CALIB_ENERGY") != beam_calib.end()) {
       endpoint_calib_GeV = beam_calib.at("TAGGER_CALIB_ENERGY");
    }
    std::vector<std::map<string, float> > micro_parms;
-   loop->GetCalib("PHOTON_BEAM/microscope/scaled_energy_range", micro_parms);
+   DEvent::GetCalib(event, "PHOTON_BEAM/microscope/scaled_energy_range", micro_parms);
    for (unsigned int i=0; i < micro_parms.size(); ++i) {
       int col = micro_parms[i]["column"];
       double Emin = micro_parms[i]["xlow"] * endpoint_calib_GeV

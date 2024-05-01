@@ -10,7 +10,7 @@
 class tof_config_t 
 {
   public:
-	tof_config_t(JEventLoop *loop);
+	tof_config_t(const std::shared_ptr<const JEvent>& event);
 	
 	inline double GetPaddleTimeResolution(int plane, int bar)  { 
 		int paddle = plane*TOF_NUM_BARS + bar - 1; 
@@ -46,8 +46,8 @@ class tof_config_t
 class TOFSmearer : public Smearer
 {
   public:
-	TOFSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		tof_config = new tof_config_t(loop);
+	TOFSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		tof_config = new tof_config_t(event);
 	}
 	~TOFSmearer() {
 		delete tof_config;
