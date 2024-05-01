@@ -17,4 +17,3 @@ src/SBMS/*.pyc
 *.png
 *.swp
 *.mil
-halld_sim_prereqs_version.xml
