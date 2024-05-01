@@ -637,6 +637,8 @@ def AddDANA(env):
 	DANA_LIBS += " expat"
 	env.PrependUnique(LIBS = DANA_LIBS.split())
 	env.Append(LIBS = 'DANA')
+	env.Append(LIBS = 'DIRC')
+	env.Append(LIBS = 'HDGEOMETRY')
 	env.PrependUnique(OPTIONAL_PLUGIN_LIBS = DANA_LIBS.split())
 
 ##################################
