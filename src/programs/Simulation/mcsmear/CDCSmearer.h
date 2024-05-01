@@ -9,7 +9,7 @@
 class cdc_config_t 
 {
   public:
-	cdc_config_t(JEventLoop *loop);
+	cdc_config_t(const std::shared_ptr<const JEvent>& event);
 
 	double CDC_TDRIFT_SIGMA;
 	double CDC_TIME_WINDOW;
@@ -25,7 +25,7 @@ class cdc_config_t
 	vector< vector<double> > wire_efficiencies;
 	vector< vector<double> > wire_thresholds;
 
-	void CalcNstraws(JEventLoop *loop, int32_t runnumber, vector<unsigned int> &Nstraws);
+	void CalcNstraws(const std::shared_ptr<const JEvent>& event, int32_t runnumber, vector<unsigned int> &Nstraws);
 	double GetEfficiencyCorrectionFactor(int ring, int straw) {
 		return wire_efficiencies.at(ring-1).at(straw-1);
 	}
@@ -38,8 +38,8 @@ class cdc_config_t
 class CDCSmearer : public Smearer
 {
   public:
-	CDCSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		cdc_config = new cdc_config_t(loop);
+	CDCSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		cdc_config = new cdc_config_t(event);
 	}
 	~CDCSmearer() {
 		delete cdc_config;

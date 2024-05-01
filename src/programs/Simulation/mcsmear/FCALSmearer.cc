@@ -3,7 +3,7 @@
 //-----------
 // fcal_config_t  (constructor)
 //-----------
-fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mcsmear_config_t *in_config) 
+fcal_config_t::fcal_config_t(const std::shared_ptr<const JEvent>& event, const DFCALGeometry *fcalGeom, mcsmear_config_t *in_config) 
 {
 	// default values
 	FCAL_PHOT_STAT_COEF     = 0.0; // 0.05;
@@ -30,7 +30,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 	// Get values from CCDB
 	cout << "Get PHOTON_BEAM/endpoint_energy from CCDB ..." << endl;
 	map<string, float> beam_parms;
-	if (loop->GetCalib("PHOTON_BEAM/endpoint_energy", beam_parms)) {
+	if (DEvent::GetCalib(event, "PHOTON_BEAM/endpoint_energy", beam_parms)) {
 	  jerr << "Problem loading PHOTON_BEAM/endpoint_energy from CCDB!" << endl;
 	} else {
 	  double endpoint_energy = beam_parms["PHOTON_BEAM_ENDPOINT_ENERGY"];
@@ -39,7 +39,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 	
 	cout << "Get FCAL/fcal_mc_timing_parms parameters from CCDB..." << endl;
         map<string, double> fcaltimingparms;
-        if(loop->GetCalib("FCAL/fcal_mc_timing_parms", fcaltimingparms)) {
+        if(DEvent::GetCalib(event, "FCAL/fcal_mc_timing_parms", fcaltimingparms)) {
           jerr << "Problem loading FCAL/fcal_mc_timing_parms from CCDB!" << endl;
         } else {
         FCAL_TIME_A   = fcaltimingparms["FCAL_TIME_A"];
@@ -51,7 +51,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 	
 	cout << "Get FCAL/fcal_parms parameters from CCDB..." << endl;
 	map<string, double> fcalparms;
-	if(loop->GetCalib("FCAL/fcal_parms", fcalparms)) { 
+	if(DEvent::GetCalib(event, "FCAL/fcal_parms", fcalparms)) { 
 	  jerr << "Problem loading FCAL/fcal_parms from CCDB!" << endl;
 	} else {
 	  FCAL_PHOT_STAT_COEF   = fcalparms["FCAL_PHOT_STAT_COEF"]; 
@@ -60,7 +60,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 	
 	cout<<"get FCAL/gains from calibDB"<<endl;
     vector <double> FCAL_GAINS_TEMP;
-    if(loop->GetCalib("FCAL/gains", FCAL_GAINS_TEMP)) {
+    if(DEvent::GetCalib(event, "FCAL/gains", FCAL_GAINS_TEMP)) {
     	jerr << "Problem loading FCAL/gains from CCDB!" << endl;
     } else {
     	for (unsigned int i = 0; i < FCAL_GAINS_TEMP.size(); i++) {
@@ -70,7 +70,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
      
    cout<<"get FCAL/pedestals from calibDB"<<endl;
    vector <double> FCAL_PEDS_TEMP;
-   if(loop->GetCalib("FCAL/pedestals", FCAL_PEDS_TEMP)) {
+   if(DEvent::GetCalib(event, "FCAL/pedestals", FCAL_PEDS_TEMP)) {
       jerr << "Problem loading FCAL/pedestals from CCDB!" << endl;
    } else {
        for (unsigned int i = 0; i < FCAL_PEDS_TEMP.size(); i++) {
@@ -80,7 +80,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
    
    cout<<"get FCAL/MC/pedestal_rms from calibDB"<<endl;
    double FCAL_PED_RMS_TEMP;
-   if(loop->GetCalib("FCAL/MC/pedestal_rms", FCAL_PED_RMS_TEMP)) {
+   if(DEvent::GetCalib(event, "FCAL/MC/pedestal_rms", FCAL_PED_RMS_TEMP)) {
       jerr << "Problem loading FCAL/MC/pedestal_rms from CCDB!" << endl;
    } else {
       FCAL_PED_RMS = FCAL_PED_RMS_TEMP;
@@ -88,7 +88,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 	
    cout<<"get FCAL/MC/integral_peak_ratio from calibDB"<<endl;
    double FCAL_INT_PEAK_TEMP;
-   if(loop->GetCalib("FCAL/MC/integral_peak_ratio", FCAL_INT_PEAK_TEMP)) {
+   if(DEvent::GetCalib(event, "FCAL/MC/integral_peak_ratio", FCAL_INT_PEAK_TEMP)) {
       jerr << "Problem loading FCAL/MC/integral_peak_ratio from CCDB!" << endl;
    } else {
       FCAL_INTEGRAL_PEAK = FCAL_INT_PEAK_TEMP;
@@ -96,7 +96,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
    
    cout<<"get FCAL/MC/threshold from calibDB"<<endl;
    double FCAL_THRESHOLD_TEMP;
-   if(loop->GetCalib("FCAL/MC/threshold", FCAL_THRESHOLD_TEMP)) {
+   if(DEvent::GetCalib(event, "FCAL/MC/threshold", FCAL_THRESHOLD_TEMP)) {
       jerr << "Problem loading FCAL/MC/threshold from CCDB!" << endl;
    } else {
       FCAL_THRESHOLD = FCAL_THRESHOLD_TEMP;
@@ -104,7 +104,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
    
    cout<<"get FCAL/MC/threhsold_scaling from calibDB"<<endl;
    double FCAL_THRESHOLD_SCALING_TEMP;
-   if(loop->GetCalib("FCAL/MC/threshold_scaling", FCAL_THRESHOLD_SCALING_TEMP)) {
+   if(DEvent::GetCalib(event, "FCAL/MC/threshold_scaling", FCAL_THRESHOLD_SCALING_TEMP)) {
        jerr << "Problem loading FCAL/MC/threshold_scaling from CCDB!" << endl;
    } else {
        FCAL_THRESHOLD_SCALING = FCAL_THRESHOLD_SCALING_TEMP;
@@ -112,7 +112,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 
    cout<<"get FCAL/MC/mc_escale from calibDB"<<endl;
    double FCAL_MC_ESCALE_TEMP;
-   if(loop->GetCalib("FCAL/MC/mc_escale", FCAL_MC_ESCALE_TEMP)) {
+   if(DEvent::GetCalib(event, "FCAL/MC/mc_escale", FCAL_MC_ESCALE_TEMP)) {
         jerr << "Problem loading FCAL/MC/mc_escale from CCDB!" << endl;
    } else {
         FCAL_MC_ESCALE = FCAL_MC_ESCALE_TEMP;
@@ -120,7 +120,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 
     cout<<"get FCAL/MC/energy_width_floor from calibDB"<<endl;
     double FCAL_ENERGY_WIDTH_FLOOR_TEMP;
-    if(loop->GetCalib("FCAL/MC/energy_width_floor", FCAL_ENERGY_WIDTH_FLOOR_TEMP)) {
+    if(DEvent::GetCalib(event, "FCAL/MC/energy_width_floor", FCAL_ENERGY_WIDTH_FLOOR_TEMP)) {
         jerr << "Problem loading FCAL/MC/energy_width_floor from CCDB!" << endl;
     } else {
         FCAL_ENERGY_WIDTH_FLOOR = FCAL_ENERGY_WIDTH_FLOOR_TEMP;
@@ -128,7 +128,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 
     cout<<"get FCAL/digi_scales parameters from calibDB"<<endl;
     map<string, double> fcaldigiscales;
-    if(loop->GetCalib("FCAL/MC/digi_scales", fcaldigiscales)) {
+    if(DEvent::GetCalib(event, "FCAL/MC/digi_scales", fcaldigiscales)) {
     	jerr << "Problem loading FCAL/MC/digi_scales from CCDB!" << endl;
     } else {
         FCAL_ADC_ASCALE = fcaldigiscales["FCAL_ADC_ASCALE"];
@@ -136,7 +136,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 
     cout<<"get FCAL/mc_timing_smear parameters from calibDB"<<endl;
     map<string, double> fcalmctimingsmear;
-    if(loop->GetCalib("FCAL/mc_timing_smear", fcalmctimingsmear)) {
+    if(DEvent::GetCalib(event, "FCAL/mc_timing_smear", fcalmctimingsmear)) {
     	jerr << "Problem loading FCAL/mc_timing_smear from CCDB!" << endl;
     } else {
         FCAL_TSIGMA = fcalmctimingsmear["FCAL_TSIGMA"];
@@ -148,7 +148,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 	if(FCAL_LIGHTGUIDE_SCALE_FACTOR < 0.) {  
 		cout<<"get FCAL/fcal_lightguide_scale_factor parameters from calibDB"<<endl;
 		map<string, double> fcallightguidescale;
-		if(loop->GetCalib("FCAL/fcal_lightguide_scale_factor", fcallightguidescale)) {
+		if(DEvent::GetCalib(event, "FCAL/fcal_lightguide_scale_factor", fcallightguidescale)) {
 			jerr << "Problem loading FCAL/fcal_lightguide_scale_factor from CCDB!" << endl;
 		} else {
 			FCAL_LIGHTGUIDE_SCALE_FACTOR = fcallightguidescale["factor"];
@@ -163,7 +163,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
     // load efficiencies from CCDB and fill 
     vector<double> raw_table;
 
-    if(loop->GetCalib("FCAL/block_mc_efficiency", raw_table)) {
+    if(DEvent::GetCalib(event, "FCAL/block_mc_efficiency", raw_table)) {
       jerr << "Problem loading FCAL/block_mc_efficiency from CCDB!" << endl;
     } else {
       for (int channel=0; channel < static_cast<int>(raw_table.size()); channel++) {
@@ -181,7 +181,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
 
     int primex_run = 0;
 
-    if (loop->GetCalib("/PHOTON_BEAM/pair_spectrometer/experiment", primex_run))
+    if (DEvent::GetCalib(event, "/PHOTON_BEAM/pair_spectrometer/experiment", primex_run))
       jerr << "Problem loading /PHOTON_BEAM/pair_spectrometer/experment/run from CCDB!" << endl;
 
 
@@ -192,7 +192,7 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
       int BAD_CH = 1;
       
       
-      if (loop->GetCalib("/FCAL/block_quality", raw_block_qualities))
+      if (DEvent::GetCalib(event, "/FCAL/block_quality", raw_block_qualities))
 	jout << "/FCAL/block_quality not used for this run" << endl;
       else {
 	

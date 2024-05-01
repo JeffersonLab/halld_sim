@@ -1,12 +1,14 @@
 
 #include "ECALSmearer.h"
+#include "DANA/DEvent.h"
+
 
 DECALGeometry *ecalGeom = NULL;
 
 //-----------
 // ecal_config_t  (constructor)
 //-----------
-ecal_config_t::ecal_config_t(JEventLoop *loop) {
+ecal_config_t::ecal_config_t(const std::shared_ptr<const JEvent>& event) {
 
   // Default Parameters
 
@@ -36,7 +38,7 @@ ecal_config_t::ecal_config_t(JEventLoop *loop) {
 
 	map<string, double> ecalparms;
 
-	if(loop->GetCalib("ECAL/mc_energy", ecalparms)) { 
+	if(DEvent::GetCalib(event, "ECAL/mc_energy", ecalparms)) { 
 	  jerr << "Problem loading ECAL/mc_energy from CCDB!" << endl;
 	} else {
 	  ECAL_EN_SCALE   = ecalparms["ECAL_EN_SCALE"]; 
@@ -53,7 +55,7 @@ ecal_config_t::ecal_config_t(JEventLoop *loop) {
 	cout<<"get ECAL/mc_time parameters from calibDB"<<endl;
 
 	map<string, double> ecaltime;
-	if(loop->GetCalib("ECAL/mc_time", ecaltime)) {
+	if(DEvent::GetCalib(event, "ECAL/mc_time", ecaltime)) {
 	  jerr << "Problem loading ECAL/mc_time from CCDB!" << endl;
 	} else {
 	  ECAL_TSIGMA = ecaltime["ECAL_TSIGMA"];

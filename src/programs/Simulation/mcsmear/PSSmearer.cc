@@ -3,7 +3,7 @@
 //-----------
 // ps_config_t  (constructor)
 //-----------
-ps_config_t::ps_config_t(JEventLoop *loop) 
+ps_config_t::ps_config_t(const std::shared_ptr<const JEvent>& event) 
 {
 	// default values
 	PS_SIGMA = 0.200; // ns

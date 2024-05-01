@@ -8,7 +8,7 @@
 class dirc_config_t
 {
   public:
-        dirc_config_t(JEventLoop *loop);
+        dirc_config_t(const std::shared_ptr<const JEvent>& event);
 
         double DIRC_TSIGMA;
 
@@ -20,8 +20,8 @@ class dirc_config_t
 class DIRCSmearer : public Smearer
 {
   public:
-	DIRCSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-                dirc_config = new dirc_config_t(loop);
+	DIRCSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+                dirc_config = new dirc_config_t(event);
 	}
 	~DIRCSmearer() {
 		delete dirc_config;
