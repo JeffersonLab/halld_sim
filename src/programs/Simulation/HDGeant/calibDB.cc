@@ -8,7 +8,8 @@
 #include <string>
 using namespace std;
 
-#include <JANA/JCalibrationFile.h>
+#include <JANA/Calibrations/JCalibrationFile.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
 #include <DANA/DApplication.h>
 #include <HDGEOMETRY/DGeometry.h>
 #include <HDGEOMETRY/DMagneticFieldMapFineMesh.h>
@@ -68,7 +69,7 @@ void initcalibdb_(char *bfield_type, char *bfield_map, char *PS_bfield_type, cha
    }
 
    // Get the JCalibration object
-   jcalib = japp->GetJCalibration(*runno);
+   jcalib =  japp->GetService<JCalibrationManager>()->GetJCalibration(*runno);
  
    // The actual DMagneticFieldMap subclass can be specified in
    // the control.in file. Since it is read in as integers of
@@ -458,7 +459,7 @@ const char* GetMD5Geom(void)
 
 extern "C" {
 
-   #include <JANA/JCalibration.h>
+   #include <JANA/Calibrations/JCalibration.h>
 
    extern float coherent_peak_GeV[2];
    extern float endpoint_calib_GeV;
@@ -469,7 +470,7 @@ extern "C" {
       char dbname[] = "/PHOTON_BEAM/endpoint_energy";
       unsigned int ndata = 1;
       if (jcalib == 0)
-         jcalib = japp->GetJCalibration(runno);
+         jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       if (GetCalib(dbname, &ndata, &endpoint_energy_GeV)) {
          fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
                  "failed to read photon beam endpoint energy",
@@ -484,7 +485,7 @@ extern "C" {
       char dbname[] = "/PHOTON_BEAM/hodoscope/endpoint_calib";
       unsigned int ndata = 1;
       if (jcalib == 0)
-         jcalib = japp->GetJCalibration(runno);
+         jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       if (GetCalib(dbname, &ndata, &endpoint_calib_GeV)) {
          fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
                  "failed to read photon beam endpoint_calib",
@@ -499,7 +500,7 @@ extern "C" {
       char dbname[] = "/PHOTON_BEAM/coherent_energy";
       unsigned int ndata = 2;
       if (jcalib == 0)
-         jcalib = japp->GetJCalibration(runno);
+         jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       if (GetCalib(dbname, &ndata, coherent_peak_GeV)) {
          fprintf(stderr,"HDGeant error in hitTagger: %s %s\n",
                  "failed to read coherent peak energy",
