@@ -39,6 +39,7 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 
 #include "AMPTOOLS_MCGEN/FixedTargetGenerator.h"
+#include "AMPTOOLS_MCGEN/BreitWignerGenerator.h"
 
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -70,7 +71,7 @@ int main( int argc, char* argv[] ){
   string  lvString("");
   string  uvString("");
 
-	
+  	
   bool fixedGen = false;
   bool fsRootFormat = false;
   bool diag = false;
@@ -90,6 +91,11 @@ int main( int argc, char* argv[] ){
 
   int nEvents = 10000;
   int batchSize = 10000;
+  
+  vector<int> indicateBW;
+
+  map<string,BreitWignerGenerator> mpBW;
+  map<string,int> mpIND;
 
   // Initialization of FixedTargetGenerator
   FixedTargetGenerator ftGen;
@@ -180,9 +186,9 @@ int main( int argc, char* argv[] ){
       else{
       	if( atoi( argv[i+1] ) == 0 ) reWeight -= FixedTargetGenerator::kUpperVtxMass;	
       	if( atoi( argv[i+2] ) == 0 ) reWeight -= FixedTargetGenerator::kLowerVtxMass;
-	if( atoi( argv[i+3] ) == 0 ) reWeight -= FixedTargetGenerator::kMomentumTransfer;	
+	if( atoi( argv[i+3] ) == 0 ) reWeight -= FixedTargetGenerator::kMomentumTransfer;
       }
-    }	
+    }
     if (arg == "-f") fixedGen = true; 
     if (arg == "-d") diag = true;
     if (arg == "-h"){
@@ -280,8 +286,14 @@ int main( int argc, char* argv[] ){
         if( lvIndices[j] > 0 && ((unsigned int)lvIndices[j] == i )){
        	  cout << "This is lower vertex particle with indices " << lvIndices[j] 
 	  << " with name " <<  tempString << endl; 
-          lvMasses.push_back( ParticleMass( particle ) );	
+	  lvMasses.push_back( ParticleMass( particle ) );	
 	  lowerVtxName << ParticleName_ROOT( particle );
+	  if( tempString == "Omega" ) {   // Will change to switch statement if more otpions added
+            cout << "Omega found in lower vertex!" << endl << endl;
+            mpBW[tempString]  = BreitWignerGenerator( ParticleMass( particle ), 0.00868, seed);
+	    mpIND[tempString] = (int)lvMasses.size() - 1;
+            indicateBW.push_back(1); //This will vary lower BW mass
+          }
         }
       }
       // this loop will check if particle is part of upper vertex according to user
@@ -289,15 +301,24 @@ int main( int argc, char* argv[] ){
         if( uvIndices[k] > 0 && ((unsigned int)uvIndices[k] == i )){
           cout << "This is upper vertex particle with indices " << uvIndices[k] 
           << " with name " <<  tempString << endl;
-          uvMasses.push_back( ParticleMass( particle ) ); 
-          upperVtxName << ParticleName_ROOT( particle );     
+	  uvMasses.push_back( ParticleMass( particle ) ); 
+          upperVtxName << ParticleName_ROOT( particle );  
+	  if( tempString == "Omega" ){    // Will change to switch statement if more otpions added
+            cout << "Omega found in upper vertex!" << endl << endl;
+            mpBW[tempString]  = BreitWignerGenerator( ParticleMass( particle ), 0.00868, seed);
+            mpIND[tempString] = (int)uvMasses.size() - 1;
+            indicateBW.push_back(2); //This will vary upper BW mass
+          }   
         }
       }
       // add particle to pTypes
       pTypes.push_back( particle );
     }
+    
   }
-
+  map<string, BreitWignerGenerator>::iterator itBW = mpBW.begin();
+  map<string, int>::iterator itIND = mpIND.begin();
+ 
 
   // random number initialization (set to 0 by default)
   TRandom3* gRandom = new TRandom3();
@@ -355,8 +376,15 @@ int main( int argc, char* argv[] ){
   ftGen.setBeamEnergy( beamEnergy );
   ftGen.setUpperVtxMasses( uvMasses );
   ftGen.setLowerVtxMasses( lvMasses );
-  ftGen.setSeed(seed);
- 
+  ftGen.setSeed( seed );
+  // Add the new seed value to sub BW's if exist
+  while( itBW != mpBW.end() ){
+    itBW->second.setSeed( seed );
+    itBW++;
+  }
+  // Place itBW back to beginning 
+  itBW = mpBW.begin();  
+
  // Sets reweighting based off of options given in command line
   ftGen.setReweightMask( reWeight );
   
@@ -406,7 +434,27 @@ int main( int argc, char* argv[] ){
 
       vector<TLorentzVector> reactionVector(reaction->particleList().size());
       Kinematics* kin;
-      ftGen.setBeamEnergy( cobrem_vs_E->GetRandom() );  // Resets value of beam energy
+      beamEnergy = cobrem_vs_E->GetRandom();
+      ftGen.setBeamEnergy( beamEnergy );  // Resets value of beam energy
+      int iter = 0;
+      //This while loop will change mass value of subBW specified in arguments  
+      while( itBW != mpBW.end() ){
+        switch(indicateBW[iter]){
+	  case 1: 
+            lvMasses[itIND->second] = itBW->second().first; // Resets value of particle in lower vertex  
+	    ftGen.setLowerVtxMasses(lvMasses);
+            cout << "Mass of omega is " <<  lvMasses[itIND->second] << endl;
+	    break;
+	  case 2:
+            uvMasses[itIND->second] = itBW->second().first; // Resets value of particle in upper vertex  
+            ftGen.setUpperVtxMasses(uvMasses);
+	    cout << "Mass of omega is " <<  uvMasses[itIND->second] << endl;
+            break;
+        }
+        itBW++;
+        itIND++;
+	iter++;	
+      }  
       kin = ftGen.generate(); 
       // Rearranging indices in kinematics class to mimic reactionList
       // Starting with beam
@@ -424,8 +472,10 @@ int main( int argc, char* argv[] ){
       delete kin;
       delete sim;
       i++;
+      itBW = mpBW.begin();
+      itIND = mpIND.begin();
     }
-		
+    		
     cout << "Processing events..." << endl;
 		
     // include factor of 1.5 to be safe in case we miss peak -- avoid
