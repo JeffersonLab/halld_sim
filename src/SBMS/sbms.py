@@ -1200,7 +1200,7 @@ def AddEvtGen(env):
                 EVTGEN_CPPPATH = "%s/include" % (EVTGEN_HOME)
                 EVTGEN_LIBPATH = [ "%s/lib" % (EVTGEN_HOME), "%s/lib64" % (EVTGEN_HOME) ]   # either of these could be true
                 EVTGEN_LIBS = [ "EvtGen", "EvtGenExternal" ] 
-                EVTGEN_LIBS += [ "EVTGEN_MODELS" ]
+                EVTGEN_LIBS += [ "EVTGEN_WRAPPER", "EVTGEN_MODELS" ]
                 env.AppendUnique(CXXFLAGS = ['-DHAVE_EVTGEN', '-DEVTGEN_EXTERNAL'])
                 env.AppendUnique(CPPPATH = EVTGEN_CPPPATH)
                 env.AppendUnique(LIBPATH = EVTGEN_LIBPATH)
