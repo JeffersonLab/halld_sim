@@ -16,6 +16,11 @@ using namespace std;
 
 class Kinematics;
 
+#ifdef GPU_ACCELERATION			  
+void GPUComplexCoeff_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble real, GDouble imag);
+#endif
+
+
 class ComplexCoeff : public UserAmplitude< ComplexCoeff >
 {  
 public:
@@ -28,6 +33,14 @@ public:
   string name() const { return "ComplexCoeff"; }
   
   complex< GDouble > calcAmplitude( GDouble** pKin ) const;
+
+  #ifdef GPU_ACCELERATION
+  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO) const{
+      GPUComplexCoeff_exec(dimGrid, dimBlock, GPU_AMP_ARGS, m_value.real(), m_value.imag());
+  };
+  
+  bool isGPUEnabled() const { return true; }
+  #endif
 
   void updatePar( const AmpParameter& par );
 
