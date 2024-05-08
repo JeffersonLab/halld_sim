@@ -16,7 +16,7 @@ using namespace std;
 
 #ifdef GPU_ACCELERATION
 void
-GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s );
+GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO );
 #endif
 
 class Kinematics;
