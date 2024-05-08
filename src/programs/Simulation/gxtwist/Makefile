@@ -15,10 +15,22 @@ $(DIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 current_dir:
+	$(MAKE) -- -lHDDM
+	$(MAKE) -- -lHDGEOMETRY
 	$(MAKE) -f Makefile.bms $(MAKECMDGOALS)
 
 -lHDDM:
 	touch -- $@
 	true
 
+-lHDGEOMETRY:
+	touch -- $@
+	true
+
+clean:
+	rm -rf paw.metafile flukaerr.dat geant.hbook gxtwist.rz gelhad hdgeant.hddm
+	rm -f hddsGeant3_tagger.F hdds/hddsGeant4_tagger.F
+	rm -f -- -lHDDM -lHDGEOMETRY
+
+#
 # DO NOT DELETE

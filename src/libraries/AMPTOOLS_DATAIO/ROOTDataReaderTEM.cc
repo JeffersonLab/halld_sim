@@ -85,6 +85,9 @@ ROOTDataReaderTEM::ROOTDataReaderTEM( const vector< string >& args ):
       cout << "Number of events kept    = " << m_numEvents << endl;
       cout << "*********************************************" << endl;
    }   
+
+   // Reset event counter back to 0 since we incremented it in the above loop
+   resetSource(); 
 }
 
 ROOTDataReaderTEM::~ROOTDataReaderTEM()

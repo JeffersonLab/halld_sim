@@ -256,6 +256,19 @@ void getLikelihood( ConfigurationInfo* cfgInfo ){
     return;
 }
 
+void printAmplitudes( ConfigurationInfo* cfgInfo ){
+
+  AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kPlotGeneration );
+  DataReader* dataReader = ati.dataReader(cfgInfo->reactionList()[0]->reactionName());  
+  dataReader->resetSource();
+  for (int i = 0; i < 2; i++){
+    Kinematics* kin = dataReader->getEvent();
+    ati.printEventDetails(cfgInfo->reactionList()[0]->reactionName(),kin);
+    delete kin;
+  }
+  return;
+}
+
 int main( int argc, char* argv[] ){
 
    // set default parameters
@@ -263,6 +276,7 @@ int main( int argc, char* argv[] ){
    bool useMinos = false;
    bool hesse = false;
    bool noFit = false;
+   bool printAmps = false;
 
    string configfile;
    string seedfile;
@@ -295,6 +309,7 @@ int main( int argc, char* argv[] ){
       if (arg == "-n") useMinos = true;
       if (arg == "-H") hesse = true;
       if (arg == "-l") noFit = true;
+      if (arg == "-test" ) printAmps = true;
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
@@ -310,6 +325,7 @@ int main( int argc, char* argv[] ){
          cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          cout << "   -l \t\t\t\t Calculate likelihood and exit without running a fit" << endl; 
+	 cout << "   -test \t\t\t Print amplitude details for the first 2 data events" << endl;
          exit(1);}
    }
 
@@ -364,16 +380,18 @@ int main( int argc, char* argv[] ){
 
 
    if(noFit)
-      getLikelihood(cfgInfo);
+     getLikelihood(cfgInfo);
+   else if(printAmps)
+     printAmplitudes(cfgInfo);
    else if(numRnd==0){
-      if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
-      else
-         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
+     if(scanPar=="")
+       runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
+     else
+       runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
    } else {
-      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
-      AmpToolsInterface::setRandomSeed(randomSeed);
-      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
+     cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+     AmpToolsInterface::setRandomSeed(randomSeed);
+     runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
    }
 
   return 0;
