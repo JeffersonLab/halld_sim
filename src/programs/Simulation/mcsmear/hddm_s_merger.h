@@ -66,7 +66,7 @@ namespace hddm_s_merger {
    double get_bcal_tdc_counts_per_ns();
    void set_bcal_tdc_counts_per_ns(double slope);
 
-   // hits merging / truncation parameters for the TOF
+   // hits merging / truncation parameters for the FTOF
    bool get_ftof_merging();
    void set_ftof_merging(bool merging_status);
    int get_ftof_adc_max_hits();
@@ -77,6 +77,18 @@ namespace hddm_s_merger {
    void set_ftof_min_delta_t_ns(double dt_ns);
    double get_ftof_integration_window_ns();
    void set_ftof_integration_window_ns(double dt_ns);
+ 
+   // hits merging / truncation parameters for the CTOF
+   bool get_ctof_merging();
+   void set_ctof_merging(bool merging_status);
+   int get_ctof_adc_max_hits();
+   void set_ctof_adc_max_hits(int maxhits);
+   int get_ctof_tdc_max_hits();
+   void set_ctof_tdc_max_hits(int maxhits);
+   double get_ctof_min_delta_t_ns();
+   void set_ctof_min_delta_t_ns(double dt_ns);
+   double get_ctof_integration_window_ns();
+   void set_ctof_integration_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the FCAL
    bool get_fcal_merging();
@@ -87,6 +99,17 @@ namespace hddm_s_merger {
    void set_fcal_min_delta_t_ns(double dt_ns);
    double get_fcal_integration_window_ns();
    void set_fcal_integration_window_ns(double dt_ns);
+
+   // hits merging / truncation parameters for the ECAL
+   bool get_ecal_merging();
+   void set_ecal_merging(bool merging_status);
+   int get_ecal_max_hits();
+   void set_ecal_max_hits(int maxhits);
+   double get_ecal_min_delta_t_ns();
+   void set_ecal_min_delta_t_ns(double dt_ns);
+   double get_ecal_integration_window_ns();
+   void set_ecal_integration_window_ns(double dt_ns);
+
 
    // hits merging / truncation parameters for the CCAL
    bool get_ccal_merging();
@@ -155,7 +178,9 @@ namespace hddm_s_merger {
    void truncate_bcal_adc_digihits(hddm_s::BcalfADCDigiHitList &hits);
    void truncate_bcal_tdc_digihits(hddm_s::BcalTDCDigiHitList &hits);
    void truncate_ftof_hits(hddm_s::FtofHitList &hits);
+   void truncate_ctof_hits(hddm_s::CtofHitList &hits);
    void truncate_fcal_hits(hddm_s::FcalHitList &hits);
+   void truncate_ecal_hits(hddm_s::EcalHitList &hits);
    void truncate_ccal_hits(hddm_s::CcalHitList &hits);
    void truncate_tag_hits(hddm_s::TaggerHitList &hits);
    void truncate_ps_hits(hddm_s::PsHitList &hits);
@@ -211,12 +236,24 @@ hddm_s::FtofCounterList &operator+=(hddm_s::FtofCounterList &dst,
                                     hddm_s::FtofCounterList &src);
 hddm_s::FtofHitList &operator+=(hddm_s::FtofHitList &dst,
                                 hddm_s::FtofHitList &src);
+hddm_s::CppTOFList &operator+=(hddm_s::CppTOFList &dst,
+                                   hddm_s::CppTOFList &src);
+hddm_s::CtofCounterList &operator+=(hddm_s::CtofCounterList &dst,
+                                    hddm_s::CtofCounterList &src);
+hddm_s::CtofHitList &operator+=(hddm_s::CtofHitList &dst,
+                                hddm_s::CtofHitList &src);
 hddm_s::ForwardEMcalList &operator+=(hddm_s::ForwardEMcalList &dst,
                                      hddm_s::ForwardEMcalList &src);
 hddm_s::FcalBlockList &operator+=(hddm_s::FcalBlockList &dst,
                                   hddm_s::FcalBlockList &src);
 hddm_s::FcalHitList &operator+=(hddm_s::FcalHitList &dst,
                                 hddm_s::FcalHitList &src);
+hddm_s::CrystalEcalList &operator+=(hddm_s::CrystalEcalList &dst,
+                                     hddm_s::CrystalEcalList &src);
+hddm_s::EcalBlockList &operator+=(hddm_s::EcalBlockList &dst,
+                                  hddm_s::EcalBlockList &src);
+hddm_s::EcalHitList &operator+=(hddm_s::EcalHitList &dst,
+                                hddm_s::EcalHitList &src);
 hddm_s::ComptonEMcalList &operator+=(hddm_s::ComptonEMcalList &dst,
                                      hddm_s::ComptonEMcalList &src);
 hddm_s::CcalBlockList &operator+=(hddm_s::CcalBlockList &dst,

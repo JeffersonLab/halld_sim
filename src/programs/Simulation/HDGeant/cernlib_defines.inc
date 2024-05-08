@@ -1,0 +1,8 @@
+#define CERNLIB_LINUX 1
+#define CERNLIB_UNIX 1
+#define DCERNLIB_LNX 1
+#define CERNLIB_1
+#define QMGLIBC 1
+#define CERNLIB_QMLXIA64 1
+#define CERNLIB_GFORTRAN 1
+#define CERNLIB_GCC4 1
