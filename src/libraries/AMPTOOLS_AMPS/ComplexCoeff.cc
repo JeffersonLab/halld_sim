@@ -28,16 +28,31 @@ UserAmplitude< ComplexCoeff >( args )
   // need to register any free parameters so the framework knows about them
   registerParameter( m_param1 );
   registerParameter( m_param2 );
+
+  cout<<"ComplexCoeff"<<endl;
 }
 
 complex< GDouble >
 ComplexCoeff::calcAmplitude( GDouble** pKin ) const
 {
+
+#ifndef GPU_ACCELERATION
   return m_value;
+#else
+  cout<<"calcAmplitude"<<endl;
+  complex<GDouble> a(m_param1,m_param2);
+  if(!m_represReIm)
+    a = polar(fabs(GDouble(m_param1)), GDouble(m_param2));
+  return a;
+#endif
+
 }
 
 void
 ComplexCoeff::updatePar( const AmpParameter& par ){
+
+#ifndef GPU_ACCELERATION
+  cout<<"updatePar"<<endl;
 
   if( m_represReIm ){
 
@@ -47,4 +62,6 @@ ComplexCoeff::updatePar( const AmpParameter& par ){
 
     m_value = polar( fabs( m_param1 ), (GDouble)m_param2 );
   }
+#endif
+
 }

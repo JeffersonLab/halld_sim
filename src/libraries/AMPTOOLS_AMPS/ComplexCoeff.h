@@ -16,8 +16,8 @@ using namespace std;
 
 class Kinematics;
 
-#ifdef GPU_ACCELERATION			  
-void GPUComplexCoeff_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble real, GDouble imag);
+#ifdef GPU_ACCELERATION
+void GPUComplexCoeff_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble param1, GDouble param2, bool represReIm);
 #endif
 
 
@@ -34,13 +34,13 @@ public:
   
   complex< GDouble > calcAmplitude( GDouble** pKin ) const;
 
-  #ifdef GPU_ACCELERATION
+#ifdef GPU_ACCELERATION
   void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO) const{
-      GPUComplexCoeff_exec(dimGrid, dimBlock, GPU_AMP_ARGS, m_value.real(), m_value.imag());
+	  GPUComplexCoeff_exec(dimGrid, dimBlock, GPU_AMP_ARGS, m_param1, m_param2, m_represReIm);
   };
   
   bool isGPUEnabled() const { return true; }
-  #endif
+#endif
 
   void updatePar( const AmpParameter& par );
 
@@ -50,7 +50,10 @@ private:
   AmpParameter m_param2;
   bool m_represReIm;
 
+#ifndef GPU_ACCELERATION
   complex< GDouble > m_value;
+#endif
+
 };
 
 #endif

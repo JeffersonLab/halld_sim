@@ -6,14 +6,22 @@
 
 
 __global__ void
-GPUComplexCoeff_kernel(GPU_AMP_PROTO, GDouble m_value_re, GDouble m_value_im)
+GPUComplexCoeff_kernel(GPU_AMP_PROTO, GDouble param1, GDouble param2, bool represReIm)
 {
-  WCUComplex ans = { m_value_re, m_value_im };
-  pcDevAmp[GPU_THIS_EVENT] = ans;
+  
+  if(represReIm) {
+    WCUComplex ans = { param1, param2 };
+    pcDevAmp[GPU_THIS_EVENT] = ans;
+  }
+  else {
+    WCUComplex ans = { param1*cos(param2), param1*sin(param2) };
+    pcDevAmp[GPU_THIS_EVENT] = ans;
+  }
+
 }
 
 void
-GPUComplexCoeff_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble m_value_re, GDouble m_value_im)
+GPUComplexCoeff_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble m_param1, GDouble m_param2, bool m_represReIm)
 {
-  GPUComplexCoeff_kernel<<< dimGrid, dimBlock >>>(GPU_AMP_ARGS, m_value_re, m_value_im);
+  GPUComplexCoeff_kernel<<< dimGrid, dimBlock >>>(GPU_AMP_ARGS, m_param1, m_param2, m_represReIm);
 }
