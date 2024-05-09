@@ -437,18 +437,23 @@ int main( int argc, char* argv[] ){
       beamEnergy = cobrem_vs_E->GetRandom();
       ftGen.setBeamEnergy( beamEnergy );  // Resets value of beam energy
       int iter = 0;
-      //This while loop will change mass value of subBW specified in arguments  
+      //This while loop will change mass value of subBW specified in arguments
       while( itBW != mpBW.end() ){
+        
+        // this is the fraction of the central BW distribution that
+        // will be generated... throwing away 1% in the tails of
+        // the distribution avoids extreme values that cause problems
+        // with energy/momentum conservation
+        double genFraction = 0.99;
+        
         switch(indicateBW[iter]){
 	  case 1: 
-            lvMasses[itIND->second] = itBW->second().first; // Resets value of particle in lower vertex  
+            lvMasses[itIND->second] = itBW->second(genFraction).first; // Resets value of particle in lower vertex
 	    ftGen.setLowerVtxMasses(lvMasses);
-            cout << "Mass of omega is " <<  lvMasses[itIND->second] << endl;
 	    break;
 	  case 2:
-            uvMasses[itIND->second] = itBW->second().first; // Resets value of particle in upper vertex  
+            uvMasses[itIND->second] = itBW->second(genFraction).first; // Resets value of particle in upper vertex
             ftGen.setUpperVtxMasses(uvMasses);
-	    cout << "Mass of omega is " <<  uvMasses[itIND->second] << endl;
             break;
         }
         itBW++;
