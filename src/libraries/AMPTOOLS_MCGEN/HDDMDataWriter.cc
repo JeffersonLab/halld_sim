@@ -61,6 +61,7 @@ writeEvent( const Kinematics& kin, const vector<int>& ptype,
   pes().setRunNo(m_runNumber);
   pes().setEventNo(m_eventCounter);
   hddm_s::ReactionList rs = pes().addReactions();
+  rs().setWeight( kin.weight() );
   hddm_s::VertexList vs = rs().addVertices();
   hddm_s::OriginList os = vs().addOrigins();
   hddm_s::ProductList ps = vs().addProducts(nParticles-1);

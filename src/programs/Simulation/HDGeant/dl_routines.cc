@@ -187,7 +187,7 @@ void init_runtime_xml_(void)
 	// Compile FORTRAN into shared object
 	cout<<endl;
 	cout << "Compiling FORTRAN into shared object ..." << endl;
-	cmd = "gfortran -shared -fPIC -o tmp.so -I$CERN/$CERN_LEVEL/include tmp.F";
+	cmd = "gfortran -shared -fPIC -std=legacy -o tmp.so -I$CERN/$CERN_LEVEL/include tmp.F";
 	cout << cmd << endl;
 	retcode = system(cmd.c_str());
 	if(retcode) cerr << "Error running command: " << retcode << endl;

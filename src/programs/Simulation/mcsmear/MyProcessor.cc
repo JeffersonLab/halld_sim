@@ -380,6 +380,21 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 		hddm_s_merger::set_fcal_integration_window_ns(fcal_gate);
 
 
+		// hits merging / truncation parameters for the ECAL
+		int ecal_npeak     =  3;
+		double ecal_nsa    =  15;
+		double ecal_nsb    =  1;
+		
+		if(config->readout["ECAL"].size() > 0){
+		  ecal_npeak = config->readout["ECAL"].at("NPEAK");
+		  ecal_nsb = config->readout["ECAL"].at("NSB");		  
+		}
+		
+		double ecal_gate = (ecal_nsa + ecal_nsb) * fadc250_period_ns;
+		
+		hddm_s_merger::set_ecal_max_hits(ecal_npeak);
+		hddm_s_merger::set_ecal_integration_window_ns(ecal_gate);
+				
 		
 		// hits merging / truncation parameters for the CCAL
 		int ccal_npeak     =  3;
