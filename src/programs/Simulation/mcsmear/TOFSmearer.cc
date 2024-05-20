@@ -65,7 +65,46 @@ tof_config_t::tof_config_t(JEventLoop *loop)
             }	      
         }
     }
+    
+    // load bad channel tables
+    string locTOFADCBadChannelTable = TOFGeom[0]->Get_CCDB_DirectoryName() + "/adc_bad_channels";
+	raw_table.clear();
+	if(loop->GetCalib(locTOFADCBadChannelTable.c_str(), raw_table)) {
+    	jerr << "Problem loading "<<locTOFADCBadChannelTable<<" from CCDB!" << endl;
+    } else {
+    	int channel = 0;
 
+    	for(int plane=0; plane<TOF_NUM_PLANES; plane++) {
+        	int plane_index=2*TOF_NUM_BARS*plane;
+        	channel_efficiencies.push_back( vector< pair<double,double> >(TOF_NUM_BARS) );
+        	for(int bar=0; bar<TOF_NUM_BARS; bar++) {
+            	bad_adc_channels[plane][bar] 
+                	= pair<double,double>(raw_table[plane_index+bar],
+                    	    raw_table[plane_index+TOF_NUM_BARS+bar]);
+            	channel+=2;
+            }	      
+        }
+    }
+    
+    string locTOFTDCBadChannelTable = TOFGeom[0]->Get_CCDB_DirectoryName() + "/tdc_bad_channels";
+	raw_table.clear();
+	if(loop->GetCalib(locTOFTDCBadChannelTable.c_str(), raw_table)) {
+    	jerr << "Problem loading "<<locTOFTDCBadChannelTable<<" from CCDB!" << endl;
+    } else {
+    	int channel = 0;
+
+    	for(int plane=0; plane<TOF_NUM_PLANES; plane++) {
+        	int plane_index=2*TOF_NUM_BARS*plane;
+        	channel_efficiencies.push_back( vector< pair<double,double> >(TOF_NUM_BARS) );
+        	for(int bar=0; bar<TOF_NUM_BARS; bar++) {
+            	bad_tdc_channels[plane][bar] 
+                	= pair<double,double>(raw_table[plane_index+bar],
+                    	    raw_table[plane_index+TOF_NUM_BARS+bar]);
+            	channel+=2;
+            }	      
+        }
+    }
+        
 	cout << "Number of TOF bars per plane = " << TOF_NUM_BARS << endl;
 }
 
@@ -83,6 +122,9 @@ void TOFSmearer::SmearEvent(hddm_s::HDDM *record)
       hddm_s::FtofTruthHitList thits = iter->getFtofTruthHits();
       hddm_s::FtofTruthHitList::iterator titer;
       for (titer = thits.begin(); titer != thits.end(); ++titer) {
+      	 if(tof_config->GetADCBadChannelStatus(titer))
+			continue;
+			      
          // correct simulation efficiencies 
 		 if (config->APPLY_EFFICIENCY_CORRECTIONS
 		 		&& !gDRandom.DecideToAcceptHit(tof_config->GetEfficiencyCorrectionFactor(titer)))
@@ -94,7 +136,10 @@ void TOFSmearer::SmearEvent(hddm_s::HDDM *record)
          // Smear the energy
          float NewE = titer->getDE();
          if(config->SMEAR_HITS) {
-			 t += gDRandom.SampleGaussian(tof_config->GetHitTimeResolution(iter->getPlane(),iter->getBar()));
+         	 if(tof_config->GetTDCBadChannelStatus(titer))
+				 t += gDRandom.SampleGaussian(tof_config->GetHitTimeResolution(iter->getPlane(),iter->getBar()));  // replace this with something worse
+			 else
+				 t += gDRandom.SampleGaussian(tof_config->GetHitTimeResolution(iter->getPlane(),iter->getBar()));
          	 double npe = titer->getDE() * 1000. * tof_config->TOF_PHOTONS_PERMEV;
          	 npe += gDRandom.SampleGaussian(sqrt(npe));
           	 NewE = npe/tof_config->TOF_PHOTONS_PERMEV/1000.;

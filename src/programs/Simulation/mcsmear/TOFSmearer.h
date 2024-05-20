@@ -33,12 +33,26 @@ class tof_config_t
   	vector<double> TOF_PADDLE_TIME_RESOLUTIONS;
 	
 	vector< vector< pair<double,double> > > channel_efficiencies;
+	vector< vector< pair<double,double> > > bad_adc_channels;
+	vector< vector< pair<double,double> > > bad_tdc_channels;
 
 	double GetEfficiencyCorrectionFactor(hddm_s::FtofTruthHitList::iterator &siter) {
 		if(siter->getEnd() == 0)
 			return channel_efficiencies.at(siter->getPlane()).at(siter->getBar()-1).first;
 		else 
 			return channel_efficiencies.at(siter->getPlane()).at(siter->getBar()-1).second;
+	}
+	double GetADCBadChannelStatus(hddm_s::FtofTruthHitList::iterator &siter) {
+		if(siter->getEnd() == 0)
+			return bad_adc_channels.at(siter->getPlane()).at(siter->getBar()-1).first;
+		else 
+			return bad_adc_channels.at(siter->getPlane()).at(siter->getBar()-1).second;
+	}
+	double GetTDCBadChannelStatus(hddm_s::FtofTruthHitList::iterator &siter) {
+		if(siter->getEnd() == 0)
+			return bad_tdc_channels.at(siter->getPlane()).at(siter->getBar()-1).first;
+		else 
+			return bad_tdc_channels.at(siter->getPlane()).at(siter->getBar()-1).second;
 	}
 };
 
