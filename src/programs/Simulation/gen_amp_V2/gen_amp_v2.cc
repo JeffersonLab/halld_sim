@@ -93,9 +93,9 @@ int main( int argc, char* argv[] ){
   int batchSize = 10000;
   
   vector<int> indicateBW;
-
-  map<string,BreitWignerGenerator> mpBW;
-  map<string,int> mpIND;
+  map<int,BreitWignerGenerator> mpBW;
+  mpBW[PDGtype( ParticleEnum("Omega") )] = BreitWignerGenerator( ParticleMass( ParticleEnum( "Omega" ) ), 0.00868, seed); // Initialize BW for omega
+  mpBW[PDGtype( ParticleEnum("Phi") )] = BreitWignerGenerator( ParticleMass( ParticleEnum( "Phi" ) ), 0.00868, seed); // Initialize BW for omega
 
   // Initialization of FixedTargetGenerator
   FixedTargetGenerator ftGen;
@@ -262,7 +262,9 @@ int main( int argc, char* argv[] ){
 
   vector< int > lvIndices = parseString( lvString );
   vector< int > uvIndices = parseString( uvString );
-  /// get the masses for each.....
+  vector< int > valPDG;
+  vector< int > valVertex;
+  // get the masses for each.....
 
   vector< double > lvMasses;
   vector< double > uvMasses;
@@ -288,10 +290,10 @@ int main( int argc, char* argv[] ){
 	  << " with name " <<  tempString << endl; 
 	  lvMasses.push_back( ParticleMass( particle ) );	
 	  lowerVtxName << ParticleName_ROOT( particle );
-	  if( tempString == "Omega" ) {   // Will change to switch statement if more otpions added
-            cout << "Omega found in lower vertex!" << endl << endl;
-            mpBW[tempString]  = BreitWignerGenerator( ParticleMass( particle ), 0.00868, seed);
-	    mpIND[tempString] = (int)lvMasses.size() - 1;
+	  if( !IsResonance( particle ) ) {   // Check if particle has a resonance 
+            cout << "Particle with resonance found in lower vertex!" << endl << endl;
+	    valPDG.push_back( PDGtype( particle ) );
+            valVertex.push_back( (int)lvMasses.size() - 1 );
             indicateBW.push_back(1); //This will vary lower BW mass
           }
         }
@@ -303,10 +305,10 @@ int main( int argc, char* argv[] ){
           << " with name " <<  tempString << endl;
 	  uvMasses.push_back( ParticleMass( particle ) ); 
           upperVtxName << ParticleName_ROOT( particle );  
-	  if( tempString == "Omega" ){    // Will change to switch statement if more otpions added
-            cout << "Omega found in upper vertex!" << endl << endl;
-            mpBW[tempString]  = BreitWignerGenerator( ParticleMass( particle ), 0.00868, seed);
-            mpIND[tempString] = (int)uvMasses.size() - 1;
+	  if( !IsResonance( particle ) ){
+            cout << "Particle with resonance found in upper vertex!" << endl << endl;
+            valPDG.push_back( PDGtype( particle ) );
+            valVertex.push_back( (int)uvMasses.size() - 1 );
             indicateBW.push_back(2); //This will vary upper BW mass
           }   
         }
@@ -316,8 +318,7 @@ int main( int argc, char* argv[] ){
     }
     
   }
-  map<string, BreitWignerGenerator>::iterator itBW = mpBW.begin();
-  map<string, int>::iterator itIND = mpIND.begin();
+  map<int, BreitWignerGenerator>::iterator itBW = mpBW.begin();
  
 
   // random number initialization (set to 0 by default)
@@ -378,14 +379,10 @@ int main( int argc, char* argv[] ){
   ftGen.setLowerVtxMasses( lvMasses );
   ftGen.setSeed( seed );
   // Add the new seed value to sub BW's if exist
-  while( itBW != mpBW.end() ){
-    itBW->second.setSeed( seed );
-    itBW++;
-  }
-  // Place itBW back to beginning 
-  itBW = mpBW.begin();  
-
- // Sets reweighting based off of options given in command line
+  mpBW[PDGtype( ParticleEnum("omega") )].setSeed( seed );
+  mpBW[PDGtype( ParticleEnum("phi") )].setSeed( seed );
+ 
+  // Sets reweighting based off of options given in command line
   ftGen.setReweightMask( reWeight );
   
   HDDMDataWriter* hddmOut = NULL;
@@ -409,7 +406,8 @@ int main( int argc, char* argv[] ){
   TH1F* eW = new TH1F( "eW", "Beam Energy", 120, 0, 12 );
   TH1F* eWI = new TH1F( "eWI", "Beam Energy", 120, 0, 12 );
   TH1F* intenW = new TH1F("intenW", "True PDF/ Gen. PDF", 1000, -0.1e-03, 0.8e-03);
-  TH2F* intenWVsE = new TH2F("intenWVsE","Ratio vs. M", 100, 0, 12, 1000, -0.1e-03, 0.8e-03);
+  TH2F* intenWVsE = new TH2F("intenWVsE","Ratio vs. E", 100, 0, 12, 200, -0.1e-03, 0.8e-03);
+  TH2F* intenWVsM = new TH2F("intenWVsE","Ratio vs. M", 100, 0, 3., 200, -0.1e-03, 0.8e-03);
   
   TH1F* m_Meson = new TH1F( "m_Meson", locHistTitle.c_str(), 200, 0., 3. );
   TH1F* mW_Meson = new TH1F( "mW_Meson", locHistTitle.c_str(), 200, 0., 3. );
@@ -436,29 +434,26 @@ int main( int argc, char* argv[] ){
       Kinematics* kin;
       beamEnergy = cobrem_vs_E->GetRandom();
       ftGen.setBeamEnergy( beamEnergy );  // Resets value of beam energy
-      int iter = 0;
       //This while loop will change mass value of subBW specified in arguments
-      while( itBW != mpBW.end() ){
-        
-        // this is the fraction of the central BW distribution that
+      for(unsigned int iter = 0 ; iter < valVertex.size(); iter++ ){
+        // Add BW to associated particle
+
+	// this is the fraction of the central BW distribution that
         // will be generated... throwing away 1% in the tails of
         // the distribution avoids extreme values that cause problems
         // with energy/momentum conservation
         double genFraction = 0.99;
         
-        switch(indicateBW[iter]){
+        switch( indicateBW[iter] ){
 	  case 1: 
-            lvMasses[itIND->second] = itBW->second(genFraction).first; // Resets value of particle in lower vertex
+            lvMasses[valVertex[iter]] = mpBW[valPDG[iter]](genFraction).first; // Resets value of particle in lower vertex
 	    ftGen.setLowerVtxMasses(lvMasses);
 	    break;
 	  case 2:
-            uvMasses[itIND->second] = itBW->second(genFraction).first; // Resets value of particle in upper vertex
+            uvMasses[valVertex[iter]] = mpBW[valPDG[iter]](genFraction).first; // Resets value of particle in upper vertex
             ftGen.setUpperVtxMasses(uvMasses);
             break;
         }
-        itBW++;
-        itIND++;
-	iter++;	
       }  
       kin = ftGen.generate(); 
       // Rearranging indices in kinematics class to mimic reactionList
@@ -477,8 +472,6 @@ int main( int argc, char* argv[] ){
       delete kin;
       delete sim;
       i++;
-      itBW = mpBW.begin();
-      itIND = mpIND.begin();
     }
     		
     cout << "Processing events..." << endl;
@@ -534,6 +527,8 @@ int main( int argc, char* argv[] ){
 	  intenW->Fill( weightedInten );
 
 	  intenWVsE->Fill( beam.E(), weightedInten );
+	  
+	  intenWVsM->Fill( resonance.M(), weightedInten );
 	
 	  m_Meson->Fill( resonance.M() );
 	  
@@ -564,6 +559,7 @@ int main( int argc, char* argv[] ){
 	eWI->Fill( beam.E(), weightedInten );
 	intenW->Fill( weightedInten );
 	intenWVsE->Fill( beam.E(), weightedInten );	
+	intenWVsM->Fill( resonance.M(), weightedInten );
 			
 	++eventCounter;
       }
@@ -585,6 +581,7 @@ int main( int argc, char* argv[] ){
   eWI->Write();
   intenW->Write();
   intenWVsE->Write();
+  intenWVsM->Write();
 
   diagOut->Close();
 	
