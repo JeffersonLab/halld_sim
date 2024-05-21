@@ -62,6 +62,7 @@ using namespace std;
 
 vector<int> parseString(string vertexString);
 string checkParticle(string particleString);
+inline static unsigned short int UseResonance(Particle_t p);
 int main( int argc, char* argv[] ){
   
   TString beamConfigFile("");
@@ -290,7 +291,7 @@ int main( int argc, char* argv[] ){
 	  << " with name " <<  tempString << endl; 
 	  lvMasses.push_back( ParticleMass( particle ) );	
 	  lowerVtxName << ParticleName_ROOT( particle );
-	  if( !IsResonance( particle ) ) {   // Check if particle has a resonance 
+	  if( UseResonance( particle ) ) {   // Check if particle has a resonance 
             cout << "Particle with resonance found in lower vertex!" << endl << endl;
 	    valPDG.push_back( PDGtype( particle ) );
             valVertex.push_back( (int)lvMasses.size() - 1 );
@@ -305,7 +306,7 @@ int main( int argc, char* argv[] ){
           << " with name " <<  tempString << endl;
 	  uvMasses.push_back( ParticleMass( particle ) ); 
           upperVtxName << ParticleName_ROOT( particle );  
-	  if( !IsResonance( particle ) ){
+	  if( UseResonance( particle ) ){
             cout << "Particle with resonance found in upper vertex!" << endl << endl;
             valPDG.push_back( PDGtype( particle ) );
             valVertex.push_back( (int)uvMasses.size() - 1 );
@@ -610,3 +611,19 @@ string checkParticle(string particleString){
     return particleString;
   }
 }//END of checkParticle
+
+
+inline static unsigned short int UseResonance(Particle_t p)
+{
+   p = RemapParticleID(p);
+
+	if(IsFixedMass(p) == 1)
+		return 0;
+	if(p == Unknown)
+		return 1;
+	if(p == phiMeson)
+		return 1;
+	if(p == omega)
+		return 1;
+	return 1;
+}//END OF UseResonance
