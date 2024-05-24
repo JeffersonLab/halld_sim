@@ -1,13 +1,10 @@
 /*
- * hitCCal - registers hits for Compton calorimeter
+ * hitECal - registers hits for Compton calorimeter
  *
  *	This is a part of the hits package for the
  *	HDGeant simulation program for Hall D.
  *
- *	version 1.0 	-Richard Jones July 16, 2001
- *
- *      version 1.1     -A. Somov  
- *      Add interface with CCDB,  change module length and attenuation length
+ *      Initial implementation version 0.1   A.S.  12/18/2023   
  *
  *
  */
@@ -37,7 +34,7 @@ static float   THRESH_MEV       =   5.;
 
 
 
-binTree_t* ComptonCalTree = 0;
+binTree_t* CrystalCalTree = 0;
 static int blockCount = 0;
 static int showerCount = 0;
 
@@ -45,12 +42,12 @@ static int initialized = 0;
 
 /* register hits during tracking (from gustep) */
 
-void hitComptonEMcal (float xin[4], float xout[4],
+void hitCrystalEcal (float xin[4], float xout[4],
                     float pin[5], float pout[5], float dEsum,
                     int track, int stack, int history, int ipart)
 {
    float x[3], t;
-   float xccal[3];
+   float xecal[3];
 
 
   if (!initialized){
@@ -58,7 +55,13 @@ void hitComptonEMcal (float xin[4], float xout[4],
      mystr_t strings[50];
      float  values[50];
      int  nvalues = 50;
-     int status = GetConstants("CCAL/ccal_parms", &nvalues, values, strings);
+
+
+#if 1
+
+     int status = GetConstants("ECAL/ecal_parms", &nvalues, values, strings);
+
+     //     printf(" DB status = %d \n",status);
 
      if (!status) {
        
@@ -66,50 +69,53 @@ void hitComptonEMcal (float xin[4], float xout[4],
        int i;
        for ( i = 0; i < (int)nvalues; i++){
 
-	 if (!strcmp(strings[i].str,"CCAL_ATTEN_LENGTH")) {
+	 if (!strcmp(strings[i].str,"ECAL_ATTEN_LENGTH")) {
 	   ATTEN_LENGTH  = values[i];
 	   ncounter++;
 	 }
-	 if (!strcmp(strings[i].str,"CCAL_C_EFFECTIVE")) {
+	 if (!strcmp(strings[i].str,"ECAL_C_EFFECTIVE")) {
 	   C_EFFECTIVE  = values[i];
 	   ncounter++;
 	 }
-	 if (!strcmp(strings[i].str,"CCAL_WIDTH_OF_BLOCK")) {
+	 if (!strcmp(strings[i].str,"ECAL_WIDTH_OF_BLOCK")) {
 	   WIDTH_OF_BLOCK  = values[i];
 	   ncounter++;
 	 }
-	 if (!strcmp(strings[i].str,"CCAL_LENGTH_OF_BLOCK")) {
+	 if (!strcmp(strings[i].str,"ECAL_LENGTH_OF_BLOCK")) {
 	   LENGTH_OF_BLOCK  = values[i];
 	   ncounter++;
 	 }
-	 if (!strcmp(strings[i].str,"CCAL_TWO_HIT_RESOL")) {
+	 if (!strcmp(strings[i].str,"ECAL_TWO_HIT_RESOL")) {
 	   TWO_HIT_RESOL  = values[i];
 	   ncounter++;
 	 }
-	 if (!strcmp(strings[i].str,"CCAL_MAX_HITS")) {
+	 if (!strcmp(strings[i].str,"ECAL_MAX_HITS")) {
 	   MAX_HITS  = (int)values[i];
 	   ncounter++;
 	 }
-	 if (!strcmp(strings[i].str,"CCAL_THRESH_MEV")) {
+	 if (!strcmp(strings[i].str,"ECAL_THRESH_MEV")) {
 	   THRESH_MEV  = values[i];
 	   ncounter++;
 	 }
 
        }
 
+       printf("ATTEN_LENGTH =  %f  C_EFFECTIVE = %f  WIDTH_OF_BLOCK  = %f  LENGTH_OF_BLOCK = %f  ECAL_TWO_HIT_RESOL = %f  ECAL_MAX_HITS = %d  ECAL_THRESH_MEV = %f  \n", ATTEN_LENGTH, C_EFFECTIVE, WIDTH_OF_BLOCK, LENGTH_OF_BLOCK, TWO_HIT_RESOL, MAX_HITS, THRESH_MEV);
 
        const int nparams = 7;
 
        if (ncounter == nparams){
-	 printf("CCAL: ALL parameters loaded from Data Base\n");
+	 printf("ECAL: ALL parameters loaded from Data Base\n");
        } else if (ncounter < nparams){
-         printf("CCAL: NOT ALL necessary parameters found in Data Base %d out of %d\n",ncounter,nparams);
+         printf("ECAL: NOT ALL necessary parameters found in Data Base %d out of %d\n",ncounter,nparams);
        } else {
-	 printf("CCAL: SOME parameters found more than once in Data Base\n");
+	 printf("ECAL: SOME parameters found more than once in Data Base\n");
        }
      } else {
-       printf("CCAL: Cannot Load Parameters from Data Base. Use default values. \n");
+       printf("ECAL: Cannot Load Parameters from Data Base. Use default values. \n");
      }
+
+#endif
 
      initialized = 1;
 
@@ -120,7 +126,7 @@ void hitComptonEMcal (float xin[4], float xout[4],
    x[1] = (xin[1] + xout[1])/2;
    x[2] = (xin[2] + xout[2])/2;
    t    = (xin[3] + xout[3])/2 * 1e9;
-   transformCoord(x,"global",xccal,"CCAL");
+   transformCoord(x,"global",xecal,"ECAL");
 
    /* post the hit to the truth tree */
 
@@ -128,13 +134,13 @@ void hitComptonEMcal (float xin[4], float xout[4],
 
    if ((history == 0) && (pin[3] > THRESH_MEV/1e3))
    {
-      s_CcalTruthShowers_t* showers;
+      s_EcalTruthShowers_t* showers;
       int mark = (1<<30) + showerCount;
-      void** twig = getTwig(&ComptonCalTree, mark);
+      void** twig = getTwig(&CrystalCalTree, mark);
       if (*twig == 0)
       {
-         s_ComptonEMcal_t* cal = *twig = make_s_ComptonEMcal();
-         cal->ccalTruthShowers = showers = make_s_CcalTruthShowers(1);
+         s_CrystalEcal_t* cal = *twig = make_s_CrystalEcal();
+         cal->ecalTruthShowers = showers = make_s_EcalTruthShowers(1);
          int a = thisInputEvent->physicsEvents->in[0].reactions->in[0].vertices->in[0].products->mult;
          showers->in[0].primary = (track <= a && stack == 0);
          showers->in[0].track = track;
@@ -159,30 +165,30 @@ void hitComptonEMcal (float xin[4], float xout[4],
    if (dEsum > 0)
    {
       int nhit;
-      s_CcalTruthHits_t* hits;
+      s_EcalTruthHits_t* hits;
       int row = getrow_wrapper_();
       int column = getcolumn_wrapper_();
       
-      float dist = 0.5*LENGTH_OF_BLOCK-xccal[2];
+      float dist = 0.5*LENGTH_OF_BLOCK-xecal[2];
       float dEcorr = dEsum * exp(-dist/ATTEN_LENGTH);
       float tcorr = t + dist/C_EFFECTIVE;
       int mark = ((row+1)<<16) + (column+1);
-      void** twig = getTwig(&ComptonCalTree, mark);
+      void** twig = getTwig(&CrystalCalTree, mark);
       if (*twig == 0)
       {
-         s_ComptonEMcal_t* cal = *twig = make_s_ComptonEMcal();
-         s_CcalBlocks_t* blocks = make_s_CcalBlocks(1);
+         s_CrystalEcal_t* cal   = *twig = make_s_CrystalEcal();
+         s_EcalBlocks_t* blocks = make_s_EcalBlocks(1);
          blocks->mult = 1;
          blocks->in[0].row = row;
          blocks->in[0].column = column;
-         blocks->in[0].ccalTruthHits = hits = make_s_CcalTruthHits(MAX_HITS);
-         cal->ccalBlocks = blocks;
+         blocks->in[0].ecalTruthHits = hits = make_s_EcalTruthHits(MAX_HITS);
+         cal->ecalBlocks = blocks;
          blockCount++;
       }
       else
       {
-         s_ComptonEMcal_t* cal = *twig;
-         hits = cal->ccalBlocks->in[0].ccalTruthHits;
+         s_CrystalEcal_t*  cal = *twig;
+         hits = cal->ecalBlocks->in[0].ecalTruthHits;
       }
 
       for (nhit = 0; nhit < hits->mult; nhit++)
@@ -216,51 +222,51 @@ void hitComptonEMcal (float xin[4], float xout[4],
       }
       else
       {
-         fprintf(stderr,"HDGeant error in hitComptonEMcal: ");
+         fprintf(stderr,"HDGeant error in hitCrystalEcal: ");
          fprintf(stderr,"max hit count %d exceeded, truncating!\n",MAX_HITS);
-         //exit(2);
+         exit(2);
       }
    }
 }
 
 /* entry point from fortran */
 
-void hitcomptonemcal_(float* xin, float* xout,
+void hitcrystalecal_(float* xin, float* xout,
                       float* pin, float* pout, float* dEsum,
                       int* track, int* stack, int* history, int* ipart)
 {
-   hitComptonEMcal(xin,xout,pin,pout,*dEsum,*track,*stack,*history, *ipart);
+   hitCrystalEcal(xin,xout,pin,pout,*dEsum,*track,*stack,*history, *ipart);
 }
 
 
 /* pick and package the hits for shipping */
 
-s_ComptonEMcal_t* pickComptonEMcal ()
+s_CrystalEcal_t* pickCrystalEcal ()
 {
-   s_ComptonEMcal_t* box;
-   s_ComptonEMcal_t* item;
+   s_CrystalEcal_t* box;
+   s_CrystalEcal_t* item;
 
    if ((blockCount == 0) && (showerCount == 0))
    {
       return HDDM_NULL;
    }
 
-   box = make_s_ComptonEMcal();
-   box->ccalBlocks = make_s_CcalBlocks(blockCount);
-   box->ccalTruthShowers = make_s_CcalTruthShowers(showerCount);
-   while ((item = (s_ComptonEMcal_t*) pickTwig(&ComptonCalTree)))
+   box = make_s_CrystalEcal();
+   box->ecalBlocks = make_s_EcalBlocks(blockCount);
+   box->ecalTruthShowers = make_s_EcalTruthShowers(showerCount);
+   while ((item = (s_CrystalEcal_t*) pickTwig(&CrystalCalTree)))
    {
-      s_CcalBlocks_t* blocks = item->ccalBlocks;
+      s_EcalBlocks_t* blocks = item->ecalBlocks;
       int block;
-      s_CcalTruthShowers_t* showers = item->ccalTruthShowers;
+      s_EcalTruthShowers_t* showers = item->ecalTruthShowers;
       int shower;
       for (block=0; block < blocks->mult; ++block)
       {
-         s_CcalTruthHits_t* hits = blocks->in[block].ccalTruthHits;
+         s_EcalTruthHits_t* hits = blocks->in[block].ecalTruthHits;
 
          if (hits)
          {
-            int m = box->ccalBlocks->mult;
+            int m = box->ecalBlocks->mult;
 
          /* compress out the hits below threshold */
             int i,iok;
@@ -278,8 +284,8 @@ s_ComptonEMcal_t* pickComptonEMcal ()
             if (iok)
             {
                hits->mult = iok;
-               box->ccalBlocks->in[m] = blocks->in[block];
-               box->ccalBlocks->mult++;
+               box->ecalBlocks->in[m] = blocks->in[block];
+               box->ecalBlocks->mult++;
             }
             else if (hits != HDDM_NULL)
             {
@@ -294,8 +300,8 @@ s_ComptonEMcal_t* pickComptonEMcal ()
 
       for (shower=0; shower < showers->mult; ++shower)
       {
-         int m = box->ccalTruthShowers->mult++;
-         box->ccalTruthShowers->in[m] = showers->in[shower];
+         int m = box->ecalTruthShowers->mult++;
+         box->ecalTruthShowers->in[m] = showers->in[shower];
       }
       if (blocks != HDDM_NULL)
       {
@@ -310,20 +316,20 @@ s_ComptonEMcal_t* pickComptonEMcal ()
 
    blockCount = showerCount = 0;
 
-   if ((box->ccalBlocks != HDDM_NULL) &&
-       (box->ccalBlocks->mult == 0))
+   if ((box->ecalBlocks != HDDM_NULL) &&
+       (box->ecalBlocks->mult == 0))
    {
-      FREE(box->ccalBlocks);
-      box->ccalBlocks = HDDM_NULL;
+      FREE(box->ecalBlocks);
+      box->ecalBlocks = HDDM_NULL;
    }
-   if ((box->ccalTruthShowers != HDDM_NULL) &&
-       (box->ccalTruthShowers->mult == 0))
+   if ((box->ecalTruthShowers != HDDM_NULL) &&
+       (box->ecalTruthShowers->mult == 0))
    {
-      FREE(box->ccalTruthShowers);
-      box->ccalTruthShowers = HDDM_NULL;
+      FREE(box->ecalTruthShowers);
+      box->ecalTruthShowers = HDDM_NULL;
    }
-   if ((box->ccalBlocks->mult == 0) &&
-       (box->ccalTruthShowers->mult == 0))
+   if ((box->ecalBlocks->mult == 0) &&
+       (box->ecalTruthShowers->mult == 0))
    {
       FREE(box);
       box = HDDM_NULL;

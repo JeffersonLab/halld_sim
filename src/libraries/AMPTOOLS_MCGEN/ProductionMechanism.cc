@@ -20,6 +20,7 @@ m_highMass( 0 ),
 m_slope( slope ),
 m_lowT( 0 ),
 m_highT( 12 ),
+m_seed( seed ),
 m_lastWeight( 1. )
 {	
   // kMZ = 108.;      //  mass of Sn116 
@@ -210,7 +211,7 @@ void
 ProductionMechanism::addResonance( double mass, double width, double crossSec ){
   
   m_decGen.addChannel( m_bwGen.size(), crossSec );
-  m_bwGen.push_back( BreitWignerGenerator( mass, width ) );
+  m_bwGen.push_back( BreitWignerGenerator( mass, width, m_seed ) );
 }
 
 double

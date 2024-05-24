@@ -205,6 +205,10 @@
       data spotX/0/
       data spotY/0/
 
+      integer beamgen_disable
+      common /internal_beamgen/beamgen_disable
+      data beamgen_disable/0/
+
       integer vertex_spec(20)
       common /vertexSpec/ vertex_spec
       data vertex_spec/20*0/
@@ -390,6 +394,7 @@ c        endif
 *             Get beam properties from ccdb if needed
 *
       if (beamE0.eq.0) then
+         beamgen_disable = 1;
          beamE0 = get_endpoint_energy(IDRUN);
          beamEpeak = get_peak_energy(IDRUN);
          beamEmin = beamE0 * 0.25;

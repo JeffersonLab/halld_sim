@@ -146,7 +146,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
     }
 
     // Parse CODA config file 
-    vector<string> SectionNames = {"TRIGGER", "GLOBAL", "FCAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
+    vector<string> SectionNames = {"TRIGGER", "GLOBAL", "FCAL", "ECAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
                                          "TAGM", "PS", "PSC", "TPOL", "CDC", "FDC"};
     string fileContent = file->GetContent();                               // Get file content
     auto result = rcdb::ConfigParser::Parse(fileContent, SectionNames);    // Parse it!
@@ -187,7 +187,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
     double dvalue;
     std::stringstream deco;
     vector<string>::iterator iter;
-    vector<string> fadc250_sys = {"FCAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
+    vector<string> fadc250_sys = {"FCAL", "ECAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
                                   "TAGM", "PS", "PSC", "TPOL"};
     for (iter = fadc250_sys.begin(); iter != fadc250_sys.end(); ++iter) {
 
