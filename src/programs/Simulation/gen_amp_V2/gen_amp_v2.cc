@@ -62,7 +62,8 @@ using namespace std;
 
 vector<int> parseString(string vertexString);
 string checkParticle(string particleString);
-inline static unsigned short int UseResonance(Particle_t p);
+vector<double> GetVertexMasses(vector<string>& reactionList, map<int, BreitWignerGenerator>& mpBWGen, vector<int>& Indices, bool& hasResonance);
+vector<int> GetTypes(vector<string>& reactionList);
 int main( int argc, char* argv[] ){
   
   TString beamConfigFile("");
@@ -76,6 +77,8 @@ int main( int argc, char* argv[] ){
   bool fixedGen = false;
   bool fsRootFormat = false;
   bool diag = false;
+  bool lvHasResonance = false;
+  bool uvHasResonance = false;
 
   // default upper and lower bounds -- these
   // just need to be outside the kinematic bounds
@@ -260,67 +263,19 @@ int main( int argc, char* argv[] ){
   ReactionInfo* reaction = cfgInfo->reactionList()[0];
 
   //
-
+  vector< string > pList = reaction->particleList();
   vector< int > lvIndices = parseString( lvString );
   vector< int > uvIndices = parseString( uvString );
-  vector< int > valPDG;
-  vector< int > valVertex;
   // get the masses for each.....
 
-  vector< double > lvMasses;
-  vector< double > uvMasses;
   vector< int > pTypes;
   ostringstream upperVtxName;
   ostringstream lowerVtxName;
  
-  for( unsigned int i = 0; i < reaction->particleList().size(); ++i){
-    // checkParticle will check if an identical particle is used, dictated by % after particle name
-    // if none then will return string unchanged
-    string tempString = checkParticle( reaction->particleList()[i] );
-    Particle_t particle = ParticleEnum( tempString.c_str() );
-    if (particle == 0 && i > 0){
-      cout << "ERROR:  unknown particle " << tempString 
-           << " unable to configure generator." << endl;
-      exit( 1 );
-    }
-    else{
-      // this loop will check if particle is part of lower vertex according to user
-      for( unsigned int j = 0; j < lvIndices.size(); ++j){
-        if( lvIndices[j] > 0 && ((unsigned int)lvIndices[j] == i )){
-       	  cout << "This is lower vertex particle with indices " << lvIndices[j] 
-	  << " with name " <<  tempString << endl; 
-	  lvMasses.push_back( ParticleMass( particle ) );	
-	  lowerVtxName << ParticleName_ROOT( particle );
-	  if( UseResonance( particle ) ) {   // Check if particle has a resonance 
-            cout << "Particle with resonance found in lower vertex!" << endl << endl;
-	    valPDG.push_back( PDGtype( particle ) );
-            valVertex.push_back( (int)lvMasses.size() - 1 );
-            indicateBW.push_back(1); //This will vary lower BW mass
-          }
-        }
-      }
-      // this loop will check if particle is part of upper vertex according to user
-      for( unsigned int k = 0; k < uvIndices.size(); ++k){
-        if( uvIndices[k] > 0 && ((unsigned int)uvIndices[k] == i )){
-          cout << "This is upper vertex particle with indices " << uvIndices[k] 
-          << " with name " <<  tempString << endl;
-	  uvMasses.push_back( ParticleMass( particle ) ); 
-          upperVtxName << ParticleName_ROOT( particle );  
-	  if( UseResonance( particle ) ){
-            cout << "Particle with resonance found in upper vertex!" << endl << endl;
-            valPDG.push_back( PDGtype( particle ) );
-            valVertex.push_back( (int)uvMasses.size() - 1 );
-            indicateBW.push_back(2); //This will vary upper BW mass
-          }   
-        }
-      }
-      // add particle to pTypes
-      pTypes.push_back( particle );
-    }
+  vector< double > lvMasses = GetVertexMasses( pList, mpBW, lvIndices, lvHasResonance );
+  vector< double > uvMasses = GetVertexMasses( pList, mpBW, uvIndices, uvHasResonance );
     
-  }
-  map<int, BreitWignerGenerator>::iterator itBW = mpBW.begin();
- 
+  pTypes = GetTypes( pList );
 
   // random number initialization (set to 0 by default)
   TRandom3* gRandom = new TRandom3();
@@ -397,8 +352,8 @@ int main( int argc, char* argv[] ){
 	
   TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
   
-  string locHistTitle = string("Meson Mass ;") + upperVtxName.str() + string(" Invariant Mass (GeV/c^{2});");
-  string locRecoilTitle = string("Baryon Mass ;") + lowerVtxName.str() + string(" Invariant Mass (GeV/c^{2});");
+  string locHistTitle = string("Meson Mass ; Upper Vertex") + string(" Invariant Mass (GeV/c^{2});");
+  string locRecoilTitle = string("Baryon Mass ; Lower Vertex") + string(" Invariant Mass (GeV/c^{2});");
 
 	
   TH1F* t = new TH1F( "t", "-t Distribution", 200, 0, 2 );
@@ -408,7 +363,7 @@ int main( int argc, char* argv[] ){
   TH1F* eWI = new TH1F( "eWI", "Beam Energy", 120, 0, 12 );
   TH1F* intenW = new TH1F("intenW", "True PDF/ Gen. PDF", 1000, -0.1e-03, 0.8e-03);
   TH2F* intenWVsE = new TH2F("intenWVsE","Ratio vs. E", 100, 0, 12, 200, -0.1e-03, 0.8e-03);
-  TH2F* intenWVsM = new TH2F("intenWVsE","Ratio vs. M", 100, 0, 3., 200, -0.1e-03, 0.8e-03);
+  TH2F* intenWVsM = new TH2F("intenWVsM","Ratio vs. M", 100, 0, 3., 200, -0.1e-03, 0.8e-03);
   
   TH1F* m_Meson = new TH1F( "m_Meson", locHistTitle.c_str(), 200, 0., 3. );
   TH1F* mW_Meson = new TH1F( "mW_Meson", locHistTitle.c_str(), 200, 0., 3. );
@@ -435,38 +390,23 @@ int main( int argc, char* argv[] ){
       Kinematics* kin;
       beamEnergy = cobrem_vs_E->GetRandom();
       ftGen.setBeamEnergy( beamEnergy );  // Resets value of beam energy
-      //This while loop will change mass value of subBW specified in arguments
-      for(unsigned int iter = 0 ; iter < valVertex.size(); iter++ ){
-        // Add BW to associated particle
-
-	// this is the fraction of the central BW distribution that
-        // will be generated... throwing away 1% in the tails of
-        // the distribution avoids extreme values that cause problems
-        // with energy/momentum conservation
-        double genFraction = 0.99;
-        
-        switch( indicateBW[iter] ){
-	  case 1: 
-            lvMasses[valVertex[iter]] = mpBW[valPDG[iter]](genFraction).first; // Resets value of particle in lower vertex
-	    ftGen.setLowerVtxMasses(lvMasses);
-	    break;
-	  case 2:
-            uvMasses[valVertex[iter]] = mpBW[valPDG[iter]](genFraction).first; // Resets value of particle in upper vertex
-            ftGen.setUpperVtxMasses(uvMasses);
-            break;
-        }
-      }  
+      //This will change mass value of upper/lower vertex if particle is an omega or phi
+      if( uvHasResonance ) ftGen.setUpperVtxMasses( GetVertexMasses( pList, mpBW, uvIndices, uvHasResonance ) );
+      if( lvHasResonance ) ftGen.setUpperVtxMasses( GetVertexMasses( pList, mpBW, lvIndices, lvHasResonance ) );
       kin = ftGen.generate(); 
+      
       // Rearranging indices in kinematics class to mimic reactionList
       // Starting with beam
       for(unsigned int k = 0; k < reaction->particleList().size(); k++){
-        if( k == 0 ) reactionVector[k] = kin->particle( k );
-        if( k > 0 && k <= lvIndices.size()){
+        if( k == 0 ){ //This is for the beam
+          reactionVector[k] = kin->particle( k );
+        }
+        if( k > 0 && k <= lvIndices.size()){ //This is for the lower vertex 
 	  reactionVector[lvIndices[k-1]] = kin->particle( k ) ;
 	}
-	if( k > lvIndices.size() && k <= lvIndices.size() + uvIndices.size() ){
+	if( k > lvIndices.size() && k <= lvIndices.size() + uvIndices.size() ){//This is for the upper vertex
 	  reactionVector[uvIndices[k - lvIndices.size() - 1]] = kin->particle( k ) ;
-	}
+        }
       }
       Kinematics* sim = new Kinematics(reactionVector,kin->weight());
       ati.loadEvent( sim, i, batchSize );
@@ -613,17 +553,48 @@ string checkParticle(string particleString){
 }//END of checkParticle
 
 
-inline static unsigned short int UseResonance(Particle_t p)
-{
-   p = RemapParticleID(p);
+vector<double> GetVertexMasses(vector<string>& reactionList, map<int, BreitWignerGenerator>& mpBWGen, vector<int>& Indices, bool& hasResonance){
+  vector<double> vertexMasses; 
+  // this is the fraction of the central BW distribution that
+  // will be generated... throwing away 1% in the tails of
+  // the distribution avoids extreme values that cause problems
+  // with energy/momentum conservationdouble 
+  double genFraction = 0.99;
+  int valPDG;
+  for(unsigned int i = 0; i < Indices.size(); i++){
+    string tempString = checkParticle( reactionList[Indices[i]] );
+    Particle_t particle = ParticleEnum( tempString.c_str() ); 
+    if (particle == 0 && i > 0){
+      cout << "ERROR:  unknown particle " << tempString 
+           << " unable to configure generator." << endl;
+      exit( 1 );
+    }
+    else{
+      //cout << "This is particle with indices " << Indices[i] 
+      //	   << " with name " <<  tempString << endl; 
+      valPDG = PDGtype( particle );    
+      vertexMasses.push_back( (tempString == "Omega" || tempString == "Phi" ? mpBWGen[valPDG](genFraction).first : ParticleMass( particle )  )); // Will add BW mass distribution if particle is an Omega or Phi 	 
+      hasResonance = (tempString == "Omega" || tempString == "Phi" ? true : false);
+    }
+  }
+  return vertexMasses;
+ 
+}//END OF GetVertexMasses
 
-	if(IsFixedMass(p) == 1)
-		return 0;
-	if(p == Unknown)
-		return 1;
-	if(p == phiMeson)
-		return 1;
-	if(p == omega)
-		return 1;
-	return 1;
-}//END OF UseResonance
+vector<int> GetTypes(vector<string>& reactionList){
+  vector<int> pTypes;
+  for(unsigned int i = 0; i < reactionList.size(); i++){
+    string tempString = checkParticle( reactionList[i] );
+    Particle_t particle = ParticleEnum( tempString.c_str() );
+    if (particle == 0 && i > 0){
+      cout << "ERROR:  unknown particle " << tempString
+           << " unable to configure generator." << endl;
+      exit( 1 );
+    }
+    else{
+      pTypes.push_back(particle); 
+    }
+  }
+  return pTypes;
+}//END OF GetTypes
+
