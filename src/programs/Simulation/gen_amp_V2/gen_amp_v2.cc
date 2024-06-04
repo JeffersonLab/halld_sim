@@ -62,8 +62,9 @@ using namespace std;
 
 vector<int> parseString(string vertexString);
 string checkParticle(string particleString);
-vector<double> GetVertexMasses(vector<string>& reactionList, map<int, BreitWignerGenerator>& mpBWGen, vector<int>& Indices, bool& hasResonance);
-vector<int> GetTypes(vector<string>& reactionList);
+vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, bool& hasResonance);
+vector<int> getTypes(vector<string>& reactionList);
+
 int main( int argc, char* argv[] ){
   
   TString beamConfigFile("");
@@ -96,10 +97,11 @@ int main( int argc, char* argv[] ){
   int nEvents = 10000;
   int batchSize = 10000;
   
-  vector<int> indicateBW;
-  map<int,BreitWignerGenerator> mpBW;
-  mpBW[PDGtype( ParticleEnum("Omega") )] = BreitWignerGenerator( ParticleMass( ParticleEnum( "Omega" ) ), 0.00868, seed); // Initialize BW for omega
-  mpBW[PDGtype( ParticleEnum("Phi") )] = BreitWignerGenerator( ParticleMass( ParticleEnum( "Phi" ) ), 0.00868, seed); // Initialize BW for omega
+  map<string,BreitWignerGenerator> mpBW;
+  // the map index must match what is written in the AmpTools config file
+  // the particle enum lookup needs to match what is in particleType.h
+  mpBW["omega"] = BreitWignerGenerator( ParticleMass( ParticleEnum( "omega" ) ), 0.00868, seed); // Initialize BW for omega
+  mpBW["phiMeson"] = BreitWignerGenerator( ParticleMass( ParticleEnum( "phiMeson" ) ), 0.00868, seed); // Initialize BW for omega
 
   // Initialization of FixedTargetGenerator
   FixedTargetGenerator ftGen;
@@ -553,15 +555,14 @@ string checkParticle(string particleString){
 }//END of checkParticle
 
 
-vector<double> GetVertexMasses(vector<string>& reactionList, map<int, BreitWignerGenerator>& mpBWGen, vector<int>& Indices, bool& hasResonance){
-  vector<double> vertexMasses; 
+vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, bool& hasResonance){
+  vector<double> vertexMasses;
   // this is the fraction of the central BW distribution that
   // will be generated... throwing away 1% in the tails of
   // the distribution avoids extreme values that cause problems
   // with energy/momentum conservationdouble 
   double genFraction = 0.99;
-  int valPDG;
-  for(unsigned int i = 0; i < Indices.size(); i++){
+  for(unsigned int i = 0; i < indices.size(); i++){
     string tempString = checkParticle( reactionList[Indices[i]] );
     Particle_t particle = ParticleEnum( tempString.c_str() ); 
     if (particle == 0 && i > 0){
@@ -570,18 +571,15 @@ vector<double> GetVertexMasses(vector<string>& reactionList, map<int, BreitWigne
       exit( 1 );
     }
     else{
-      //cout << "This is particle with indices " << Indices[i] 
-      //	   << " with name " <<  tempString << endl; 
-      valPDG = PDGtype( particle );    
-      vertexMasses.push_back( (tempString == "Omega" || tempString == "Phi" ? mpBWGen[valPDG](genFraction).first : ParticleMass( particle )  )); // Will add BW mass distribution if particle is an Omega or Phi 	 
-      hasResonance = (tempString == "Omega" || tempString == "Phi" ? true : false);
+      vertexMasses.push_back( mapBWGen.find(tempString) == mapBWGen.end() ? ParticleMass( particle ) : mapBWGen[tempString](genFraction).first );
+      hasResonance = (mapBWGen.find(tempString) != mapBWGen.end());
     }
   }
   return vertexMasses;
  
 }//END OF GetVertexMasses
 
-vector<int> GetTypes(vector<string>& reactionList){
+vector<int> getTypes(vector<string>& reactionList){
   vector<int> pTypes;
   for(unsigned int i = 0; i < reactionList.size(); i++){
     string tempString = checkParticle( reactionList[i] );
