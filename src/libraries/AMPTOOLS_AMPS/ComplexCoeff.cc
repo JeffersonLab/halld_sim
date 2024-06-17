@@ -33,9 +33,17 @@ UserAmplitude< ComplexCoeff >( args )
 complex< GDouble >
 ComplexCoeff::calcAmplitude( GDouble** pKin ) const
 {
-  complex<GDouble> a(m_param1,m_param2);
-  if(!m_represReIm)
-    a = polar(fabs(GDouble(m_param1)), GDouble(m_param2));
-  
-  return a;
+  return m_value;
+}
+
+void
+ComplexCoeff::updatePar( const AmpParameter& par ){
+
+  if( m_represReIm ){
+    m_value = complex< GDouble >( m_param1, m_param2 );
+  }
+  else{
+    m_value = polar( fabs( m_param1 ), (GDouble)m_param2 );
+  }
+
 }

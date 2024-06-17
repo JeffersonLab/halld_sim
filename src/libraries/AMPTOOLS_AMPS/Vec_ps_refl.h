@@ -16,7 +16,7 @@ using namespace std;
 
 #ifdef GPU_ACCELERATION
 void
-GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, int m_j, int m_m, int m_l, int m_r, int m_s );
+GPUVec_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO );
 #endif
 
 class Kinematics;
@@ -35,13 +35,16 @@ public:
 	complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
 
 	// **********************
-	// The following lines are optional and can be used to precalcualte
+	// The following lines are optional and can be used to precalculate
 	// user-defined data that the amplitudes depend on.
 	
 	// Use this for indexing a user-defined data array and notifying
 	// the framework of the number of user-defined variables.
-	
-	enum UserVars { uv_cosTheta = 0, uv_Phi = 1, uv_cosThetaH = 2, uv_PhiH = 3, uv_prod_Phi = 4, uv_MX = 5, uv_MVec = 6, uv_MPs = 7, uv_beam_polFraction = 8, uv_beam_polAngle = 9, kNumUserVars };
+		
+	//enum UserVars { uv_cosTheta = 0, uv_Phi, uv_cosThetaH, uv_PhiH,
+	//                uv_prod_Phi, uv_MX, uv_MVec, uv_MPs, uv_beam_polFraction,
+	//                uv_beam_polAngle, kNumUserVars };
+	enum UserVars { uv_ampRe = 0, uv_ampIm, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	// This function needs to be defined -- see comments and discussion
@@ -54,12 +57,12 @@ public:
 	// based fits.
 	bool needsUserVarsOnly() const { return true; }
 	
-	// This is an optional addition if the UserVars are the same for each 
+	// This is an optional addition if the UserVars are the same for each 	
 	// instance of an amplitude.  If it is not used, the memory footprint
 	// grows dramatically as UserVars values are stored for each instance
 	// of the amplitude.  NOTE: To use this make sure that UserVars only 
 	// depend on kinematics and no arguments provided to the amplitude!
-	bool areUserVarsStatic() const { return true; }
+	bool areUserVarsStatic() const { return false; }
 
 	void updatePar( const AmpParameter& par );
 
@@ -81,8 +84,8 @@ private:
 	int m_3pi;
 	
 	//AmpParameter polAngle;
-	double polFraction;
-	double polAngle;
+	GDouble polFraction;
+	GDouble polAngle;
 	bool m_polInTree;
 	TH1D *polFrac_vs_E;
 };
