@@ -83,8 +83,8 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   TLorentzVector beam;
   TVector3 eps;
-  double beam_polFraction;
-  double beam_polAngle;
+  GDouble beam_polFraction;
+  GDouble beam_polAngle;
 
   if(m_polInTree){
     beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
@@ -160,42 +160,14 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   //if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
   //else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
 
-  userVars[uv_cosTheta] = TMath::Cos(locDecayAngles[0]);
-  userVars[uv_Phi] = locDecayAngles[1];
-
-  userVars[uv_cosThetaH] = TMath::Cos(locDecayAngles[2]);
-  userVars[uv_PhiH] = locDecayAngles[3];
-
-  userVars[uv_prod_Phi] = locPhiProd;
-
-  userVars[uv_MX] = X.M();
-  userVars[uv_MVec] = vec.M();
-  userVars[uv_MPs] = ps.M();
-
-  userVars[uv_beam_polFraction] = beam_polFraction;
-  userVars[uv_beam_polAngle] = beam_polAngle;
-
-  return;
-}
-
-
-////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
-
-complex< GDouble >
-Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
-{
-
-  GDouble cosTheta = userVars[uv_cosTheta];
-  GDouble Phi = userVars[uv_Phi];
-  GDouble cosThetaH = userVars[uv_cosThetaH];
-  GDouble PhiH = userVars[uv_PhiH];
-  GDouble prod_angle = userVars[uv_prod_Phi];
-  GDouble MX = userVars[uv_MX];
-  GDouble MVec = userVars[uv_MVec];
-  GDouble MPs = userVars[uv_MPs];
-  GDouble beam_polFraction = userVars[uv_beam_polFraction];
-  GDouble beam_polAngle = userVars[uv_beam_polAngle];
-
+  GDouble cosTheta = TMath::Cos(locDecayAngles[0]);
+  GDouble Phi = locDecayAngles[1];
+  GDouble cosThetaH = TMath::Cos(locDecayAngles[2]);
+  GDouble PhiH = locDecayAngles[3];
+  GDouble prod_angle = locPhiProd;
+  GDouble MX = X.M();
+  GDouble MVec = vec.M();
+  GDouble MPs = ps.M();
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
@@ -223,7 +195,19 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
   Factor *= kinFactor;
 
-  return complex< GDouble >( static_cast< GDouble>( Factor ) * zjm );
+  userVars[uv_ampRe] = ( Factor * zjm ).real();
+  userVars[uv_ampIm] = ( Factor * zjm ).imag();
+
+  return;
+}
+
+
+////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
+
+complex< GDouble >
+Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
+{
+  return complex< GDouble >( userVars[uv_ampRe], userVars[uv_ampIm] );
 }
 
 
@@ -238,7 +222,7 @@ void Vec_ps_refl::updatePar( const AmpParameter& par ){
 void
 Vec_ps_refl::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS, m_j, m_m, m_l, m_r, m_s );
+	GPUVec_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS );
 
 }
 
