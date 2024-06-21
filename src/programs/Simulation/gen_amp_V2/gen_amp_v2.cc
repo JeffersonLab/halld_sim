@@ -60,9 +60,9 @@ using std::complex;
 using namespace std;
 
 
-vector<int> parseString(string vertexString);
+pair< vector<int>,vector<bool> > parseString(string vertexString);
 string checkParticle(string particleString);
-vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, bool& hasResonance);
+vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, vector<bool>& hasResonance);
 vector<int> getTypes(vector<string>& reactionList);
 
 int main( int argc, char* argv[] ){
@@ -78,8 +78,6 @@ int main( int argc, char* argv[] ){
   bool fixedGen = false;
   bool fsRootFormat = false;
   bool diag = false;
-  bool lvHasResonance = false;
-  bool uvHasResonance = false;
 
   // default upper and lower bounds -- these
   // just need to be outside the kinematic bounds
@@ -97,11 +95,11 @@ int main( int argc, char* argv[] ){
   int nEvents = 10000;
   int batchSize = 10000;
   
-  map<string,BreitWignerGenerator> mpBW;
+  map<string, BreitWignerGenerator> mpBW;
   // the map index must match what is written in the AmpTools config file
   // the particle enum lookup needs to match what is in particleType.h
-  mpBW["omega"] = BreitWignerGenerator( ParticleMass( ParticleEnum( "omega" ) ), 0.00868, seed); // Initialize BW for omega
-  mpBW["phiMeson"] = BreitWignerGenerator( ParticleMass( ParticleEnum( "phiMeson" ) ), 0.00868, seed); // Initialize BW for omega
+  mpBW["Omega"] = BreitWignerGenerator( ParticleMass( ParticleEnum( "Omega" ) ), 0.00868, seed); // Initialize BW for omega
+  mpBW["Phi"] = BreitWignerGenerator( ParticleMass( ParticleEnum( "Phi" ) ), 0.004249, seed); // Initialize BW for omega
 
   // Initialization of FixedTargetGenerator
   FixedTargetGenerator ftGen;
@@ -266,18 +264,18 @@ int main( int argc, char* argv[] ){
 
   //
   vector< string > pList = reaction->particleList();
-  vector< int > lvIndices = parseString( lvString );
-  vector< int > uvIndices = parseString( uvString );
+  pair< vector< int >,vector<bool> > lvIndices = parseString( lvString );
+  pair< vector< int >,vector<bool> > uvIndices = parseString( uvString );
   // get the masses for each.....
 
   vector< int > pTypes;
   ostringstream upperVtxName;
   ostringstream lowerVtxName;
- 
-  vector< double > lvMasses = GetVertexMasses( pList, mpBW, lvIndices, lvHasResonance );
-  vector< double > uvMasses = GetVertexMasses( pList, mpBW, uvIndices, uvHasResonance );
+
+  vector< double > uvMasses = getVertexMasses( pList, mpBW, uvIndices.first, uvIndices.second );
+  vector< double > lvMasses = getVertexMasses( pList, mpBW, lvIndices.first, lvIndices.second );
     
-  pTypes = GetTypes( pList );
+  pTypes = getTypes( pList );
 
   // random number initialization (set to 0 by default)
   TRandom3* gRandom = new TRandom3();
@@ -337,8 +335,8 @@ int main( int argc, char* argv[] ){
   ftGen.setLowerVtxMasses( lvMasses );
   ftGen.setSeed( seed );
   // Add the new seed value to sub BW's if exist
-  mpBW[PDGtype( ParticleEnum("omega") )].setSeed( seed );
-  mpBW[PDGtype( ParticleEnum("phi") )].setSeed( seed );
+  mpBW["Omega"].setSeed( seed );
+  mpBW["Phi"].setSeed( seed );
  
   // Sets reweighting based off of options given in command line
   ftGen.setReweightMask( reWeight );
@@ -393,8 +391,11 @@ int main( int argc, char* argv[] ){
       beamEnergy = cobrem_vs_E->GetRandom();
       ftGen.setBeamEnergy( beamEnergy );  // Resets value of beam energy
       //This will change mass value of upper/lower vertex if particle is an omega or phi
-      if( uvHasResonance ) ftGen.setUpperVtxMasses( GetVertexMasses( pList, mpBW, uvIndices, uvHasResonance ) );
-      if( lvHasResonance ) ftGen.setUpperVtxMasses( GetVertexMasses( pList, mpBW, lvIndices, lvHasResonance ) );
+      if( count(uvIndices.second.begin(), uvIndices.second.end(), true) > 0  ){
+        ftGen.setUpperVtxMasses( getVertexMasses( pList, mpBW, uvIndices.first, uvIndices.second ) );
+        cout << "It made it passed" << endl;
+      }
+      if( count(lvIndices.second.begin(), lvIndices.second.end(), true) > 0 ) ftGen.setUpperVtxMasses( getVertexMasses( pList, mpBW, lvIndices.first, lvIndices.second ) );
       kin = ftGen.generate(); 
       
       // Rearranging indices in kinematics class to mimic reactionList
@@ -403,11 +404,11 @@ int main( int argc, char* argv[] ){
         if( k == 0 ){ //This is for the beam
           reactionVector[k] = kin->particle( k );
         }
-        if( k > 0 && k <= lvIndices.size()){ //This is for the lower vertex 
-	  reactionVector[lvIndices[k-1]] = kin->particle( k ) ;
+        if( k > 0 && k <= lvIndices.first.size()){ //This is for the lower vertex 
+	  reactionVector[lvIndices.first[k-1]] = kin->particle( k ) ;
 	}
-	if( k > lvIndices.size() && k <= lvIndices.size() + uvIndices.size() ){//This is for the upper vertex
-	  reactionVector[uvIndices[k - lvIndices.size() - 1]] = kin->particle( k ) ;
+	if( k > lvIndices.first.size() && k <= lvIndices.first.size() + uvIndices.first.size() ){//This is for the upper vertex
+	  reactionVector[uvIndices.first[k - lvIndices.first.size() - 1]] = kin->particle( k ) ;
         }
       }
       Kinematics* sim = new Kinematics(reactionVector,kin->weight());
@@ -428,13 +429,13 @@ int main( int argc, char* argv[] ){
 			
       Kinematics* evt = ati.kinematics( i );
       TLorentzVector recoil;
-      for (unsigned int j=0; j < lvIndices.size(); j++){
-	      recoil += evt->particle( lvIndices[j] );
+      for (unsigned int j=0; j < lvIndices.first.size(); j++){
+	      recoil += evt->particle( lvIndices.first[j] );
        
       }
       TLorentzVector resonance;
-      for (unsigned int j= 0; j < uvIndices.size(); j++){
-	      resonance += evt->particle( uvIndices[j] );
+      for (unsigned int j= 0; j < uvIndices.first.size(); j++){
+	      resonance += evt->particle( uvIndices.first[j] );
 
       }
 
@@ -534,12 +535,14 @@ int main( int argc, char* argv[] ){
   return 0;
 }// END OF MAIN()
 
-vector<int> parseString(string vertexString){
-  vector<int> Index;
+pair< vector<int>,vector<bool> > parseString(string vertexString){
+  vector<int> index;
+  vector<bool> boolDex;
   for(unsigned int i = 0; i < vertexString.size() ; i++){
-    Index.push_back(atoi(vertexString.substr(i,1).c_str()));
+    index.push_back( atoi(vertexString.substr(i,1).c_str()) );
+    boolDex.push_back( false );
   }
-  return Index;
+  return make_pair( index,boolDex );
 }// END OF parseString
 
 string checkParticle(string particleString){
@@ -555,7 +558,7 @@ string checkParticle(string particleString){
 }//END of checkParticle
 
 
-vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, bool& hasResonance){
+vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, vector<bool>& hasResonance){
   vector<double> vertexMasses;
   // this is the fraction of the central BW distribution that
   // will be generated... throwing away 1% in the tails of
@@ -563,7 +566,7 @@ vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWi
   // with energy/momentum conservationdouble 
   double genFraction = 0.99;
   for(unsigned int i = 0; i < indices.size(); i++){
-    string tempString = checkParticle( reactionList[Indices[i]] );
+    string tempString = checkParticle( reactionList[indices[i]] );
     Particle_t particle = ParticleEnum( tempString.c_str() ); 
     if (particle == 0 && i > 0){
       cout << "ERROR:  unknown particle " << tempString 
@@ -571,13 +574,13 @@ vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWi
       exit( 1 );
     }
     else{
-      vertexMasses.push_back( mapBWGen.find(tempString) == mapBWGen.end() ? ParticleMass( particle ) : mapBWGen[tempString](genFraction).first );
-      hasResonance = (mapBWGen.find(tempString) != mapBWGen.end());
+      vertexMasses.push_back( mpBWGen.find(tempString) == mpBWGen.end() ? ParticleMass( particle ) : mpBWGen[tempString](genFraction).first );
+      hasResonance[i] = mpBWGen.find(tempString) != mpBWGen.end();
     }
   }
   return vertexMasses;
  
-}//END OF GetVertexMasses
+}//END OF getVertexMasses
 
 vector<int> getTypes(vector<string>& reactionList){
   vector<int> pTypes;
@@ -594,5 +597,5 @@ vector<int> getTypes(vector<string>& reactionList){
     }
   }
   return pTypes;
-}//END OF GetTypes
+}//END OF getTypes
 
