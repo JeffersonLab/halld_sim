@@ -145,6 +145,8 @@ int main( int argc, char* argv[] ){
         // ************************
 
         TFile* plotfile = new TFile( outName.c_str(), "recreate");
+        vector< TDirectory* > plotDir;
+
         TH1::AddDirectory(kFALSE);
 
         int nReactions = results.reactionList().size();
@@ -153,6 +155,15 @@ int main( int argc, char* argv[] ){
         for( int iReac = 0; iReac < nReactions; iReac++ ){
             reactionName = results.reactionList()[iReac];
             plotGen.enableReaction( reactionName );
+            // create directories in plotfile
+            if( iReac == 0 ){
+                for( unsigned int ivar = 0; ivar < OmegaPiPlotGenerator::kNumHists; ivar++ ){
+                    const char * dirName = ( plotGen.getHistogram( ivar )->name() ).c_str();
+                    cout << "Creating directory for " << dirName << " plots" << endl;
+                    TDirectory *temp = plotfile->mkdir( dirName );
+                    plotDir.push_back( temp );
+                }
+            }
             vector<string> sums = plotGen.uniqueSums();
             vector<string> amps = plotGen.uniqueAmplitudes();
             cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
@@ -227,7 +238,7 @@ int main( int argc, char* argv[] ){
                         for (unsigned int ivar  = 0; ivar  < OmegaPiPlotGenerator::kNumHists; ivar++){
 
                             // set unique histogram name for each plot (could put in directories...)
-                            string histname =  plotGen.getHistogram( ivar )->name();
+                            string histname = plotGen.getHistogram( ivar )->name();
 
                             if (iplot == PlotGenerator::kData) histname += "dat";
                             if (iplot == PlotGenerator::kBkgnd) histname += "bkgnd";
@@ -252,8 +263,9 @@ int main( int argc, char* argv[] ){
                             Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
                             TH1* thist = hist->toRoot();
                             thist->SetName(histname.c_str());
-                            plotfile->cd();
+                            plotDir[ivar]->cd();
                             thist->Write();
+                            plotfile->cd();
                         }
                     }
                 }
