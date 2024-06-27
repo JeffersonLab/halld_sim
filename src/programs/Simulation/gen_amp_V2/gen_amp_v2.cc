@@ -393,7 +393,6 @@ int main( int argc, char* argv[] ){
       //This will change mass value of upper/lower vertex if particle is an omega or phi
       if( count(uvIndices.second.begin(), uvIndices.second.end(), true) > 0  ){
         ftGen.setUpperVtxMasses( getVertexMasses( pList, mpBW, uvIndices.first, uvIndices.second ) );
-        cout << "It made it passed" << endl;
       }
       if( count(lvIndices.second.begin(), lvIndices.second.end(), true) > 0 ) ftGen.setUpperVtxMasses( getVertexMasses( pList, mpBW, lvIndices.first, lvIndices.second ) );
       kin = ftGen.generate(); 
