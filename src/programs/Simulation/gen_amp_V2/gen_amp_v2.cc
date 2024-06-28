@@ -98,8 +98,8 @@ int main( int argc, char* argv[] ){
   map<string, BreitWignerGenerator> mpBW;
   // the map index must match what is written in the AmpTools config file
   // the particle enum lookup needs to match what is in particleType.h
-  mpBW["Omega"] = BreitWignerGenerator( ParticleMass( ParticleEnum( "Omega" ) ), 0.00868, seed); // Initialize BW for omega
-  mpBW["Phi"] = BreitWignerGenerator( ParticleMass( ParticleEnum( "Phi" ) ), 0.004249, seed); // Initialize BW for omega
+  mpBW["Omega"] = BreitWignerGenerator( ParticleMass( (Particle_t)omega ), 0.00868, seed); // Initialize BW for omega
+  mpBW["Phi"] = BreitWignerGenerator( ParticleMass( (Particle_t)phiMeson ), 0.004249, seed); // Initialize BW for omega
 
   // Initialization of FixedTargetGenerator
   FixedTargetGenerator ftGen;
@@ -335,9 +335,10 @@ int main( int argc, char* argv[] ){
   ftGen.setLowerVtxMasses( lvMasses );
   ftGen.setSeed( seed );
   // Add the new seed value to sub BW's if exist
-  mpBW["Omega"].setSeed( seed );
-  mpBW["Phi"].setSeed( seed );
- 
+  for( map< string, BreitWignerGenerator >::iterator mapItr = mpBW.begin(); mapItr != mpBW.end(); ++mapItr ){
+    mapItr->second.setSeed( seed );
+  } 
+
   // Sets reweighting based off of options given in command line
   ftGen.setReweightMask( reWeight );
   
