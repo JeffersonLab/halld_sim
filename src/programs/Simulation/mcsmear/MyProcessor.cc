@@ -38,6 +38,10 @@ static pthread_t input_file_mutex_last_owner;
 //static JCalibration *jcalib=NULL;
 static bool locCheckCCDBContext = true;
 
+static thread_local Smear *smearer(0);
+static pthread_mutex_t smearer_mutex;
+static pthread_t smearer_mutex_last_owner;
+
 //-----------
 // PrintCCDBWarning
 //-----------
@@ -140,6 +144,7 @@ jerror_t MyProcessor::init(void)
    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
    pthread_mutex_init(&output_file_mutex, NULL);
    pthread_mutex_init(&input_file_mutex, NULL);
+   pthread_mutex_init(&smearer_mutex, NULL);
    
    // pthreads does not provide an "invalid" value for 
    // a pthread_t that we can initialize with. Furthermore,
@@ -148,6 +153,7 @@ jerror_t MyProcessor::init(void)
    // we clear it with bzero.
    bzero(&output_file_mutex_last_owner, sizeof(pthread_t));
    bzero(&input_file_mutex_last_owner, sizeof(pthread_t));
+   bzero(&smearer_mutex_last_owner, sizeof(pthread_t));
    
    // By default, the empirical fdc DOCA-dependent efficiency
    // is applied to fdc wire hits in FDCSmearer. This can be
@@ -172,8 +178,8 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
     // It might be advisable to apply some tougher love.
 
     if(locCheckCCDBContext) {
-        // only do this once
-        locCheckCCDBContext = false;        
+        // only do this once per brun record
+        locCheckCCDBContext = true;
 
         // load the CCDB context
         DApplication* locDApp = dynamic_cast<DApplication*>(japp);
@@ -205,6 +211,9 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
    
 
 	// load configuration parameters for all the detectors
+    pthread_mutex_lock(&smearer_mutex);
+    smearer_mutex_last_owner = pthread_self();
+
 	if(smearer != NULL)
 		delete smearer;
 	smearer = new Smear(config, loop, config->DETECTORS_TO_LOAD);
@@ -371,6 +380,21 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 		hddm_s_merger::set_fcal_integration_window_ns(fcal_gate);
 
 
+		// hits merging / truncation parameters for the ECAL
+		int ecal_npeak     =  3;
+		double ecal_nsa    =  15;
+		double ecal_nsb    =  1;
+		
+		if(config->readout["ECAL"].size() > 0){
+		  ecal_npeak = config->readout["ECAL"].at("NPEAK");
+		  ecal_nsb = config->readout["ECAL"].at("NSB");		  
+		}
+		
+		double ecal_gate = (ecal_nsa + ecal_nsb) * fadc250_period_ns;
+		
+		hddm_s_merger::set_ecal_max_hits(ecal_npeak);
+		hddm_s_merger::set_ecal_integration_window_ns(ecal_gate);
+				
 		
 		// hits merging / truncation parameters for the CCAL
 		int ccal_npeak     =  3;
@@ -463,6 +487,8 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
         skip2merge[iter->first] = 0;
     }
 
+    hddm_s_merger::set_config_run_loaded(locRunNumber);
+    pthread_mutex_unlock(&smearer_mutex);
     return NOERROR;
 }
 
@@ -482,6 +508,14 @@ jerror_t MyProcessor::evnt(JEventLoop *loop, uint64_t eventnumber)
    if (!record)
       return NOERROR;
  
+   // Make sure the run-dependent config has been loaded for this run
+   hddm_s::PhysicsEventList pev = record->getPhysicsEvents();
+   if (pev.size() > 0) {
+      if (hddm_s_merger::get_config_run_loaded() != pev(0).getRunNo()) {
+         brun(loop, pev(0).getRunNo());
+      }
+   }
+
    // Handle geometry records
    hddm_s::GeometryList geom = record->getGeometrys();
    if (geom.size() > 0) {

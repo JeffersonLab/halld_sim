@@ -20,30 +20,59 @@ m_highMass( 0 ),
 m_slope( slope ),
 m_lowT( 0 ),
 m_highT( 12 ),
+m_seed( seed ),
 m_lastWeight( 1. )
 {	
-  kMproton=ParticleMass(Proton);
-  kMneutron=ParticleMass(Neutron);
   // kMZ = 108.;      //  mass of Sn116 
   kMZ = 208.*0.931494;      //  use mass of Pb as it is in the particle table
-  kMPion = ParticleMass(PiPlus);
-  kMPi0 = ParticleMass(Pi0);
-  kMKaon = ParticleMass(KPlus);
-  
+    
   isBaryonResonance = false;
 
   // initialize pseudo-random generator
   gRandom->SetSeed(seed);
 
+  m_targetMass = ParticleMass(Proton);
   switch( recoil ){
     // I'm sure the distinction between these doesn't matter!  
-  case kProton:  m_recMass = kMproton; break; //old value: 0.9382
-  case kNeutron: m_recMass = kMneutron; break; //old value: 0.9395
-  case kZ: m_recMass = kMZ; break; //default to Sn116/Pb
-  case kPion: m_recMass = kMPion; isBaryonResonance = true; break;
-  case kPi0: m_recMass = kMPi0; isBaryonResonance = true; break;
-  case kKaon: m_recMass = kMKaon; isBaryonResonance = true; break;
-  default:       m_recMass = kMproton; break; //old value: 0.9382
+  case kProton:  
+    m_recMass = ParticleMass(Proton);
+    break; //old value: 0.9382
+  case kNeutron: 
+    m_recMass = ParticleMass(Neutron); 
+    m_targetMass = ParticleMass(Neutron);
+    break; //old value: 0.9395
+  case kZ: 
+    m_recMass = kMZ; 
+    m_targetMass = kMZ;
+    break; //default to Sn116/Pb
+  case kDeuteron:
+    m_recMass = ParticleMass(Deuteron);
+    m_targetMass = ParticleMass(Deuteron);
+    break;
+  case kHelium:
+    m_recMass = ParticleMass(Helium);
+    m_targetMass = ParticleMass(Helium);
+    break;
+  case kC12:
+    m_recMass = ParticleMass(C12);
+    m_targetMass = ParticleMass(C12);
+    break;
+  case kPion: 
+    m_recMass = ParticleMass(PiPlus); 
+    isBaryonResonance = true; 
+    break;
+  case kPi0: 
+    m_recMass = ParticleMass(Pi0); 
+    isBaryonResonance = true; 
+    break;
+  case kKaon:
+    m_recMass = ParticleMass(KPlus); 
+    isBaryonResonance = true; 
+    break;
+  default:
+    m_recMass = ParticleMass(Proton); 
+    m_targetMass = ParticleMass(Proton);
+    break; //old value: 0.9382
   }
 }
 
@@ -76,7 +105,7 @@ ProductionMechanism::setRecoilMass( double recMass ){
 TLorentzVector
 ProductionMechanism::produceResonance( const TLorentzVector& beam ){
 
-  TLorentzVector target( 0, 0, 0, kMproton );
+  TLorentzVector target( 0, 0, 0, m_targetMass );
   
   TLorentzRotation lab2cmBoost( -( target + beam ).BoostVector() );
   TLorentzRotation cm2labBoost( ( target + beam ).BoostVector() );
@@ -182,7 +211,7 @@ void
 ProductionMechanism::addResonance( double mass, double width, double crossSec ){
   
   m_decGen.addChannel( m_bwGen.size(), crossSec );
-  m_bwGen.push_back( BreitWignerGenerator( mass, width ) );
+  m_bwGen.push_back( BreitWignerGenerator( mass, width, m_seed ) );
 }
 
 double

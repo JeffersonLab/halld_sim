@@ -15,15 +15,16 @@ __global__ void
 GPUOmegaDalitz_kernel( GPU_AMP_PROTO, GDouble dalitz_alpha, GDouble dalitz_beta, GDouble dalitz_gamma, GDouble dalitz_delta )
 {
 	int iEvent = GPU_THIS_EVENT;
-
-	GDouble dalitz_z = GPU_UVARS(0);
-	GDouble dalitz_sin3theta = GPU_UVARS(1);
-	GDouble lambda = GPU_UVARS(2);
 	
-	///////////////////////////////////////////////////////////////////////////////////////////
-
+  	GDouble alpha_term = GPU_UVARS(0);
+  	GDouble beta_term = GPU_UVARS(1);
+  	GDouble gamma_term = GPU_UVARS(2);
+  	GDouble delta_term = GPU_UVARS(3);
+	GDouble lambda = GPU_UVARS(4);
+	
 	// dalitz parameters for 3-body vector decay
-	GDouble G = G_SQRT( G_FABS(lambda * (1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * G_POW(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * G_POW(dalitz_z,2) + 2 * dalitz_delta * G_POW(dalitz_z,5/2.) * dalitz_sin3theta)) );
+
+	GDouble G = G_SQRT( G_FABS( lambda *  ( 1 + dalitz_alpha * alpha_term + dalitz_beta * beta_term + dalitz_gamma * gamma_term + dalitz_delta * delta_term ) ) );
 
   	pcDevAmp[iEvent] = G;
 }
