@@ -38,7 +38,7 @@ const double gsq_rho_T=g_rho_T*g_rho_T;
 const double g_rho_V_and_T=g_rho_V+2.*m_p*g_rho_T;
 const double gsq_rho_V_and_T=g_rho_V_and_T*g_rho_V_and_T;
 // Regge cut parameters
-double regge_cuts[5]; // dc c_P_omega c_f2_omega c_P_rho c_f2_rho 
+double regge_cuts[5]; // dc c_P(natural) c_f2(natural) c_P(unnatural) c_f2(unnatural) 
 
 int Nevents=10000;
 int runNo=30300;
@@ -995,7 +995,8 @@ double TensorCrossSection(TLorentzVector &q /* beam */,
     + mp2_minus_p1_dot_p2*(10./3.+(t-2.*m_rho_sq)*dp2_sum/(m_rho_sq*m_rho_sq));
   double tensor_coupling=(Kappa_rho*Kappa_rho/(4.*m_p_sq)*mp2_minus_p1_dot_p2
 			  *(dp2_sum-(10./3.)*t));
-  double amp_sum=gT_sq*(vector_coupling+tensor_coupling)*regge_rho_sq;
+  double amp_sum=gT_sq*g_rho_V*g_rho_V*(vector_coupling+tensor_coupling)
+    *regge_rho_sq;
   double T=common_fac*gR*gR*(ReB*ReB+ImB*ImB)*amp_sum;
   
   return T;
@@ -1597,9 +1598,9 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   }
   // f0(1500)
   if ((got_pipi||got_etaeta) && generate[2]){
-    double m_f1500=1.506;
+    double m_f1500=1.522;
     double M_sq_R=m_f1500*m_f1500; 
-    width=0.112;
+    width=0.108;
     double BWmassTerm=M_sq_R-M_sq;
     double MRsq_minus_m1sq_m2sq=M_sq_R-m1sq_plus_m2sq;
     double temp=4.*m1sq*m2sq;
@@ -1742,7 +1743,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
   }
   if (generate[3]){ // Tensor background
     double m_T=1.27; // mass determined empirically	
-    double Gamma_T=0.19;
+    double Gamma_T=0.187;
     if (got_pieta){
       Gamma_T=0.11; // determined empirically
       m_T=1.29; //determined empirically
@@ -1764,7 +1765,7 @@ double GetCrossSection(double s,double t,double M_sq,TLorentzVector &beam,
     double partial_width=Gamma_T*q_over_qR_5*M_sq_R_T/M_sq;
     if (got_pipi || got_etaeta){ // f2(1270)    
       if (got_pipi){ 
-	partial_width*=0.85*(1./3.);
+	partial_width*=0.84*(1./3.);
       }
       else{
 	partial_width*=4e-3; // from PDG
@@ -2110,9 +2111,9 @@ int main(int narg, char *argv[])
 
   // phases for interference
   getline(infile,comment_line);
-  double phase[10];
+  double phase[4];
   cout << "Interference phases =";
-  for (int k=0;k<10;k++){
+  for (int k=0;k<4;k++){
     infile >> phase[k];
     cout << " " << phase[k]; 
   }
