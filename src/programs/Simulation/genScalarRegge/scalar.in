@@ -4,9 +4,9 @@ cobrems.conf
 7 7
 #Regge cut parameters: dc c_P_n c_f2_n c_P_u c_f2_u 
 1.8 0.45 0.15 0. 0.
-#Processes to simulate: f0(600) f0(980) f0(1370) f2(1270) background
+#Processes to simulate: f0(500) f0(980) f0(1500) f2(1270) background
 1 1 1 1 1
-#Coupling constants: f0(600) f0(980) f0(1370) f2(1270) background
-0.0125 0.00275 0.003 77.5 1.7
-# phases: f0(600) f0(980) f0(1500) f2(1270)
-4.5 1.5 1.5 0.0 0.0 3 3 3 3 3 
+#Coupling constants: f0(500) f0(980) f0(1500) f2(1270) background
+0.383 0.084 0.092 204.0 51.4
+# phases: f0(500) f0(980) f0(1500) f2(1270)
+4.5 1.5 1.5 0.0 
