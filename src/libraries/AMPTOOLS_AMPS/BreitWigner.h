@@ -54,6 +54,7 @@ private:
   int m_orbitL;
   
   pair< string, string > m_daughters;  
+  int phaseTag = 0;
 };
 
 #endif
