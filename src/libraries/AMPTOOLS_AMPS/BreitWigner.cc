@@ -18,19 +18,22 @@ BreitWigner::BreitWigner( const vector< string >& args ) :
 UserAmplitude< BreitWigner >( args )
 {
   
-  assert( args.size() == 5 );
+  assert( args.size() == 5 || args.size() == 6 );
 	
 	m_mass0 = AmpParameter( args[0] );
 	m_width0 = AmpParameter( args[1] );
 	m_orbitL = atoi( args[2].c_str() );
 	m_daughters = pair< string, string >( args[3], args[4] );
-  
+        if( args.size() == 6 )
+            phaseTag = atoi( args[5].c_str() );  
+
   // need to register any free parameters so the framework knows about them
   registerParameter( m_mass0 );
   registerParameter( m_width0 );
   
   // make sure the input variables look reasonable
   assert( ( m_orbitL >= 0 ) && ( m_orbitL <= 4 ) );
+  assert( phaseTag == 1 || phaseTag == 0 );
 }
 
 complex< GDouble >
@@ -78,8 +81,13 @@ BreitWigner::calcAmplitude( GDouble** pKin ) const
   
   complex<GDouble> bwbottom( ( m_mass0*m_mass0 - mass*mass ) ,
                            -1.0 * ( m_mass0 * width ) );
-  
-  return( F * bwtop / bwbottom );
+
+  complex<GDouble> bwtot( F * bwtop / bwbottom );
+
+  if( phaseTag == 0 )  
+    return( bwtot );
+  else
+    return( bwtot / abs( bwtot ) );
 }
 
 void
