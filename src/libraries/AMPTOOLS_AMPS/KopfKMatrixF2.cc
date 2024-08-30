@@ -178,7 +178,6 @@ complex<GDouble> KopfKMatrixF2::calcAmplitude(GDouble** pKin, GDouble* userVars)
         SMatrix4 temp_B;
         temp_P = couplings[i];
         temp_P *= betas[i]; 
-        GDouble denominator = (masses[i] * masses[i] - s);
         temp_P *= KopfKMatrixF2::poleProductRemainder(s, i);
         // Loop over channels:
         SVector4 B_factor;

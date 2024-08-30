@@ -38,7 +38,7 @@
  *  See <https://doi.org/10.1140/epjc/s10052-021-09821-2> for more details.
  */
 
-KopfKmatrixA0::KopfKmatrixA0(const vector<string> &args): UserAmplitude<KopfKmatrixA0>(args) {
+KopfKMatrixA0::KopfKMatrixA0(const vector<string> &args): UserAmplitude<KopfKMatrixA0>(args) {
 	assert(args.size() == 7);
 	m_daughters = pair<string, string>(args[0], args[1]);
 	channel = atoi(args[2].c_str());
@@ -62,7 +62,7 @@ KopfKmatrixA0::KopfKmatrixA0(const vector<string> &args): UserAmplitude<KopfKmat
     mat_bkg = SMatrix2Sym(a_bkg.begin(), a_bkg.end());
 }
 
-void KopfKmatrixA0::calcUserVars(GDouble** pKin, GDouble* userVars) const {
+void KopfKMatrixA0::calcUserVars(GDouble** pKin, GDouble* userVars) const {
     TLorentzVector pTemp, pTot;
     /* This allows us to input something like
      * "12 34" for the daughter particle parameters
@@ -103,7 +103,7 @@ void KopfKmatrixA0::calcUserVars(GDouble** pKin, GDouble* userVars) const {
         SMatrix2 temp_B;
         temp_K = TensorProd(couplings[i], couplings[i]);
         temp_K += (mat_bkg * (masses[i] * masses[i] - s));
-        temp_K *= KopfKmatrixA0::poleProductRemainder(s, i);
+        temp_K *= KopfKMatrixA0::poleProductRemainder(s, i);
         // Loop over channels: 
         SVector2 B_factor;
         for (int j = 0; j < 2; j++) {
@@ -125,17 +125,17 @@ void KopfKmatrixA0::calcUserVars(GDouble** pKin, GDouble* userVars) const {
     }
     // Loop over channels
     for (int j = 0; j < 2; j++) {
-        mat_C(j, j) = KopfKmatrixA0::chew(s, m1s[j], m2s[j]);
+        mat_C(j, j) = KopfKMatrixA0::chew(s, m1s[j], m2s[j]);
     }
     SMatrix2 temp;
-    complex<GDouble> product = KopfKmatrixA0::poleProduct(s);
+    complex<GDouble> product = KopfKMatrixA0::poleProduct(s);
     for (int i = 0; i < 2; ++i) {
         temp(i, i) = product;
     }
     mat_K *= mat_C;
     temp += mat_K;
     // Now temp is (I + KC)
-    SMatrix2 temp_inv = KopfKmatrixA0::inverse2(temp); // (I + KC)^{-1}
+    SMatrix2 temp_inv = KopfKMatrixA0::inverse2(temp); // (I + KC)^{-1}
     // Now we cache the results
     for (int i = 0; i < 2; i++) {
         userVars[i + 2] = temp_inv(channel, i).real(); // +2 because kM and kS are first in the enum
@@ -145,7 +145,7 @@ void KopfKmatrixA0::calcUserVars(GDouble** pKin, GDouble* userVars) const {
 
 
 
-complex<GDouble> KopfKmatrixA0::calcAmplitude(GDouble** pKin, GDouble* userVars) const {
+complex<GDouble> KopfKMatrixA0::calcAmplitude(GDouble** pKin, GDouble* userVars) const {
     GDouble m = userVars[kM]; 
     GDouble s = userVars[kS];
     SVector2 vec_P;
@@ -159,7 +159,7 @@ complex<GDouble> KopfKmatrixA0::calcAmplitude(GDouble** pKin, GDouble* userVars)
         SMatrix2 temp_B;
         temp_P = couplings[i];
         temp_P *= betas[i]; 
-        temp_P *= KopfKmatrixA0::poleProductRemainder(s, i);
+        temp_P *= KopfKMatrixA0::poleProductRemainder(s, i);
         SVector2 B_factor;
         // Loop over channels:
         for (int j = 0; j < 2; j++) {
@@ -181,7 +181,7 @@ complex<GDouble> KopfKmatrixA0::calcAmplitude(GDouble** pKin, GDouble* userVars)
     return Dot(temp_inv, vec_P);
 }
 
-SMatrix2 KopfKmatrixA0::inverse2(SMatrix2 A) const {
+SMatrix2 KopfKMatrixA0::inverse2(SMatrix2 A) const {
     // A matrix inverse that works for complex values
     SMatrix2 M;
     SMatrix2 I = SMatrixIdentity();
@@ -195,23 +195,23 @@ SMatrix2 KopfKmatrixA0::inverse2(SMatrix2 A) const {
     return M / (-1.0 * c);
 }
 
-complex<GDouble> KopfKmatrixA0::rho(double s, double m1, double m2) const {
+complex<GDouble> KopfKMatrixA0::rho(double s, double m1, double m2) const {
     return sqrt(complex<GDouble>(((1 - ((m1 + m2) * (m1 + m2) / s)) * (1 - ((m1 - m2) * (m1 - m2) / s))), 0));
 }
 
-complex<GDouble> KopfKmatrixA0::xi(double s, double m1, double m2) const {
+complex<GDouble> KopfKMatrixA0::xi(double s, double m1, double m2) const {
     return complex<GDouble>(1 - ((m1 + m2) * (m1 + m2) / s), 0);
 }
 
-complex<GDouble> KopfKmatrixA0::chew(double s, double m1, double m2) const {
+complex<GDouble> KopfKMatrixA0::chew(double s, double m1, double m2) const {
     // The Chew-Mandelstam matrix as described by Appendix B in <https://doi.org/10.1103/PhysRevD.91.054008>
     complex<GDouble> tot = 0;
-    tot += (KopfKmatrixA0::rho(s, m1, m2) / Pi()) * log((KopfKmatrixA0::xi(s, m1, m2) + KopfKmatrixA0::rho(s, m1, m2)) / (KopfKmatrixA0::xi(s, m1, m2) - KopfKmatrixA0::rho(s, m1, m2)));
-    tot -= (KopfKmatrixA0::xi(s, m1, m2) / Pi()) * ((m2 - m1) / (m1 + m2)) * log(m2 / m1);
+    tot += (KopfKMatrixA0::rho(s, m1, m2) / Pi()) * log((KopfKMatrixA0::xi(s, m1, m2) + KopfKMatrixA0::rho(s, m1, m2)) / (KopfKMatrixA0::xi(s, m1, m2) - KopfKMatrixA0::rho(s, m1, m2)));
+    tot -= (KopfKMatrixA0::xi(s, m1, m2) / Pi()) * ((m2 - m1) / (m1 + m2)) * log(m2 / m1);
     return tot;
 }
 
-complex<GDouble> KopfKmatrixA0::poleProduct(double s) const {
+complex<GDouble> KopfKMatrixA0::poleProduct(double s) const {
     // We multiply the numerator and denominator by the product of poles to remove
     // division by zero errors when the measured mass is computationally close to
     // the pole mass.
@@ -222,7 +222,7 @@ complex<GDouble> KopfKmatrixA0::poleProduct(double s) const {
     return tot;
 }
 
-complex<GDouble> KopfKmatrixA0::poleProductRemainder(double s, size_t index) const {
+complex<GDouble> KopfKMatrixA0::poleProductRemainder(double s, size_t index) const {
     // We multiply the numerator and denominator by the product of poles to remove
     // division by zero errors when the measured mass is computationally close to
     // the pole mass.
@@ -234,4 +234,4 @@ complex<GDouble> KopfKmatrixA0::poleProductRemainder(double s, size_t index) con
     return tot;
 }
 
-void KopfKmatrixA0::updatePar(const AmpParameter &par) {}
+void KopfKMatrixA0::updatePar(const AmpParameter &par) {}
