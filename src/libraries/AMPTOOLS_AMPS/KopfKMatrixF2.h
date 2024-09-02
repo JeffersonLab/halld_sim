@@ -22,7 +22,7 @@ typedef SMatrix<complex<GDouble>, 4, 4, ROOT::Math::MatRepSym<complex<GDouble>, 
 typedef SVector<complex<GDouble>, 4> SVector4;
 
 /* 
- *  Usage: KopfKMatrixF2 <daughter 1> <daughter 2> <channel> <Re[f₂(1270)]> <Im[f₂(1270)]> ...
+ *  Usage: KopfKMatrixF2 <daughter 1> <daughter 2> <channel> <Re[f2(1270)]> <Im[f2(1270)]> ...
  * 
  *  Parameters:
  *  1. <daughter 1>: a single digit number or pair of digits corresponding to the location of
@@ -32,20 +32,19 @@ typedef SVector<complex<GDouble>, 4> SVector4;
  *     which, when added together, form the first decay product (e.g. 23 would sum particles
  *     2 and 3 to make a new state).
  *  2. <daughter 2>: Same as (1) but for the second decay product.
- *  3. <channel>: A single digit corresponding to the final state channel (see table).
- *     ╭────┬──────┬────┬────╮
- *     │ 0  │ 1    │ 2  │ 3  │
- *     ├────┼──────┼────┼────┤
- *     │ ππ │ 2π2π │ KK̅ │ ηη │
- *     ╰────┴──────┴────┴────╯
- *  4. f₂(1270) initial state coupling (real part)
- *  5. f₂(1270) initial state coupling (imaginary part)
- *  6. f₂'(1525) initial state coupling (real part)
- *  7. f₂'(1525) initial state coupling (imaginary part)
- *  8. f₂(1810) initial state coupling (real part)
- *  9. f₂(1810) initial state coupling (imaginary part)
- * 10. f₂(1950) initial state coupling (real part)
- * 11. f₂(1950) initial state coupling (imaginary part)
+ *  3. <channel>: A single digit corresponding to the final state channel:
+ *     0: pi-pi
+ *     1: 2pi-2pi (effective channel for all decays into four pions not present in other channels)
+ *     2: K-Kbar
+ *     3: eta-eta
+ *  4. f2(1270) initial state coupling (real part)
+ *  5. f2(1270) initial state coupling (imaginary part)
+ *  6. f2'(1525) initial state coupling (real part)
+ *  7. f2'(1525) initial state coupling (imaginary part)
+ *  8. f2(1810) initial state coupling (real part)
+ *  9. f2(1810) initial state coupling (imaginary part)
+ * 10. f2(1950) initial state coupling (real part)
+ * 11. f2(1950) initial state coupling (imaginary part)
  *
  *  See <https://doi.org/10.1140/epjc/s10052-021-09821-2> for more details.
  */

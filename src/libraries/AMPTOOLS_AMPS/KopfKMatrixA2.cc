@@ -14,7 +14,7 @@
 #include "AMPTOOLS_AMPS/KopfKMatrixA2.h"
 
 /* 
- *  Usage: KopfKMatrixA2 <daughter 1> <daughter 2> <channel> <Re[a₂(1320)]> <Im[a₂(1320)]> ...
+ *  Usage: KopfKMatrixA2 <daughter 1> <daughter 2> <channel> <Re[a2(1320)]> <Im[a2(1320)]> ...
  * 
  *  Parameters:
  *  1. <daughter 1>: a single digit number or pair of digits corresponding to the location of
@@ -24,16 +24,14 @@
  *     which, when added together, form the first decay product (e.g. 23 would sum particles
  *     2 and 3 to make a new state).
  *  2. <daughter 2>: Same as (1) but for the second decay product.
- *  3. <channel>: A single digit corresponding to the final state channel (see table).
- *     ╭────┬────┬─────╮
- *     │ 0  │ 1  │ 2   │
- *     ├────┼────┼─────┤
- *     │ πη │ KK̅ │ πη' │
- *     ╰────┴────┴─────╯
- *  4. a₂(1320) initial state coupling (real part)
- *  5. a₂(1320) initial state coupling (imaginary part)
- *  6. a₂(1700) initial state coupling (real part)
- *  7. a₂(1700) initial state coupling (imaginary part)
+ *  3. <channel>: A single digit corresponding to the final state channel:
+ *     0: pi-eta
+ *     1: K-Kbar
+ *     2: pi-eta'
+ *  4. a2(1320) initial state coupling (real part)
+ *  5. a2(1320) initial state coupling (imaginary part)
+ *  6. a2(1700) initial state coupling (real part)
+ *  7. a2(1700) initial state coupling (imaginary part)
  *
  *  See <https://doi.org/10.1140/epjc/s10052-021-09821-2> for more details.
  */

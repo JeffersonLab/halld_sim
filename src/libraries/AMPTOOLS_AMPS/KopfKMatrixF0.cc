@@ -14,7 +14,7 @@
 #include "AMPTOOLS_AMPS/KopfKMatrixF0.h"
 
 /* 
- *  Usage: KopfKMatrixF0 <daughter 1> <daughter 2> <channel> <Re[f₀(500)]> <Im[f₀(500)]> ...
+ *  Usage: KopfKMatrixF0 <daughter 1> <daughter 2> <channel> <Re[f0(500)]> <Im[f0(500)]> ...
  * 
  *  Parameters:
  *  1. <daughter 1>: a single digit number or pair of digits corresponding to the location of
@@ -24,22 +24,22 @@
  *     which, when added together, form the first decay product (e.g. 23 would sum particles
  *     2 and 3 to make a new state).
  *  2. <daughter 2>: Same as (1) but for the second decay product.
- *  3. <channel>: A single digit corresponding to the final state channel (see table).
- *     ╭────┬──────┬────┬────┬─────╮
- *     │ 0  │ 1    │ 2  │ 3  │ 4   │
- *     ├────┼──────┼────┼────┼─────┤
- *     │ ππ │ 2π2π │ KK̅ │ ηη │ ηη' │
- *     ╰────┴──────┴────┴────┴─────╯
- *  4. f₀(500) initial state coupling (real part)
- *  5. f₀(500) initial state coupling (imaginary part)
- *  6. f₀(980) initial state coupling (real part)
- *  7. f₀(980) initial state coupling (imaginary part)
- *  8. f₀(1370) initial state coupling (real part)
- *  9. f₀(1370) initial state coupling (imaginary part)
- * 10. f₀(1500) initial state coupling (real part)
- * 11. f₀(1500) initial state coupling (imaginary part)
- * 12. f₀(1710) initial state coupling (real part)
- * 13. f₀(1710) initial state coupling (imaginary part)
+ *  3. <channel>: A single digit corresponding to the final state channel:
+ *     0: pi-pi
+ *     1: 2pi-2pi (effective channel for all decays into four pions not present in other channels)
+ *     2: K-Kbar
+ *     3: eta-eta
+ *     4: eta-eta'
+ *  4. f0(500) initial state coupling (real part)
+ *  5. f0(500) initial state coupling (imaginary part)
+ *  6. f0(980) initial state coupling (real part)
+ *  7. f0(980) initial state coupling (imaginary part)
+ *  8. f0(1370) initial state coupling (real part)
+ *  9. f0(1370) initial state coupling (imaginary part)
+ * 10. f0(1500) initial state coupling (real part)
+ * 11. f0(1500) initial state coupling (imaginary part)
+ * 12. f0(1710) initial state coupling (real part)
+ * 13. f0(1710) initial state coupling (imaginary part)
  *
  *  See <https://doi.org/10.1140/epjc/s10052-021-09821-2> for more details.
  */

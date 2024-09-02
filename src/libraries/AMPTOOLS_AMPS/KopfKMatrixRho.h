@@ -22,7 +22,7 @@ typedef SMatrix<complex<GDouble>, 3, 3, ROOT::Math::MatRepSym<complex<GDouble>, 
 typedef SVector<complex<GDouble>, 3> SVector3;
 
 /* 
- *  Usage: KopfKMatrixRho <daughter 1> <daughter 2> <channel> <Re[ρ(770)]> <Im[ρ(770)]> ...
+ *  Usage: KopfKMatrixRho <daughter 1> <daughter 2> <channel> <Re[rho(770)]> <Im[rho(770)]> ...
  * 
  *  Parameters:
  *  1. <daughter 1>: a single digit number or pair of digits corresponding to the location of
@@ -32,16 +32,14 @@ typedef SVector<complex<GDouble>, 3> SVector3;
  *     which, when added together, form the first decay product (e.g. 23 would sum particles
  *     2 and 3 to make a new state).
  *  2. <daughter 2>: Same as (1) but for the second decay product.
- *  3. <channel>: A single digit corresponding to the final state channel (see table).
- *     ╭────┬──────┬────╮
- *     │ 0  │ 1    │ 2  │
- *     ├────┼──────┼────┤
- *     │ ππ │ 2π2π │ KK̅ │
- *     ╰────┴──────┴────╯
- *  4. ρ(770) initial state coupling (real part)
- *  5. ρ(770) initial state coupling (imaginary part)
- *  6. ρ(1700) initial state coupling (real part)
- *  7. ρ(1700) initial state coupling (imaginary part)
+ *  3. <channel>: A single digit corresponding to the final state channel:
+ *     0: pi-pi
+ *     1: 2pi-2pi (effective channel for all decays into four pions not present in other channels)
+ *     2: K-Kbar
+ *  4. rho(770) initial state coupling (real part)
+ *  5. rho(770) initial state coupling (imaginary part)
+ *  6. rho(1700) initial state coupling (real part)
+ *  7. rho(1700) initial state coupling (imaginary part)
  *
  *  See <https://doi.org/10.1140/epjc/s10052-021-09821-2> for more details.
  */
