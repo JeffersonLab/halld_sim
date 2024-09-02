@@ -22,7 +22,7 @@ typedef SMatrix<complex<GDouble>, 2, 2, ROOT::Math::MatRepSym<complex<GDouble>, 
 typedef SVector<complex<GDouble>, 2> SVector2;
 
 /* 
- *  Usage: KopfKMatrixPi1 <daughter 1> <daughter 2> <channel> <Re[π1(1600)]> <Im[π1(1600)]> ...
+ *  Usage: KopfKMatrixPi1 <daughter 1> <daughter 2> <channel> <Re[pi1(1600)]> <Im[pi1(1600)]> ...
  * 
  *  Parameters:
  *  1. <daughter 1>: a single digit number or pair of digits corresponding to the location of
@@ -35,8 +35,8 @@ typedef SVector<complex<GDouble>, 2> SVector2;
  *  3. <channel>: A single digit corresponding to the final state channel:
  *     0: pi-eta
  *     1: pi-eta'
- *  4. π1(1600) initial state coupling (real part)
- *  5. π1(1600) initial state coupling (imaginary part)
+ *  4. pi1(1600) initial state coupling (real part)
+ *  5. pi1(1600) initial state coupling (imaginary part)
  *
  *  See <https://doi.org/10.1140/epjc/s10052-021-09821-2> for more details.
  */
