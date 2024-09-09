@@ -22,7 +22,7 @@ m_width( width )
 }
 
 pair< double, double >
-BreitWignerGenerator::operator()() const
+BreitWignerGenerator::operator()( double fraction ) const
 {
     
     // generate BW's with 100% efficiency by integrating
@@ -35,6 +35,11 @@ BreitWignerGenerator::operator()() const
     // weight is the reciprocal of the normalized PDF and can be
     // used to reweight the events so they are flat in s
     // (i.e. flat in two-body phase space)
+    //
+    // the optional "fraction" argument reduces the range of
+    // rho by (1-fraction)/2 on each end and therefore
+    // only retains the center fraction of the BW
+    // distribution to avoid extreme values.
     
     double s = -1;
     double rho;
@@ -44,7 +49,7 @@ BreitWignerGenerator::operator()() const
     // avoid potential funny business at extreme values of rho
     while( s < 0 ){
     
-        rho = random( -kPi/2, kPi/2 );
+        rho = random( -kPi*fraction/2, kPi*fraction/2 );
         s = m_mass * m_mass + m_mass * m_width * tan( rho );
     }
     
