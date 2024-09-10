@@ -25,6 +25,7 @@ m_lastWeight( 1. )
   kMproton=ParticleMass(Proton);
   kMneutron=ParticleMass(Neutron);
   kMlambda=ParticleMass(Lambda);
+  kMsigmaPlus=ParticleMass(SigmaPlus);
   // kMZ = 108.;      //  mass of Sn116 
   kMZ = 208.*0.931494;      //  use mass of Pb as it is in the particle table
   kMPion = ParticleMass(PiPlus);
@@ -41,6 +42,7 @@ m_lastWeight( 1. )
   case kProton:  m_recMass = kMproton; break; //old value: 0.9382
   case kNeutron: m_recMass = kMneutron; break; //old value: 0.9395
   case kLambda: m_recMass = kMlambda; break;
+  case kSigmaPlus: m_recMass = kMsigmaPlus; break;
   case kZ: m_recMass = kMZ; break; //default to Sn116/Pb
   case kPion: m_recMass = kMPion; isBaryonResonance = true; break;
   case kPi0: m_recMass = kMPi0; isBaryonResonance = true; break;
