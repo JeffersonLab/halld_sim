@@ -241,6 +241,9 @@ int main( int argc, char* argv[] ){
 	case Lambda:
 	  recoil = ProductionMechanism::kLambda;
 	  break;
+	case SigmaPlus:
+	  recoil = ProductionMechanism::kSigmaPlus;
+	  break;
 	case Pb208:
 	  recoil = ProductionMechanism::kZ;
 	  break;
