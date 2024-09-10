@@ -26,7 +26,7 @@ class MyProcessor:public JEventProcessor
    public:
    	  MyProcessor(mcsmear_config_t *in_config) {
    	  	 config = in_config;
-   	  	 smearer = NULL;
+   	  	 //smearer = NULL;
    	  }
    
       jerror_t init(void);                              ///< Called once at program start.
@@ -46,7 +46,7 @@ class MyProcessor:public JEventProcessor
       bool HDDM_USE_INTEGRITY_CHECKS;
       
       mcsmear_config_t *config;
-      Smear *smearer;
+      //Smear *smearer;              //moved into thread_local storage, see MyProcessor.cc
 };
 
 

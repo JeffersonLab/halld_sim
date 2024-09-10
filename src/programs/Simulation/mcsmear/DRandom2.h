@@ -145,6 +145,6 @@ class DRandom2:public TRandom2{
 
 #endif  // _DRANDOM2_H_
 
-extern DRandom2 gDRandom;
+extern thread_local DRandom2 gDRandom;
 
 

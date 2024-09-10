@@ -111,12 +111,20 @@
     <posXYZ volume="SEC3" X_Y_Z="-27.5 +2.008  0.0" rot="90  0  0"/>
     <posXYZ volume="SEC3" X_Y_Z="-27.5 -2.008  0.0" rot="-90 0  0"/>
 
-<!--    <posXYZ volume="BackPlane" X_Y_Z="-6.05 0.0 0.0"/>  
+    <posXYZ volume="BackPlane" X_Y_Z="-6.05 0.0 0.0"/>  
 
     <posXYZ volume="SDPL" X_Y_Z="-54.95 +6.825 0.0"/>
     <posXYZ volume="SDPL" X_Y_Z="-54.95 -6.825 0.0"/>
 
-    <posXYZ volume="EntrancePlate" X_Y_Z="-30.5 0.0 -313.2025"/> -->
+    <posXYZ volume="EntrancePlate" X_Y_Z="-30.5 0.0 -313.2025"/>
+
+    <posXYZ volume="DET0" X_Y_Z="-27.0 0.0 -308.0"/>
+    <posXYZ volume="DET1" X_Y_Z="-27.0 0.0 -154.0"/>
+    <posXYZ volume="DET2" X_Y_Z="-27.0 0.0    0.0"/>
+    <posXYZ volume="DET3" X_Y_Z="-27.0 0.0 +154.0"/>
+    <posXYZ volume="DET4" X_Y_Z="-27.0 0.0 +308.0"/>
+    <posXYZ volume="DET5" X_Y_Z="-6.5 0.0 0.0"/>
+    <posXYZ volume="DET6" X_Y_Z="-48.5 0.0 0.0"/>
 
   </composition> 
 
@@ -233,6 +241,15 @@
   <trd name="CHE0" Xmp_Ymp_Z="43.7963  38.377  5.77  5.77  2.54"
       material="Iron" inclination="-20.3847 0" unit_angle="deg"/>
 
+<!--  ======== virtual planes inside the vacuum box ======= -->
+
+  <box name="DET0" X_Y_Z="42 3 0.1" material="TaggerVacuum" sensitive="true"/>
+  <box name="DET1" X_Y_Z="42 3 0.1" material="TaggerVacuum" sensitive="true"/>
+  <box name="DET2" X_Y_Z="42 3 0.1" material="TaggerVacuum" sensitive="true"/>
+  <box name="DET3" X_Y_Z="42 3 0.1" material="TaggerVacuum" sensitive="true"/>
+  <box name="DET4" X_Y_Z="42 3 0.1" material="TaggerVacuum" sensitive="true"/>
+  <box name="DET5" X_Y_Z="0.1 3 629" material="TaggerVacuum" sensitive="true"/>
+  <box name="DET6" X_Y_Z="0.1 3 629" material="TaggerVacuum" sensitive="true"/>
 </section>
 
 <!-- </HDDS> -->
