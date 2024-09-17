@@ -711,24 +711,26 @@ hddm_s::CdcStrawList &operator+=(hddm_s::CdcStrawList &dst,
 hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
                                     hddm_s::CdcStrawHitList &src)
 {
+
+  
+  
    hddm_s::CdcStrawHitList::iterator iter;
 
    hddm_s::CdcStrawHitList::iterator iter_firsthit;
 
-
+   const double CDC_INTEGRAL_TO_AMPLITUDE = 1. / 28.8;
+   
    // There should be no more than one hit in dst - assume this is the case.  (otherwise, would have to pick the earliest)
 
-   // Find the earliest (random) hit in src, ignore the later ones, if any
-   // If it is before the original hit, replace the original hit
-   // If it is at the same time sample as the original hit, sum the pulse height
-   // If it is after the original hit, leave the original hit alone and ignore the random hit.
+   // Find the earliest (random) hit in src, ignore the later ones, if any. 
+   // If it is before the original hit, replace the original hit's time and peak height.  Sum the charge.
+   // If it is at the same time sample as the original hit, sum the pulse height and charge.
+   // If it is after the original hit, leave the original hit's time and peak height alone.  Sum the charge.
    
    
    iter_firsthit = src.begin();
    double t_firsthit = iter_firsthit->getT();
    
-   // if we know that these are already time-ordered, or there is only one, skip this loop
-
    for (iter = src.begin(); iter != src.end(); ++iter) {
       double this_t = iter->getT();
       if (this_t < t_firsthit) {
@@ -737,101 +739,70 @@ hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
       }
    }
 
-   
-   
+     
    double t = iter_firsthit->getT() + t_shift_ns;
 
    if (t > cdc_integration_window_ns) return dst;       // new hit is too late, don't use it.
 
    
-   double newQ = iter_firsthit->getQ();     //  REALLY want peak amp here.  Should this all be in a dighit list instead?
+   double newQ = iter_firsthit->getQ();    
 
    double newPeakAmp = 0;
    if(iter_firsthit->getCdcDigihits().size() > 0) {
       newPeakAmp = iter_firsthit->getCdcDigihit().getPeakAmp();
    } else {
-      ; /* newPeakAmp = ????  // if we have old random trigger files without the peak amplitude written out, then estimate it from the integral? */
+      newPeakAmp = newQ*CDC_INTEGRAL_TO_AMPLITUDE;  //   if we have very old random trigger files without the peak amplitude written out, then estimate it from the integral 
    }
+   
    if (dst.size() == 0) {   // no hits in this straw, just add the random hit 
 
       dst.add(1, -1);      //  dst.add(1,(iord < dst.size())? iord : -1); with iord=0
-      dst(0).setQ(newQ);         // really want to use setPeakAmp
       dst(0).setT(t);
-      
-	  hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
-	  digihit().setPeakAmp(newPeakAmp);
+      dst(0).setQ(newQ);        
+
+      hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
+      digihit().setPeakAmp(newPeakAmp);
 
    } else {
-   
+
+      // convert time into 8ns samples to see if hits arrive in same sample
+
+      double origT = dst(0).getT();
+
       int src_hitsample = (int)(t/fadc125_period_ns);
+      int dst_hitsample = (int)(origT/fadc125_period_ns);
 
-      int dst_hitsample = (int)(dst(0).getT()/fadc125_period_ns);
+      double origQ = dst(0).getQ();  
 
+      double origPeakAmp = 0;
+
+      if(dst(0).getCdcDigihits().size() > 0) {
+     	 origPeakAmp = dst(0).getCdcDigihit().getPeakAmp();
+      } else {    // should not be possible, digihit should always be present
+         hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
+         origPeakAmp = origQ*CDC_INTEGRAL_TO_AMPLITUDE; 
+      }
+
+      
       if (dst_hitsample == src_hitsample) { // same sample, add pulse heights
 
-        double oldQ = dst(0).getQ();   // should use pulse height
-	 	dst(0).setQ(oldQ + newQ);
-
-         double origPeakAmp = 0;
-         if(dst(0).getCdcDigihits().size() > 0) {
-	        origPeakAmp = dst(0).getCdcDigihit().getPeakAmp();
-         } else {
-         	hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
-	        ; /* origPeakAmp = ????  // sanity check, but I think this shouldn't happen */
-         }
-         
+ 	 if (t < origT) dst(0).setT(t);
+	 dst(0).setQ(origQ + newQ);
          dst(0).getCdcDigihit().setPeakAmp(origPeakAmp + newPeakAmp);
    
-      } else if (src_hitsample < dst_hitsample) { // replace hit time and pulse height   if the random hit precedes the 'normal' one
-
-	 	 dst(0).setQ(newQ);    // should use pulse height
+      } else if (src_hitsample < dst_hitsample) { // random arrives earlier, replace hit time and pulse height 
+	
          dst(0).setT(t);
+	 dst(0).setQ(origQ + newQ);           
+	 dst(0).getCdcDigihit().setPeakAmp(newPeakAmp);
          
-         if(dst(0).getCdcDigihits().size() > 0) {
-         	dst(0).getCdcDigihit().setPeakAmp(newPeakAmp);
-         } else {
-	        hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
-	        digihit().setPeakAmp(newPeakAmp);
-         }
+      } else {  // random hit is after the original one.  Add the charge but don't change anything else.
+
+	 dst(0).setQ(origQ + newQ);  	 
+         dst(0).getCdcDigihit().setPeakAmp(origPeakAmp);  // do this just in case it wasn't already there
       }
-     
    }
 
-   /*
-   // order by t, merge with existing hit if close enough
-   int iord = 0;
-	  
-   for (iter = src.begin(); iter != src.end(); ++iter) {
-      double t = iter->getT() + t_shift_ns;
-      double ti = cdc_integration_window_ns;
-      double dt = ti + 2*fadc125_period_ns;
-      double newQ = iter->getQ();
-      while (iord > 0 && dst(iord).getT() > t)
-         --iord;
-      while (iord < dst.size() && dst(iord).getT() < t)
-         ++iord;
-      if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         --iord;
-         double oldQ = dst(iord).getQ();
-         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
-         if (pulse_fraction > 0)
-            dst(iord).setQ(oldQ + newQ * pulse_fraction);
-      }
-      else if (iord < dst.size() && dst(iord).getT() - t < dt) {
-         double oldQ = dst(iord).getQ();
-         double pulse_fraction = 1 - (dst(iord).getT() - t) / ti;
-         if (pulse_fraction > 0)
-            dst(iord).setQ(newQ + oldQ * pulse_fraction);
-         else
-            dst(iord).setQ(newQ);
-         dst(iord).setT(t);
-      }
-      else {
-         dst.add(1, (iord < dst.size())? iord : -1);
-         dst(iord).setQ(newQ);
-         dst(iord).setT(t);
-      }
-      }*/
    return dst;
 }
 
