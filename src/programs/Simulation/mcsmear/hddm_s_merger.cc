@@ -35,7 +35,7 @@ static thread_local double t_shift_ns(0);
 
 static thread_local bool   enable_cdc_merging(true);
 static thread_local int    cdc_max_hits(1);
-static thread_local double cdc_integration_window_ns(800.);
+static thread_local double cdc_integration_window_ns(1432.);
 
 static thread_local bool   enable_fdc_merging(true);
 static thread_local int    fdc_wires_max_hits(8);
@@ -711,9 +711,70 @@ hddm_s::CdcStrawList &operator+=(hddm_s::CdcStrawList &dst,
 hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
                                     hddm_s::CdcStrawHitList &src)
 {
+   hddm_s::CdcStrawHitList::iterator iter;
+
+   hddm_s::CdcStrawHitList::iterator iter_firsthit;
+
+
+   // There should be no more than one hit in dst - assume this is the case.  (otherwise, would have to pick the earliest)
+
+   // Find the earliest (random) hit in src, ignore the later ones, if any
+   // If it is before the original hit, replace the original hit
+   // If it is at the same time sample as the original hit, sum the pulse height
+   // If it is after the original hit, leave the original hit alone and ignore the random hit.
+   
+   
+   iter_firsthit = src.begin();
+   double t_firsthit = iter_firsthit->getT();
+   
+   // if we know that these are already time-ordered, or there is only one, skip this loop
+
+   for (iter = src.begin(); iter != src.end(); ++iter) {
+      double this_t = iter->getT();
+      if (this_t < t_firsthit) {
+	t_firsthit = this_t;
+	iter_firsthit = iter;
+      }
+   }
+
+   
+   
+   double t = iter_firsthit->getT() + t_shift_ns;
+
+   if (t > cdc_integration_window_ns) return dst;       // new hit is too late, don't use it.
+
+   
+   double newQ = iter_firsthit->getQ();     //  REALLY want peak amp here.  Should this all be in a dighit list instead?
+   
+   if (dst.size() == 0) {   // no hits in this straw, just add the random hit 
+
+      dst.add(1, -1);      //  dst.add(1,(iord < dst.size())? iord : -1); with iord=0
+      dst(0).setQ(newQ);         // really want to use setPeakAmp
+      dst(0).setT(t);
+
+   } else {
+   
+      int src_hitsample = (int)(t/fadc125_period_ns);
+
+      int dst_hitsample = (int)(dst(0).getT()/fadc125_period_ns);
+
+      if (dst_hitsample == src_hitsample) { // same sample, add pulse heights
+
+         double oldQ = dst(0).getQ();   // should use pulse height
+	 dst(0).setQ(oldQ + newQ);
+
+      } else if (src_hitsample < dst_hitsample) { // replace hit time and pulse height   if the random hit precedes the 'normal' one
+
+	 dst(0).setQ(newQ);    // should use pulse height
+         dst(0).setT(t);
+      }
+     
+   }
+
+   /*
    // order by t, merge with existing hit if close enough
    int iord = 0;
-   hddm_s::CdcStrawHitList::iterator iter;
+	  
    for (iter = src.begin(); iter != src.end(); ++iter) {
       double t = iter->getT() + t_shift_ns;
       double ti = cdc_integration_window_ns;
@@ -744,7 +805,7 @@ hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
          dst(iord).setQ(newQ);
          dst(iord).setT(t);
       }
-   }
+      }*/
    return dst;
 }
 
