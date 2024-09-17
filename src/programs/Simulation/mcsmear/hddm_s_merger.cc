@@ -745,12 +745,21 @@ hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
 
    
    double newQ = iter_firsthit->getQ();     //  REALLY want peak amp here.  Should this all be in a dighit list instead?
-   
+
+   double newPeakAmp = 0;
+   if(iter_firsthit->getCdcDigihits().size() > 0) {
+      newPeakAmp = iter_firsthit->getCdcDigihit().getPeakAmp();
+   } else {
+      ; /* newPeakAmp = ????  // if we have old random trigger files without the peak amplitude written out, then estimate it from the integral? */
+   }
    if (dst.size() == 0) {   // no hits in this straw, just add the random hit 
 
       dst.add(1, -1);      //  dst.add(1,(iord < dst.size())? iord : -1); with iord=0
       dst(0).setQ(newQ);         // really want to use setPeakAmp
       dst(0).setT(t);
+      
+	  hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
+	  digihit().setPeakAmp(newPeakAmp);
 
    } else {
    
@@ -760,13 +769,30 @@ hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
 
       if (dst_hitsample == src_hitsample) { // same sample, add pulse heights
 
-         double oldQ = dst(0).getQ();   // should use pulse height
-	 dst(0).setQ(oldQ + newQ);
+        double oldQ = dst(0).getQ();   // should use pulse height
+	 	dst(0).setQ(oldQ + newQ);
 
+         double origPeakAmp = 0;
+         if(dst(0).getCdcDigihits().size() > 0) {
+	        origPeakAmp = dst(0).getCdcDigihit().getPeakAmp();
+         } else {
+         	hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
+	        ; /* origPeakAmp = ????  // sanity check, but I think this shouldn't happen */
+         }
+         
+         dst(0).getCdcDigihit().setPeakAmp(origPeakAmp + newPeakAmp);
+   
       } else if (src_hitsample < dst_hitsample) { // replace hit time and pulse height   if the random hit precedes the 'normal' one
 
-	 dst(0).setQ(newQ);    // should use pulse height
+	 	 dst(0).setQ(newQ);    // should use pulse height
          dst(0).setT(t);
+         
+         if(dst(0).getCdcDigihits().size() > 0) {
+         	dst(0).getCdcDigihit().setPeakAmp(newPeakAmp);
+         } else {
+	        hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
+	        digihit().setPeakAmp(newPeakAmp);
+         }
       }
      
    }
