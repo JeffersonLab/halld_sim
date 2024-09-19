@@ -780,7 +780,7 @@ hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
      	 origPeakAmp = dst(0).getCdcDigihit().getPeakAmp();
       } else {    // should not be possible, digihit should always be present
          hddm_s::CdcDigihitList digihit = dst(0).addCdcDigihits();
-         origPeakAmp = origQ*CDC_INTEGRAL_TO_AMPLITUDE; 
+         origPeakAmp = origQ;     // usually done in DEventSourceHDDM
       }
 
       
