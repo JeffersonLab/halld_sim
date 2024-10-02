@@ -235,7 +235,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
         deco.clear();
         deco.str(result.Sections.at(*iter).NameValues["FADC125_W_WIDTH"]);
         deco >> dvalue;
-        readout[*iter]["WINDOW"] = dvalue;
+        readout[*iter]["NW"] = dvalue;
     }
 
     vector<string> f1tdc_sys = {"BCAL", "ST", "TAGH", "TAGM", "PSC", "FDC"};
