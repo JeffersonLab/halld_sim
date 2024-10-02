@@ -36,6 +36,7 @@ public:
 	string name() const { return "BreitWigner3body"; }
   
   complex< GDouble > calcAmplitude( GDouble** pKin ) const;
+  complex< GDouble > calcAmplitudeFromMasses( GDouble mass ) const;
 	  
   void updatePar( const AmpParameter& par );
     
