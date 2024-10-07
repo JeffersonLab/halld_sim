@@ -271,10 +271,6 @@ TLorentzVector p1(0,0,0.,ParticleMass(Proton));
   TLorentzVector d2=q_dot_v2*v2-v2sq*q;
   TLorentzVector N1=b1*p1+p1.Dot(c1)*v1+p1.Dot(d1)*p;
   TLorentzVector N2=b2*p1+p1.Dot(c2)*v2+p1.Dot(d2)*p;
-
-  double bslope=0.1;
-  double exp_b_v1sq=exp(bslope*v1sq);  
-  double exp_b_v2sq=exp(bslope*v2sq);
   
   // Rho propagators for top exchange
   double m_rho=0.77;
@@ -552,24 +548,6 @@ TLorentzVector p1(0,0,0.,ParticleMass(Proton));
 
     }
 
-    a1_aS_sum*=exp_b_v1sq;
-    a1_aS_diff*=exp_b_v1sq;  
-    a1_bS_sum*=exp_b_v1sq;
-    a1_bS_diff*=exp_b_v1sq;  
-    b1_aS_sum*=exp_b_v1sq;
-    b1_aS_diff*=exp_b_v1sq;
-    b1_bS_sum*=exp_b_v1sq;
-    b1_bS_diff*=exp_b_v1sq;
-    
-    a2_aS_sum*=exp_b_v2sq;
-    a2_aS_diff*=exp_b_v2sq; 
-    a2_bS_sum*=exp_b_v2sq;
-    a2_bS_diff*=exp_b_v2sq;   
-    b2_aS_sum*=exp_b_v2sq;
-    b2_aS_diff*=exp_b_v2sq; 
-    b2_bS_sum*=exp_b_v2sq;
-    b2_bS_diff*=exp_b_v2sq;
-      
     T=kin_a1_aS*(cosphi*a1_aS_sum-sinphi*a1_aS_diff)
       + kin_a2_aS*(cosphi*a2_aS_sum-sinphi*a2_aS_diff)
       + kin_a1_bS*(cosphi*(b1_aS_sum+a1_bS_sum)-sinphi*(b1_aS_diff+a1_bS_diff))
@@ -706,17 +684,6 @@ TLorentzVector p1(0,0,0.,ParticleMass(Proton));
 			 + (1./3.)*g_omega_V*rho_2_omega_1_interference
 			 );
     }
-
-    a1_a1*=exp_b_v1sq*exp_b_v1sq;
-    a2_a2*=exp_b_v2sq*exp_b_v2sq;
-    a1_a2*=exp_b_v1sq*exp_b_v2sq; 
-    b1_b1*=exp_b_v1sq*exp_b_v1sq;
-    b2_b2*=exp_b_v2sq*exp_b_v2sq;
-    b1_b2*=exp_b_v1sq*exp_b_v2sq; 
-    b1_a1*=exp_b_v1sq*exp_b_v1sq;
-    b2_a2*=exp_b_v2sq*exp_b_v2sq;
-    b1_a2*=exp_b_v1sq*exp_b_v2sq; 
-    b2_a1*=exp_b_v1sq*exp_b_v2sq;    
 
     T=(m_p_sq-p1_dot_p2)*(a1_a1*M1_M1 + a1_a2*M1_M2 + a2_a2*M2_M2)
       + 2.*(a1_a1*N1_N1 + a1_a2*N1_N2 + a2_a2*N2_N2)
