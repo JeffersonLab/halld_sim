@@ -47,6 +47,10 @@ void FMWPCSmearer::SmearEvent(hddm_s::HDDM *record)
 	   hits().setDE(0.); // Not used (SJT 2/28/22)
 	   hddm_s::FmwpcHitQList charges=hits().addFmwpcHitQs(1);
 	   charges(0).setQ(q);
+       hddm_s::FmwpcDigiHitList digis=hits().addFmwpcDigiHits(1);
+       digis(0).setAmp(0.);     // set this to something reasonable based on q!
+       digis(0).setQf(0.);     
+       digis(0).setPed(0.);    
          }
       }
 
