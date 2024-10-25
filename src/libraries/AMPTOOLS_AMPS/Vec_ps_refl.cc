@@ -36,9 +36,6 @@ UserAmplitude< Vec_ps_refl >( args )
   // default is 2-body vector decay (set flag in config file for omega->3pi)
   m_3pi = false; 
 
-  // d/s ratio scaling default = 1
-  dsratio = 1.0;
-
   // 5 possibilities to initialize this amplitude:
   // (with <J>: total spin, <m>: spin projection, <l>: partial wave, <r>: +1/-1 for real/imaginary part; <s>: +1/-1 sign in P_gamma term)
 
@@ -65,10 +62,6 @@ UserAmplitude< Vec_ps_refl >( args )
 		  }
 	  }
 
-          // if there's an eighth argument, it's the d/s ratio
-          if( ioption == 8 ){
-            dsratio = atof( args[8].c_str() );
-          }
 	  // other options should be strings
 	  if(option.EqualTo("omega3pi")) m_3pi = true;
 
@@ -201,9 +194,6 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   double kinFactor = barrierFactor(MX, m_l, MVec, MPs);
   //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
   Factor *= kinFactor;
-  if( m_l == 2 ){
-    Factor *= dsratio;
-  }
 
   userVars[uv_ampRe] = ( Factor * zjm ).real();
   userVars[uv_ampIm] = ( Factor * zjm ).imag();

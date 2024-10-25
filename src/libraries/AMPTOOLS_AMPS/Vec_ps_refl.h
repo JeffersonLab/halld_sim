@@ -29,7 +29,6 @@ public:
 	Vec_ps_refl() : UserAmplitude< Vec_ps_refl >() { };
 	Vec_ps_refl( const vector< string >& args );
 	Vec_ps_refl( int m_j, int m_m, int m_l, int m_r, int m_s );
-        Vec_ps_refl( double dsratio );
 
 	string name() const { return "Vec_ps_refl"; }
     
@@ -83,7 +82,6 @@ private:
 	int m_r;
 	int m_s;
 	int m_3pi;
-        double dsratio;
 	
 	//AmpParameter polAngle;
 	GDouble polFraction;
