@@ -49,7 +49,7 @@ void OmegaPiPlotGenerator::createHistograms( ) {
    bookHistogram( kRecoilMass, new Histogram1D( 100, 0.9, 1.9 , "MRecoil", "Invariant Mass of Recoil" ) );
    bookHistogram( kTwoPiMass, new Histogram1D( 100, 0.25, 1.75, "MTwoPi", "Invariant Mass of 2 #pi" ) ); 
    bookHistogram( kProtonPiMass, new Histogram1D( 100, 0.9, 2.9, "MProtonPi", "Invariant Mass of proton and bachelor pion" ) );
-   bookHistogram( kRecoilPiMass, new Histogram1D( 100, 0.9, 2.9, "MRecoilPi", "Invariant Mass of recoil and bachelor pion" ) );
+   bookHistogram( kRecoilPiMass, new Histogram1D( 100, 0.9, 3.5, "MRecoilPi", "Invariant Mass of recoil and bachelor pion" ) );
    bookHistogram( kLambda, new Histogram1D( 110, 0.0, 1.1, "Lambda", "#lambda_{#omega}" ) );
    bookHistogram( kDalitz, new Histogram2D( 100, -2., 2., 100, -2., 2., "Dalitz", "Dalitz XY" ) );
    bookHistogram( kCosThetaDelta, new Histogram1D( 100, -1., 1., "CosThetaDelta", "cos#theta_{#pi^{+}}" ) );
