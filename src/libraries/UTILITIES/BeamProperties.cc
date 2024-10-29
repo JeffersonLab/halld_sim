@@ -365,8 +365,10 @@ void BeamProperties::fillFluxFromCCDB() {
 
 	// Get untagged flux from CCDB and fill histogram
 	vector< vector<double> > taghflux, tagmflux;
-        calib->GetCalib(taghflux, "PHOTON_BEAM/pair_spectrometer/lumi/tagh/untagged");
-	calib->GetCalib(tagmflux, "PHOTON_BEAM/pair_spectrometer/lumi/tagm/untagged");
+        if(!calib->GetCalib(taghflux, "PHOTON_BEAM/pair_spectrometer/lumi/tagh/untagged")) {
+	  cout << "ERROR: Flux in CCDB not available for this energy range!" << endl;
+	  exit(101);
+	}	
 	for(uint i=0; i<taghflux.size(); i++) {
 		double energy = 0.5*(tagh_scaled_energy[i][1]+tagh_scaled_energy[i][2]) * photon_endpoint[0];
 		double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
