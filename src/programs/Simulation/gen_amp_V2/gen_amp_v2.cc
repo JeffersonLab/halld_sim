@@ -37,6 +37,7 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/PhaseOffset.h"
 
 #include "AMPTOOLS_MCGEN/FixedTargetGenerator.h"
 
@@ -327,6 +328,7 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( ComplexCoeff() );
   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+  AmpToolsInterface::registerAmplitude( PhaseOffset() );
   AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
   if(beamConfigFile.Length() == 0) {
