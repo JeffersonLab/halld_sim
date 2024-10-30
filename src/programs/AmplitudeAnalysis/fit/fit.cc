@@ -50,6 +50,12 @@
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/DeltaAngles.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixF0.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixF2.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixA0.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixA2.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -369,6 +375,12 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
    AmpToolsInterface::registerAmplitude( DeltaAngles() );
    AmpToolsInterface::registerAmplitude( SinglePS() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixF0() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixF2() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixA0() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixA2() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
