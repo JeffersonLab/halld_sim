@@ -265,18 +265,18 @@ int main( int argc, char* argv[] ){
 	const vector<ConfigFileLine> configFileLines = parser.getConfigFileLines();
 	double resonance[]={1.0, 1.0};
 	bool foundResonance = false;
+	std::set<std::string> targetParticles = {"rho", "omega", "phi", "b1", "a1", "Lambda1520", "Kstar", "K0star1430"};
 	for (vector<ConfigFileLine>::const_iterator it=configFileLines.begin(); it!=configFileLines.end(); it++) {
-	  if ((*it).keyword() == "define") {
-	    if ((*it).arguments()[0] == "rho" || (*it).arguments()[0] == "omega" || (*it).arguments()[0] == "phi" || (*it).arguments()[0] == "b1" || (*it).arguments()[0] == "a1" || (*it).arguments()[0] == "Lambda1520"){
-	      if ( (*it).arguments().size() != 3 )
-		continue;
-	      resonance[0]=atof((*it).arguments()[1].c_str());
-	      resonance[1]=atof((*it).arguments()[2].c_str());
-	      cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
-	      foundResonance = true;
-	      break;
-	    }
-	  }
+		if ((*it).keyword() == "define") {
+	   		if (targetParticles.find((*it).arguments()[0]) != targetParticles.end()) {	      
+				if( (*it).arguments().size() != 3 ) continue;
+				resonance[0]=atof((*it).arguments()[1].c_str());
+				resonance[1]=atof((*it).arguments()[2].c_str());
+				cout << "Distribution seeded with resonance " << (*it).arguments()[0] << " : mass = " << resonance[0] << "GeV , width = " << resonance[1] << "GeV" << endl; 
+				foundResonance = true;
+				break;
+	    	}
+	  	}
 	}
 	if (!foundResonance)
 	  cout << "ConfigFileParser WARNING:  no known resonance found, seed with mass = width = 1GeV" << endl; 
@@ -542,7 +542,7 @@ int main( int argc, char* argv[] ){
 					TLorentzVector beam = evt->particle ( 0 );
 					TLorentzVector rec = evt->particle ( 1 );
 					TLorentzVector p1 = evt->particle ( 2 );
-					TLorentzVector target(0,0,0,rec[3]);
+					TLorentzVector target(0,0,0,targetMass);
 					
 					if(isBaryonResonance) // assume t-channel
 						t->Fill(-1*(beam-evt->particle(1)).M2());

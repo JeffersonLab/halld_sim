@@ -31,11 +31,11 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
-#include "AMPTOOLS_DATAIO/TwoPiPlotGenerator.h"
+#include "AMPTOOLS_DATAIO/TwoPsPlotGenerator.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 
-typedef TwoPiPlotGenerator TwoPi_PlotGen;
+typedef TwoPsPlotGenerator TwoPs_PlotGen;
 
 void atiSetup() {
 
@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
   atiSetup();
   cout << "Plotgen results" << endl;
 
-  TwoPi_PlotGen plotGen(results);
+  TwoPs_PlotGen plotGen(results);
   cout << " Initialized ati and PlotGen" << endl;
 
   // ************************
@@ -205,45 +205,45 @@ int main(int argc, char *argv[]) {
           continue; // only plot data once
 
         // loop over different variables
-        for (unsigned int ivar = 0; ivar < TwoPiPlotGenerator::kNumHists;
+        for (unsigned int ivar = 0; ivar < TwoPsPlotGenerator::kNumHists;
              ivar++) {
 
           // set unique histogram name for each plot (could put in
           // directories...)
           string histname = "";
-          if (ivar == TwoPiPlotGenerator::k2PsMass)
+          if (ivar == TwoPsPlotGenerator::k2PsMass)
             histname += "M2Ps";
-          else if (ivar == TwoPiPlotGenerator::kLambdaKMass)
+          else if (ivar == TwoPsPlotGenerator::kLambdaKMass)
             histname += "MLambdaK";
-          else if (ivar == TwoPiPlotGenerator::kLambdaPiMass)
+          else if (ivar == TwoPsPlotGenerator::kLambdaPiMass)
             histname += "MLambdaPi";
-          else if (ivar == TwoPiPlotGenerator::kPiCosTheta)
+          else if (ivar == TwoPsPlotGenerator::kPiCosTheta)
             histname += "CosTheta";
-          else if (ivar == TwoPiPlotGenerator::kPhiK)
+          else if (ivar == TwoPsPlotGenerator::kPhiK)
             histname += "PhiK";
-          else if (ivar == TwoPiPlotGenerator::kPhiPi)
+          else if (ivar == TwoPsPlotGenerator::kPhiPi)
             histname += "PhiPi";
-          else if (ivar == TwoPiPlotGenerator::kPhiLambda)
+          else if (ivar == TwoPsPlotGenerator::kPhiLambda)
             histname += "PhiLambda";
-          else if (ivar == TwoPiPlotGenerator::kThetaK)
+          else if (ivar == TwoPsPlotGenerator::kThetaK)
             histname += "ThetaK";
-          else if (ivar == TwoPiPlotGenerator::kThetaPi)
+          else if (ivar == TwoPsPlotGenerator::kThetaPi)
             histname += "ThetaPi";
-          else if (ivar == TwoPiPlotGenerator::kThetaLambda)
+          else if (ivar == TwoPsPlotGenerator::kThetaLambda)
             histname += "ThetaLambda";
-          else if (ivar == TwoPiPlotGenerator::kMomK)
+          else if (ivar == TwoPsPlotGenerator::kMomK)
             histname += "MomK";
-          else if (ivar == TwoPiPlotGenerator::kMomPi)
+          else if (ivar == TwoPsPlotGenerator::kMomPi)
             histname += "MomPi";
-          else if (ivar == TwoPiPlotGenerator::kMomLambda)
+          else if (ivar == TwoPsPlotGenerator::kMomLambda)
             histname += "MomLambda";
-          else if (ivar == TwoPiPlotGenerator::kPhi)
+          else if (ivar == TwoPsPlotGenerator::kPhi)
             histname += "Phi";
-          else if (ivar == TwoPiPlotGenerator::kphi)
+          else if (ivar == TwoPsPlotGenerator::kphi)
             histname += "phi";
-          else if (ivar == TwoPiPlotGenerator::kPsi)
+          else if (ivar == TwoPsPlotGenerator::kPsi)
             histname += "psi";
-          else if (ivar == TwoPiPlotGenerator::kt)
+          else if (ivar == TwoPsPlotGenerator::kt)
             histname += "t";
           else
             continue;

@@ -39,6 +39,11 @@ PlotGenerator( )
 	createHistograms();
 }
 
+TwoPsPlotGenerator::~TwoPsPlotGenerator() {
+    // No specific cleanup needed; the base class destructor will handle its cleanup
+}
+
+
 void TwoPsPlotGenerator::createHistograms() {
   // calls to bookHistogram go here
   
@@ -116,21 +121,19 @@ void TwoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionNa
 
   // calls to fillHistogram go here
   
-  fillHistogram( k2PiMass, ( resonance ).M() );
-  fillHistogram( kPPipMass, ( recoil+p1 ).M() );
-  fillHistogram( kPPimMass, ( recoil+p2 ).M() );
-  
-  fillHistogram( kPiPCosTheta, cosTheta );
-
-  fillHistogram( kPhiPiPlus,  p1.Phi() );
-  fillHistogram( kPhiPiMinus, p2.Phi() );
-  fillHistogram( kPhiProton, recoil.Phi() );
-  fillHistogram( kThetaPiPlus,  p1.Theta()*TMath::RadToDeg() );
-  fillHistogram( kThetaPiMinus, p2.Theta()*TMath::RadToDeg() );
-  fillHistogram( kThetaProton, recoil.Theta()*TMath::RadToDeg() );
-  fillHistogram( kMomPiPlus,  p1.P() );
-  fillHistogram( kMomPiMinus, p2.P() );
-  fillHistogram( kMomProton, recoil.P() );
+  fillHistogram( k2PsMass, ( resonance ).M() );
+  fillHistogram( kLambdaKMass, ( recoil+p1 ).M() );
+  fillHistogram( kLambdaPiMass, ( recoil+p2 ).M() );
+  fillHistogram( kPiCosTheta, cosTheta );
+  fillHistogram( kPhiK,  p1.Phi() );
+  fillHistogram( kPhiPi, p2.Phi() );
+  fillHistogram( kPhiLambda, recoil.Phi() );
+  fillHistogram( kThetaK,  p1.Theta()*TMath::RadToDeg() );
+  fillHistogram( kThetaPi, p2.Theta()*TMath::RadToDeg() );
+  fillHistogram( kThetaLambda, recoil.Theta()*TMath::RadToDeg() );
+  fillHistogram( kMomK,  p1.P() );
+  fillHistogram( kMomPi, p2.P() );
+  fillHistogram( kMomLambda, recoil.P() );
   fillHistogram( kPhi, Phi );
   fillHistogram( kphi, phi );
   fillHistogram( kPsi, psi );

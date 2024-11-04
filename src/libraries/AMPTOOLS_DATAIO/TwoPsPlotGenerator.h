@@ -1,24 +1,22 @@
 #if !(defined TWOPSPLOTGENERATOR)
 #define TWOPSPLOTGENERATOR
 
-#include <vector>
+#include <map>
 #include <string>
+#include <vector>
 
 #include "IUAmpTools/PlotGenerator.h"
 
 using namespace std;
 
+// Forward declarations
 class FitResults;
 class Kinematics;
 
-class TwoPsPlotGenerator : public PlotGenerator
-{
-    
+class TwoPsPlotGenerator : public PlotGenerator {
 public:
-  
-  // create an index for different histograms
-  //enum { k2PiMass = 0, kPPipMass, kPPimMass, kPiPCosTheta, kThetaPiPlus, kThetaPiMinus, kThetaProton, kMomPiPlus, kMomPiMinus, kMomProton, kPhiPiPlus, kPhiPiMinus, kPhiProton, kPhi, kphi, kPsi, kt, kNumHists};
-  enum {
+  // Enumeration of histogram indices for the different observables
+  enum HistogramIndex {
     k2PsMass = 0,
     kLambdaKMass,
     kLambdaPiMass,
@@ -36,20 +34,25 @@ public:
     kphi,
     kPsi,
     kt,
-    kNumHists
+    kNumHists // Total number of histograms
   };
 
-  TwoPsPlotGenerator( const FitResults& results );
-  TwoPsPlotGenerator( );
+  // Constructors
+  explicit TwoPsPlotGenerator(const FitResults &results);
+  TwoPsPlotGenerator();
 
-  void projectEvent( Kinematics* kin );
-  void projectEvent( Kinematics* kin, const string& reactionName );
-  
+  // Projects a kinematic event onto histograms
+  void projectEvent(Kinematics *kin);
+  void projectEvent(Kinematics *kin, const string &reactionName);
+
+  virtual ~TwoPsPlotGenerator();
+
 private:
-        
+  // Method to initialize histograms
   void createHistograms();
 
-  map< string, double > m_reactionAngleMap;
+  // Map to store reaction-specific angle data
+  map<string, double> m_reactionAngleMap;
 };
 
-#endif
+#endif // TWOPSPLOTGENERATOR
