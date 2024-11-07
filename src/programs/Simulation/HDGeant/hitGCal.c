@@ -141,7 +141,7 @@ void hitGapEMcal (float xin[4], float xout[4],
       {
          fprintf(stderr,"HDGeant error in hitgapEMcal: ");
          fprintf(stderr,"max hit count %d exceeded, truncating!\n",MAX_HITS);
-         exit(2);
+         //exit(2);
       }
    }
 }

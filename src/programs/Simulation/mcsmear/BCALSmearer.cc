@@ -562,8 +562,16 @@ void BCALSmearer::FindHits(double thresh_MeV, map<int, SumHits> &bcalfADC, map<i
       double thresh_MeV_TDC = thresh_MeV/preamp_gain_tdc;
 	  //the outermost layer of the detector is not equipped with TDCs, so don't generate any TDC hits
 	  int layer = dBCALGeom->layer(fADCId);
+	  
 
       for(int ii = 0; ii < (int)sumhits.EUP.size(); ii++){
+		// check to see if we should throw the hit out
+		if(bcal_config->GetBadChannelStatus(GetCalibIndex(dBCALGeom->module(fADCId),
+		 												  dBCALGeom->layer(fADCId),
+		 												  dBCALGeom->sector(fADCId)),
+		 												  DBCALGeometry::End::kUpstream))
+		 			continue;
+		
         // correct simulation efficiencies 
 		if (config->APPLY_EFFICIENCY_CORRECTIONS
 		 		&& !gDRandom.DecideToAcceptHit(bcal_config->GetEfficiencyCorrectionFactor(GetCalibIndex(dBCALGeom->module(fADCId),
@@ -576,6 +584,13 @@ void BCALSmearer::FindHits(double thresh_MeV, map<int, SumHits> &bcalfADC, map<i
         if(layer != 4 && sumhits.EUP[ii] > thresh_MeV_TDC && sumhits.tUP[ii] < 2000) uphitsTDC.push_back(sumhits.tUP[ii]);     // and times when they cross an energy threshold.
       }                                                                                                                        // Also fill TDC uphits and dnhits with times if
       for(int ii = 0; ii < (int)sumhits.EDN.size(); ii++){                                                                     // they are not layer 4 hits and cross threshold.
+		// check to see if we should throw the hit out
+		if(bcal_config->GetBadChannelStatus(GetCalibIndex(dBCALGeom->module(fADCId),
+		 												  dBCALGeom->layer(fADCId),
+		 												  dBCALGeom->sector(fADCId)),
+		 												  DBCALGeometry::End::kDownstream))
+		 			continue;
+		
         // correct simulation efficiencies 
 		if (config->APPLY_EFFICIENCY_CORRECTIONS
 		 		&& !gDRandom.DecideToAcceptHit(bcal_config->GetEfficiencyCorrectionFactor(GetCalibIndex(dBCALGeom->module(fADCId),
@@ -920,6 +935,27 @@ bcal_config_t::bcal_config_t(JEventLoop *loop)
         	for (int layer=1; layer<=BCAL_NUM_LAYERS; layer++) {
             	for (int sector=1; sector<=BCAL_NUM_SECTORS; sector++) {
 	                channel_efficiencies.push_back( pair<double,double>(raw_table[channel],raw_table[channel+1]) );
+
+                	channel += 2;
+                }
+            }
+        }
+        
+    }
+
+   	
+   	// load bad channel table
+    cout << "Get BCAL/bad_channels tables from CCDB..." << endl;
+	vector<double> raw_table2;
+	if(loop->GetCalib("BCAL/bad_channels", raw_table2)) {
+    	jerr << "Problem loading BCAL/bad_channels from CCDB!" << endl;
+    } else {
+   	    int channel = 0;
+
+    	for (int module=1; module<=BCAL_NUM_MODULES; module++) {
+        	for (int layer=1; layer<=BCAL_NUM_LAYERS; layer++) {
+            	for (int sector=1; sector<=BCAL_NUM_SECTORS; sector++) {
+	                bad_channels.push_back( pair<double,double>(raw_table2[channel],raw_table2[channel+1]) );
 
                 	channel += 2;
                 }

@@ -329,7 +329,7 @@ void BeamProperties::fillFluxFromCCDB() {
 	}
 
 	// Generate calibration class
-	auto_ptr<ccdb::Calibration> calib(ccdb::CalibrationGenerator::CreateCalibration(string(calib_url), mRunNumber, variation));
+	unique_ptr<ccdb::Calibration> calib(ccdb::CalibrationGenerator::CreateCalibration(string(calib_url), mRunNumber, variation));
 
 	// Get PS acceptance from CCDB
 	vector< vector<double> > psAccept;
@@ -363,10 +363,18 @@ void BeamProperties::fillFluxFromCCDB() {
 	sort(Elows_tagh.begin(), Elows_tagh.end());
       	fluxVsEgamma = new TH1D("BeamProperties_FluxVsEgamma", "Flux vs. E_{#gamma}", Elows_tagh.size()-1, &Elows_tagh[0]);
 
-	// Get untagged flux from CCDB and fill histogram
-	vector< vector<double> > taghflux, tagmflux;
-        calib->GetCalib(taghflux, "PHOTON_BEAM/pair_spectrometer/lumi/tagh/untagged");
-	calib->GetCalib(tagmflux, "PHOTON_BEAM/pair_spectrometer/lumi/tagm/untagged");
+	// Get untagged flux from CCDB and fill histogram (if they exist)
+	try{
+		if(!calib->GetCalib(taghflux, "PHOTON_BEAM/pair_spectrometer/lumi/tagh/untagged")) {
+			cout << "ERROR: Flux not available in CCDB for run " << mRunNumber << endl;
+			exit(101);
+		}
+	}
+	catch (std::exception &) {
+		cout << "ERROR: Failed to find flux table in CCDB for run " << mRunNumber << endl;
+		exit(101);
+	}
+		
 	for(uint i=0; i<taghflux.size(); i++) {
 		double energy = 0.5*(tagh_scaled_energy[i][1]+tagh_scaled_energy[i][2]) * photon_endpoint[0];
 		double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);

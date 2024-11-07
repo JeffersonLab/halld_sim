@@ -7,18 +7,22 @@
 
 const double BreitWignerGenerator::kPi = 3.14159;
 
-BreitWignerGenerator::BreitWignerGenerator() :
+BreitWignerGenerator::BreitWignerGenerator( int seed ) :
 m_mass( 0 ),
 m_width( 0 )
-{}
+{
+  m_randGen.SetSeed( seed );
+}
 
-BreitWignerGenerator::BreitWignerGenerator( double mass, double width ) :
+BreitWignerGenerator::BreitWignerGenerator( double mass, double width, int seed ) :
 m_mass( mass ),
 m_width( width )
-{}
+{
+    m_randGen.SetSeed( seed );
+}
 
 pair< double, double >
-BreitWignerGenerator::operator()() const
+BreitWignerGenerator::operator()( double fraction ) const
 {
     
     // generate BW's with 100% efficiency by integrating
@@ -31,6 +35,11 @@ BreitWignerGenerator::operator()() const
     // weight is the reciprocal of the normalized PDF and can be
     // used to reweight the events so they are flat in s
     // (i.e. flat in two-body phase space)
+    //
+    // the optional "fraction" argument reduces the range of
+    // rho by (1-fraction)/2 on each end and therefore
+    // only retains the center fraction of the BW
+    // distribution to avoid extreme values.
     
     double s = -1;
     double rho;
@@ -40,7 +49,7 @@ BreitWignerGenerator::operator()() const
     // avoid potential funny business at extreme values of rho
     while( s < 0 ){
     
-        rho = random( -kPi/2, kPi/2 );
+        rho = random( -kPi*fraction/2, kPi*fraction/2 );
         s = m_mass * m_mass + m_mass * m_width * tan( rho );
     }
     
@@ -61,5 +70,5 @@ BreitWignerGenerator::pdf( double s ) const {
 double
 BreitWignerGenerator::random( double low, double hi ) const {
 	
-	return( ( hi - low ) * drand48() + low );
+	return( ( hi - low ) * m_randGen.Uniform() + low );
 }

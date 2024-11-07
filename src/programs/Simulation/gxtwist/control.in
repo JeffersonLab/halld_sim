@@ -53,6 +53,17 @@ c
 c    vertex_x vertex_y vertex_z
 SCAP    0.       0.      0.
 
+c The FEMO card lets you specify the parameters of an iron Moller target
+c and insert it into the electron beam in the region between the goniometer
+c and the entrance to the tagger dipole. Parameters are as follows. Be sure
+c to add the decimal point to each number, otherwise it will not read in.
+c  - motar_angle_deg = rotation angle about the x axis from perpendicular
+c  - motar_thick_cm = thickness of the Moller iron target
+c  - motar_z_cm = placement distance downstream of the goniometer
+c
+c    motar_angle_deg  motar_thick_cm  motar_z_cm
+FEMO    30.              0.1             100.
+
 c If you specify a non-zero value for vertex_x and/or vertex_y above then
 c all tracks will emerge from the given point.  If you leave them at zero,
 c you have the option of specifying the HALO card which causes the simulation

@@ -35,6 +35,7 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 		// default to loading all subdetectors
 		smearers[SYS_BCAL]  = static_cast<Smearer*>(new BCALSmearer(loop,config));
 		smearers[SYS_FCAL]  = static_cast<Smearer*>(new FCALSmearer(loop,config));
+		smearers[SYS_ECAL]  = static_cast<Smearer*>(new ECALSmearer(loop,config));
 		smearers[SYS_CDC]   = static_cast<Smearer*>(new CDCSmearer(loop,config));
 		smearers[SYS_FDC]   = static_cast<Smearer*>(new FDCSmearer(loop,config));
 		smearers[SYS_TOF]   = static_cast<Smearer*>(new TOFSmearer(loop,config));
@@ -59,6 +60,7 @@ Smear::Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_
 			switch(the_detector) {
 				case SYS_BCAL:   smearers[the_detector] = static_cast<Smearer*>(new BCALSmearer(loop,config));  break;
 				case SYS_FCAL:   smearers[the_detector] = static_cast<Smearer*>(new FCALSmearer(loop,config));  break;
+			        case SYS_ECAL:   smearers[the_detector] = static_cast<Smearer*>(new ECALSmearer(loop,config));  break;
 				case SYS_CDC:    smearers[the_detector] = static_cast<Smearer*>(new CDCSmearer(loop,config));  break;
 				case SYS_FDC:    smearers[the_detector] = static_cast<Smearer*>(new FDCSmearer(loop,config));  break;
 				case SYS_TOF:    smearers[the_detector] = static_cast<Smearer*>(new TOFSmearer(loop,config));  break;

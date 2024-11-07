@@ -46,6 +46,12 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixF0.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixF2.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixA0.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixA2.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -283,6 +289,14 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
    MPI_Finalize();
 }
 
+void getLikelihood( ConfigurationInfo* cfgInfo ){
+    AmpToolsInterfaceMPI ati( cfgInfo );
+    if( rank_mpi == 0 )
+        cout << "LIKELIHOOD WITHOUT MINIMIZATION:  " << ati.likelihood() << endl;
+    ati.exitMPI();
+    MPI_Finalize();
+}
+
 int main( int argc, char* argv[] ){
 
    MPI_Init( &argc, &argv );
@@ -294,6 +308,7 @@ int main( int argc, char* argv[] ){
 
    bool useMinos = false;
    bool hesse = false;
+   bool noFit = false;
 
    string configfile;
    string seedfile;
@@ -325,6 +340,7 @@ int main( int argc, char* argv[] ){
          else  maxIter = atoi(argv[++i]); }
       if (arg == "-n") useMinos = true;
       if (arg == "-H") hesse = true;
+      if (arg == "-l") noFit = true;
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
@@ -339,6 +355,7 @@ int main( int argc, char* argv[] ){
             cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
             cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
             cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
+            cout << "   -l \t\t\t\t Calculate likelihood and exit without running a fit" << endl; 
          }
          MPI_Finalize();
          exit(1);
@@ -383,6 +400,12 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
    AmpToolsInterface::registerAmplitude( SinglePS() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixF0() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixF2() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixA0() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixA2() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
@@ -390,7 +413,9 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderTEM>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<FSRootDataReader>() );
 
-   if(numRnd==0){
+   if(noFit)
+      getLikelihood(cfgInfo);
+   else if(numRnd==0){
       if(scanPar=="")
          runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
       else

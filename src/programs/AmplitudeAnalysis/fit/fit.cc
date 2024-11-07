@@ -48,6 +48,12 @@
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixF0.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixF2.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixA0.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixA2.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -248,12 +254,33 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   }
 }
 
+void getLikelihood( ConfigurationInfo* cfgInfo ){
+    AmpToolsInterface ati( cfgInfo );
+    cout << "LIKELIHOOD WITHOUT MINIMIZATION:  " << ati.likelihood() << endl;
+    return;
+}
+
+void printAmplitudes( ConfigurationInfo* cfgInfo ){
+
+  AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kPlotGeneration );
+  DataReader* dataReader = ati.dataReader(cfgInfo->reactionList()[0]->reactionName());  
+  dataReader->resetSource();
+  for (int i = 0; i < 2; i++){
+    Kinematics* kin = dataReader->getEvent();
+    ati.printEventDetails(cfgInfo->reactionList()[0]->reactionName(),kin);
+    delete kin;
+  }
+  return;
+}
+
 int main( int argc, char* argv[] ){
 
    // set default parameters
 
    bool useMinos = false;
    bool hesse = false;
+   bool noFit = false;
+   bool printAmps = false;
 
    string configfile;
    string seedfile;
@@ -285,19 +312,23 @@ int main( int argc, char* argv[] ){
          else  maxIter = atoi(argv[++i]); }
       if (arg == "-n") useMinos = true;
       if (arg == "-H") hesse = true;
+      if (arg == "-l") noFit = true;
+      if (arg == "-test" ) printAmps = true;
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
       if (arg == "-h"){
          cout << endl << " Usage for: " << argv[0] << endl << endl;
-         cout << "   -n \t\t\t\t\t use MINOS instead of MIGRAD" << endl;
-         cout << "   -H \t\t\t\t\t evaluate HESSE matrix after minimization" << endl;
-         cout << "   -c <file>\t\t\t\t config file" << endl;
-         cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
+         cout << "   -n \t\t\t\t use MINOS instead of MIGRAD" << endl;
+         cout << "   -H \t\t\t\t evaluate HESSE matrix after minimization" << endl;
+         cout << "   -c <file>\t\t\t config file" << endl;
+         cout << "   -s <output file>\t\t for seeding next fit based on this fit (optional)" << endl;
          cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
-            cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
-         cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
+         cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
+         cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
+         cout << "   -l \t\t\t\t Calculate likelihood and exit without running a fit" << endl; 
+	 cout << "   -test \t\t\t Print amplitude details for the first 2 data events" << endl;
          exit(1);}
    }
 
@@ -340,6 +371,12 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
    AmpToolsInterface::registerAmplitude( SinglePS() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixF0() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixF2() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixA0() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixA2() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
@@ -348,15 +385,19 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
    AmpToolsInterface::registerDataReader( FSRootDataReader() );
 
-   if(numRnd==0){
-      if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
-      else
-         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
+   if(noFit)
+     getLikelihood(cfgInfo);
+   else if(printAmps)
+     printAmplitudes(cfgInfo);
+   else if(numRnd==0){
+     if(scanPar=="")
+       runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
+     else
+       runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
    } else {
-      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
-      AmpToolsInterface::setRandomSeed(randomSeed);
-      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
+     cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+     AmpToolsInterface::setRandomSeed(randomSeed);
+     runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
    }
 
   return 0;
