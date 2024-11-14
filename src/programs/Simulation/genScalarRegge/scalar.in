@@ -7,6 +7,7 @@ cobrems.conf
 #Processes to simulate: f0(500) f0(980) f0(1500) f2(1270) background
 1 1 1 1 1
 #Coupling constants: f0(500) f0(980) f0(1500) f2(1270) background
-0.383 0.084 0.092 204.0 51.4
+0.24 0.05 0.095 204.0 32.
 # phases: f0(500) f0(980) f0(1500) f2(1270)
-4.5 1.5 1.5 0.0 
+4.5 1.5 1.5 0.0
+
