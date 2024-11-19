@@ -86,7 +86,7 @@ C
 C---            A simple single exponential function, no histogram is needed
          IF(ITDRNG(ir).EQ.2) THEN
             ITDSING=ir
-            TSLREAC=TPAREAC(2,ir)
+            TSLREAC=TPAREAC(3,ir)
 C
 C---            A complex function for the t distribution, use HBOOK 
          ELSE IF(ITDRNG(ir).EQ.1) THEN

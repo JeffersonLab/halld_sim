@@ -232,8 +232,7 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 		// Default parameters
 
 		int cdc_npeak     =  1;
-		double cdc_ie     =  200.;
-		double cdc_pg     =  4;
+		double cdc_nw     =  179.;
 
 		int fdc_nhits     =  100;
 		int fdc_npeak     =  1;
@@ -286,11 +285,10 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 		// hits merging / truncation parameters for the CDC
 		if(config->readout["CDC"].size() > 0){
 		  cdc_npeak   =  config->readout["CDC"].at("NPEAK");
-		  cdc_ie      =  config->readout["CDC"].at("IE");
-		  cdc_pg      =  config->readout["CDC"].at("PG");
+		  cdc_nw      =  config->readout["CDC"].at("NW");
 		}
 
-		double cdc_gate = (cdc_ie + cdc_pg) * fadc125_period_ns;
+		double cdc_gate = (cdc_nw - 21) * fadc125_period_ns;   
 
 		hddm_s_merger::set_cdc_max_hits(cdc_npeak);
 		hddm_s_merger::set_cdc_integration_window_ns(cdc_gate);
