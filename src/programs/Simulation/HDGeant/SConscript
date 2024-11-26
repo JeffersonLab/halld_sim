@@ -27,7 +27,7 @@ else:
 			version_string = postgcc[0:vers_end]
 		else:
 			version_string = postgcc
-		versions = version_string.split('.')
+		versions = (version_string + ".0.0").split('.')
 		if int(versions[0]) >= 4 and int(versions[1]) >= 8 or int(versions[0]) >= 5:
 			env.PrependUnique(FORTRANFLAGS = ['-fno-aggressive-loop-optimizations'])
 

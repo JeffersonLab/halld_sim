@@ -251,8 +251,8 @@ int main( int argc, char* argv[] ){
   TH1F * m_h_PFermi = new TH1F("PFermi", "", 1000, 0.0, 1.0);
   Particle_t t_target;
   Particle_t t_meson;
-  Particle_t t_spectator = Unknown;
-  Particle_t t_participant = Unknown;
+  Particle_t t_spectator = UnknownParticle;
+  Particle_t t_participant = UnknownParticle;
   if (ReadFile->GetConfigName("fermi_file") != "" && ReadFile->GetConfigName("participant") != "" && ReadFile->GetConfigName("spectator") != "") {
     m_Fermi_file = ReadFile->GetConfigName("fermi_file");
     cout << "Fermi_file " << m_Fermi_file << endl;

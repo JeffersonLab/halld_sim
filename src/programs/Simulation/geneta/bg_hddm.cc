@@ -181,7 +181,7 @@ int GEANT_to_PDG(Particle_t type)
 
    map<Particle_t, int>::iterator iter = GEANT_to_PDG_map.find(type);
    if (iter == GEANT_to_PDG_map.end())
-      type = Unknown;
+      type = UnknownParticle;
 
    return GEANT_to_PDG_map[type];
 }
@@ -192,7 +192,7 @@ int GEANT_to_PDG(Particle_t type)
 void InitializePDGGEANTmaps(void)
 {
    // Set values in GEANT_to_PDG_map first, then copy them into PDG_to_GEANT_map
-   GEANT_to_PDG_map[Unknown]   = 0;
+   GEANT_to_PDG_map[UnknownParticle]   = 0;
    GEANT_to_PDG_map[Gamma]     = 22;
    GEANT_to_PDG_map[Positron]  = -11;
    GEANT_to_PDG_map[Electron]  = 11;
