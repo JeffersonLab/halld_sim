@@ -126,7 +126,8 @@ int main( int argc, char* argv[] ){
     }
     cout << "Fit results loaded" << endl;
 
-    vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "3mp2f", "3mpf", "3m0f", "3mmf", "3mm2f", "0m", "1p", "1m", "2m", "3m"};
+    vector<string> amphistname = {"1ppS", "1p0S", "1pmS", "1ppD", "1p0D", "1pmD", "1mpP", "1m0P", "1mmP", "1p", "1m"};
+//    vector<string> amphistname = {"0m0p", "1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "2mp2p", "2mpp", "2m0p", "2mmp", "2mm2p", "2mp2f", "2mpf", "2m0f", "2mmf", "2mm2f", "3mp2f", "3mpf", "3m0f", "3mmf", "3mm2f", "0m", "1p", "1m", "2m", "3m"};
     vector<string> reflname = {"PosRefl", "NegRefl"};
 
     if(makePlots) {
