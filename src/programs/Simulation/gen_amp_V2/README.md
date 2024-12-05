@@ -9,9 +9,10 @@ Basic scripts in order to simulate events using gen_amp_V2.
    * EX: `reaction omegapi Beam Proton Pi0 Pi+ Pi-`
 
 ## How to use
-   * In this example we generate 10k four-body phase phase where the π<sup>+</sup> π<sup>-</sup> π<sup>0</sup> are in the upper vertex and the proton is in the lower vertex.  
+   * In this example we generate 10k four-body phase phase events where the π<sup>+</sup> π<sup>-</sup> π<sup>0</sup> are in the upper vertex and the proton is in the lower vertex.  
    * run `gen_amp_V2 -ac genPS.cfg -o test.root -uv 234 -lv 1 -f`.  
- Things to note:
+ 
+  Things to note:
    * Unless a beam config file is used, a local file will be produced within the coherent peak.
    * The values from the "uv & lv' flags indicate the particle index from the reaction name.
    * The `-f` flag skips the amplitude accept/reject process and generates phase space.
