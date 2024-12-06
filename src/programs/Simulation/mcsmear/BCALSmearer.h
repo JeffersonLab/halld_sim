@@ -84,12 +84,20 @@ class bcal_config_t
 	//vector<double> effective_velocities; // 16.75 (from calibDB BCAL/effective_velocities)
 
 	vector< pair<double,double> > channel_efficiencies;
+	vector< pair<double,double> > bad_channels;
 	
 	double GetEfficiencyCorrectionFactor(int index, DBCALGeometry::End the_end) {
 		if(the_end == DBCALGeometry::End::kUpstream)
 			return channel_efficiencies.at(index).first;
 		else 
 			return channel_efficiencies.at(index).second;
+	}
+
+	double GetBadChannelStatus(int index, DBCALGeometry::End the_end) {
+		if(the_end == DBCALGeometry::End::kUpstream)
+			return bad_channels.at(index).first;
+		else 
+			return bad_channels.at(index).second;
 	}
 
 	double fADC_MinIntegral_Saturation[2][4];

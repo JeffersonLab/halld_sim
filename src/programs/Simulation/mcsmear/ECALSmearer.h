@@ -5,9 +5,6 @@
 
 #include "Smearer.h"
 
-#include <ECAL/DECALGeometry.h>
-
-
 class ecal_config_t 
 {
   public:
@@ -39,18 +36,16 @@ class ECALSmearer : public Smearer
   public:
         ECALSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
         ecal_config = new ecal_config_t(loop);
-        ecalGeom = new DECALGeometry();
-        }
+         }
 	~ECALSmearer() {
 		delete ecal_config;
-		delete ecalGeom;
 	}
 	
 	void SmearEvent(hddm_s::HDDM *record);
 	
   private:
   	ecal_config_t  *ecal_config;
-	DECALGeometry  *ecalGeom;
+
 };
 
 

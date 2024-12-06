@@ -166,7 +166,8 @@ fcal_config_t::fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mc
     if(loop->GetCalib("FCAL/block_mc_efficiency", raw_table)) {
       jerr << "Problem loading FCAL/block_mc_efficiency from CCDB!" << endl;
     } else {
-      for (int channel=0; channel < static_cast<int>(raw_table.size()); channel++) {
+      int num_channels=fcalGeom->numFcalChannels();
+      for (int channel=0; channel < num_channels; channel++) {
 	int row = fcalGeom->row(channel);
 	int col = fcalGeom->column(channel);
 	block_efficiencies[row][col] = raw_table[channel];
