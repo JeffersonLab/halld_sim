@@ -328,8 +328,8 @@ void fini()
 	p2().setPz(v2.Z());
 	p2().setE(v2.T());
       } else if (str_decay == "a") {
-	ps(1).setType(Unknown);
-	ps(1).setPdgtype(PDGtype(Unknown));
+	ps(1).setType(UnknownParticle);
+	ps(1).setPdgtype(PDGtype(UnknownParticle));
 	ps(1).setId(2);
 	ps(1).setParentid(1);
 	ps(1).setMech(1);

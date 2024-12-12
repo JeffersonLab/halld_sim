@@ -232,7 +232,7 @@ void WriteEvent(unsigned int eventNumber, TLorentzVector &beam, float vert[3],
    origin->vy = vert[1];
    origin->vz = vert[2];
    // Final state particle
-   ps->in[0].type = Unknown;  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
+   ps->in[0].type = UnknownParticle;  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
    //ps->in[0].type = particle_type;
    ps->in[0].pdgtype = particle_type;
    ps->in[0].id = 0; /* unique value for this particle within the event */
