@@ -165,8 +165,8 @@ namespace hddm_s_merger {
    void set_fmwpc_merging(bool merging_status);
    int get_fmwpc_max_hits();
    void set_fmwpc_max_hits(int maxhits);
-   double get_fmwpc_min_delta_t_ns();
-   void set_fmwpc_min_delta_t_ns(double dt_ns);
+   double get_fmwpc_integration_window_ns();
+   void set_fmwpc_integration_window_ns(double dt_ns);
 
    void truncate_hits(hddm_s::HDDM &record);
    void truncate_cdc_hits(hddm_s::CdcStrawHitList &hits);

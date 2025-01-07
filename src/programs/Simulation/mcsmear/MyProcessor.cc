@@ -239,6 +239,9 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 		double fdc_width  =  80.;
 		double fdc_nw     =  80;
 
+		int fmwpc_npeak     =  1;
+		double fmwpc_nw     =  200.;
+		
 		int stc_npeak     =  3;
 		int stc_nhits     =  8;
 		double stc_width  =  80;
@@ -309,6 +312,19 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 		hddm_s_merger::set_fdc_strips_max_hits(fdc_npeak);
 		hddm_s_merger::set_fdc_strips_integration_window_ns(fdc_gate);
 
+
+
+		// hits merging / truncation parameters for the FMWPC
+		if(config->readout["MUON"].size() > 0){
+		  fmwpc_npeak   =  config->readout["MUON"].at("NPEAK");
+		  fmwpc_nw      =  config->readout["MUON"].at("NW");
+		}
+
+		double fmwpc_gate = (fmwpc_nw - 21) * fadc125_period_ns;   
+
+		hddm_s_merger::set_fmwpc_max_hits(fmwpc_npeak);
+		hddm_s_merger::set_fmwpc_integration_window_ns(fmwpc_gate);
+		
 
 
 		// hits merging / truncation parameters for the STC

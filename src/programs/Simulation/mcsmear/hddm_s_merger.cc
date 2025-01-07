@@ -106,7 +106,7 @@ static thread_local double tpol_integration_window_ns(2500.);
 
 static thread_local bool   enable_fmwpc_merging(true);
 static thread_local int    fmwpc_max_hits(1);
-static thread_local double fmwpc_min_delta_t_ns(400.);
+static thread_local double fmwpc_integration_window_ns(1432.);
 
 extern const mcsmear_config_t *mcsmear_config;
 
@@ -604,13 +604,19 @@ namespace hddm_s_merger {
       return fmwpc_max_hits;
    }
 
-   void set_fmwpc_max_hits(int maxhits) {
+  void set_fmwpc_max_hits(int maxhits) {
       fmwpc_max_hits = maxhits;
    }
 
-   double get_fmwpc_min_delta_t_ns() {
-      return fmwpc_min_delta_t_ns;
+   double get_fmwpc_integration_window_ns() {
+      return fmwpc_integration_window_ns;
    }
+
+   void set_fmwpc_integration_window_ns(double dt_ns) {
+      fmwpc_integration_window_ns = dt_ns;
+   }
+
+
 }
 
 hddm_s::HDDM &operator+=(hddm_s::HDDM &dst, hddm_s::HDDM &src)
@@ -2393,44 +2399,102 @@ hddm_s::FmwpcChamberList &operator+=(hddm_s::FmwpcChamberList &dst,
 hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
                                  hddm_s::FmwpcHitList &src)
 {
-   // order by t, merge with existing hit if close enough
-   int iord = 0;
+
    hddm_s::FmwpcHitList::iterator iter;
+   hddm_s::FmwpcHitList::iterator iter_firsthit;
+   
+   //   const double CDC_INTEGRAL_TO_AMPLITUDE = 1. / 28.8;
+   
+   // There should be no more than one hit in dst - assume this is the case.  (otherwise, would have to pick the earliest)
+
+   // Find the earliest (random) hit in src, ignore the later ones, if any. 
+   // If it is before the original hit, replace the original hit's time and peak height.  Sum the charge.
+   // If it is at the same time sample as the original hit, sum the pulse height and charge.
+   // If it is after the original hit, leave the original hit's time and peak height alone.  Sum the charge.
+   
+   
+   iter_firsthit = src.begin();
+   double t_firsthit = iter_firsthit->getT();
+   
    for (iter = src.begin(); iter != src.end(); ++iter) {
-      double t = iter->getT() + t_shift_ns;
-      double dt = fmwpc_min_delta_t_ns;
-      hddm_s::FmwpcHitQList &charges=iter->getFmwpcHitQs();
-      double newQ = (charges.size()) ? charges.begin()->getQ() : 0.;
-      while (iord > 0 && dst(iord).getT() > t)
-         --iord;
-      while (iord < dst.size() && dst(iord).getT() < t)
-         ++iord;
-      if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-	--iord;
-	hddm_s::FmwpcHitQList &oldcharges=dst(iord).getFmwpcHitQs();
-	if (oldcharges.size()){
-	  double oldQ = oldcharges.begin()->getQ();
-	  double pulse_fraction = 1 - (t - dst(iord).getT()) / dt;
-	  oldcharges.begin()->setQ(oldQ + newQ * pulse_fraction);
-	}
-      }
-      else if (iord < dst.size() && dst(iord).getT() - t < dt) {
-	hddm_s::FmwpcHitQList &oldcharges=dst(iord).getFmwpcHitQs();
-	if (oldcharges.size()){
-	  double oldQ = oldcharges.begin()->getQ();
-	  double pulse_fraction = 1 - (dst(iord).getT() - t) / dt;
-	  oldcharges.begin()->setQ(newQ + oldQ * pulse_fraction);
-	}
-	dst(iord).setT(t);
-      }
-      else {
-         dst.add(1, (iord < dst.size())? iord : -1);
-	 hddm_s::FmwpcHitQList newcharge=dst(iord).addFmwpcHitQs(1);
-         newcharge(0).setQ(newQ);
-         dst(iord).setT(t);
+      double this_t = iter->getT();
+      if (this_t < t_firsthit) {
+	t_firsthit = this_t;
+	iter_firsthit = iter;
       }
    }
+
+     
+   double t = iter_firsthit->getT() + t_shift_ns;
+
+   if (t > fmwpc_integration_window_ns) return dst;       // new hit is too late, don't use it.
+
+   double newQ = iter_firsthit->getFmwpcHitQs().begin()->getQ();     // YUK.
+   //double newQ = iter_firsthit->getQ();        
+   /*
+   double newPeakAmp = 0;
+   if(iter_firsthit->getFmwpcDigihits().size() > 0) {
+      newPeakAmp = iter_firsthit->getFmwpcDigihit().getPeakAmp();
+   } else {
+      newPeakAmp = newQ*CDC_INTEGRAL_TO_AMPLITUDE;  //   if we have very old random trigger files without the peak amplitude written out, then estimate it from the integral 
+   }
+   */
+   
+   if (dst.size() == 0) {   // no hits in this straw, just add the random hit 
+
+      dst.add(1, -1);      //  dst.add(1,(iord < dst.size())? iord : -1); with iord=0
+      dst(0).setT(t);
+      //      dst(0).setQ(newQ);        
+      dst(0).getFmwpcHitQs().begin()->setQ(newQ);
+      //   hddm_s::FmwpcDigihitList digihit = dst(0).addFmwpcDigihits();
+      //  digihit().setPeakAmp(newPeakAmp);
+
+   } else {
+
+      // convert time into 8ns samples to see if hits arrive in same sample
+
+      double origT = dst(0).getT();
+
+      int src_hitsample = (int)(t/fadc125_period_ns);
+      int dst_hitsample = (int)(origT/fadc125_period_ns);
+
+      //      double origQ = dst(0).getQ();  
+      double origQ = dst(0).getFmwpcHitQs().begin()->getQ();
+      //      double origPeakAmp = 0;
+      
+      /*
+      if(dst(0).getFmwpcDigihits().size() > 0) {
+     	 origPeakAmp = dst(0).getFmwpcDigihit().getPeakAmp();
+      } else {    // should not be possible, digihit should always be present
+         hddm_s::FmwpcDigihitList digihit = dst(0).addFmwpcDigihits();
+         origPeakAmp = origQ;     // usually done in DEventSourceHDDM
+      }
+      */
+      
+      if (dst_hitsample == src_hitsample) { // same sample, add pulse heights
+
+ 	 if (t < origT) dst(0).setT(t);
+	 //	 dst(0).setQ(origQ + newQ);
+	 dst(0).getFmwpcHitQs().begin()->setQ(origQ + newQ);
+         // dst(0).getFmwpcDigihit().setPeakAmp(origPeakAmp + newPeakAmp);
+   
+      } else if (src_hitsample < dst_hitsample) { // random arrives earlier, replace hit time and pulse height 
+	
+         dst(0).setT(t);
+	 //	 dst(0).setQ(origQ + newQ);
+	 dst(0).getFmwpcHitQs().begin()->setQ(origQ + newQ);
+	 //dst(0).getFmwpcDigihit().setPeakAmp(newPeakAmp);
+         
+      } else {  // random hit is after the original one.  Add the charge but don't change anything else.
+
+	//	 dst(0).setQ(origQ + newQ);
+	 dst(0).getFmwpcHitQs().begin()->setQ(origQ + newQ);
+         //dst(0).getFmwpcDigihit().setPeakAmp(origPeakAmp);  // do this just in case it wasn't already there
+      }
+   }
+
    return dst;
+
 }
 
 void hddm_s_merger::truncate_hits(hddm_s::HDDM &record) {

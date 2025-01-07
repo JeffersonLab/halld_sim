@@ -147,7 +147,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
 
     // Parse CODA config file 
     vector<string> SectionNames = {"TRIGGER", "GLOBAL", "FCAL", "ECAL", "CCAL", "BCAL", "TOF", "ST", "TAGH",
-                                         "TAGM", "PS", "PSC", "TPOL", "CDC", "FDC"};
+      "TAGM", "PS", "PSC", "TPOL", "CDC", "FDC", "MUON"};
     string fileContent = file->GetContent();                               // Get file content
     auto result = rcdb::ConfigParser::Parse(fileContent, SectionNames);    // Parse it!
 
@@ -214,7 +214,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
         readout[*iter]["WINDOW"] = dvalue;
     }
 
-    vector<string> fadc125_sys = {"FDC", "CDC"};
+    vector<string> fadc125_sys = {"FDC", "CDC", "MUON"};
     for (iter = fadc125_sys.begin(); iter != fadc125_sys.end(); ++iter) {
 
         auto section_length = result.Sections[*iter].Rows;
