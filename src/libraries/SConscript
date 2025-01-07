@@ -11,7 +11,7 @@ subdirs = ['UTILITIES', 'AMPTOOLS_AMPS', 'AMPTOOLS_DATAIO', 'AMPTOOLS_MCGEN']
 # only build if EvtGen is installed
 EVTGEN_HOME = os.getenv('EVTGENDIR')
 if EVTGEN_HOME!=None:
-   subdirs += ['EVTGEN_MODELS']
+   subdirs += ['EVTGEN_MODELS', 'GLUEX_EVTGEN']
 
 
 SConscript(dirs=subdirs, exports='env osname', duplicate=0)
