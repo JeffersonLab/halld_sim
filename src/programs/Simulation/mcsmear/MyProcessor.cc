@@ -232,13 +232,12 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 		// Default parameters
 
 		int cdc_npeak     =  1;
-		double cdc_nw     =  179.;
+		double cdc_nw     =  200.;
 
 		int fdc_nhits     =  100;
 		int fdc_npeak     =  1;
 		double fdc_width  =  80.;
-		double fdc_ie     =  16;
-		double fdc_pg     =  4;
+		double fdc_nw     =  80;
 
 		int stc_npeak     =  3;
 		int stc_nhits     =  8;
@@ -298,13 +297,12 @@ jerror_t MyProcessor::brun(JEventLoop *loop, int locRunNumber)
 		// hits merging / truncation parameters for the FDC
 		if(config->readout["FDC"].size() > 0){
 		  fdc_nhits  =  config->readout["FDC"].at("NHITS");
-		  fdc_npeak  =  config->readout["FDC"].at("NPEAK");
 		  fdc_width  =  config->readout["FDC"].at("WIDTH");
-		  fdc_ie     =  config->readout["FDC"].at("IE");
-		  fdc_pg     =  config->readout["FDC"].at("PG");
+		  fdc_npeak  =  config->readout["FDC"].at("NPEAK");
+		  fdc_nw     =  config->readout["FDC"].at("NW");
 		}
 
-		double fdc_gate = (fdc_ie + fdc_pg) * fadc125_period_ns;
+		double fdc_gate = (fdc_nw - 21) * fadc125_period_ns;
 
 		hddm_s_merger::set_fdc_wires_max_hits(fdc_nhits);
 		hddm_s_merger::set_fdc_wires_min_delta_t_ns(fdc_width + 5.);
