@@ -2403,7 +2403,7 @@ hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
    hddm_s::FmwpcHitList::iterator iter;
    hddm_s::FmwpcHitList::iterator iter_firsthit;
    
-   //   const double CDC_INTEGRAL_TO_AMPLITUDE = 1. / 28.8;
+   const double CDC_INTEGRAL_TO_AMPLITUDE = 1. / 28.8;
    
    // There should be no more than one hit in dst - assume this is the case.  (otherwise, would have to pick the earliest)
 
@@ -2431,14 +2431,14 @@ hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
 
    double newQ = iter_firsthit->getFmwpcHitQs().begin()->getQ();     // YUK.
    //double newQ = iter_firsthit->getQ();        
-   /*
+   
    double newPeakAmp = 0;
-   if(iter_firsthit->getFmwpcDigihits().size() > 0) {
-      newPeakAmp = iter_firsthit->getFmwpcDigihit().getPeakAmp();
+   if(iter_firsthit->getFmwpcDigiHits().size() > 0) {
+      newPeakAmp = iter_firsthit->getFmwpcDigiHit().getAmp();
    } else {
       newPeakAmp = newQ*CDC_INTEGRAL_TO_AMPLITUDE;  //   if we have very old random trigger files without the peak amplitude written out, then estimate it from the integral 
    }
-   */
+   
    
    if (dst.size() == 0) {   // no hits in this straw, just add the random hit 
 
@@ -2446,8 +2446,8 @@ hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
       dst(0).setT(t);
       //      dst(0).setQ(newQ);        
       dst(0).getFmwpcHitQs().begin()->setQ(newQ);
-      //   hddm_s::FmwpcDigihitList digihit = dst(0).addFmwpcDigihits();
-      //  digihit().setPeakAmp(newPeakAmp);
+      hddm_s::FmwpcDigiHitList digihit = dst(0).addFmwpcDigiHits();
+      digihit().setAmp(newPeakAmp);
 
    } else {
 
@@ -2460,36 +2460,36 @@ hddm_s::FmwpcHitList &operator+=(hddm_s::FmwpcHitList &dst,
 
       //      double origQ = dst(0).getQ();  
       double origQ = dst(0).getFmwpcHitQs().begin()->getQ();
-      //      double origPeakAmp = 0;
+      double origPeakAmp = 0;
       
-      /*
-      if(dst(0).getFmwpcDigihits().size() > 0) {
-     	 origPeakAmp = dst(0).getFmwpcDigihit().getPeakAmp();
+      
+      if(dst(0).getFmwpcDigiHits().size() > 0) {
+     	 origPeakAmp = dst(0).getFmwpcDigiHit().getAmp();
       } else {    // should not be possible, digihit should always be present
-         hddm_s::FmwpcDigihitList digihit = dst(0).addFmwpcDigihits();
+         hddm_s::FmwpcDigiHitList digihit = dst(0).addFmwpcDigiHits();
          origPeakAmp = origQ;     // usually done in DEventSourceHDDM
       }
-      */
+      
       
       if (dst_hitsample == src_hitsample) { // same sample, add pulse heights
 
  	 if (t < origT) dst(0).setT(t);
 	 //	 dst(0).setQ(origQ + newQ);
 	 dst(0).getFmwpcHitQs().begin()->setQ(origQ + newQ);
-         // dst(0).getFmwpcDigihit().setPeakAmp(origPeakAmp + newPeakAmp);
+         dst(0).getFmwpcDigiHit().setAmp(origPeakAmp + newPeakAmp);
    
       } else if (src_hitsample < dst_hitsample) { // random arrives earlier, replace hit time and pulse height 
 	
          dst(0).setT(t);
 	 //	 dst(0).setQ(origQ + newQ);
 	 dst(0).getFmwpcHitQs().begin()->setQ(origQ + newQ);
-	 //dst(0).getFmwpcDigihit().setPeakAmp(newPeakAmp);
+	 dst(0).getFmwpcDigiHit().setAmp(newPeakAmp);
          
       } else {  // random hit is after the original one.  Add the charge but don't change anything else.
 
 	//	 dst(0).setQ(origQ + newQ);
 	 dst(0).getFmwpcHitQs().begin()->setQ(origQ + newQ);
-         //dst(0).getFmwpcDigihit().setPeakAmp(origPeakAmp);  // do this just in case it wasn't already there
+         dst(0).getFmwpcDigiHit().setAmp(origPeakAmp);  // do this just in case it wasn't already there
       }
    }
 
