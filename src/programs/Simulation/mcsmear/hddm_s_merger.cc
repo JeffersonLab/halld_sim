@@ -988,6 +988,15 @@ hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
    
    double newQ = iter_firsthit->getQ();
 
+   double newPeakAmp = 0;
+
+   if(iter_firsthit->getFdcDigihits().size() > 0) {
+     newPeakAmp = iter_firsthit->getFdcDigihit().getPeakAmp();
+   } else {
+     newPeakAmp = newQ*6.; // ***** This should be newQ/fdc_config->FDC_ASCALE;     //   if we have very old random trigger files without the peak amplitude written out, then estimate it from the integral 
+   }
+
+
 
    if (dst.size() == 0) {   // no hits in this straw, just add the random hit 
 
@@ -996,6 +1005,7 @@ hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
       dst(0).setQ(newQ);        
 
       hddm_s::FdcDigihitList digihit = dst(0).addFdcDigihits();
+      digihit().setPeakAmp(newPeakAmp);
 
    } else {
 
@@ -1007,20 +1017,32 @@ hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
       int dst_hitsample = (int)(origT/fadc125_period_ns);
 
       double origQ = dst(0).getQ();  
+      double origPeakAmp = 0;
 
+      if(dst(0).getFdcDigihits().size() > 0) {
+     	 origPeakAmp = dst(0).getFdcDigihit().getPeakAmp();
+      } else {    // should not be possible, digihit should always be present
+         hddm_s::FdcDigihitList digihit = dst(0).addFdcDigihits();
+         origPeakAmp = origQ;     // usually done in DEventSourceHDDM
+      }
+
+      // treat the charge the same way as the pulse height, as the fadc does not read it out.
       if (dst_hitsample == src_hitsample) { // same sample, add pulse heights
 
  	 if (t < origT) dst(0).setT(t);
 	 dst(0).setQ(origQ + newQ);
-   
+	 dst(0).getFdcDigihit().setPeakAmp(origPeakAmp + newPeakAmp);
+ 
       } else if (src_hitsample < dst_hitsample) { // random arrives earlier, replace hit time and pulse height 
 	
          dst(0).setT(t);
-	 dst(0).setQ(origQ + newQ); 
+	 dst(0).setQ(newQ);
+	 dst(0).getFdcDigihit().setPeakAmp(newPeakAmp);
          
-      } else {  // random hit is after the original one.  Add the charge but don't change anything else.
+      } else {  // random hit is after the original one. 
 
-	 dst(0).setQ(origQ + newQ);
+	 dst(0).setQ(origQ);
+	 dst(0).getFdcDigihit().setPeakAmp(origPeakAmp);
       }
    }
    

@@ -20,6 +20,7 @@ fdc_config_t::fdc_config_t(JEventLoop *loop)
  	FDC_THRESHOLD_FACTOR  = 0.0;
  	FDC_TIME_WINDOW       = 0.0;
  	FDC_THRESH_KEV        = 0.0;
+	FDC_ASCALE = 1/6.0;
 
 	// load data from CCDB
 	cout << "Get FDC/fdc_parms parameters from CCDB..." << endl;
@@ -34,8 +35,17 @@ fdc_config_t::fdc_config_t(JEventLoop *loop)
        	FDC_TIME_WINDOW       = fdcparms["FDC_TIME_WINDOW"];
        	//FDC_HIT_DROP_FRACTION = fdcparms["FDC_HIT_DROP_FRACTION"];   // ???
        	FDC_THRESH_KEV 		  = fdcparms["FDC_THRESH_KEV"]; 
-	}
+        
+     }
 
+     // load scale factors
+     map<string,double> scale_factors;
+     if (loop->GetCalib("/FDC/digi_scales", scale_factors)) {
+         jerr << "Error loading /FDC/digi_scales !" << endl;
+     } else {
+         FDC_ASCALE = scale_factors["FDC_ADC_ASCALE"];
+     }
+     
    	// Calculate ped noise level based on position resolution
    	//   FDC_PED_NOISE = -0.004594 + 0.008711*FDC_CATHODE_SIGMA +
    	//                    0.000010*FDC_CATHODE_SIGMA*FDC_CATHODE_SIGMA; //pC
@@ -104,6 +114,9 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
           
             double q = titer->getQ();
             double t = titer->getT();
+
+	    double amp = q/fdc_config->FDC_ASCALE;
+	    
           	if(config->SMEAR_HITS) {
              	q += gDRandom.SampleGaussian(fdc_config->FDC_PED_NOISE);
              	t += gDRandom.SampleGaussian(fdc_config->FDC_TDRIFT_SIGMA)*1.0e9;
@@ -112,6 +125,10 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
                hddm_s::FdcCathodeHitList hits = siter->addFdcCathodeHits();
                hits().setQ(q);
                hits().setT(t);
+
+	       hddm_s::FdcDigihitList digihit = hits().addFdcDigihits();
+	       digihit().setPeakAmp(amp);
+	       
             }
          }
 
