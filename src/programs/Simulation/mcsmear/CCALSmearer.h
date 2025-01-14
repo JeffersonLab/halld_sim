@@ -17,16 +17,22 @@ class ccal_config_t
 	
 	double CCAL_EN_P0;
 	double CCAL_EN_P1;
-	double CCAL_EN_P2;	
+	double CCAL_EN_P2;
 	
 	double CCAL_EN_GP0;
 	double CCAL_EN_GP1;
 	double CCAL_EN_GP2;
-
+	
+	vector<double> CCAL_PEDS;
+	vector<double> CCAL_GAINS;
+	
+	double CCAL_THRESHOLD;
+	double CCAL_INTEGRAL_PEAK;
+	double CCAL_ADC_ASCALE;
+	double CCAL_PED_RMS;
 	
 	// Time smearing factor
 	double CCAL_TSIGMA;
-	
 	
 	// Single block energy threshold (applied after smearing)
 	double CCAL_BLOCK_THRESHOLD;
