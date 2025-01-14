@@ -43,7 +43,7 @@ C
 C
 	costhe = Pez / Pe;
 	thetae = acos(costhe)
-	phie = phi + pi;
+	phie = dmod(phi + pi, 2 * pi)
 	relec = tgtz * tan(thetae)
 	xelec = relec * cos(phie)
 	yelec = relec * sin(phie)

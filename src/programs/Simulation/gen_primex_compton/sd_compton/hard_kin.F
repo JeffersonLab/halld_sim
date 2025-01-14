@@ -67,7 +67,7 @@ C
 C	print * , 'Pe     = ',dsqrt(Pex**2 + Pey**2 + Pez**2)/Pe
 C
 C	phie = datan2(Pey,Pex) + pi
-	phie = dmod(datan2(Pey,Pex) + pi, 2 * pi)
+	phie = dmod(datan2(Pey,Pex) + 2 * pi, 2 * pi)
 C	phie = dmod(phi + pi, 2 * pi)
 C
 	relec = tgtz * dtan(thetae)
