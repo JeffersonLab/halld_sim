@@ -46,6 +46,7 @@
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
+#include "AMPTOOLS_AMPS/Polynomial.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixF0.h"
@@ -371,6 +372,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( ComplexCoeff() );
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
+   AmpToolsInterface::registerAmplitude( Polynomial() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
    AmpToolsInterface::registerAmplitude( SinglePS() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixF0() );
