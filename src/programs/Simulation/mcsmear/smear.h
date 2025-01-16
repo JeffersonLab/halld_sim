@@ -31,6 +31,7 @@ using namespace jana;
 #include <TPOLSmearer.h>
 #include <FMWPCSmearer.h>
 #include <CTOFSmearer.h>
+#include <TRDSmearer.h>
 
 
 
