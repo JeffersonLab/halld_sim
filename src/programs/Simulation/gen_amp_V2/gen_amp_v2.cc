@@ -41,6 +41,8 @@
 #include "AMPTOOLS_MCGEN/FixedTargetGenerator.h"
 #include "AMPTOOLS_MCGEN/BreitWignerGenerator.h"
 
+#include "GLUEX_EVTGEN/EvtGenDecayer.h"
+
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/ConfigFileParser.h"
 #include "IUAmpTools/PlotGenerator.h"
@@ -60,7 +62,10 @@ using std::complex;
 using namespace std;
 
 
+bool compVector(int a, int b);
 pair< vector<int>,vector<bool> > parseString(string vertexString);
+vector<string> trueReactionDecay( vector<string>& keywordArgs, vector<string>& reactionList, vector<int>& uvIndices, vector<int>& lvIndices, pair< vector<int>,vector<bool> >& orderTrueuvIndices, pair< vector<int>,vector<bool> >& orderTruelvIndices);
+vector<TLorentzVector> makeReaction( Kinematics* kin, vector< string > keywordArgs, vector< TLorentzVector > reactionVector, vector< int > uvIndex, vector< int > lvIndex, int numUvDecay, int numLvDecay );
 string checkParticle(string particleString);
 vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, vector<bool>& hasResonance);
 vector<int> getTypes(vector<string>& reactionList);
@@ -266,15 +271,34 @@ int main( int argc, char* argv[] ){
   vector< string > pList = reaction->particleList();
   pair< vector< int >,vector<bool> > lvIndices = parseString( lvString );
   pair< vector< int >,vector<bool> > uvIndices = parseString( uvString );
-  // get the masses for each.....
+  
+  // This section initiates variables needed for EvtGen decay 
+  vector< string > truepList;
+  pair< vector< int >,vector<bool> > orderTruelvIndices;
+  pair< vector< int >,vector<bool> > orderTrueuvIndices;
+  vector< vector<string> > trueReactionKeyword = cfgInfo->userKeywordArguments("trueReaction");
+  vector< string > keywordArgs = trueReactionKeyword[0];
+  truepList = reaction->particleList(); 
+  
+
+  // Redefinition of variables if keyword is found
+  if(trueReactionKeyword.size() == 1){
+  truepList = trueReactionDecay( keywordArgs, pList, uvIndices.first, lvIndices.first, orderTrueuvIndices, orderTruelvIndices);
+  }
 
   vector< int > pTypes;
   ostringstream upperVtxName;
   ostringstream lowerVtxName;
 
-  vector< double > uvMasses = getVertexMasses( pList, mpBW, uvIndices.first, uvIndices.second );
-  vector< double > lvMasses = getVertexMasses( pList, mpBW, lvIndices.first, lvIndices.second );
-    
+  vector< double > uvMasses;
+  vector< double > lvMasses;
+  uvMasses = getVertexMasses( pList, mpBW, uvIndices.first, uvIndices.second );
+  lvMasses = getVertexMasses( pList, mpBW, lvIndices.first, lvIndices.second );
+  if(trueReactionKeyword.size() == 1){
+  uvMasses = getVertexMasses( truepList, mpBW, orderTrueuvIndices.first, orderTrueuvIndices.second );
+  lvMasses = getVertexMasses( truepList, mpBW, orderTruelvIndices.first, orderTruelvIndices.second );	  
+  }
+
   pTypes = getTypes( pList );
 
   // random number initialization (set to 0 by default)
@@ -371,7 +395,13 @@ int main( int argc, char* argv[] ){
   TH1F* m_recoil = new TH1F( "m_recoil", locRecoilTitle.c_str(), 200, 0., 3. );
   TH1F* mW_recoil = new TH1F( "mW_recoil", locRecoilTitle.c_str(), 200, 0., 3. );
 
-	
+
+  // Making temporary uv/lv indices for reorganization
+  pair< vector< int >,vector<bool> > tempuvIndices = ( trueReactionKeyword.size() == 1 ? orderTrueuvIndices : uvIndices );	
+  pair< vector< int >,vector<bool> > templvIndices = ( trueReactionKeyword.size() == 1 ? orderTruelvIndices : lvIndices );	
+  vector< string > temppList = ( trueReactionKeyword.size() == 1 ? truepList : pList);
+  
+  
   int eventCounter = 0;
   while( eventCounter < nEvents ){
 		
@@ -392,12 +422,50 @@ int main( int argc, char* argv[] ){
       beamEnergy = cobrem_vs_E->GetRandom();
       ftGen.setBeamEnergy( beamEnergy );  // Resets value of beam energy
       //This will change mass value of upper/lower vertex if particle is an omega or phi
-      if( count(uvIndices.second.begin(), uvIndices.second.end(), true) > 0  ){
-        ftGen.setUpperVtxMasses( getVertexMasses( pList, mpBW, uvIndices.first, uvIndices.second ) );
+      if( count(tempuvIndices.second.begin(), tempuvIndices.second.end(), true) > 0  ){
+        ftGen.setUpperVtxMasses( getVertexMasses( temppList, mpBW, tempuvIndices.first, tempuvIndices.second ) );
       }
-      if( count(lvIndices.second.begin(), lvIndices.second.end(), true) > 0 ) ftGen.setUpperVtxMasses( getVertexMasses( pList, mpBW, lvIndices.first, lvIndices.second ) );
+      if( count(templvIndices.second.begin(), templvIndices.second.end(), true) > 0 ) ftGen.setUpperVtxMasses( getVertexMasses( temppList, mpBW, templvIndices.first, templvIndices.second ) );
       kin = ftGen.generate(); 
+     
+      // This section will generate daughter particles for specified decay particles
+      if( trueReactionKeyword.size() == 1 ){
+        // First check local decay config file if found
+	ifstream file("userDecay.dec");
+	if( !file.good() ){
+	  cout << "ERROR:  Missing local EvtGen decay config file" << endl;
+          exit( 1 );
+        }	  
+        int uvIndex = 0; // Quick bookeeping of upper index
+        int lvIndex = 0; // Qucik bookeeping of lower index
+        vector<TLorentzVector> trueReactionVector;
+        
+	trueReactionVector.push_back( kin->particle(0) ); //Add Beam 4-vector to new vector
+	for( int i = 0; i < (int)keywordArgs.size()/3; i++){
+	  if( keywordArgs[3*i] == "lv" ){
+            EvtGenDecayer* decayer = new EvtGenDecayer();
+            vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( i + 1 ), ParticleEnum( checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() ) );
+            lvIndex++;
+	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
+            trueReactionVector.push_back( child_itr->first );
+	    }
+          } 
+		
+	  if( keywordArgs[3*i] == "uv" ){
+	    EvtGenDecayer* decayer = new EvtGenDecayer();
+  	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( templvIndices.first.size() + i + 1 ), ParticleEnum( checkParticle( temppList[ tempuvIndices.first[uvIndex] ] ).c_str() ) );
+	    uvIndex++;
+	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
+            trueReactionVector.push_back( child_itr->first );
+            }
+	  }
+        }
+      kin->setParticleList( makeReaction( kin, temppList, trueReactionVector, templvIndices.first, tempuvIndices.first, uvIndex, lvIndex) );
       
+      }  
+
+
+
       // Rearranging indices in kinematics class to mimic reactionList
       // Starting with beam
       for(unsigned int k = 0; k < reaction->particleList().size(); k++){
@@ -535,6 +603,12 @@ int main( int argc, char* argv[] ){
   return 0;
 }// END OF MAIN()
 
+// Comparator function
+bool compVector(int a, int b){
+  return a < b;
+
+}//END of compVector
+
 pair< vector<int>,vector<bool> > parseString(string vertexString){
   vector<int> index;
   vector<bool> boolDex;
@@ -542,6 +616,7 @@ pair< vector<int>,vector<bool> > parseString(string vertexString){
     index.push_back( atoi(vertexString.substr(i,1).c_str()) );
     boolDex.push_back( false );
   }
+  sort(index.begin(), index.end(), compVector);
   return make_pair( index,boolDex );
 }// END OF parseString
 
@@ -556,6 +631,116 @@ string checkParticle(string particleString){
     return particleString;
   }
 }//END of checkParticle
+
+
+// This function will create a new reactionList order and names if user specifies a decay using the Keyword "trueReaction"
+// First step is to replace beginning indice of the reactionList with the parent particle specified
+// Then remove the remaining daughter particles from reactionList, this will be passed through FixedTargetGenerator
+// Lastly, we need to generate a new index vector for the upper/lower vertexes  
+
+vector<string> trueReactionDecay(vector<string>& keywordArgs, vector<string>& reactionList, vector<int>& uvIndices, vector<int>& lvIndices, pair< vector<int>,vector<bool> >& orderTrueuvIndices, pair< vector<int>,vector<bool> >& orderTruelvIndices){
+
+vector<int> tempOrderTrueuvIndicesFirst;
+  vector<bool> tempOrderTrueuvIndicesSecond;
+  vector<int> tempOrderTruelvIndicesFirst;
+  vector<bool> tempOrderTruelvIndicesSecond;
+  vector<string> tempReactionList;
+  vector<int> tempuvIndex = uvIndices;
+  vector<int> templvIndex = lvIndices;
+  int tempInt = 0;
+  //Need the next two ints to keep track of total number of true uv/lv particles
+  int tempuvInt = 0;
+  int templvInt = 0;
+
+  tempReactionList.push_back(reactionList[0]); // Add beam index to list 
+  for( int k = 0; k < (int)keywordArgs.size()/3; k++){
+    tempInt++;
+    pair< vector<int>, vector<bool> > trueIndices = parseString( keywordArgs[3*k+2] );
+    // First add parent name to tempReactionList        
+    tempReactionList.push_back(keywordArgs[3*k+1]);
+    // Add particle to index vector 
+    if( keywordArgs[3*k] == "uv" ){
+      tempOrderTrueuvIndicesFirst.push_back( tempInt );
+      tempOrderTrueuvIndicesSecond.push_back( false );
+    }
+    if( keywordArgs[3*k] == "lv" ){
+      tempOrderTruelvIndicesFirst.push_back( tempInt );
+      tempOrderTruelvIndicesSecond.push_back( false );
+    }
+  }
+  // Remove decay indices from uv/lv array. Will be used for non-decaying particles
+  for( int k = 0; k < (int)keywordArgs.size()/3; k++){
+    pair< vector<int>, vector<bool> > trueIndices = parseString( keywordArgs[3*k+2] );
+    for( int j = 0; j < (int)trueIndices.first.size(); j++){
+      if( keywordArgs[3*k] == "uv" ){
+        tempuvIndex.erase( find( tempuvIndex.begin(), tempuvIndex.end(), trueIndices.first[j] ) );
+        tempuvInt++;
+      }
+      if( keywordArgs[3*k] == "lv" ){
+        templvIndex.erase( find( templvIndex.begin(), templvIndex.end(), trueIndices.first[j] ) );
+        templvInt++;
+      }
+    }
+  }
+  tempInt++; //This is to make sure index is correct
+  // Add the non-decaying particles into new uv/lv array
+  for( int m = 0; m < (int)uvIndices.size() - tempuvInt; m++){
+    tempOrderTrueuvIndicesFirst.push_back( tempInt );
+    tempOrderTrueuvIndicesSecond.push_back( false );
+    tempInt++;
+    tempReactionList.push_back( reactionList[ tempuvIndex[m] ] );
+  }
+
+  for( int v = 0; v < (int)lvIndices.size() - templvInt; v++){
+    tempOrderTruelvIndicesFirst.push_back( tempInt );
+    tempOrderTruelvIndicesSecond.push_back( false );
+    tempReactionList.push_back( reactionList[ templvIndex[v] ] );
+    tempInt++;
+  }
+
+  // This is needed to add to NULL pair
+  orderTrueuvIndices.first.resize(tempOrderTrueuvIndicesFirst.size());
+  orderTrueuvIndices.second.resize(tempOrderTrueuvIndicesSecond.size());
+  orderTruelvIndices.first.resize(tempOrderTruelvIndicesFirst.size());
+  orderTruelvIndices.second.resize(tempOrderTruelvIndicesSecond.size());
+
+
+  for( int j = 0; j < (int)tempOrderTrueuvIndicesFirst.size(); j++){
+    orderTrueuvIndices.first[j] = tempOrderTrueuvIndicesFirst[j];
+    orderTrueuvIndices.second[j] = tempOrderTrueuvIndicesSecond[j];
+    cout << orderTrueuvIndices.first[j] << endl;
+  }
+  for( int m = 0; m < (int)tempOrderTruelvIndicesFirst.size(); m++){
+   orderTruelvIndices.first[m] = tempOrderTruelvIndicesFirst[m];
+   orderTruelvIndices.second[m] = tempOrderTruelvIndicesSecond[m];
+   cout << orderTruelvIndices.first[m] << endl;
+  }
+  return tempReactionList;
+
+  
+}//END of trueReactionDecay 	
+
+vector< TLorentzVector > makeReaction( Kinematics* kin, vector<string> keywordArgs, vector<TLorentzVector> reactionVector, vector<int> uvIndex, vector<int> lvIndex, int numUvDecay, int numLvDecay ){
+
+  vector< TLorentzVector > tempLorentz = reactionVector;
+  int lowerVNum = 1; // Statrting with 1 cause the beam is included
+  int upperVNum = 1;
+  // First thing to do is find where to add the non-decayed particles since the decayed particles are already in tempLorentz
+  for( int i = 0; i < (int)keywordArgs.size()/3; i++ ){
+    if( keywordArgs[3*i] == "lv" ) lowerVNum += keywordArgs[3*i +2].length();
+    if( keywordArgs[3*i] == "uv" ) upperVNum += keywordArgs[3*i +2].length();
+  }
+  // Add the non-decaying particles to tempLorentz starting with the lower vertex
+  for( int j = 0; j < (int)lvIndex.size() - numLvDecay; j++ ){
+    tempLorentz.insert( tempLorentz.begin() + lowerVNum, kin->particle( numLvDecay + j + 1) );
+  }
+  for( int k = 0; k < (int)uvIndex.size() - numUvDecay; k++ ){
+    tempLorentz.insert( tempLorentz.begin() + lowerVNum + lvIndex.size() - numLvDecay + numUvDecay, kin->particle( lvIndex.size() + numUvDecay + k + 1 ) );
+  }
+  return tempLorentz;
+
+}// END OF makeReaction
+
 
 
 vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, vector<bool>& hasResonance){
