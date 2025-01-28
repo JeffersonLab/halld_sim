@@ -60,13 +60,14 @@
 using std::complex;
 using namespace std;
 
-double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
+double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, int strategy, string seedfile) {
   AmpToolsInterface ati( cfgInfo );
 
   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
 
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
+  if(strategy != 1) fitManager->setStrategy(strategy);
 
   if( useMinos ){
 
@@ -99,7 +100,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
   return ati.likelihood();
 }
 
-void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numRnd, double maxFraction) {
+void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, int strategy, string seedfile, int numRnd, double maxFraction) {
   AmpToolsInterface ati( cfgInfo );
   string fitName = cfgInfo->fitName();
 
@@ -107,6 +108,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
+  if(strategy != 1) fitManager->setStrategy(strategy);
 
   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
@@ -167,7 +169,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   }
 }
 
-void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan) {
+void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, int strategy, string seedfile, string parScan) {
   double minVal=0, maxVal=0, stepSize=0;
   int steps=0;
 
@@ -197,7 +199,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   ParameterManager* parMgr = ati.parameterManager();
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
-
+  if(strategy != 1) fitManager->setStrategy(strategy);
 
   for(int i=0; i<steps; i++) {
     cout << endl << "###############################" << endl;
@@ -263,6 +265,7 @@ int main( int argc, char* argv[] ){
    int numRnd = 0;
    unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
    int maxIter = 10000;
+   int strategy = 1;
 
    // parse command line
 
@@ -286,12 +289,17 @@ int main( int argc, char* argv[] ){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
       if (arg == "-n") useMinos = true;
+      if (arg == "-st"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  strategy = atoi(argv[++i]); 
+         } 
       if (arg == "-H") hesse = true;
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
       if (arg == "-h"){
          cout << endl << " Usage for: " << argv[0] << endl << endl;
+         cout << "   -st \t\t\t\t\t set MINUIT strategy to be 0,1,2 (default is 1)." << endl;
          cout << "   -n \t\t\t\t\t use MINOS instead of MIGRAD" << endl;
          cout << "   -H \t\t\t\t\t evaluate HESSE matrix after minimization" << endl;
          cout << "   -c <file>\t\t\t\t config file" << endl;
@@ -354,13 +362,13 @@ int main( int argc, char* argv[] ){
 
    if(numRnd==0){
       if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
+         runSingleFit(cfgInfo, useMinos, hesse, maxIter, strategy, seedfile);
       else
-         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
+         runParScan(cfgInfo, useMinos, hesse, maxIter, strategy, seedfile, scanPar);
    } else {
       cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
       AmpToolsInterface::setRandomSeed(randomSeed);
-      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
+      runRndFits(cfgInfo, useMinos, hesse, maxIter, strategy, seedfile, numRnd, 0.5);
    }
 
   return 0;
