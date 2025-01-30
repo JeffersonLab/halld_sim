@@ -64,7 +64,7 @@ using namespace std;
 
 bool compVector(int a, int b);
 pair< vector<int>,vector<bool> > parseString(string vertexString);
-vector<string> trueReactionDecay( vector<string>& keywordArgs, vector<string>& reactionList, vector<int>& uvIndices, vector<int>& lvIndices, pair< vector<int>,vector<bool> >& orderTrueuvIndices, pair< vector<int>,vector<bool> >& orderTruelvIndices);
+vector<string> trueReactionDecay( vector<string>& keywordArgs, vector<string> reactionList, vector<int> uvIndices, vector<int> lvIndices, pair< vector<int>,vector<bool> >& orderTrueuvIndices, pair< vector<int>,vector<bool> >& orderTruelvIndices);
 vector<TLorentzVector> makeReaction( Kinematics* kin, vector< string > keywordArgs, vector< TLorentzVector > reactionVector, vector< int > uvIndex, vector< int > lvIndex, int numUvDecay, int numLvDecay );
 string checkParticle(string particleString);
 vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, vector<bool>& hasResonance);
@@ -276,6 +276,7 @@ int main( int argc, char* argv[] ){
   vector< string > truepList;
   pair< vector< int >,vector<bool> > orderTruelvIndices;
   pair< vector< int >,vector<bool> > orderTrueuvIndices;
+  EvtGenDecayer* decayer;
   vector< vector<string> > trueReactionKeyword = cfgInfo->userKeywordArguments("trueReaction");
   vector< string > keywordArgs = trueReactionKeyword[0];
   truepList = reaction->particleList(); 
@@ -301,6 +302,19 @@ int main( int argc, char* argv[] ){
 
   pTypes = getTypes( pList );
 
+   // This section will generate daughter particles for specified decay particles
+  if( trueReactionKeyword.size() == 1 ){
+    // First check local decay config file if found
+    ifstream file("userDecay.dec");
+    if( !file.good() ){
+      cout << "ERROR:  Missing local EvtGen decay config file" << endl;
+      exit( 1 );
+    }
+    decayer = new EvtGenDecayer();
+  }
+
+  
+  
   // random number initialization (set to 0 by default)
   TRandom3* gRandom = new TRandom3();
   gRandom->SetSeed(seed);
@@ -427,44 +441,54 @@ int main( int argc, char* argv[] ){
       }
       if( count(templvIndices.second.begin(), templvIndices.second.end(), true) > 0 ) ftGen.setUpperVtxMasses( getVertexMasses( temppList, mpBW, templvIndices.first, templvIndices.second ) );
       kin = ftGen.generate(); 
-     
+    
+      
+      for(int h = 0; h < kin->particleList().size(); h++){
+          kin->particle( h ).Print();
+          cout << endl << endl;
+      }
+
       // This section will generate daughter particles for specified decay particles
       if( trueReactionKeyword.size() == 1 ){
-        // First check local decay config file if found
-	ifstream file("userDecay.dec");
-	if( !file.good() ){
-	  cout << "ERROR:  Missing local EvtGen decay config file" << endl;
-          exit( 1 );
-        }	  
-        int uvIndex = 0; // Quick bookeeping of upper index
+  	int uvIndex = 0; // Quick bookeeping of upper index
         int lvIndex = 0; // Qucik bookeeping of lower index
-        vector<TLorentzVector> trueReactionVector;
-        
+	vector<TLorentzVector> trueReactionVector;
 	trueReactionVector.push_back( kin->particle(0) ); //Add Beam 4-vector to new vector
-	for( int i = 0; i < (int)keywordArgs.size()/3; i++){
-	  if( keywordArgs[3*i] == "lv" ){
-            EvtGenDecayer* decayer = new EvtGenDecayer();
-            vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( i + 1 ), ParticleEnum( checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() ) );
+	for( int h = 0; h < (int)keywordArgs.size()/3; h++){
+	  if( keywordArgs[3*h] == "lv" ){
+            cout << " lv particle to be decayed " << checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() <<  " for event " << i << endl;
+	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( h + 1 ), ParticleEnum( checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() ) );
             lvIndex++;
 	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
             trueReactionVector.push_back( child_itr->first );
 	    }
           } 
 		
-	  if( keywordArgs[3*i] == "uv" ){
-	    EvtGenDecayer* decayer = new EvtGenDecayer();
-  	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( templvIndices.first.size() + i + 1 ), ParticleEnum( checkParticle( temppList[ tempuvIndices.first[uvIndex] ] ).c_str() ) );
+	  if( keywordArgs[3*h] == "uv" ){ 
+  	    cout << "uv particle to be decayed " << checkParticle( temppList[ tempuvIndices.first[uvIndex] ] ).c_str() << endl << " for event " << i << endl;
+	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( templvIndices.first.size() + h + 1 ), ParticleEnum( checkParticle( temppList[ tempuvIndices.first[uvIndex] ] ).c_str() ) );
 	    uvIndex++;
 	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
             trueReactionVector.push_back( child_itr->first );
             }
 	  }
         }
-      kin->setParticleList( makeReaction( kin, temppList, trueReactionVector, templvIndices.first, tempuvIndices.first, uvIndex, lvIndex) );
-      
+	for( int g = 0; g < trueReactionVector.size(); g++){
+          trueReactionVector[g].Print();
+	}
+	cout << "Particles coming out of EvtGen is " << trueReactionVector.size() << endl;
+	vector<TLorentzVector> trialVector = makeReaction( kin, temppList, trueReactionVector, tempuvIndices.first, templvIndices.first, uvIndex, lvIndex);
+	vector<TLorentzVector> trialVector2 = makeReaction( kin, temppList, trueReactionVector, tempuvIndices.first, templvIndices.first, uvIndex, lvIndex);
+        kin->setParticleList( trialVector2 );
+        //kin->setParticleList( makeReaction( kin, temppList, trueReactionVector, tempuvIndices.first, templvIndices.first, uvIndex, lvIndex) );
+	for(int g = 0; g < kin->particleList().size(); g++){
+          kin->particle( g ).Print();
+          trialVector[g].Print();
+          trialVector2[g].Print();
+	  cout << endl << endl;
+        }
+	cout << "Passed the stuff " << endl;
       }  
-
-
 
       // Rearranging indices in kinematics class to mimic reactionList
       // Starting with beam
@@ -599,7 +623,8 @@ int main( int argc, char* argv[] ){
 	
   if( hddmOut ) delete hddmOut;
   delete rootOut;
-	
+  if( trueReactionKeyword.size() == 1 ) delete decayer;
+
   return 0;
 }// END OF MAIN()
 
@@ -638,7 +663,7 @@ string checkParticle(string particleString){
 // Then remove the remaining daughter particles from reactionList, this will be passed through FixedTargetGenerator
 // Lastly, we need to generate a new index vector for the upper/lower vertexes  
 
-vector<string> trueReactionDecay(vector<string>& keywordArgs, vector<string>& reactionList, vector<int>& uvIndices, vector<int>& lvIndices, pair< vector<int>,vector<bool> >& orderTrueuvIndices, pair< vector<int>,vector<bool> >& orderTruelvIndices){
+vector<string> trueReactionDecay(vector<string>& keywordArgs, vector<string> reactionList, vector<int> uvIndices, vector<int> lvIndices, pair< vector<int>,vector<bool> >& orderTrueuvIndices, pair< vector<int>,vector<bool> >& orderTruelvIndices){
 
 vector<int> tempOrderTrueuvIndicesFirst;
   vector<bool> tempOrderTrueuvIndicesSecond;
@@ -724,7 +749,7 @@ vector< TLorentzVector > makeReaction( Kinematics* kin, vector<string> keywordAr
 
   vector< TLorentzVector > tempLorentz = reactionVector;
   int lowerVNum = 1; // Statrting with 1 cause the beam is included
-  int upperVNum = 1;
+  int upperVNum = 0;
   // First thing to do is find where to add the non-decayed particles since the decayed particles are already in tempLorentz
   for( int i = 0; i < (int)keywordArgs.size()/3; i++ ){
     if( keywordArgs[3*i] == "lv" ) lowerVNum += keywordArgs[3*i +2].length();
@@ -732,10 +757,11 @@ vector< TLorentzVector > makeReaction( Kinematics* kin, vector<string> keywordAr
   }
   // Add the non-decaying particles to tempLorentz starting with the lower vertex
   for( int j = 0; j < (int)lvIndex.size() - numLvDecay; j++ ){
-    tempLorentz.insert( tempLorentz.begin() + lowerVNum, kin->particle( numLvDecay + j + 1) );
+    tempLorentz.insert( tempLorentz.begin() + lowerVNum + j, kin->particle( numLvDecay + j + 1) );
   }
+  // The non-decaying uv particles go at the end
   for( int k = 0; k < (int)uvIndex.size() - numUvDecay; k++ ){
-    tempLorentz.insert( tempLorentz.begin() + lowerVNum + lvIndex.size() - numLvDecay + numUvDecay, kin->particle( lvIndex.size() + numUvDecay + k + 1 ) );
+    tempLorentz.push_back( kin->particle( lvIndex.size() + numUvDecay + k + 1) );
   }
   return tempLorentz;
 
