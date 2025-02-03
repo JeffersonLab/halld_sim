@@ -59,6 +59,8 @@ void OmegaPiPlotGenerator::createHistograms( ) {
    bookHistogram( kDeltaAngles, new Histogram2D( 100, -1., 1., 100, -1*PI, PI, "DeltaAngles", "cos#theta_{p} and #phi_{p}" ) );
    bookHistogram( kBigLittlePhi, new Histogram2D( 100, -1*PI, PI, 100, -1*PI, PI, "BigLittlePhi", "#Phi_{Prod} and #phi" ) );
    bookHistogram( kBigLittlePhiDelta, new Histogram2D( 100, -1*PI, PI, 100, -1*PI, PI, "BigLittlePhiDelta", "#Phi_{Prod} and #phi_{p}" ) );
+   bookHistogram( kOmegaPipMass, new Histogram1D( 200, 0.6, 2.5, "MOmegaPip", "Invariant Mass of #omega #pi_{bach}") );
+   bookHistogram( kOmega2PiMass, new Histogram1D( 200, 0.6, 3.5, "MOmega2Pi", "Invariant Mass of #omega #pi #pi") );
 }
 
 void
@@ -85,10 +87,12 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
    TLorentzVector proton_pi = proton + Xs_pi;
    TLorentzVector recoil_pi = proton_pi;
    TLorentzVector two_pi = kin->particle( 2 );
+   TLorentzVector pi_bach;
    for(uint i=6; i<kin->particleList().size(); i++) {
 	recoil += kin->particle(i);
 	recoil_pi += kin->particle(i);
 	two_pi += kin->particle(i);
+        pi_bach += kin->particle(i);
    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,7 +106,9 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
 
   double b1_mass = X.M();
   double Mandt = fabs((target-recoil).M2());
-  double recoil_mass = recoil.M();  
+  double recoil_mass = recoil.M();
+  double omegapip = (omega + pi_bach).M();
+  double omega2pi = (omega + two_pi).M();
 
     //////////////////////// Boost Particles and Get Angles//////////////////////////////////
 
@@ -143,6 +149,9 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
    fillHistogram( kOmegaPiAngles, cosTheta, Phi );
    fillHistogram( kOmegaHAngles, cosThetaH, PhiH );
    fillHistogram( kBigLittlePhi, prod_angle, Phi );
+   fillHistogram( kOmegaPipMass, omegapip );
+   fillHistogram( kOmega2PiMass, omega2pi );
+
 
    // Dalitz variables
    fillHistogram( kLambda, lambda );
