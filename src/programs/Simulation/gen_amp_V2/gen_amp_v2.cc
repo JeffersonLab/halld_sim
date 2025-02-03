@@ -443,11 +443,11 @@ int main( int argc, char* argv[] ){
       kin = ftGen.generate(); 
     
       
-      for(int h = 0; h < kin->particleList().size(); h++){
+ /*     for(int h = 0; h < kin->particleList().size(); h++){
           kin->particle( h ).Print();
           cout << endl << endl;
       }
-
+*/
       // This section will generate daughter particles for specified decay particles
       if( trueReactionKeyword.size() == 1 ){
   	int uvIndex = 0; // Quick bookeeping of upper index
@@ -456,7 +456,7 @@ int main( int argc, char* argv[] ){
 	trueReactionVector.push_back( kin->particle(0) ); //Add Beam 4-vector to new vector
 	for( int h = 0; h < (int)keywordArgs.size()/3; h++){
 	  if( keywordArgs[3*h] == "lv" ){
-            cout << " lv particle to be decayed " << checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() <<  " for event " << i << endl;
+   //         cout << " lv particle to be decayed " << checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() <<  " for event " << i << endl;
 	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( h + 1 ), ParticleEnum( checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() ) );
             lvIndex++;
 	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
@@ -465,7 +465,7 @@ int main( int argc, char* argv[] ){
           } 
 		
 	  if( keywordArgs[3*h] == "uv" ){ 
-  	    cout << "uv particle to be decayed " << checkParticle( temppList[ tempuvIndices.first[uvIndex] ] ).c_str() << endl << " for event " << i << endl;
+  //	    cout << "uv particle to be decayed " << checkParticle( temppList[ tempuvIndices.first[uvIndex] ] ).c_str() << endl << " for event " << i << endl;
 	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( templvIndices.first.size() + h + 1 ), ParticleEnum( checkParticle( temppList[ tempuvIndices.first[uvIndex] ] ).c_str() ) );
 	    uvIndex++;
 	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
@@ -473,21 +473,21 @@ int main( int argc, char* argv[] ){
             }
 	  }
         }
-	for( int g = 0; g < trueReactionVector.size(); g++){
+/*	for( int g = 0; g < trueReactionVector.size(); g++){
           trueReactionVector[g].Print();
 	}
-	cout << "Particles coming out of EvtGen is " << trueReactionVector.size() << endl;
+*///	cout << "Particles coming out of EvtGen is " << trueReactionVector.size() << endl;
 	vector<TLorentzVector> trialVector = makeReaction( kin, temppList, trueReactionVector, tempuvIndices.first, templvIndices.first, uvIndex, lvIndex);
 	vector<TLorentzVector> trialVector2 = makeReaction( kin, temppList, trueReactionVector, tempuvIndices.first, templvIndices.first, uvIndex, lvIndex);
         kin->setParticleList( trialVector2 );
         //kin->setParticleList( makeReaction( kin, temppList, trueReactionVector, tempuvIndices.first, templvIndices.first, uvIndex, lvIndex) );
-	for(int g = 0; g < kin->particleList().size(); g++){
+/*	for(int g = 0; g < kin->particleList().size(); g++){
           kin->particle( g ).Print();
           trialVector[g].Print();
           trialVector2[g].Print();
 	  cout << endl << endl;
         }
-	cout << "Passed the stuff " << endl;
+*///	cout << "Passed the stuff " << endl;
       }  
 
       // Rearranging indices in kinematics class to mimic reactionList
