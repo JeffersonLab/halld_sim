@@ -261,7 +261,7 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
     
     // there is a bug in the computation of the max weight
     // if this condition is not met
-    assert( psWeight < m_maxWeight );
+    assert( psWeight <= m_maxWeight );
   }
   while( m_randGen.Uniform( 0, m_maxWeight ) > psWeight );
       
@@ -415,14 +415,14 @@ FixedTargetGenerator::calculateLimits() const {
   m_lvMin = ( m_lvMinUser > lvSum ? m_lvMinUser : lvSum );
   m_lvMax = ( m_lvMaxUser < m_W - uvSum ? m_lvMaxUser : m_W - uvSum );
   
-  m_uvMin = ( m_uvMinUser > uvSum ? m_uvMinUser : uvSum );;
+  m_uvMin = ( m_uvMinUser > uvSum ? m_uvMinUser : uvSum );
   m_uvMax = ( m_uvMaxUser < m_W - lvSum ? m_uvMaxUser : m_W - lvSum );
   
   // now calculate the max weight by computing the products of the maximum
   // relative momentum at every step of the decay
   
   m_maxWeight = pcm( m_W, m_lvMin, m_uvMin )/(4*TMath::Pi()*m_W);
-  
+
   // for each of the vertices, we are going to step backwards starting
   // from the final two stable particles -- the maximum momentum for these
   // two occurs when all other particles "above" them are produced at
