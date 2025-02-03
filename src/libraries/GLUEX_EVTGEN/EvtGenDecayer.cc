@@ -33,10 +33,8 @@
 //
 // Initialization (constructor)
 ////////////////////////////////////////////////////
-EvtGenDecayer::EvtGenDecayer()
+EvtGenDecayer::EvtGenDecayer(string in_user_decay_filename)
 {
-	// TODO: Make it so that some of these options can be passed in as arguments
-    string USER_DECAY = "userDecay.dec";
 
   	// initialize EvtGen
   	const char* evtgen_home_env_ptr = std::getenv("EVTGENDIR");
@@ -70,6 +68,11 @@ EvtGenDecayer::EvtGenDecayer()
  	string evtGenDecayFile = (evtgen_decay_file_ptr==nullptr) ? EVTGEN_HOME + "/DECAY.DEC" : evtgen_decay_file_ptr;
   	const char* evtgen_particle_defs_ptr = std::getenv("EVTGEN_PARTICLE_DEFINITIONS");
  	string evtGenParticleDefs = (evtgen_particle_defs_ptr==nullptr) ? EVTGEN_HOME + "/evt.pdl" : evtgen_particle_defs_ptr;
+ 	
+ 	cerr << "EvtGenDecayer::EvtGenDecayer()" << endl;
+ 	cerr << " " << evtGenDecayFile << endl;
+ 	cerr << " " << evtGenParticleDefs << endl;
+ 	
  	myGenerator = new EvtGen(evtGenDecayFile.c_str(), evtGenParticleDefs.c_str(), eng,
   		     				 radCorrEngine, &extraModels);
   		     				 
@@ -77,6 +80,9 @@ EvtGenDecayer::EvtGenDecayer()
   	GlueX_EvtGen::RegisterGlueXModels();
 
 	// open optional user decay file, if it exists
+  	const char* evtgen_user_decay_file_ptr = std::getenv("EVTGEN_USER_DECAY_FILE");
+    string USER_DECAY = (evtgen_user_decay_file_ptr==nullptr) ? in_user_decay_filename : evtgen_user_decay_file_ptr;
+
 	struct stat buffer;   
 	if(stat(USER_DECAY.c_str(), &buffer) == 0)
 	  	myGenerator->readUDecay(USER_DECAY.c_str());
