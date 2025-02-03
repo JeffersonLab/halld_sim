@@ -161,9 +161,9 @@ int main( int argc, char* argv[] ){
             // create directories in plotfile
             if( iReac == 0 ){
                 for( unsigned int ivar = 0; ivar < OmegaPiPlotGenerator::kNumHists; ivar++ ){
-                    const char * dirName = ( plotGen.getHistogram( ivar )->name() ).c_str();
-                    cout << "Creating directory for " << dirName << " plots" << endl;
-                    TDirectory *temp = plotfile->mkdir( dirName );
+                    string dirName = plotGen.getHistogram( ivar )->name();
+                    cout << "Creating directory for " << dirName.data() << " plots" << endl;
+                    TDirectory *temp = plotfile->mkdir( dirName.data() );
                     plotDir.push_back( temp );
                 }
             }
