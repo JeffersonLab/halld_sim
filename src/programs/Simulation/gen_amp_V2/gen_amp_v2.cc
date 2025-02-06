@@ -75,6 +75,7 @@ int main( int argc, char* argv[] ){
   
   TString beamConfigFile("");
   string  atConfigFile("");
+  string  evtGenFile("");
   string  hddmName("");
   string  outName("");
   string  lvString("");
@@ -199,6 +200,12 @@ int main( int argc, char* argv[] ){
 	if( atoi( argv[i+3] ) == 0 ) reWeight -= FixedTargetGenerator::kMomentumTransfer;
       }
     }
+    if (arg == "-evtGenFile"){
+      if((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+      else{
+        evtGenFile = argv[++i];
+      }
+    }
     if (arg == "-f") fixedGen = true; 
     if (arg == "-d") diag = true;
     if (arg == "-h"){
@@ -248,7 +255,9 @@ int main( int argc, char* argv[] ){
       cout << "\t -a        <min E beam>" << endl;
       cout << "\t           Minimum photon energy to simulate events [optional]" << endl;
       cout << "\t -b        <max E beam>" << endl;
-      cout << "\t           Maximum photon energy to simulate events [optional]" << endl << endl;
+      cout << "\t           Maximum photon energy to simulate events [optional]" << endl;
+      cout << "\t -evtGenFile <file path> " << endl;
+      cout << "\t           Path to decay file if EvtGen is used [optional]" << endl << endl;
       exit(1);
     }
   }
@@ -309,12 +318,14 @@ int main( int argc, char* argv[] ){
    // This section will generate daughter particles for specified decay particles
   if( trueReactionKeyword.size() == 1 ){
     // First check local decay config file if found
-    ifstream file("userDecay.dec");
-    if( !file.good() ){
-      cout << "ERROR:  Missing local EvtGen decay config file" << endl;
-      exit( 1 );
+    if( evtGenFile == "" ){
+      ifstream file("userDecay.dec");
+      if( !file.good() ){
+        cout << "ERROR:  Missing local EvtGen decay config file" << endl;
+        exit( 1 );
+      }
     }
-    decayer = new EvtGenDecayer();
+    decayer = new EvtGenDecayer( evtGenFile );
   }
 
   
