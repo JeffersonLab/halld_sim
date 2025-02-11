@@ -8,7 +8,7 @@ inline static char* EvtGenOutputString(Particle_t p)
   p = RemapParticleID(p);
 
   switch (p) {
-  case Unknown:
+  case UnknownParticle:
     return (char*)"Unknown";
   case Gamma:
     return (char*)"gamma";

@@ -370,7 +370,7 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam,TLorentzVector &ta
    for (unsigned int i=0;i<particle_vectors.size();i++,ps->mult++){
      Particle_t my_particle=particle_types[i];
      if(particle_decayed[i])
-	     ps->in[ps->mult].type = Unknown;  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
+	     ps->in[ps->mult].type = UnknownParticle;  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
 	 else
 	     ps->in[ps->mult].type = my_particle;
      ps->in[ps->mult].pdgtype = PDGtype(my_particle);
@@ -1191,7 +1191,7 @@ int main(int narg, char *argv[])
 		}
 
 		for (int j=0;j<num_decay_particles;j++){
-			if (particle_types[j]!=Unknown) {
+			if (particle_types[j]!=UnknownParticle) {
 				output_particle_vectors.push_back(*phase_space.GetDecay(j));
 				output_particle_types.push_back(particle_types[j]);
 			} else {

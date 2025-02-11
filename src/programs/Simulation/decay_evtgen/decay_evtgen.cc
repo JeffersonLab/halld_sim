@@ -39,7 +39,7 @@ using namespace std;
 
 typedef struct {
 	int id = -1;
-	Particle_t type = Unknown;
+	Particle_t type = UnknownParticle;
 	int pdgtype = -1;   
 	bool decayed = false;
 	TLorentzVector momentum;
@@ -228,7 +228,7 @@ void DecayParticles(hddm_s::HDDM * hddmevent, vector< gen_particle_info_t > &par
 			default:
 				myGenerator->generateDecay(parent);
 				if(parent->getNDaug() > 0) 
-					part.hddmProduct->setType(Unknown);  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
+					part.hddmProduct->setType(UnknownParticle);  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
 				break;
 		}
 		
