@@ -63,6 +63,8 @@ using std::complex;
 using namespace std;
 
 
+vector<int> globalUvIndex;
+vector<int> globalLvIndex;
 bool compVector(int a, int b);
 pair< vector<int>,vector<bool> > parseString(string vertexString);
 vector<string> trueReactionDecay( vector<string>& keywordArgs, vector<string> reactionList, vector<int> uvIndices, vector<int> lvIndices, pair< vector<int>,vector<bool> >& orderTrueuvIndices, pair< vector<int>,vector<bool> >& orderTruelvIndices);
@@ -70,6 +72,7 @@ vector<TLorentzVector> makeReaction( Kinematics* kin, vector<string> keywordArgs
 string checkParticle(string particleString);
 vector<double> getVertexMasses(vector<string>& reactionList, map<string, BreitWignerGenerator>& mpBWGen, vector<int>& indices, vector<bool>& hasResonance);
 vector<int> getTypes(vector<string>& reactionList);
+string checkVertex(vector<int> parentToDaughterIndex);
 
 int main( int argc, char* argv[] ){
   
@@ -97,7 +100,7 @@ int main( int argc, char* argv[] ){
 
   int runNum = 30731;
   unsigned int seed = 0;
-  unsigned int reWeight =7;
+  unsigned int reWeight = 7;
 
   int nEvents = 10000;
   int batchSize = 10000;
@@ -281,12 +284,15 @@ int main( int argc, char* argv[] ){
   vector< string > pList = reaction->particleList();
   pair< vector< int >,vector<bool> > lvIndices = parseString( lvString );
   pair< vector< int >,vector<bool> > uvIndices = parseString( uvString );
-  
+  // Initialize global indices
+  globalUvIndex = uvIndices.first;
+  globalLvIndex = lvIndices.first;
+
   // This section initiates variables needed for EvtGen decay 
   vector< string > truepList;
   pair< vector< int >,vector<bool> > orderTruelvIndices;
   pair< vector< int >,vector<bool> > orderTrueuvIndices;
-  EvtGenDecayer* decayer;
+  EvtGenDecayer* decayer = nullptr;
   vector< vector<string> > trueReactionKeyword = cfgInfo->userKeywordArguments("trueReaction");
   vector< string > keywordArgs = trueReactionKeyword[0];
   truepList = reaction->particleList(); 
@@ -296,7 +302,7 @@ int main( int argc, char* argv[] ){
   if(trueReactionKeyword.size() == 1){
   truepList = trueReactionDecay( keywordArgs, pList, uvIndices.first, lvIndices.first, orderTrueuvIndices, orderTruelvIndices);
   }
-  for( int m = 0; m < truepList.size(); m++){
+  for( int m = 0; m < (int)truepList.size(); m++){
     cout << "New reaction list is " << truepList[m] << endl;
   }
 
@@ -324,9 +330,18 @@ int main( int argc, char* argv[] ){
         cout << "ERROR:  Missing local EvtGen decay config file" << endl;
         exit( 1 );
       }
+      cout << "Using local userDecay.dec " << endl;
+      decayer = new EvtGenDecayer( "./userDecay.dec" );
     }
-    decayer = new EvtGenDecayer( evtGenFile );
-  }
+    else{
+      ifstream pathFile( evtGenFile );
+      if( !pathFile.good() ){
+        cout << "ERROR:  Missing local EvtGen decay config file" << endl;
+        exit( 1 );
+      }
+      decayer = new EvtGenDecayer( evtGenFile );
+   }
+ }
 
   
   
@@ -464,8 +479,8 @@ int main( int argc, char* argv[] ){
         int lvIndex = 0; // Qucik bookeeping of lower index
 	vector<TLorentzVector> trueReactionVector;
 	trueReactionVector.push_back( kin->particle(0) ); //Add Beam 4-vector to new vector
-	for( int h = 0; h < (int)keywordArgs.size()/3; h++){
-	  if( keywordArgs[3*h] == "lv" ){
+	for( int h = 0; h < (int)keywordArgs.size()/2; h++){
+	  if( checkVertex( parseString( keywordArgs[2*h + 1] ).first ) == "lv" ){
 	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( h + 1 ), ParticleEnum( checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() ) );
             lvIndex++;
 	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
@@ -473,7 +488,7 @@ int main( int argc, char* argv[] ){
 	    }
           } 
 		
-	  if( keywordArgs[3*h] == "uv" ){ 
+	  if( checkVertex( parseString( keywordArgs[2*h + 1] ).first ) == "uv" ){
 	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( templvIndices.first.size() + h + 1 ), ParticleEnum( checkParticle( temppList[ tempuvIndices.first[uvIndex] ] ).c_str() ) );
 	    uvIndex++;
 	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
@@ -605,7 +620,7 @@ int main( int argc, char* argv[] ){
 	
   if( hddmOut ) delete hddmOut;
   delete rootOut;
-  if( trueReactionKeyword.size() == 1 ) delete decayer;
+  delete decayer;
 
   return 0;
 }// END OF MAIN()
@@ -654,36 +669,40 @@ vector<int> tempOrderTrueuvIndicesFirst;
   vector<string> tempReactionList;
   vector<int> tempuvIndex = uvIndices;
   vector<int> templvIndex = lvIndices;
+  pair< vector<int>, vector<bool> > trueIndices;
+  string tempVertexString;
   int tempInt = 0;
   //Need the next two ints to keep track of total number of true uv/lv particles
   int tempuvInt = 0;
   int templvInt = 0;
 
   tempReactionList.push_back(reactionList[0]); // Add beam index to list 
-  for( int k = 0; k < (int)keywordArgs.size()/3; k++){
+  for( int k = 0; k < (int)keywordArgs.size()/2; k++){
     tempInt++;
-    pair< vector<int>, vector<bool> > trueIndices = parseString( keywordArgs[3*k+2] );
+    trueIndices = parseString( keywordArgs[2*k+1] );
+    tempVertexString = checkVertex( trueIndices.first );
     // First add parent name to tempReactionList        
-    tempReactionList.push_back(keywordArgs[3*k+1]);
+    tempReactionList.push_back(keywordArgs[2*k]);
     // Add particle to index vector 
-    if( keywordArgs[3*k] == "uv" ){
+    if( tempVertexString == "uv" ){
       tempOrderTrueuvIndicesFirst.push_back( tempInt );
       tempOrderTrueuvIndicesSecond.push_back( false );
     }
-    if( keywordArgs[3*k] == "lv" ){
+    if( tempVertexString == "lv" ){
       tempOrderTruelvIndicesFirst.push_back( tempInt );
       tempOrderTruelvIndicesSecond.push_back( false );
     }
   }
   // Remove decay indices from uv/lv array. Will be used for non-decaying particles
-  for( int k = 0; k < (int)keywordArgs.size()/3; k++){
-    pair< vector<int>, vector<bool> > trueIndices = parseString( keywordArgs[3*k+2] );
+  for( int k = 0; k < (int)keywordArgs.size()/2; k++){
+    trueIndices = parseString( keywordArgs[2*k+1] );
+    tempVertexString = checkVertex( trueIndices.first );
     for( int j = 0; j < (int)trueIndices.first.size(); j++){
-      if( keywordArgs[3*k] == "uv" ){
+      if( tempVertexString == "uv" ){
         tempuvIndex.erase( find( tempuvIndex.begin(), tempuvIndex.end(), trueIndices.first[j] ) );
         tempuvInt++;
       }
-      if( keywordArgs[3*k] == "lv" ){
+      if( tempVertexString == "lv" ){
         templvIndex.erase( find( templvIndex.begin(), templvIndex.end(), trueIndices.first[j] ) );
         templvInt++;
       }
@@ -733,13 +752,17 @@ vector< TLorentzVector > makeReaction( Kinematics* kin, vector<string> keywordAr
   vector<int> changeLvIndex = lvIndex;	
   vector<int> finalUvIndex;
   vector<int> finalLvIndex;
+  string tempVertexString;
+  pair< vector<int>, vector<bool> > tempIndices;
   vector<TLorentzVector> tempLorentz = reactionVector;
   int lowerVNum = 1; // Statrting with 1 cause the beam is included
   int upperVNum = 0;
   // First thing to do is find where to add the non-decayed particles since the decayed particles are already in tempLorentz
-  for( int i = 0; i < (int)keywordArgs.size()/3; i++ ){
-    if( keywordArgs[3*i] == "lv" ) lowerVNum += keywordArgs[3*i +2].length();
-    if( keywordArgs[3*i] == "uv" ) upperVNum += keywordArgs[3*i +2].length();
+  for( int i = 0; i < (int)keywordArgs.size()/2; i++ ){
+    tempIndices = parseString( keywordArgs[2*i+1] );
+    tempVertexString = checkVertex( tempIndices.first );
+    if( tempVertexString == "lv" ) lowerVNum += keywordArgs[2*i +1].length();
+    if( tempVertexString == "uv" ) upperVNum += keywordArgs[2*i +1].length();
   }
   // Add the non-decaying particles to tempLorentz starting with the lower vertex
   for( int j = 0; j < (int)trueLvIndex.size() - numLvDecay; j++ ){
@@ -751,16 +774,17 @@ vector< TLorentzVector > makeReaction( Kinematics* kin, vector<string> keywordAr
   }
   
   // Make a upper/lower index vector for reorganization in the next step
-  for( int k = 0; k < (int)keywordArgs.size()/3; k++){
-    pair< vector<int>, vector<bool> > trueIndices = parseString( keywordArgs[3*k+2] );
-    for( int j = 0; j < (int)trueIndices.first.size(); j++){
-      if( keywordArgs[3*k] == "uv" ){
-        finalUvIndex.push_back( trueIndices.first[j] );
-	changeUvIndex.erase( find( changeUvIndex.begin(), changeUvIndex.end(), trueIndices.first[j] ) );
+  for( int k = 0; k < (int)keywordArgs.size()/2; k++){
+    tempIndices = parseString( keywordArgs[2*k+1] );
+    tempVertexString = checkVertex( tempIndices.first );
+    for( int j = 0; j < (int)tempIndices.first.size(); j++){
+      if( tempVertexString == "uv" ){
+        finalUvIndex.push_back( tempIndices.first[j] );
+	changeUvIndex.erase( find( changeUvIndex.begin(), changeUvIndex.end(), tempIndices.first[j] ) );
       }
-      if( keywordArgs[3*k] == "lv" ){
-        finalLvIndex.push_back( trueIndices.first[j] );
-        changeLvIndex.erase( find( changeLvIndex.begin(), changeLvIndex.end(), trueIndices.first[j] ) );
+      if( tempVertexString == "lv" ){
+        finalLvIndex.push_back( tempIndices.first[j] );
+        changeLvIndex.erase( find( changeLvIndex.begin(), changeLvIndex.end(), tempIndices.first[j] ) );
       }
     }
   }
@@ -829,4 +853,16 @@ vector<int> getTypes(vector<string>& reactionList){
   }
   return pTypes;
 }//END OF getTypes
+
+// This function is to check if the daughter particles(if specified) are in the upper/lower vertex
+// This is an automation function
+string checkVertex(vector<int> parentToDaughterIndex){
+  for( int i = 0; i < (int)parentToDaughterIndex.size(); i++ ){
+    auto it = find( globalUvIndex.begin(), globalUvIndex.end(), parentToDaughterIndex[i]);
+    if( it != globalUvIndex.end() ){
+      return "uv"; 
+    }
+  }
+  return "lv";
+}// END OF checkVertex
 
