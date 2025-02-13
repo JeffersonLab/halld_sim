@@ -124,7 +124,7 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
     }
     for (unsigned int i=0;i<y_strip_hits.size();i++){
       strip_hit_t myhit=y_strip_hits[i];
-      if (x_used[i]==false){
+      if (y_used[i]==false){
 	hddm_s::GemtrdHitList hits = iter->addGemtrdHits();
 	hits().setT(myhit.t);
 	hits().setPulse_height(myhit.q);
