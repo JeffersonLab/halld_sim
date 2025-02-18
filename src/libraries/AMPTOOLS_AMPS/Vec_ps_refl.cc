@@ -191,9 +191,9 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	  zjm = i*imag(amplitude * rotateY);
 
   // E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
-  double kinFactor = barrierFactor(MX, m_l, MVec, MPs);
+//  double kinFactor = barrierFactor(MX, m_l, MVec, MPs); // comment this out for now... eventually add flag to turn this on or off based on whether the barrier factor is included in another amplitude (e.g. BreitWigner)
   //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
-  Factor *= kinFactor;
+//  Factor *= kinFactor;
 
   userVars[uv_ampRe] = ( Factor * zjm ).real();
   userVars[uv_ampIm] = ( Factor * zjm ).imag();
