@@ -8,7 +8,7 @@
 #include <cmath>
 #include <vector>
 #include <map>
-#include <JANA/Compatibility/JGeometryManager.h>
+#include <JANA/Geometry/JGeometryManager.h>
 
 
 using namespace std;
@@ -22,7 +22,7 @@ using namespace std;
 #include <JANA/JEvent.h>
 
 #include <HDDM/DEventSourceHDDM.h>
-#include <JANA/Compatibility/JGeometryXML.h>
+#include <JANA/Geometry/JGeometryXML.h>
 #include <TRACKING/DMCThrown.h>
 #include <DRandom2.h>
 #include <FDCSmearer.h>
