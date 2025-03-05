@@ -1,4 +1,11 @@
+/* Simplistic model for fitting vector-pseudoscalar data with linearly polarized moments 
 
+The file currently assumes the vector is an omega decaying to 3pi, and so uses the
+m_3pi flag, just as is done in vec_ps_refl.cc.
+
+Original author: Edmundo Barriga
+Modified by: Kevin Scheuer
+*/
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -17,14 +24,15 @@
 Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   UserAmplitude< Vec_ps_moment >( args )
 {
-  m_maxJ = atoi( args[0].c_str() );
-  m_nMoments = atoi( args[1].c_str() );
-  cout << m_nMoments<< endl;
+  m_maxJ = atoi( args[0].c_str() ); // explicitly set the maximum J value TODO: why?
+  m_nMoments = atoi( args[1].c_str() );  // number of moment parameters
+
   for(int imom = 0; imom < m_nMoments; imom++) { 
-    m_H.push_back( AmpParameter( args[imom+2] ) );
+    string parameter = args[imom+2];
+    string name = parameter.name();
+    m_H.push_back( AmpParameter( parameter ) );
 
-    string name = m_H[imom].name();
-
+    // TODO: why is this indexing needed?
     int index = atoi(name.substr(1,1).data()) * 10000;
     index += atoi(name.substr(3,1).data()) * 1000;
     index += atoi(name.substr(4,1).data()) * 100;
@@ -33,28 +41,35 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
 
     // global moment indices
     m_indices.push_back( index );
+
+    // register free parameters so the framework knows about them
+    registerParameter( parameter );
   }   
 
-  for(int imom = 0; imom < m_nMoments; imom++) 
-    registerParameter( m_H[imom] );
+  // Three possibilities to initialize the set of polarized moment parameters, with the following labels:
+  // <alpha>: indexes the unpolarized [0], polarized real [1], and polarized imaginary moments [2],
+  // <Jv>: moment quantum number originating from decay of vector meson,
+  // <Lambda>: moment quantum number originating from omega helicity
+  // <J>: moment quantum number originating from spin of resonance decay
+  // <M>: moment quantum number originating from spin projection of resonance decay
 
-  // Three possibilities to initialize this amplitude:
-  // (with <alpha>, <l>, <m> defining the polarized moments)
+  // note that below the vector of moments is listed as a single argument, but in reality
+  // it is a list of arguments, one for each moment parameter i.e. H<alpha>_<Jv><Lambda><J><M>
   
-  // 1: three arguments, polarization information must be included in beam photon four vector
-  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <maxL> <nMoments> <Moments...>
+  // 1: three arguments, polarization information must be included in a beam photon four vector
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <maxJ> <nMoments> <Moments...>
   if(args.size() == size_t(m_nMoments + 2)) {
     m_polInTree = true;
   }
-  // 2: five arguments, polarization fixed per amplitude and passed as flag
+  // 2: five arguments, fixed polarization defined by user
   //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <maxJ> <nMoments> <Moments...> <polAngle> <polFraction>
   else if(args.size() == size_t(m_nMoments + 4)) {
     m_polInTree = false;
     m_polAngle = atof( args[m_nMoments+2].c_str() );
     m_polFraction = atof( args[m_nMoments+3].c_str() );  
   }
-  // 3: eight arguments, read polarization from histogram <hist> in file <rootFile>
-  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <maxJ> <nMoments> <Moments...> <polAngle> <polFraction=0.> <rootFile> <hist>  
+  // 3: seven arguments, read polarization from histogram <hist> in file <rootFile>
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <maxJ> <nMoments> <Moments...> <polAngle> <polFraction.> <rootFile> <hist>  
   else if(args.size() == size_t(m_nMoments + 6)) {
     m_polInTree = false;
     m_polAngle = atof( args[m_nMoments+2].c_str() );
@@ -163,6 +178,7 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 complex< GDouble >
 Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
+  // obtain all the angles from the userVars block
   GDouble pGamma = userVars[kPgamma];
   GDouble cosTheta = userVars[kCosTheta];
   GDouble phi = userVars[kPhi];
@@ -175,24 +191,27 @@ Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble theta = acos(cosTheta) * 180./TMath::Pi(); 
   GDouble thetaH = acos(cosThetaH) * 180./TMath::Pi(); 
 
-  GDouble total = 0;
+  GDouble total = 0; // initialize the total "amplitude" to zero
   for(int imom = 0; imom < m_nMoments; imom++)
   { 
     int alpha = m_indices[imom] / 10000;
-    int S = m_indices[imom] / 1000 % 10;
+    int Jv = m_indices[imom] / 1000 % 10;
     int Lambda = m_indices[imom] / 100 % 10;
     int J = m_indices[imom] / 10 % 10;
     int M = m_indices[imom] %10;
 
-    GDouble mom =(2*J + 1) / (4*TMath::Pi()) * (2*S + 1) / (4*TMath::Pi());
-    if(alpha == 0)
-      mom *= wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( S, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
-    else if(alpha == 1) 
-      mom *= -1.0 * pGamma * cos2bigPhi * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( S, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
-    else if(alpha == 2) 
-      mom *= -1.0 * pGamma * sin2bigPhi * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( S, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
+    // initialize moment with the common factor
+    GDouble mom =(2*J + 1) / (4*TMath::Pi()) * (2*Jv + 1) / (4*TMath::Pi());
 
-    total += mom*m_H[imom];
+    // handle what intensity component the moment contributes to
+    if(alpha == 0)
+      mom *= wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
+    else if(alpha == 1) 
+      mom *= -1.0 * pGamma * cos2bigPhi * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
+    else if(alpha == 2) 
+      mom *= -1.0 * pGamma * sin2bigPhi * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
+
+    total += mom * m_H[imom];
   } 
 
   return complex< GDouble >( sqrt(fabs(total)) );
