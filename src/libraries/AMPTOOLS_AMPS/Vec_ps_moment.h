@@ -20,10 +20,10 @@ GPUVec_ps_moment_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
 		     GDouble* H, int* indices, int nMoments );
 #endif
 
-// A class for describing the polarized moments for R-> Vector Pseudoscalar
-// with a polarized photon beam, must have m >= 0
 class Kinematics;
 
+// An AmpTools class for describing the polarized moments for R-> Vector Pseudoscalar
+// with a polarized photon beam, must have m >= 0
 class Vec_ps_moment : public UserAmplitude< Vec_ps_moment >
 {
 
@@ -32,20 +32,18 @@ public:
     Vec_ps_moment() : UserAmplitude< Vec_ps_moment >() { };
     Vec_ps_moment( const vector< string >& args );
 
-    enum UserVars { kPgamma = 0, kCosTheta, kPhi, kCosThetaH, kPhiH, kBigPhi, kNumUserVars };
-    unsigned int numUserVars() const { return kNumUserVars; }
-
     string name() const { return "Vec_ps_moment"; }
 
     complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
+
+    enum UserVars { kBeamPolFraction = 0, kCosTheta, kPhi, kCosThetaH, kPhiH, kProdAngle, kNumUserVars };
+    unsigned int numUserVars() const { return kNumUserVars; }
+
     void calcUserVars( GDouble** pKin, GDouble* userVars ) const;
 
     // we can calcualte everything we need from userVars block so allow
     // the framework to purge the four-vectors
     bool needsUserVarsOnly() const { return true; }
-
-    // the user variables above are the same for all instances of this amplitude
-    bool areUserVarsStatic() const { return true; }
 
 #ifdef GPU_ACCELERATION
 
@@ -57,9 +55,9 @@ public:
 
 private:
 
-    bool m_3pi;
-    int m_maxJ;
+    bool m_3pi;    
     int m_nMoments;
+    int m_nonMomentArgs;
     vector<AmpParameter> m_H;
     vector<int> m_indices;
 

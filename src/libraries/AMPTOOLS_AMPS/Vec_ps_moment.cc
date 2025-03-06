@@ -23,27 +23,35 @@ Modified by: Kevin Scheuer
 
 Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   UserAmplitude< Vec_ps_moment >( args )
-{
-  m_maxJ = atoi( args[0].c_str() ); // explicitly set the maximum J value TODO: why?
-  m_nMoments = atoi( args[1].c_str() );  // number of moment parameters
+{  
+  // count the number of non-moment arguments. Sometimes moments are passed within
+  // brackets "[]", so this accounts for that case.
+  m_nonMomentArgs = 0; 
+  for (const auto& arg : args) {
+    if (arg[0] != 'H' && arg[1] != 'H') {
+      m_nonMomentArgs++;
+    }
+  }
 
-  for(int imom = 0; imom < m_nMoments; imom++) { 
-    string parameter = args[imom+2];
-    string name = parameter.name();
-    m_H.push_back( AmpParameter( parameter ) );
+  m_nMoments = args.size() - m_nonMomentArgs - 1; // calculate the number of moments based on non-moment arguments
 
-    // TODO: why is this indexing needed?
-    int index = atoi(name.substr(1,1).data()) * 10000;
-    index += atoi(name.substr(3,1).data()) * 1000;
-    index += atoi(name.substr(4,1).data()) * 100;
-    index += atoi(name.substr(5,1).data()) * 10;
-    index += atoi(name.substr(6,1).data());
+  for(int i = 0; i < m_nMoments; i++) { 
+    string moment = args[i + m_nonMomentArgs + 1];
+    string name = moment.name();
+    m_H.push_back( AmpParameter( moment ) );
 
-    // global moment indices
+    // this stores the moment quantum numbers in a single integer
+    int index = atoi(name.substr(1,1).data()) * 10000; // alpha * 10000
+    index += atoi(name.substr(3,1).data()) * 1000; // Jv * 1000
+    index += atoi(name.substr(4,1).data()) * 100; // Lambda * 100
+    index += atoi(name.substr(5,1).data()) * 10; // J * 10
+    index += atoi(name.substr(6,1).data()); // M
+
+    // global moment indices, paired with the moment AmpParameter vector m_H
     m_indices.push_back( index );
 
     // register free parameters so the framework knows about them
-    registerParameter( parameter );
+    registerParameter( moment );
   }   
 
   // Three possibilities to initialize the set of polarized moment parameters, with the following labels:
@@ -52,31 +60,35 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   // <Lambda>: moment quantum number originating from omega helicity
   // <J>: moment quantum number originating from spin of resonance decay
   // <M>: moment quantum number originating from spin projection of resonance decay
-
-  // note that below the vector of moments is listed as a single argument, but in reality
-  // it is a list of arguments, one for each moment parameter i.e. H<alpha>_<Jv><Lambda><J><M>
   
-  // 1: three arguments, polarization information must be included in a beam photon four vector
-  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <maxJ> <nMoments> <Moments...>
-  if(args.size() == size_t(m_nMoments + 2)) {
+  // NOTE that in each case below, the non-moment parameters are given in a specific
+  // order, and always listed before the moments.
+  
+  // 1: Only moments are given, no polarization information
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <Moments...>
+  if(m_nonMomentArgs == 0) {
     m_polInTree = true;
   }
-  // 2: five arguments, fixed polarization defined by user
-  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <maxJ> <nMoments> <Moments...> <polAngle> <polFraction>
-  else if(args.size() == size_t(m_nMoments + 4)) {
+  // 2: The beam polarization angle and fraction are fixed by the user (2 arguments)
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <polAngle> <polFraction> <Moments...> 
+  else if (m_nonMomentArgs == 2) {
     m_polInTree = false;
-    m_polAngle = atof( args[m_nMoments+2].c_str() );
-    m_polFraction = atof( args[m_nMoments+3].c_str() );  
+    m_polAngle = atof( args[0].c_str() );
+    m_polFraction = atof( args[1].c_str() );
   }
-  // 3: seven arguments, read polarization from histogram <hist> in file <rootFile>
-  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <maxJ> <nMoments> <Moments...> <polAngle> <polFraction.> <rootFile> <hist>  
-  else if(args.size() == size_t(m_nMoments + 6)) {
+  // 3: Polarization read from histogram <hist> in file <rootFile> (3 arguments)
+  //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <polAngle> <rootFile> <hist> <Moments...> 
+  else if(m_nonMomentArgs == 3) {
     m_polInTree = false;
-    m_polAngle = atof( args[m_nMoments+2].c_str() );
+    m_polAngle = atof( args[0].c_str() );
     m_polFraction = 0.; 
-    TFile* f = new TFile( args[m_nMoments+4].c_str() );
-    m_polFrac_vs_E = (TH1D*)f->Get( args[m_nMoments+5].c_str() );
+    TFile* f = new TFile( args[1].c_str() );
+    m_polFrac_vs_E = (TH1D*)f->Get( args[2].c_str() );
     assert( m_polFrac_vs_E != NULL );
+  } 
+  else {
+    cout << " ERROR: Invalid number of arguments for Vec_ps_moment constructor" << endl;
+    assert(0);
   }
 
   // default is 3-body vector decay (omega->3pi)
@@ -88,14 +100,34 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   TLorentzVector beam;
   TVector3 eps;
+  GDouble beam_polFraction;
+  GDouble beam_polAngle;
 
   if(m_polInTree){
     beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
     eps.SetXYZ(pKin[0][1], pKin[0][2], 0.); // beam polarization vector;
+
+    beam_polFraction = eps.Mag()
+    beam_polAngle = eps.Phi()*TMath::RadToDeg();
   }
   else {
     beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );
+    beam_polAngle = m_polAngle;
+    // dont know what below line does??
     eps.SetXYZ(cos(m_polAngle*TMath::DegToRad()), sin(m_polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
+
+    if(m_polFraction > 0.) { // for fitting with constant polarization 
+      beam_polFraction = m_polFraction;
+    } 
+    else { // for fitting with polarization vs E_gamma from input histogram 
+      int bin = m_polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+      if (bin == 0 || bin > m_polFrac_vs_E->GetXaxis()->GetNbins()) {
+        beam_polFraction = 0.;
+      } 
+      else {
+        beam_polFraction = m_polFrac_vs_E->GetBinContent(bin);
+      }
+    }
   }
 
   TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
@@ -149,28 +181,9 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[kCosThetaH] = TMath::Cos(locthetaphih[0]);
   userVars[kPhiH] = locthetaphih[1];
   
-  userVars[kBigPhi] = locthetaphi[2];
-  
-  GDouble pGamma;
-  if(m_polInTree) {
-    pGamma = eps.Mag();
-  } 
-  else {
-    if(m_polFraction > 0.) { // for fitting with constant polarization 
-      pGamma = m_polFraction;
-    } 
-    else {
-      int bin = m_polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
-      if (bin == 0 || bin > m_polFrac_vs_E->GetXaxis()->GetNbins()) {
-        pGamma = 0.;
-      } 
-      else {
-        pGamma = m_polFrac_vs_E->GetBinContent(bin);
-      }
-    }
-  }
+  userVars[kProdAngle] = locthetaphi[2];
 
-  userVars[kPgamma] = pGamma;
+  userVars[kBeamPolFraction] = beam_polFraction;
 }
 
 ////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
@@ -179,15 +192,15 @@ complex< GDouble >
 Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
   // obtain all the angles from the userVars block
-  GDouble pGamma = userVars[kPgamma];
+  GDouble beam_polFraction = userVars[kBeamPolFraction];
   GDouble cosTheta = userVars[kCosTheta];
   GDouble phi = userVars[kPhi];
   GDouble cosThetaH = userVars[kCosThetaH];
   GDouble phiH = userVars[kPhiH];
-  GDouble bigPhi = userVars[kBigPhi];
+  GDouble prodAngle = userVars[kProdAngle];
 
-  GDouble cos2bigPhi = cos(2*bigPhi);
-  GDouble sin2bigPhi = sin(2*bigPhi);
+  GDouble cos2prodAngle = cos(2*prodAngle);
+  GDouble sin2prodAngle = sin(2*prodAngle);
   GDouble theta = acos(cosTheta) * 180./TMath::Pi(); 
   GDouble thetaH = acos(cosThetaH) * 180./TMath::Pi(); 
 
@@ -207,13 +220,14 @@ Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
     if(alpha == 0)
       mom *= wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
     else if(alpha == 1) 
-      mom *= -1.0 * pGamma * cos2bigPhi * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
+      mom *= -1.0 * beam_polFraction * cos2prodAngle * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
     else if(alpha == 2) 
-      mom *= -1.0 * pGamma * sin2bigPhi * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
-
+      mom *= -1.0 * beam_polFraction * sin2prodAngle * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
+    
     total += mom * m_H[imom];
   } 
-
+  
+  // since AmpTools is hard coded to handle squared amplitudes, we return the square root of the total
   return complex< GDouble >( sqrt(fabs(total)) );
 }
 
