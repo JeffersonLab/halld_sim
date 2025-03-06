@@ -3,7 +3,7 @@
 //-----------
 // tpol_config_t  (constructor)
 //-----------
-tpol_config_t::tpol_config_t(JEventLoop *loop) 
+tpol_config_t::tpol_config_t(const std::shared_ptr<const JEvent>& event) 
 {
 	// default values
 	TPOL_SIGMA_NS = 4.4;  // ns

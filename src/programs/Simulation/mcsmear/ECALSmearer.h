@@ -8,7 +8,7 @@
 class ecal_config_t 
 {
   public:
-	ecal_config_t(JEventLoop *loop);
+	ecal_config_t(const std::shared_ptr<const JEvent>& event);
 
 	double ECAL_EN_SCALE;
 	
@@ -34,8 +34,8 @@ class ecal_config_t
 class ECALSmearer : public Smearer
 {
   public:
-        ECALSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-        ecal_config = new ecal_config_t(loop);
+        ECALSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+        ecal_config = new ecal_config_t(event);
          }
 	~ECALSmearer() {
 		delete ecal_config;
