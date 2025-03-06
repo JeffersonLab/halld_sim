@@ -8,7 +8,7 @@
 class gemtrd_config_t 
 {
   public:
-  gemtrd_config_t(JEventLoop *loop);
+  gemtrd_config_t(const std::shared_ptr<const JEvent>& event);
   
   // GEMTRD resolutions and threshold
   double GEMTRD_TSIGMA;
@@ -22,10 +22,12 @@ class gemtrd_config_t
 
 class GEMTRDSmearer : public Smearer
 {
-  public:
-  GEMTRDSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-    gemtrd_config = new gemtrd_config_t(loop);
+public:
+  GEMTRDSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t 
+*in_config) : Smearer(event, in_config) {
+    gemtrd_config = new gemtrd_config_t(event);
   }
+
   ~GEMTRDSmearer() {
     delete gemtrd_config;
   }

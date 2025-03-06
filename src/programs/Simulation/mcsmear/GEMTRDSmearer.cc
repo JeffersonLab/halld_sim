@@ -3,7 +3,7 @@
 //-----------
 // gemtrd_config_t  (constructor)
 //-----------
-gemtrd_config_t::gemtrd_config_t(JEventLoop *loop) 
+gemtrd_config_t::gemtrd_config_t(const std::shared_ptr<const JEvent>& event) 
 {
   // default values
   GEMTRD_TSIGMA = 1.0;  // ns
