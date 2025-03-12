@@ -39,7 +39,7 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   // brackets "[]", so this accounts for that case.
   m_nonMomentArgs = 0; 
   for (const auto& arg : args) {
-    if (arg[0] != 'H' && arg[1] != 'H') {
+    if (arg.size() < 2 || arg[0] != 'H' && arg[1] != 'H') {
       m_nonMomentArgs++;
     }
   }
@@ -66,18 +66,19 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <polAngle> <polFraction> <Moments...> 
   else if (m_nonMomentArgs == 2) {
     m_polInTree = false;
-    m_polAngle = atof( args[0].c_str() );
-    m_polFraction = atof( args[1].c_str() );
+    m_polAngle = stof( args[0].c_str() );
+    m_polFraction = stof( args[1].c_str() );
   }
   // 3: Polarization read from histogram <hist> in file <rootFile> (3 arguments)
   //    Usage: amplitude <reaction>::<sum>::<ampName> Vec_ps_moment <polAngle> <rootFile> <hist> <Moments...> 
   else if(m_nonMomentArgs == 3) {
     m_polInTree = false;
-    m_polAngle = atof( args[0].c_str() );
+    m_polAngle = stof( args[0].c_str() );
     m_polFraction = 0.; 
     TFile* f = new TFile( args[1].c_str() );
     m_polFrac_vs_E = (TH1D*)f->Get( args[2].c_str() );
     assert( m_polFrac_vs_E != NULL );
+    delete f; 
   } 
   else {
     cout << " ERROR: Invalid number of arguments for Vec_ps_moment constructor" << endl;
@@ -88,17 +89,21 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     moment mom;
 
     mom.name = args[i];
+    // remove brackets from moment name if they exist
+    if (mom.name.front() == '[' && mom.name.back() == ']') {
+      mom.name = mom.name.substr(1, mom.name.size() - 2);
+    }
     mom.H = AmpParameter( mom.name );     
     registerParameter( mom.name ); // register moment as a free parameter
 
     // parse the moment name to get the quantum numbers. Assumes moment name is of the
     // form "H<alpha>_<Jv><Lambda><J><M>"
     assert(mom.name.length() == 7);
-    mom.alpha = atoi(mom.name.substr(1,1).data());
-    mom.Jv = atoi(mom.name.substr(3,1).data());
-    mom.Lambda = atoi(mom.name.substr(4,1).data());
-    mom.J = atoi(mom.name.substr(5,1).data());
-    mom.M = atoi(mom.name.substr(6,1).data());
+    mom.alpha = stoi(mom.name.substr(1,1).data());
+    mom.Jv = stoi(mom.name.substr(3,1).data());
+    mom.Lambda = stoi(mom.name.substr(4,1).data());
+    mom.J = stoi(mom.name.substr(5,1).data());
+    mom.M = stoi(mom.name.substr(6,1).data());
 
     m_moments.push_back( mom ); // add the moment to the list
   }   
@@ -217,13 +222,14 @@ Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble thetaH = acos(cosThetaH) * 180./TMath::Pi(); 
 
   GDouble total = 0; // initialize the total "amplitude" to zero
-  for( const auto &mom : m_moments ) {
+  for(int i = 0; i < m_numberOfMoments; i++) {
+    moment mom = m_moments[i];
     // extract the quantum numbers
-    alpha = mom.alpha;
-    Jv = mom.Jv;
-    Lambda = mom.Lambda;
-    J = mom.J;
-    M = mom.M;
+    int alpha = mom.alpha;
+    int Jv = mom.Jv;
+    int Lambda = mom.Lambda;
+    int J = mom.J;
+    int M = mom.M;
 
     // initialize angular info with the common factor
     GDouble angle = (2*J + 1) / (4*TMath::Pi()) * (2*Jv + 1) / (4*TMath::Pi());
