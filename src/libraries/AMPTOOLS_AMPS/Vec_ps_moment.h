@@ -16,11 +16,20 @@ using namespace std;
 
 #ifdef GPU_ACCELERATION
 void
-GPUVec_ps_moment_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
-		     GDouble* H, int* indices, int nMoments );
+GPUVec_ps_moment_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, moment* moments, int numberOfMoments );
 #endif
 
 class Kinematics;
+
+struct moment {
+    string name;
+    AmpParameter H;
+    int alpha;
+    int Jv;
+    int Lambda;
+    int J;
+    int M;
+};
 
 // An AmpTools class for describing the polarized moments for R-> Vector Pseudoscalar
 // with a polarized photon beam, must have m >= 0
@@ -56,10 +65,10 @@ public:
 private:
 
     bool m_3pi;    
-    int m_nMoments;
+    int m_numberOfMoments;
     int m_nonMomentArgs;
-    vector<AmpParameter> m_H;
-    vector<int> m_indices;
+    vector<moment> m_moments;
+    vector<AmpParameter> m_H;    
 
     double m_polAngle;
     double m_polFraction;

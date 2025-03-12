@@ -21,6 +21,17 @@ Modified by: Kevin Scheuer
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 
+// Define a struct to hold the moment parameters
+struct moment {
+  string name;
+  AmpParameter H;
+  int alpha;
+  int Jv;
+  int Lambda;
+  int J;
+  int M;
+};
+
 Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   UserAmplitude< Vec_ps_moment >( args )
 {  
@@ -33,26 +44,8 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     }
   }
 
-  m_nMoments = args.size() - m_nonMomentArgs - 1; // calculate the number of moments based on non-moment arguments
-
-  for(int i = 0; i < m_nMoments; i++) { 
-    string moment = args[i + m_nonMomentArgs + 1];
-    string name = moment.name();
-    m_H.push_back( AmpParameter( moment ) );
-
-    // this stores the moment quantum numbers in a single integer
-    int index = atoi(name.substr(1,1).data()) * 10000; // alpha * 10000
-    index += atoi(name.substr(3,1).data()) * 1000; // Jv * 1000
-    index += atoi(name.substr(4,1).data()) * 100; // Lambda * 100
-    index += atoi(name.substr(5,1).data()) * 10; // J * 10
-    index += atoi(name.substr(6,1).data()); // M
-
-    // global moment indices, paired with the moment AmpParameter vector m_H
-    m_indices.push_back( index );
-
-    // register free parameters so the framework knows about them
-    registerParameter( moment );
-  }   
+  m_numberOfMoments = args.size() - m_nonMomentArgs - 1; // calculate the number of moments based on non-moment arguments
+  m_moments.reserve(m_numberOfMoments);
 
   // Three possibilities to initialize the set of polarized moment parameters, with the following labels:
   // <alpha>: indexes the unpolarized [0], polarized real [1], and polarized imaginary moments [2],
@@ -91,6 +84,25 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     assert(0);
   }
 
+  for(int i = m_nonMomentArgs + 1; i < args.size(); i++) { 
+    moment mom;
+
+    mom.name = args[i];
+    mom.H = AmpParameter( mom.name );     
+    registerParameter( mom.name ); // register moment as a free parameter
+
+    // parse the moment name to get the quantum numbers. Assumes moment name is of the
+    // form "H<alpha>_<Jv><Lambda><J><M>"
+    assert(mom.name.length() == 7);
+    mom.alpha = atoi(mom.name.substr(1,1).data());
+    mom.Jv = atoi(mom.name.substr(3,1).data());
+    mom.Lambda = atoi(mom.name.substr(4,1).data());
+    mom.J = atoi(mom.name.substr(5,1).data());
+    mom.M = atoi(mom.name.substr(6,1).data());
+
+    m_moments.push_back( mom ); // add the moment to the list
+  }   
+
   // default is 3-body vector decay (omega->3pi)
   m_3pi = true; 
 }
@@ -107,16 +119,15 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
     beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
     eps.SetXYZ(pKin[0][1], pKin[0][2], 0.); // beam polarization vector;
 
-    beam_polFraction = eps.Mag()
+    beam_polFraction = eps.Mag();
     beam_polAngle = eps.Phi()*TMath::RadToDeg();
   }
   else {
     beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );
     beam_polAngle = m_polAngle;
-    // dont know what below line does??
     eps.SetXYZ(cos(m_polAngle*TMath::DegToRad()), sin(m_polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
 
-    if(m_polFraction > 0.) { // for fitting with constant polarization 
+    if(m_polFraction > 0.) { // for fitting with fixed polarization
       beam_polFraction = m_polFraction;
     } 
     else { // for fitting with polarization vs E_gamma from input histogram 
@@ -186,6 +197,7 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   userVars[kBeamPolFraction] = beam_polFraction;
 }
 
+
 ////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
 
 complex< GDouble >
@@ -205,28 +217,44 @@ Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
   GDouble thetaH = acos(cosThetaH) * 180./TMath::Pi(); 
 
   GDouble total = 0; // initialize the total "amplitude" to zero
-  for(int imom = 0; imom < m_nMoments; imom++)
-  { 
-    int alpha = m_indices[imom] / 10000;
-    int Jv = m_indices[imom] / 1000 % 10;
-    int Lambda = m_indices[imom] / 100 % 10;
-    int J = m_indices[imom] / 10 % 10;
-    int M = m_indices[imom] %10;
+  for( const auto &mom : m_moments ) {
+    // extract the quantum numbers
+    alpha = mom.alpha;
+    Jv = mom.Jv;
+    Lambda = mom.Lambda;
+    J = mom.J;
+    M = mom.M;
 
-    // initialize moment with the common factor
-    GDouble mom =(2*J + 1) / (4*TMath::Pi()) * (2*Jv + 1) / (4*TMath::Pi());
+    // initialize angular info with the common factor
+    GDouble angle = (2*J + 1) / (4*TMath::Pi()) * (2*Jv + 1) / (4*TMath::Pi());
 
-    // handle what intensity component the moment contributes to
-    if(alpha == 0)
-      mom *= wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
-    else if(alpha == 1) 
-      mom *= -1.0 * beam_polFraction * cos2prodAngle * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
-    else if(alpha == 2) 
-      mom *= -1.0 * beam_polFraction * sin2prodAngle * wignerDSmall( J, M, Lambda, theta ) * wignerDSmall( Jv, Lambda, 0, thetaH ) * cos( M*phi + Lambda*phiH );
-    
-    total += mom * m_H[imom];
-  } 
-  
+    // calculate the angular distributions depending on the polarization component
+    // NOTE: the multiplication of two Wigner D functions gives 2 wignerDsmall functions,
+    // and an exponential. We enforce that the H0, H1 (H2) moments are purely real 
+    // (imaginary) by taking the real (imaginary) part of that exponential.
+    if(alpha == 0) { // unpolarized component
+      angle *= (
+        wignerDSmall( J, M, Lambda, theta ) * 
+        wignerDSmall( Jv, Lambda, 0, thetaH ) * 
+        cos( M*phi + Lambda*phiH )
+      );
+    }
+    else if(alpha == 1) {
+      angle *= -1.0 * beam_polFraction * cos2prodAngle * 
+        wignerDSmall( J, M, Lambda, theta ) * 
+        wignerDSmall( Jv, Lambda, 0, thetaH ) * 
+        cos( M*phi + Lambda*phiH );
+    }
+    else if(alpha == 2) {
+      angle *= -1.0 * beam_polFraction * sin2prodAngle * 
+        wignerDSmall( J, M, Lambda, theta ) * 
+        wignerDSmall( Jv, Lambda, 0, thetaH ) * 
+        sin( M*phi + Lambda*phiH );
+    }
+
+    total += angle * mom.H;
+  }
+
   // since AmpTools is hard coded to handle squared amplitudes, we return the square root of the total
   return complex< GDouble >( sqrt(fabs(total)) );
 }
@@ -237,15 +265,15 @@ void
 Vec_ps_moment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
   // convert vector to array for GPU
-  GDouble H[m_nMoments];
-  int indices[m_nMoments];
-  for(int i=0; i<m_nMoments; i++)
+  GDouble H[m_numberOfMoments];
+  moment moments[m_numberOfMoments];
+  for(int i=0; i<m_numberOfMoments; i++)
   {
-    H[i] = m_H[i];
-    indices[i] = m_indices[i];
-  }
+    H[i] = m_moments[i].H;
+    moments[i] = m_moments[i];
+  }  
 
-  GPUVec_ps_moment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, indices, m_nMoments );
+  GPUVec_ps_moment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, moments, m_numberOfMoments );
 
 }
 
