@@ -54,6 +54,7 @@
 #include "AMPTOOLS_AMPS/KopfKMatrixA2.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
+#include "AMPTOOLS_AMPS/Vec_ps_moment.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -377,6 +378,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( KopfKMatrixA2() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
+   AmpToolsInterface::registerAmplitude( Vec_ps_moment() );
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
