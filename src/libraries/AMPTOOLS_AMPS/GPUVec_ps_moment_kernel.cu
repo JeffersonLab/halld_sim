@@ -17,7 +17,7 @@ struct moment {
 };
 
 __global__ void
-GPUVecPSMoment_kernel(GPU_AMP_PROTO, GDouble *H, moment *moments, int numberOfMoments )
+GPUVec_ps_moment_kernel(GPU_AMP_PROTO, GDouble *H, moment *moments, int numberOfMoments )
 {
     int iEvent = GPU_THIS_EVENT;
 
@@ -76,7 +76,7 @@ GPUVecPSMoment_kernel(GPU_AMP_PROTO, GDouble *H, moment *moments, int numberOfMo
 }
 
 void
-GPUVecPSMoment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, moment* moments, int numberOfMoments)
+GPUVec_ps_moment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, moment* moments, int numberOfMoments)
 {
   // allocate memory and pass moment parameter array to GPU
   GDouble* d_H;
@@ -87,7 +87,7 @@ GPUVecPSMoment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, mome
   cudaMemcpy(d_H, &H[0], numberOfMoments * sizeof(GDouble), cudaMemcpyHostToDevice );
   cudaMemcpy(d_moments, &moments[0], numberOfMoments * sizeof(moment), cudaMemcpyHostToDevice );
 
-  GPUVecPSMoment_kernel<<< dimGrid, dimBlock >>>(GPU_AMP_ARGS, d_H, d_moments, numberOfMoments);
+  GPUVec_ps_moment_kernel<<< dimGrid, dimBlock >>>(GPU_AMP_ARGS, d_H, d_moments, numberOfMoments);
 
   cudaDeviceSynchronize();
   cudaFree(d_H);

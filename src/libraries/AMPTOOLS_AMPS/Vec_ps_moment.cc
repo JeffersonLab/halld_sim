@@ -107,7 +107,6 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   TLorentzVector beam;
   TVector3 eps;
   GDouble beam_polFraction;
-  GDouble beam_polAngle;
 
   if(m_polInTree){
     beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
@@ -117,7 +116,6 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   }
   else {
     beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );
-    beam_polAngle = m_polAngle;
     eps.SetXYZ(cos(m_polAngle*TMath::DegToRad()), sin(m_polAngle*TMath::DegToRad()), 0.0); // beam polarization vector
 
     if(m_polFraction > 0.) { // for fitting with fixed polarization
