@@ -21,17 +21,6 @@ Modified by: Kevin Scheuer
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 
-// Define a struct to hold the moment parameters
-struct moment {
-  string name;
-  AmpParameter H;
-  int alpha;
-  int Jv;
-  int Lambda;
-  int J;
-  int M;
-};
-
 Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   UserAmplitude< Vec_ps_moment >( args )
 {  
@@ -39,7 +28,7 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   // brackets "[]", so this accounts for that case.
   m_nonMomentArgs = 0; 
   for (const auto& arg : args) {
-    if (arg.size() < 2 || arg[0] != 'H' && arg[1] != 'H') {
+    if (arg.size() < 2 || (arg[0] != 'H' && arg[1] != 'H')) {
       m_nonMomentArgs++;
     }
   }
@@ -85,7 +74,7 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     assert(0);
   }
 
-  for(int i = m_nonMomentArgs + 1; i < args.size(); i++) { 
+  for(size_t i = m_nonMomentArgs + 1; i < args.size(); i++) { 
     moment mom;
 
     mom.name = args[i];
@@ -94,7 +83,7 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
       mom.name = mom.name.substr(1, mom.name.size() - 2);
     }
     mom.H = AmpParameter( mom.name );     
-    registerParameter( mom.name ); // register moment as a free parameter
+    registerParameter( mom.H ); // register moment as a free parameter
 
     // parse the moment name to get the quantum numbers. Assumes moment name is of the
     // form "H<alpha>_<Jv><Lambda><J><M>"
@@ -124,8 +113,7 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
     beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
     eps.SetXYZ(pKin[0][1], pKin[0][2], 0.); // beam polarization vector;
 
-    beam_polFraction = eps.Mag();
-    beam_polAngle = eps.Phi()*TMath::RadToDeg();
+    beam_polFraction = eps.Mag();    
   }
   else {
     beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );

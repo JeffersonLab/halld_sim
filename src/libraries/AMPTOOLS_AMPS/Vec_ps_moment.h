@@ -14,13 +14,7 @@
 using std::complex;
 using namespace std;
 
-#ifdef GPU_ACCELERATION
-void
-GPUVec_ps_moment_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, moment* moments, int numberOfMoments );
-#endif
-
-class Kinematics;
-
+// Define a struct to hold the moment parameters
 struct moment {
     string name;
     AmpParameter H;
@@ -30,6 +24,13 @@ struct moment {
     int J;
     int M;
 };
+
+#ifdef GPU_ACCELERATION
+void
+GPUVec_ps_moment_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, moment* moments, int numberOfMoments );
+#endif
+
+class Kinematics;
 
 // An AmpTools class for describing the polarized moments for R-> Vector Pseudoscalar
 // with a polarized photon beam, must have m >= 0
