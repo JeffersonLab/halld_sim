@@ -9,8 +9,20 @@ gemtrd_config_t::gemtrd_config_t(const std::shared_ptr<const JEvent>& event)
   GEMTRD_TSIGMA = 1.0;  // ns
   GEMTRD_ASIGMA = 0.0; // ???
   GEMTRD_XYSIGMA = 0.01; // cm
-  GEMTRD_THRESHOLD = 0.0;
+  GEMTRD_THRESHOLD = 0.1;
   GEMTRD_INTEGRAL_TO_AMPLITUDE=1./28.8; // copied from CDC
+  
+  
+  // Get the geometry
+  DGeometry* locGeometry = DEvent::GetDGeometry(event);
+  GEMTRDx=0.,GEMTRDy=0.;
+  vector<double>gemtrdx,gemtrdy;
+  if (locGeometry->GetGEMTRDxy_vec(gemtrdx,gemtrdy)){
+    GEMTRDx=gemtrdx[0];
+    GEMTRDy=gemtrdy[0];
+  }
+
+  
 }
 
 //-----------
@@ -68,8 +80,8 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
       }
       
       // Distribute charge over strips
-      int strip_y0=528/2-int(10.*(y+59.031));
-      int strip_x0=720/2-int(10*(x+47.4695));
+      int strip_y0=528/2-int(10.*(y-gemtrd_config->GEMTRDy));
+      int strip_x0=720/2-int(10*(x-gemtrd_config->GEMTRDx));
       for (int strip=-10;strip<=10;strip++){
 	// Assume a symmetric charge distribution in x and y
 	double q_strip=GetStripCharge(q,strip);
@@ -100,7 +112,7 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
     }
     for (unsigned int i=0;i<x_strip_hits.size();i++){
       strip_hit_t myhit=x_strip_hits[i];
-      if (x_used[i]==false&&myhit.q>0.01){
+      if (x_used[i]==false&&myhit.q>gemtrd_config->GEMTRD_THRESHOLD){
 	hddm_s::GemtrdHitList hits = iter->addGemtrdHits();
 	double t=8.0*floor(myhit.t/8.0);
 	hits().setT(t);
@@ -125,7 +137,7 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
     }
     for (unsigned int i=0;i<y_strip_hits.size();i++){
       strip_hit_t myhit=y_strip_hits[i];
-      if (y_used[i]==false && myhit.q>0.01){
+      if (y_used[i]==false && myhit.q>gemtrd_config->GEMTRD_THRESHOLD){
 	hddm_s::GemtrdHitList hits = iter->addGemtrdHits();
 	double t=8.0*floor(myhit.t/8.0);
 	hits().setT(t);
