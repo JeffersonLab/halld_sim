@@ -67,19 +67,19 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
 	y += gDRandom.SampleGaussian(sigma_xy);
       }
       
-      // Distribute charge over strips    
-      int strip_x0=15+(int)(10.*x);
-      int strip_y0=1245+(int)(10.*y);
+      // Distribute charge over strips
+      int strip_y0=528/2-int(10.*(y+59.031));
+      int strip_x0=720/2-int(10*(x+47.4695));
       for (int strip=-10;strip<=10;strip++){
 	// Assume a symmetric charge distribution in x and y
 	double q_strip=GetStripCharge(q,strip);
 	
 	int mystrip=strip+strip_x0;
-	if (mystrip>0){
+	if (mystrip>0&&mystrip<721){
 	  x_strip_hits.push_back(strip_hit_t(1,mystrip,q_strip,t));
 	}
 	mystrip=strip+strip_y0;
-	if (mystrip>0){
+	if (mystrip>0&&mystrip<433){
 	  y_strip_hits.push_back(strip_hit_t(2,mystrip,q_strip,t));
 	}
       }
@@ -100,10 +100,11 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
     }
     for (unsigned int i=0;i<x_strip_hits.size();i++){
       strip_hit_t myhit=x_strip_hits[i];
-      if (x_used[i]==false){
+      if (x_used[i]==false&&myhit.q>0.01){
 	hddm_s::GemtrdHitList hits = iter->addGemtrdHits();
-	hits().setT(myhit.t);
-	hits().setPulse_height(myhit.q);
+	double t=8.0*floor(myhit.t/8.0);
+	hits().setT(t);
+	hits().setQ(myhit.q);
 	hits().setPlane(1);
 	hits().setStrip(myhit.strip);
       }
@@ -124,10 +125,11 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
     }
     for (unsigned int i=0;i<y_strip_hits.size();i++){
       strip_hit_t myhit=y_strip_hits[i];
-      if (y_used[i]==false){
+      if (y_used[i]==false && myhit.q>0.01){
 	hddm_s::GemtrdHitList hits = iter->addGemtrdHits();
-	hits().setT(myhit.t);
-	hits().setPulse_height(myhit.q);
+	double t=8.0*floor(myhit.t/8.0);
+	hits().setT(t);
+	hits().setQ(myhit.q);
 	hits().setPlane(2);
 	hits().setStrip(myhit.strip);
       }
@@ -137,10 +139,11 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
       iter->deleteGemtrdTruthHits();
   }
 }
+
 // Induce charge on the strips according to the semi-empirical Mathieson
 // function
 double GEMTRDSmearer::GetStripCharge(double q,int strip) const {
-  const double K2=1.; // induced charge distribution shape parameter
+  const double K2=5.0; // induced charge distribution shape parameter
   double factor= 0.25 * M_PI * K2;
   double strip_pitch=0.1; // cm
   double strip_gap=0.01; //cm, place holder
