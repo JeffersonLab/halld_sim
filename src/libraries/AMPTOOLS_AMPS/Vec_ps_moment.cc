@@ -33,7 +33,7 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     }
   }
 
-  m_numberOfMoments = args.size() - m_nonMomentArgs - 1; // calculate the number of moments based on non-moment arguments
+  m_numberOfMoments = args.size() - m_nonMomentArgs; // calculate the number of moments based on non-moment arguments
   m_moments.reserve(m_numberOfMoments);
 
   // Three possibilities to initialize the set of polarized moment parameters, with the following labels:
@@ -74,20 +74,26 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     assert(0);
   }
 
-  for(size_t i = m_nonMomentArgs + 1; i < args.size(); i++) { 
+  for(int i = m_nonMomentArgs; i < m_numberOfMoments + m_nonMomentArgs; i++) { 
     moment mom;
 
     mom.name = args[i];
-    // remove brackets from moment name if they exist
-    if (mom.name.front() == '[' && mom.name.back() == ']') {
-      mom.name = mom.name.substr(1, mom.name.size() - 2);
-    }
     mom.H = AmpParameter( mom.name );     
     registerParameter( mom.H ); // register moment as a free parameter
 
+    // remove brackets from moment name if they exist to parse it
+    if (mom.name.front() == '[' && mom.name.back() == ']') {
+      mom.name = mom.name.substr(1, mom.name.size() - 2);
+    }
+
+    // Check if the moment name has the expected length of 7 characters
+    if (mom.name.length() != 7) {
+      cout << " ERROR: Invalid moment name length for " << mom.name << endl;
+      assert(0);
+    }
+
     // parse the moment name to get the quantum numbers. Assumes moment name is of the
     // form "H<alpha>_<Jv><Lambda><J><M>"
-    assert(mom.name.length() == 7);
     mom.alpha = stoi(mom.name.substr(1,1).data());
     mom.Jv = stoi(mom.name.substr(3,1).data());
     mom.Lambda = stoi(mom.name.substr(4,1).data());
