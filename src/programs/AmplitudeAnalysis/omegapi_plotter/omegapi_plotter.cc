@@ -187,30 +187,20 @@ int main( int argc, char* argv[] ){
 
                         string locampname = amphistname[iamp];
 
-                        // parse amplitude name for naturality to compute reflectivity 
-                        int j = locampname[0]-'0';
-                        int parity = 0;
-                        if( locampname[1] == 'p' ) parity = +1;
-                        else if( locampname[1] == 'm' ) parity = -1;
-                        else cout<<"Undefined parity in amplitude"<<endl;
-                        int naturality = parity*pow(-1,j);
-
                         // turn on all sums by default
                         for (unsigned int i = 0; i < sums.size(); i++) plotGen.enableSum(i);
 
-                        // turn off unwanted sums for reflectivity (based on naturality)
+                        // turn off unwanted sums for reflectivity
                         //cout<<"refl = "<<irefl<<endl;
                         if (irefl < 2) {
                             for (unsigned int i = 0; i < sums.size(); i++){
 
                                 bool disableSum = false;
                                 if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
-                                    if (naturality>0 && irefl==1) disableSum = true;
-                                    if (naturality<0 && irefl==0) disableSum = true;
+                                    if (irefl==0) disableSum = true;
                                 }
                                 else {
-                                    if (naturality>0 && irefl==0) disableSum = true;
-                                    if (naturality<0 && irefl==1) disableSum = true;
+                                    if (irefl==1) disableSum = true;
                                 }
 
                                 if(disableSum) {
