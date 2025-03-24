@@ -34,7 +34,6 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   }
 
   m_numberOfMoments = args.size() - m_nonMomentArgs; // calculate the number of moments based on non-moment arguments
-  m_moments.reserve(m_numberOfMoments);
 
   // Three possibilities to initialize the set of polarized moment parameters, with the following labels:
   // <alpha>: indexes the unpolarized [0], polarized real [1], and polarized imaginary moments [2],
@@ -79,28 +78,23 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
 
     mom.name = args[i];
     mom.H = AmpParameter( mom.name );     
-    registerParameter( mom.H ); // register moment as a free parameter
 
-    // remove brackets from moment name if they exist to parse it
-    if (mom.name.front() == '[' && mom.name.back() == ']') {
-      mom.name = mom.name.substr(1, mom.name.size() - 2);
-    }
-
-    // Check if the moment name has the expected length of 7 characters
-    if (mom.name.length() != 7) {
+    // // Check if the moment name has the expected length of 9 characters
+    if (mom.name.length() != 9) {
       cout << " ERROR: Invalid moment name length for " << mom.name << endl;
       assert(0);
     }
 
     // parse the moment name to get the quantum numbers. Assumes moment name is of the
-    // form "H<alpha>_<Jv><Lambda><J><M>"
-    mom.alpha = stoi(mom.name.substr(1,1).data());
-    mom.Jv = stoi(mom.name.substr(3,1).data());
-    mom.Lambda = stoi(mom.name.substr(4,1).data());
-    mom.J = stoi(mom.name.substr(5,1).data());
-    mom.M = stoi(mom.name.substr(6,1).data());
+    // form "[H<alpha>_<Jv><Lambda><J><M>]"
+    mom.alpha = stoi(mom.name.substr(2,1).data());
+    mom.Jv = stoi(mom.name.substr(4,1).data());
+    mom.Lambda = stoi(mom.name.substr(5,1).data());
+    mom.J = stoi(mom.name.substr(6,1).data());
+    mom.M = stoi(mom.name.substr(7,1).data());
 
     m_moments.push_back( mom ); // add the moment to the list
+    registerParameter(m_moments.back().H); // register the AmpParameter
   }   
 
   // default is 3-body vector decay (omega->3pi)
