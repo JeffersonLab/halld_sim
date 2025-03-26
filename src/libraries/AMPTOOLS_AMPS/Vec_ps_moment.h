@@ -16,8 +16,7 @@ using namespace std;
 
 // Define a struct to hold the moment parameters
 struct moment {
-    string name;
-    AmpParameter H;
+    string name;    
     int alpha;
     int Jv;
     int Lambda;
@@ -69,7 +68,7 @@ private:
     int m_numberOfMoments;
     int m_nonMomentArgs;
     vector<moment> m_moments;
-    vector<AmpParameter> m_H;    
+    vector< shared_ptr < AmpParameter > > m_H;    
 
     double m_polAngle;
     double m_polFraction;

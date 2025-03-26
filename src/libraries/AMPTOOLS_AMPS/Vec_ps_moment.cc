@@ -77,7 +77,6 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     moment mom;
 
     mom.name = args[i];
-    mom.H = AmpParameter( mom.name );     
 
     // // Check if the moment name has the expected length of 9 characters
     if (mom.name.length() != 9) {
@@ -94,7 +93,9 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     mom.M = stoi(mom.name.substr(7,1).data());
 
     m_moments.push_back( mom ); // add the moment to the list
-    registerParameter(m_moments.back().H); // register the AmpParameter
+    shared_ptr<AmpParameter> mom_H = make_shared<AmpParameter>(mom.name); // create pointer to AmpParameter
+    m_H.push_back( mom_H ); // store the shared pointer directly in the vector
+    registerParameter( *mom_H ); // register the AmpParameter
   }   
 
   // default is 3-body vector decay (omega->3pi)
@@ -209,7 +210,7 @@ Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 
   GDouble total = 0; // initialize the total "amplitude" to zero
   for(int i = 0; i < m_numberOfMoments; i++) {
-    moment mom = m_moments[i];
+    const moment &mom = m_moments[i];
     // extract the quantum numbers
     int alpha = mom.alpha;
     int Jv = mom.Jv;
@@ -244,7 +245,7 @@ Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
         sin( M*phi + Lambda*phiH );
     }
 
-    total += angle * mom.H;
+    total += angle * *m_H[i];
   }
 
   // since AmpTools is hard coded to handle squared amplitudes, we return the square root of the total
@@ -261,7 +262,7 @@ Vec_ps_moment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) con
   moment moments[m_numberOfMoments];
   for(int i=0; i<m_numberOfMoments; i++)
   {
-    H[i] = m_moments[i].H;
+    H[i] = m_H[i];
     moments[i] = m_moments[i];
   }  
 
