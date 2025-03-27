@@ -48,6 +48,7 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/Polynomial.h"
+#include "AMPTOOLS_AMPS/PhaseShift.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/DeltaAngles.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
@@ -374,6 +375,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( Polynomial() );
+   AmpToolsInterface::registerAmplitude( PhaseShift() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
    AmpToolsInterface::registerAmplitude( DeltaAngles() );
    AmpToolsInterface::registerAmplitude( SinglePS() );
