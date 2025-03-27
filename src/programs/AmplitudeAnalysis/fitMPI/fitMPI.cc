@@ -41,6 +41,7 @@
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/Polynomial.h"
+#include "AMPTOOLS_AMPS/PhaseShift.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
@@ -397,6 +398,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( Polynomial() );
+   AmpToolsInterface::registerAmplitude( PhaseShift() );
    AmpToolsInterface::registerAmplitude( Flatte() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
    AmpToolsInterface::registerAmplitude( ComplexCoeff() );
