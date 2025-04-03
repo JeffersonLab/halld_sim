@@ -265,27 +265,22 @@ Vec_ps_moment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) con
   for(int i=0; i<m_numberOfMoments; i++) {
     host_H[i] = *m_H[i];
   }
+  // Convert moment vector to array
+  moment* host_moments = new moment[m_numberOfMoments];
+  for(int i=0; i<m_numberOfMoments; i++) {
+    host_moments[i] = m_moments[i];
+  }
 
-  // Allocate memory on the GPU
-  GDouble* device_H;
-  moment* device_moments;
-  cudaMalloc((void**)&device_H, m_numberOfMoments * sizeof(GDouble));
-  cudaMalloc((void**)&device_moments, m_numberOfMoments * sizeof(moment));
-
-  // copy data to the GPU
-  cudaMemcpy(device_H, host_H, m_numberOfMoments * sizeof(GDouble), cudaMemcpyHostToDevice);
-  cudaMemcpy(device_moments, m_moments.data(), m_numberOfMoments * sizeof(moment), cudaMemcpyHostToDevice);
-
+  if (host_H == nullptr || host_moments == nullptr) {
+    throw std::runtime_error("Memory allocation failed for host_H or host_moments");
+  }
+  
   // launch the kernel
-  GPUVec_ps_moment_kernel<<<dimGrid, dimBlock>>>(GPU_AMP_ARGS, device_H, device_moments, m_numberOfMoments);
-
-  // synchronize and free GPU memory
-  cudaDeviceSynchronize();
-  cudaFree(device_H);
-  cudaFree(device_moments);
+  GPUVec_ps_moment_exec(dimGrid, dimBlock, GPU_AMP_ARGS, host_H, host_moments, m_numberOfMoments);
 
   // free host memory
   delete[] host_H;
+  delete[] host_moments;
 }
 
 #endif
