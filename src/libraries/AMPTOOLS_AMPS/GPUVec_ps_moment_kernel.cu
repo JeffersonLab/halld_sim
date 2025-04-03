@@ -8,7 +8,6 @@
 
 struct moment {
   char name[32]; // assuming max length of name is 32 characters
-  GDouble H;
   int alpha;
   int Jv;
   int Lambda;
@@ -45,7 +44,7 @@ GPUVec_ps_moment_kernel(GPU_AMP_PROTO, GDouble *H, moment *moments, int numberOf
       int GJ = mom.J;
       int GM = mom.M;
       
-      GDouble angle = 2.0 * (2*GJ + 1) / (4*PI ) * (2*GJv + 1) / (4*PI );
+      GDouble angle = (2*GJ + 1) / (4*PI ) * (2*GJv + 1) / (4*PI );
       if(Galpha == 0) {
         angle *= (
           wignerDSmall( GJ, GM, GLambda, theta ) * 
@@ -66,30 +65,11 @@ GPUVec_ps_moment_kernel(GPU_AMP_PROTO, GDouble *H, moment *moments, int numberOf
           G_SIN( GM*phi + GLambda*phiH );
       }
 
-      total += angle * mom.H;
+      total += angle * H[i];
     }   
 
   // since AmpTools is hard coded to handle squared amplitudes, we return the square root of the total
   WCUComplex amp = { G_SQRT( G_FABS( total ) ), 0 };
 
   pcDevAmp[iEvent] = amp;
-}
-
-void
-GPUVec_ps_moment_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble* H, moment* moments, int numberOfMoments)
-{
-  // allocate memory and pass moment parameter array to GPU
-  GDouble* d_H;
-  moment *d_moments;
-  cudaMalloc((void**)&d_H, numberOfMoments * sizeof(GDouble));
-  cudaMalloc((void**)&d_moments, numberOfMoments * sizeof(moment));
-
-  cudaMemcpy(d_H, &H[0], numberOfMoments * sizeof(GDouble), cudaMemcpyHostToDevice );
-  cudaMemcpy(d_moments, &moments[0], numberOfMoments * sizeof(moment), cudaMemcpyHostToDevice );
-
-  GPUVec_ps_moment_kernel<<< dimGrid, dimBlock >>>(GPU_AMP_ARGS, d_H, d_moments, numberOfMoments);
-
-  cudaDeviceSynchronize();
-  cudaFree(d_H);
-  cudaFree(d_moments);
 }

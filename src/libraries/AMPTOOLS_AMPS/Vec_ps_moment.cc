@@ -93,7 +93,10 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
     mom.M = stoi(mom.name.substr(7,1).data());
 
     m_moments.push_back( mom ); // add the moment to the list
-    shared_ptr<AmpParameter> mom_H = make_shared<AmpParameter>(mom.name); // create pointer to AmpParameter
+
+    // create pointer to AmpParameter. This must be a shared pointer, otherwise it will
+    // its value will be lost when the function exits.    
+    shared_ptr<AmpParameter> mom_H = make_shared<AmpParameter>(mom.name); 
     m_H.push_back( mom_H ); // store the shared pointer directly in the vector
     registerParameter( *mom_H ); // register the AmpParameter
   }   
@@ -257,17 +260,32 @@ Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 void
 Vec_ps_moment::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-  // convert vector to array for GPU
-  GDouble H[m_numberOfMoments];
-  moment moments[m_numberOfMoments];
-  for(int i=0; i<m_numberOfMoments; i++)
-  {
-    H[i] = m_H[i];
-    moments[i] = m_moments[i];
-  }  
+  // Extract raw values from the shared_ptr
+  GDouble* host_H = new GDouble[m_numberOfMoments];
+  for(int i=0; i<m_numberOfMoments; i++) {
+    host_H[i] = *m_H[i];
+  }
 
-  GPUVec_ps_moment_exec( dimGrid, dimBlock, GPU_AMP_ARGS, H, moments, m_numberOfMoments );
+  // Allocate memory on the GPU
+  GDouble* device_H;
+  moment* device_moments;
+  cudaMalloc((void**)&device_H, m_numberOfMoments * sizeof(GDouble));
+  cudaMalloc((void**)&device_moments, m_numberOfMoments * sizeof(moment));
 
+  // copy data to the GPU
+  cudaMemcpy(device_H, host_H, m_numberOfMoments * sizeof(GDouble), cudaMemcpyHostToDevice);
+  cudaMemcpy(device_moments, m_moments.data(), m_numberOfMoments * sizeof(moment), cudaMemcpyHostToDevice);
+
+  // launch the kernel
+  GPUVec_ps_moment_kernel<<<dimGrid, dimBlock>>>(GPU_AMP_ARGS, device_H, device_moments, m_numberOfMoments);
+
+  // synchronize and free GPU memory
+  cudaDeviceSynchronize();
+  cudaFree(device_H);
+  cudaFree(device_moments);
+
+  // free host memory
+  delete[] host_H;
 }
 
 #endif
