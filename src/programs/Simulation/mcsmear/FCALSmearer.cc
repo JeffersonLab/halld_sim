@@ -166,7 +166,7 @@ fcal_config_t::fcal_config_t(const std::shared_ptr<const JEvent>& event, const D
     if(DEvent::GetCalib(event, "FCAL/block_mc_efficiency", raw_table)) {
       jerr << "Problem loading FCAL/block_mc_efficiency from CCDB!" << endl;
     } else {
-      int num_channels=fcalGeom->numFcalChannels();
+      int num_channels=fcalGeom->numChannels();
       for (int channel=0; channel < num_channels; channel++) {
 	int row = fcalGeom->row(channel);
 	int col = fcalGeom->column(channel);
