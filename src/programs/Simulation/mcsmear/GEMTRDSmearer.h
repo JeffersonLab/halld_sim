@@ -17,6 +17,8 @@ class gemtrd_config_t
   double GEMTRD_XYSIGMA;
 
   double GEMTRD_INTEGRAL_TO_AMPLITUDE;
+  //Position of center of GEMTRD
+  double GEMTRDx,GEMTRDy;
 };
 
 
