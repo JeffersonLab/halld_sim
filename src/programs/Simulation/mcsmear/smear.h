@@ -28,6 +28,7 @@ using namespace std;
 #include <TPOLSmearer.h>
 #include <FMWPCSmearer.h>
 #include <CTOFSmearer.h>
+#include <GEMTRDSmearer.h>
 
 
 

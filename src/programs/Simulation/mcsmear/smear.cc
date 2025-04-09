@@ -48,8 +48,8 @@ Smear::Smear(mcsmear_config_t *in_config, const std::shared_ptr<const JEvent>& e
 		smearers[SYS_DIRC]  = static_cast<Smearer*>(new DIRCSmearer(event,config));
 		smearers[SYS_CCAL]  = static_cast<Smearer*>(new CCALSmearer(event,config));
 		smearers[SYS_FMWPC] = static_cast<Smearer*>(new FMWPCSmearer(event,config));
-		smearers[SYS_CTOF] = static_cast<Smearer*>(new CTOFSmearer(event,config));
-		
+		smearers[SYS_CTOF]  = static_cast<Smearer*>(new CTOFSmearer(event,config));
+		smearers[SYS_TRD]   = static_cast<Smearer*>(new GEMTRDSmearer(event,config));
 	} else {
 		// Parse string of system names
     	std::istringstream ss(detectors_to_load);
@@ -73,7 +73,8 @@ Smear::Smear(mcsmear_config_t *in_config, const std::shared_ptr<const JEvent>& e
 				case SYS_DIRC:   smearers[the_detector] = static_cast<Smearer*>(new DIRCSmearer(event,config));  break;
 				case SYS_CCAL:   smearers[the_detector] = static_cast<Smearer*>(new CCALSmearer(event,config));  break;
 				case SYS_FMWPC:  smearers[the_detector] = static_cast<Smearer*>(new FMWPCSmearer(event,config));  break;
-				case SYS_CTOF:  smearers[the_detector] = static_cast<Smearer*>(new CTOFSmearer(event,config));  break;
+				case SYS_CTOF:   smearers[the_detector] = static_cast<Smearer*>(new CTOFSmearer(event,config));  break;
+				case SYS_TRD:    smearers[the_detector] = static_cast<Smearer*>(new GEMTRDSmearer(event,config));  break;
                 default:  break;   // don't smear any other detectors
 			}
 		}
