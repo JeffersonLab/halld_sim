@@ -36,6 +36,7 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/DeltaAngles.h"
+#include "AMPTOOLS_AMPS/Linear.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/ConfigFileParser.h"
@@ -55,11 +56,11 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
   AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
   AmpToolsInterface::registerAmplitude( DeltaAngles() );
+  AmpToolsInterface::registerAmplitude( Linear() );
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
   AmpToolsInterface::registerDataReader( FSRootDataReader() );
-  AmpToolsInterface::registerDataReader( FSRootDataReaderTEM() );
 }
 
 using namespace std;
@@ -126,19 +127,19 @@ int main( int argc, char* argv[] ){
 	}
 	cout << "Fit results loaded" << endl;
 
-	vector< string > amphistname;
-
+	vector< string > amphistname = { "p1p0Sp3", "p1p0Sp1", "p1p0Sm1", "p1p0Dp3", "p1p0Dp1", "p1p0Dm1", "m1ppSp3", "m1ppSp1", "m1ppSm1", "m1ppDp3", "m1ppDp1", "m1ppDm1", "p1mpPp3", "p1mpPp1", "p1mpPm1", "m1mpPp3", "m1mpPp1", "m1mpPm1" }; // hardcode amp names for now, maybe automate later?
+/*
 	string reflTag[] = { "p", "m" };
 	int reflNum = 2;
 
-	string jpTag[] = { "1p" };
-	int jpNum = 1;
+	string jpTag[] = { "1p", "1m" };
+	int jpNum = 2;
 
 	string mJTag[] = { "m", "0", "p" };
 	int mJNum = 3;
 
-	string lTag[] = { "s" };
-	int lNum = 1;
+	string lTag[] = { "S", "P", "D" };
+	int lNum = 3;
 
 	string helDelTag[] = { "m3", "m1", "p1", "p3" };
 	int helDelNum = 4;
@@ -160,7 +161,7 @@ int main( int argc, char* argv[] ){
 			}
 		}
 	}
-
+*/
 	if( makePlots ) {
 
 		// ************************

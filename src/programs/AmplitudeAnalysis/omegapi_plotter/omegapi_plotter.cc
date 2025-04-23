@@ -34,6 +34,7 @@
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/Polynomial.h"
+#include "AMPTOOLS_AMPS/Linear.h"
 #include "AMPTOOLS_AMPS/PhaseShift.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
@@ -55,6 +56,7 @@ void atiSetup(){
     AmpToolsInterface::registerAmplitude( ComplexCoeff() );
     AmpToolsInterface::registerAmplitude( Piecewise() );
     AmpToolsInterface::registerAmplitude( Polynomial() );
+    AmpToolsInterface::registerAmplitude( Linear() );
     AmpToolsInterface::registerAmplitude( PhaseShift() );
     AmpToolsInterface::registerAmplitude( OmegaDalitz() );
     AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
