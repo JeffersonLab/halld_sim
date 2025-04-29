@@ -24,8 +24,19 @@ UserAmplitude< Linear >( args )
 }
 
 complex< GDouble >
-Linear::calcAmplitude( GDouble** pKin ) const
+Linear::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
+  GDouble mass = userVars[uv_mass];
+
+  double real_tot = m_real_p0 + m_real_p1 * mass;
+  double imag_tot = m_imag_p0 + imag_p1 * mass;
+
+  complex< GDouble > ans( real_tot, imag_tot );
+  return ans;
+}
+
+void Linear::calcUserVars( GDouble** pKin, GDouble* userVars ) const
+{ 
   TLorentzVector P1, P2, Ptot, Ptemp;
 
   for( unsigned int i = 0; i < m_daughters.first.size(); ++i ){
@@ -47,12 +58,13 @@ Linear::calcAmplitude( GDouble** pKin ) const
     P2 += Ptemp;
     Ptot += Ptemp;
   }
-
-  double imag_p1 = m_real_p1 * m_imag_p0 / m_real_p0;
-
-  double real_tot = m_real_p0 + m_real_p1*Ptot.M();
-  double imag_tot = m_imag_p0 + imag_p1*Ptot.M();
-
-  complex< GDouble > ans( real_tot, imag_tot );
-  return ans;
+  userVars[uv_mass] = Ptot.M(); 
 }
+
+void
+Linear::updatePar( const AmpParameter& par )
+{
+  imag_p1 = m_real_p1 * m_imag_p0 / m_real_p0;
+}
+
+
