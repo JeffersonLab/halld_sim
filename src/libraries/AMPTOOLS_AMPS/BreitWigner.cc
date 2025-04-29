@@ -37,57 +37,70 @@ UserAmplitude< BreitWigner >( args )
 }
 
 complex< GDouble >
-BreitWigner::calcAmplitude( GDouble** pKin ) const
+BreitWigner::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
-  TLorentzVector P1, P2, Ptot, Ptemp;
-  
-  for( unsigned int i = 0; i < m_daughters.first.size(); ++i ){
-    
-    string num; num += m_daughters.first[i];
-    int index = atoi(num.c_str());
-    Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
-                      pKin[index][3], pKin[index][0] );
-    P1 += Ptemp;
-    Ptot += Ptemp;
-  }
-  
-  for( unsigned int i = 0; i < m_daughters.second.size(); ++i ){
-    
-    string num; num += m_daughters.second[i];
-    int index = atoi(num.c_str());
-    Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2],
-                      pKin[index][3], pKin[index][0] );
-    P2 += Ptemp;
-    Ptot += Ptemp;
-  }
-  
-  GDouble mass  = Ptot.M();
-  GDouble mass1 = P1.M();
-  GDouble mass2 = P2.M();
-  
-  // assert positive breakup momenta     
-  GDouble q0 = fabs( breakupMomentum(m_mass0, mass1, mass2) );
-  GDouble q  = fabs( breakupMomentum(mass,    mass1, mass2) );
-  
-  GDouble F0 = barrierFactor(q0, m_orbitL);
-  GDouble F  = barrierFactor(q,  m_orbitL);
-  
-  GDouble width = m_width0*(m_mass0/mass)*(q/q0)*((F*F)/(F0*F0));
-  //GDouble width = m_width0;
-  
-  // this first factor just gets normalization right for BW's that have
-  // no additional s-dependence from orbital L
-  complex<GDouble> bwtop( sqrt( m_mass0 * m_width0 / 3.1416 ), 0.0 );
-  
-  complex<GDouble> bwbottom( ( m_mass0*m_mass0 - mass*mass ) ,
-                           -1.0 * ( m_mass0 * width ) );
 
-  complex<GDouble> bwtot( F * bwtop / bwbottom );
+    GDouble mass = userVars[uv_mass];
+    GDouble massDaught1 = userVars[uv_massDaught1];
+    GDouble massDaught2 = userVars[uv_massDaught1];
+    GDouble q = userVars[uv_q]; // breakup momentum
+    GDouble F = userVars[uv_F]; // barrier factor
 
-  if( phaseTag == 0 )  
-    return( bwtot );
-  else
-    return( bwtot / abs( bwtot ) );
+    // assert positive breakup momentum
+    GDouble q0 = fabs( breakupMomentum(m_mass0, massDaught1, massDaught2) );
+
+    GDouble F0 = barrierFactor(q0, m_orbitL);
+
+    GDouble width = m_width0*(m_mass0/mass)*(q/q0)*((F*F)/(F0*F0));
+
+    // this first factor just gets normalization right for BW's that have
+    // no additional s-dependence from orbital L
+    complex<GDouble> bwtop( sqrt( m_mass0 * m_width0 / 3.1416 ), 0.0 );
+    complex<GDouble> bwbottom( ( m_mass0*m_mass0 - mass*mass ), -1.0 * ( m_mass0 * width ) );
+
+    complex< GDouble > bwtot( F * bwtop / bwbottom);
+
+    if( phaseTag == 0 )
+        return bwtot;
+    else
+        return bwtot / abs( bwtot );
+}
+
+void
+BreitWigner::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
+
+    TLorentzVector P1, P2, Ptot, Ptemp;
+
+    for( unsigned int i = 0; i < m_daughters.first.size(); ++i ){
+        string num; num += m_daughters.first[i];
+        int index = atoi(num.c_str()); 
+        Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2], pKin[index][3], pKin[index][0] );
+        P1 += Ptemp;
+        Ptot += Ptemp;
+    }
+
+    for( unsigned int i = 0; i < m_daughters.second.size(); ++i ){
+        string num; num += m_daughters.second[i];
+        int index = atoi(num.c_str());
+        Ptemp.SetPxPyPzE( pKin[index][1], pKin[index][2], pKin[index][3], pKin[index][0] );
+        P2 += Ptemp;
+        Ptot += Ptemp;
+    }
+
+    GDouble mass  = Ptot.M();
+    GDouble mass1 = P1.M();
+    GDouble mass2 = P2.M();
+
+    // assert positive breakup momentum     
+    GDouble q  = fabs( breakupMomentum(mass, mass1, mass2) );
+
+    GDouble F  = barrierFactor(q,  m_orbitL);
+
+    userVars[uv_mass] = mass; 
+    userVars[uv_massDaught1] = mass1;
+    userVars[uv_massDaught2] = mass2;
+    userVars[uv_q] = q;
+    userVars[uv_F] = F;
 }
 
 void
