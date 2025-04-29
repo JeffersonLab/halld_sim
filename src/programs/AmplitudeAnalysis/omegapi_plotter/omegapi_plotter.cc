@@ -61,11 +61,12 @@ void atiSetup(){
     AmpToolsInterface::registerAmplitude( OmegaDalitz() );
     AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
     AmpToolsInterface::registerAmplitude( DeltaAngles() );
+    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
 
     AmpToolsInterface::registerDataReader( ROOTDataReader() );
     AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
     AmpToolsInterface::registerDataReader( FSRootDataReader() );
-    AmpToolsInterface::registerDataReader( FSRootDataReaderTEM() );
 }
 
 using namespace std;

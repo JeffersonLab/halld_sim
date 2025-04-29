@@ -9,7 +9,7 @@
 class tagm_config_t 
 {
   public:
-	tagm_config_t(JEventLoop *loop);
+	tagm_config_t(const std::shared_ptr<const JEvent>& event);
 
 	double TAGM_TSIGMA;
 	double TAGM_FADC_TSIGMA;
@@ -25,8 +25,8 @@ class tagm_config_t
 class TAGMSmearer : public Smearer
 {
   public:
-	TAGMSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		tagm_config = new tagm_config_t(loop);
+	TAGMSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		tagm_config = new tagm_config_t(event);
 	}
 	~TAGMSmearer() {
 		delete tagm_config;

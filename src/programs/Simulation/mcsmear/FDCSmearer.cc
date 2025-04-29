@@ -2,7 +2,8 @@
 
 #include <FDC/DFDCGeometry.h>
 #include <JANA/JException.h>
-using namespace jana;
+#include "DANA/DEvent.h"
+
 
 #include <sstream>
 
@@ -11,7 +12,7 @@ bool fdc_config_t::FDC_EFFVSDOCA(1);
 //-----------
 // fdc_config_t  (constructor)
 //-----------
-fdc_config_t::fdc_config_t(JEventLoop *loop) 
+fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event) 
 {
 	// default values
 	FDC_TDRIFT_SIGMA      = 0.0;
@@ -24,7 +25,7 @@ fdc_config_t::fdc_config_t(JEventLoop *loop)
 	// load data from CCDB
 	cout << "Get FDC/fdc_parms parameters from CCDB..." << endl;
     map<string, double> fdcparms;
-     if(loop->GetCalib("FDC/fdc_parms", fdcparms)) {
+     if(DEvent::GetCalib(event, "FDC/fdc_parms", fdcparms)) {
      	jerr << "Problem loading FDC/fdc_parms from CCDB!" << endl;
      } else {
        	FDC_TDRIFT_SIGMA      = fdcparms["FDC_TDRIFT_SIGMA"];
@@ -49,13 +50,13 @@ fdc_config_t::fdc_config_t(JEventLoop *loop)
 
 		char ccdb_str[100];
 		sprintf(ccdb_str, "/FDC/package%d/strip_mc_efficiency", package);
-    	if(loop->GetCalib(ccdb_str, new_strip_efficiencies)) {
+    	if(DEvent::GetCalib(event, ccdb_str, new_strip_efficiencies)) {
         	stringstream err_ss;
         	err_ss << "Error loading " << ccdb_str << " !";
         	throw JException(err_ss.str());
         }
 		sprintf(ccdb_str,"/FDC/package%d/wire_mc_efficiency", package);
-    	if(loop->GetCalib(ccdb_str, new_wire_efficiencies)) {
+    	if(DEvent::GetCalib(event, ccdb_str, new_wire_efficiencies)) {
         	stringstream err_ss;
         	err_ss << "Error loading " << ccdb_str << " !";
         	throw JException(err_ss.str());

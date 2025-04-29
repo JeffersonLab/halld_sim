@@ -9,9 +9,6 @@ using namespace std;
 #include "HDDM/hddm_s.hpp"
 #include "GlueX.h"
 
-#include <JANA/JEventLoop.h>
-using namespace jana;
-
 #include "mcsmear_config.h"
 
 #include <Smearer.h>
@@ -31,13 +28,14 @@ using namespace jana;
 #include <TPOLSmearer.h>
 #include <FMWPCSmearer.h>
 #include <CTOFSmearer.h>
+#include <GEMTRDSmearer.h>
 
 
 
 class Smear
 {
     public:
-		Smear(mcsmear_config_t *in_config, JEventLoop *loop, string detectors_to_load="all");
+		Smear(mcsmear_config_t *in_config, const std::shared_ptr<const JEvent>& event, string detectors_to_load="all");
 		~Smear();
 
 		// main entrance - takes an event and smears it
