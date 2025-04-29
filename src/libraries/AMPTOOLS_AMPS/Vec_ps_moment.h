@@ -44,9 +44,8 @@ public:
     string name() const { return "Vec_ps_moment"; }
 
     complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
-
-    enum UserVars { kBeamPolFraction = 0, kCosTheta, kPhi, kCosThetaH, kPhiH, kProdAngle, kNumUserVars };
-    unsigned int numUserVars() const { return kNumUserVars; }
+    
+    unsigned int numUserVars() const { return m_numberOfMoments; }
 
     void calcUserVars( GDouble** pKin, GDouble* userVars ) const;
 

@@ -3,7 +3,7 @@
 The file currently assumes the vector is an omega decaying to 3pi, and so uses the
 m_3pi flag, just as is done in vec_ps_refl.cc.
 
-Original author: Edmundo Barriga
+Original author: Edmundo Barriga & Justin Stevens
 Modified by: Kevin Scheuer
 */
 #include <cassert>
@@ -94,8 +94,8 @@ Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
 
     m_moments.push_back( mom ); // add the moment to the list
 
-    // create pointer to AmpParameter. This must be a shared pointer, otherwise it will
-    // its value will be lost when the function exits.    
+    // create pointer to AmpParameter. This must be a shared pointer, otherwise its
+    // value will be lost when the function exits.
     shared_ptr<AmpParameter> mom_H = make_shared<AmpParameter>(mom.name); 
     m_H.push_back( mom_H ); // store the shared pointer directly in the vector
     registerParameter( *mom_H ); // register the AmpParameter
@@ -112,6 +112,7 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   TVector3 eps;
   GDouble beam_polFraction;
 
+  //////////////////////// Determine Beam Polarization Fraction ////////////////////////
   if(m_polInTree){
     beam.SetPxPyPzE( 0., 0., pKin[0][0], pKin[0][0]);
     eps.SetXYZ(pKin[0][1], pKin[0][2], 0.); // beam polarization vector;
@@ -135,6 +136,7 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
       }
     }
   }
+  //////////////////////////////// Obtain Kinematics ///////////////////////////////////
 
   TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
 
@@ -167,7 +169,7 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   // final meson system P4
   TLorentzVector X = vec + ps;
 
-  //////////////////////// Boost Particles and Get Angles//////////////////////////////////
+  //////////////////////// Boost Particles and Get Angles ////////////////////////
 
   TLorentzVector target(0,0,0,0.938);
   //Helicity coordinate system
@@ -180,38 +182,24 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   vector <double> locthetaphih;
   if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
   else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
-  
-  userVars[kCosTheta] = TMath::Cos(locthetaphi[0]);
-  userVars[kPhi] = locthetaphi[1];
-  
-  userVars[kCosThetaH] = TMath::Cos(locthetaphih[0]);
-  userVars[kPhiH] = locthetaphih[1];
-  
-  userVars[kProdAngle] = locthetaphi[2];
+    
+  // the theta angles need to be in degrees for the wignerDSmall function
+  GDouble theta = locthetaphi[0] * 180.0 / TMath::Pi();
+  GDouble thetaH = locthetaphih[0] * 180.0 / TMath::Pi();
 
-  userVars[kBeamPolFraction] = beam_polFraction;
-}
+  // simply label the phi angles for easier reading
+  GDouble phi = locthetaphi[1];
+  GDouble phiH = locthetaphih[1];
 
+  // polarized components need cos(2Phi) and sin(2Phi), which take angles in radians
+  GDouble prodAngle = locthetaphi[2];
+  GDouble cos2prodAngle = TMath::Cos(2*prodAngle);
+  GDouble sin2prodAngle = TMath::Sin(2*prodAngle);
 
-////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
+  ///////////////////// Pre-calculate the angular distributions ////////////////////////
 
-complex< GDouble >
-Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
-{
-  // obtain all the angles from the userVars block
-  GDouble beam_polFraction = userVars[kBeamPolFraction];
-  GDouble cosTheta = userVars[kCosTheta];
-  GDouble phi = userVars[kPhi];
-  GDouble cosThetaH = userVars[kCosThetaH];
-  GDouble phiH = userVars[kPhiH];
-  GDouble prodAngle = userVars[kProdAngle];
-
-  GDouble cos2prodAngle = cos(2*prodAngle);
-  GDouble sin2prodAngle = sin(2*prodAngle);
-  GDouble theta = acos(cosTheta) * 180./TMath::Pi(); 
-  GDouble thetaH = acos(cosThetaH) * 180./TMath::Pi(); 
-
-  GDouble total = 0; // initialize the total "amplitude" to zero
+  // in the header file we have defined the userVars block to be the size of the number 
+  // of moments, so we can use that to store the angular distributions
   for(int i = 0; i < m_numberOfMoments; i++) {
     const moment &mom = m_moments[i];
     // extract the quantum numbers
@@ -228,29 +216,47 @@ Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
     // NOTE: the multiplication of two Wigner D functions gives 2 wignerDsmall functions,
     // and an exponential. We enforce that the H0, H1 (H2) moments are purely real 
     // (imaginary) by taking the real (imaginary) part of that exponential.
-    if(alpha == 0) { // unpolarized component
+    if(alpha == 0) { // unpolarized component (real)
       angle *= (
         wignerDSmall( J, M, Lambda, theta ) * 
         wignerDSmall( Jv, Lambda, 0, thetaH ) * 
         cos( M*phi + Lambda*phiH )
       );
     }
-    else if(alpha == 1) {
-      angle *= -1.0 * beam_polFraction * cos2prodAngle * 
+    else if(alpha == 1) { // polarized real component
+      angle *= (
+        -1.0 * beam_polFraction * cos2prodAngle * 
         wignerDSmall( J, M, Lambda, theta ) * 
         wignerDSmall( Jv, Lambda, 0, thetaH ) * 
-        cos( M*phi + Lambda*phiH );
+        cos( M*phi + Lambda*phiH )
+      );
     }
-    else if(alpha == 2) {
-      angle *= -1.0 * beam_polFraction * sin2prodAngle * 
+    else if(alpha == 2) { // polarized imaginary component
+      angle *= (-1.0 * beam_polFraction * sin2prodAngle * 
         wignerDSmall( J, M, Lambda, theta ) * 
         wignerDSmall( Jv, Lambda, 0, thetaH ) * 
-        sin( M*phi + Lambda*phiH );
+        sin( M*phi + Lambda*phiH )
+      );
     }
-
-    total += angle * *m_H[i];
+    else {
+      cout << " ERROR: Invalid moment alpha value " << alpha << endl;
+      assert(0);
+    }
+    // store the angular distribution for this moment
+    userVars[i] = angle;
   }
+}
 
+
+////////////////////////////////////////////////// Amplitude Calculation //////////////////////////////////
+complex< GDouble >
+Vec_ps_moment::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
+{
+  GDouble total = 0; // initialize the total "amplitude" to zero
+  for(int i = 0; i < m_numberOfMoments; i++) {
+    GDouble angular_distribution = userVars[i];
+    total += angular_distribution * *m_H[i];
+  }
   // since AmpTools is hard coded to handle squared amplitudes, we return the square root of the total
   return complex< GDouble >( sqrt(fabs(total)) );
 }

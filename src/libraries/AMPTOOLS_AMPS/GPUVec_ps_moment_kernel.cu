@@ -20,52 +20,10 @@ GPUVec_ps_moment_kernel(GPU_AMP_PROTO, GDouble *H, moment *moments, int numberOf
 {
     int iEvent = GPU_THIS_EVENT;
 
-
-    // be careful to index using the proper integer corresponding to the enumeration in 
-    // the C++ header file
-    GDouble beamPolFraction = GPU_UVARS(0);
-    GDouble cosTheta = GPU_UVARS(1);
-    GDouble phi = GPU_UVARS(2);
-    GDouble cosThetaH = GPU_UVARS(3);
-    GDouble phiH = GPU_UVARS(4);
-    GDouble prodAngle = GPU_UVARS(5);
-
-    GDouble cos2prodAngle = G_COS(2*prodAngle);
-    GDouble sin2prodAngle = G_SIN(2*prodAngle);
-    GDouble theta = G_ACOS(cosTheta) * 180./PI;
-    GDouble thetaH = G_ACOS(cosThetaH) * 180./PI;
-
     GDouble total = 0.0; // initialize the total "amplitude" to zero
     for(int i = 0; i < numberOfMoments; i++) {
-      moment mom = moments[i];
-      int Galpha = mom.alpha;
-      int GJv = mom.Jv;
-      int GLambda = mom.Lambda;
-      int GJ = mom.J;
-      int GM = mom.M;
-      
-      GDouble angle = (2*GJ + 1) / (4*PI ) * (2*GJv + 1) / (4*PI );
-      if(Galpha == 0) {
-        angle *= (
-          wignerDSmall( GJ, GM, GLambda, theta ) * 
-          wignerDSmall( GJv, GLambda, 0, thetaH ) * 
-          G_COS( GM*phi + GLambda*phiH )
-        );
-      }
-      else if(Galpha == 1) {
-        angle *= -1.0 * beamPolFraction * cos2prodAngle * 
-          wignerDSmall( GJ, GM, GLambda, theta ) * 
-          wignerDSmall( GJv, GLambda, 0, thetaH ) * 
-          G_COS( GM*phi + GLambda*phiH );
-      }
-      else if(Galpha == 2) {
-        angle *= -1.0 * beamPolFraction * sin2prodAngle * 
-          wignerDSmall( GJ, GM, GLambda, theta ) * 
-          wignerDSmall( GJv, GLambda, 0, thetaH ) * 
-          G_SIN( GM*phi + GLambda*phiH );
-      }
-
-      total += angle * H[i];
+      GDouble angular_distribution = GPU_UVARS(i);
+      total += angular_distribution * H[i];
     }   
 
   // since AmpTools is hard coded to handle squared amplitudes, we return the square root of the total
