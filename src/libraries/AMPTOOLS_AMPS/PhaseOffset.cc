@@ -23,6 +23,11 @@ UserAmplitude< PhaseOffset >( args )
 complex< GDouble >
 PhaseOffset::calcAmplitude( GDouble** pKin ) const
 {
-  complex <GDouble> a = polar(GDouble(1.0), GDouble(m_phase));
-  return a;
+  return m_value;
 }
+
+void
+PhaseOffset::updatePar( const AmpParameter& par ){
+  m_value = polar(GDouble(1.0), GDouble(m_phase));
+}
+

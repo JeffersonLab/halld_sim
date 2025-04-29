@@ -42,9 +42,13 @@ public:
   bool isGPUEnabled() const { return true; }
 #endif
 
+  void updatePar( const AmpParameter& par );
+
 private:
 	
   AmpParameter m_phase;
+
+  complex< GDouble > m_value;
 
 };
 
