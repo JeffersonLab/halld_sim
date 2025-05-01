@@ -42,7 +42,7 @@ BreitWigner::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 
     GDouble mass = userVars[uv_mass];
     GDouble massDaught1 = userVars[uv_massDaught1];
-    GDouble massDaught2 = userVars[uv_massDaught1];
+    GDouble massDaught2 = userVars[uv_massDaught2];
     GDouble q = userVars[uv_q]; // breakup momentum
     GDouble F = userVars[uv_F]; // barrier factor
 
