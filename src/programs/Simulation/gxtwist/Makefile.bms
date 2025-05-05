@@ -1,6 +1,6 @@
 
 PACKAGES := CERNLIB:JANA:CURL
-MISC_LIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -L$(HALLD_SIM_HOME)/$(BMS_OSNAME)/lib -lXm -lXt -lgelhad -lhitutil -rdynamic -ltirpc -lcurl
+MISC_LIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -L$(HALLD_SIM_HOME)/$(BMS_OSNAME)/lib -L$(JANA_HOME)/lib -lXm -lXt -lgelhad -lhitutil -rdynamic -ltirpc -lcurl -lJANA
 #FFLAGS = -Wno-globals
 CFLAGS += -g -I$(HALLD_RECON_HOME)/src/libraries -I$(HALLD_RECON_HOME)/${BMS_OSNAME}/include -I/usr/include/tirpc -L$(HALLD_RECON_HOME)/$(BMS_OSNME)/lib 
 ADDITIONAL_MODULES += HDDM HDGEOMETRY
