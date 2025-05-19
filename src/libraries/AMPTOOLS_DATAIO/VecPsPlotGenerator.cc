@@ -68,6 +68,13 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 	  if(option.EqualTo("omega3pi")) m_3pi = true;
    }
 
+   // if the amplitude is a moment, force the 3pi decay as it's currently the only one handled by it
+   const vector < string > momentArgs = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
+   for (uint ioption=0; ioption<momentArgs.size(); ioption++) {
+          TString option = momentArgs[ioption].c_str();
+      if(option.EqualTo("Vec_ps_moment")) m_3pi = true;
+   }
+
    TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
    double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc;
    double dalitzx = 0;
