@@ -1,9 +1,9 @@
 /* Simplistic model for fitting vector-pseudoscalar data with linearly polarized moments 
 
-The file currently assumes the vector is an omega decaying to 3pi, and so uses the
-m_3pi flag, just as is done in vec_ps_refl.cc.
+The file currently assumes the vector is an omega decaying to 3pi, and so uses only the
+m_3pi flag, meaning the angular distributions will change for different final states.
 
-Original author: Edmundo Barriga & Justin Stevens
+Original authors: Edmundo Barriga & Justin Stevens
 Modified by: Kevin Scheuer
 */
 #include <cassert>
@@ -180,8 +180,14 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
   // Calculate vector decay angles (unique for each vector)
   vector <double> locthetaphih;
-  if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
-  else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
+  if(m_3pi) 
+  {
+    locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
+  }
+  else 
+  {
+    locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
+  }
     
   // the theta angles need to be in degrees for the wignerDSmall function
   GDouble theta = locthetaphi[0] * 180.0 / TMath::Pi();
@@ -210,11 +216,13 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
     int M = mom.M;
 
     // initialize angular info with the common factor
-    // GDouble angle = (2*J + 1) / (4*TMath::Pi()) * (2*Jv + 1) / (4*TMath::Pi());
+    GDouble angle = ((2.0 * J + 1) * (2 * Jv + 1)) / TMath::Sq(4*TMath::Pi());        
     // NOTE: including the above normalization factor here in the calculation makes 
-    // the moments less interpretable (i.e. H0_0000 =/= # of events) and appears to 
-    // degrade fit performance, so we'll leave it out for now
-    GDouble angle = 1;
+    // the moments less interpretable (i.e. H0_0000 =/= # of events) but helps to 
+    // suppress higher order moments. The "proper" values can be found by rescaling the
+    // fit result values by this normalization.
+
+    // GDouble angle = 1; // uncomment for no normalization
 
     // calculate the angular distributions depending on the polarization component
     // NOTE: the multiplication of two Wigner D functions gives 2 wignerDsmall functions,
