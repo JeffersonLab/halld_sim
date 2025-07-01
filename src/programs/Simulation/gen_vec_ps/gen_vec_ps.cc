@@ -20,6 +20,7 @@
 
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/Vec_ps_moment.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
@@ -264,6 +265,7 @@ int main( int argc, char* argv[] ){
 
 	// setup AmpToolsInterface
 	AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+	AmpToolsInterface::registerAmplitude( Vec_ps_moment() );
         AmpToolsInterface::registerAmplitude( BreitWigner() );
         AmpToolsInterface::registerAmplitude( Uniform() );
 	AmpToolsInterface::registerAmplitude( OmegaDalitz() );
