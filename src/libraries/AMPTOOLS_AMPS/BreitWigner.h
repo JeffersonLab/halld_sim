@@ -36,6 +36,7 @@ public:
 	string name() const { return "BreitWigner"; }
   
   complex< GDouble > calcAmplitude( GDouble** pKin ) const;
+  complex< GDouble > calcAmplitudeFromMasses( GDouble mass, GDouble mass1, GDouble mass2 ) const;
 	  
   void updatePar( const AmpParameter& par );
     
