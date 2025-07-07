@@ -1,12 +1,12 @@
 
 #include "ECALSmearer.h"
+#include "DANA/DEvent.h"
 
-DECALGeometry *ecalGeom = NULL;
 
 //-----------
 // ecal_config_t  (constructor)
 //-----------
-ecal_config_t::ecal_config_t(JEventLoop *loop) {
+ecal_config_t::ecal_config_t(const std::shared_ptr<const JEvent>& event) {
 
   // Default Parameters
 
@@ -36,7 +36,7 @@ ecal_config_t::ecal_config_t(JEventLoop *loop) {
 
 	map<string, double> ecalparms;
 
-	if(loop->GetCalib("ECAL/mc_energy", ecalparms)) { 
+	if(DEvent::GetCalib(event, "ECAL/mc_energy", ecalparms)) { 
 	  jerr << "Problem loading ECAL/mc_energy from CCDB!" << endl;
 	} else {
 	  ECAL_EN_SCALE   = ecalparms["ECAL_EN_SCALE"]; 
@@ -53,7 +53,7 @@ ecal_config_t::ecal_config_t(JEventLoop *loop) {
 	cout<<"get ECAL/mc_time parameters from calibDB"<<endl;
 
 	map<string, double> ecaltime;
-	if(loop->GetCalib("ECAL/mc_time", ecaltime)) {
+	if(DEvent::GetCalib(event, "ECAL/mc_time", ecaltime)) {
 	  jerr << "Problem loading ECAL/mc_time from CCDB!" << endl;
 	} else {
 	  ECAL_TSIGMA = ecaltime["ECAL_TSIGMA"];
@@ -68,11 +68,6 @@ ecal_config_t::ecal_config_t(JEventLoop *loop) {
 //-----------
 void ECALSmearer::SmearEvent(hddm_s::HDDM *record){
 
-#if 1 
-
-  //   if (!ecalGeom)
-  //   ecalGeom = new DECALGeometry();
-
   hddm_s::EcalBlockList blocks = record->getEcalBlocks();   
   hddm_s::EcalBlockList::iterator iter;
   for (iter = blocks.begin(); iter != blocks.end(); ++iter) {
@@ -80,14 +75,6 @@ void ECALSmearer::SmearEvent(hddm_s::HDDM *record){
     hddm_s::EcalTruthHitList thits = iter->getEcalTruthHits();   
     hddm_s::EcalTruthHitList::iterator titer;
     for (titer = thits.begin(); titer != thits.end(); ++titer) {
-      // Simulation simulates a grid of blocks for simplicity. 
-      // Do not bother smearing inactive blocks. They will be
-      // discarded in DEventSourceHDDM.cc while being read in
-      // anyway.
-      
-      if (!ecalGeom->isBlockActive(iter->getRow(), iter->getColumn()))
-		continue;
-
       
       // A.S.  new calibration of the ECAL
       double E = titer->getE();
@@ -132,7 +119,5 @@ void ECALSmearer::SmearEvent(hddm_s::HDDM *record){
     if (ecals.size() > 0)
       ecals().deleteEcalTruthShowers();
   }
-
-#endif
 
 }

@@ -27,7 +27,7 @@ using namespace std;
 class bcal_config_t 
 {
   public:
-	bcal_config_t(JEventLoop *loop);
+	bcal_config_t(const std::shared_ptr<const JEvent>& event);
 	
 	//void inline GetAttenuationParameters(int id, double &attenuation_length, double &attenuation_L1, double &attenuation_L2) {
    	//	vector<double> &parms = attenuation_parameters.at(id);
@@ -84,12 +84,20 @@ class bcal_config_t
 	//vector<double> effective_velocities; // 16.75 (from calibDB BCAL/effective_velocities)
 
 	vector< pair<double,double> > channel_efficiencies;
+	vector< pair<double,double> > bad_channels;
 	
 	double GetEfficiencyCorrectionFactor(int index, DBCALGeometry::End the_end) {
 		if(the_end == DBCALGeometry::End::kUpstream)
 			return channel_efficiencies.at(index).first;
 		else 
 			return channel_efficiencies.at(index).second;
+	}
+
+	double GetBadChannelStatus(int index, DBCALGeometry::End the_end) {
+		if(the_end == DBCALGeometry::End::kUpstream)
+			return bad_channels.at(index).first;
+		else 
+			return bad_channels.at(index).second;
 	}
 
 	double fADC_MinIntegral_Saturation[2][4];
@@ -267,8 +275,8 @@ class IncidentParticle_t{
 class BCALSmearer : public Smearer
 {
     public:
-		BCALSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-			bcal_config = new bcal_config_t(loop);
+		BCALSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+			bcal_config = new bcal_config_t(event);
 			
 			// pass configuration parameters
 			bcal_config->NO_T_SMEAR = in_config->BCAL_NO_T_SMEAR;
@@ -281,7 +289,7 @@ class BCALSmearer : public Smearer
 			
 			// load BCAL geometry
   			vector<const DBCALGeometry *> BCALGeomVec;
-  			loop->Get(BCALGeomVec);
+  			event->Get(BCALGeomVec);
   			if(BCALGeomVec.size() == 0)
 				throw JException("Could not load DBCALGeometry object!");
 			dBCALGeom = BCALGeomVec[0];

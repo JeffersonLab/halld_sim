@@ -18,6 +18,8 @@
 #include "CCDB/Calibration.h"
 #include "CCDB/CalibrationGenerator.h"
 
+typedef vector< vector<double> > flux_t;
+
 class BeamProperties {
   
 public:
@@ -28,6 +30,9 @@ public:
   inline TH1D* GetPolFrac() { return polFracVsEgamma; };
   double GetPolAngle();
 
+  // flux stored by channel
+  flux_t taghflux;
+	
 private:
 
   void createHistograms( TString configFile );

@@ -408,6 +408,7 @@ FixedTargetGenerator::calculateLimits() const {
   double uvSum = 0;
   for( unsigned int i = 0; i < m_uvMasses.size(); ++i ) uvSum += m_uvMasses[i];
   
+  assert( m_W >= lvSum + uvSum && "Sum of particle masses can not be larger than center of mass energy");
   // set the generation limits considering also any user-specified
   // range of masses that may be more restrictive than the kinematic limits
   

@@ -5,13 +5,10 @@
 
 #include "Smearer.h"
 
-#include <ECAL/DECALGeometry.h>
-
-
 class ecal_config_t 
 {
   public:
-	ecal_config_t(JEventLoop *loop);
+	ecal_config_t(const std::shared_ptr<const JEvent>& event);
 
 	double ECAL_EN_SCALE;
 	
@@ -37,20 +34,18 @@ class ecal_config_t
 class ECALSmearer : public Smearer
 {
   public:
-        ECALSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-        ecal_config = new ecal_config_t(loop);
-        ecalGeom = new DECALGeometry();
-        }
+        ECALSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+        ecal_config = new ecal_config_t(event);
+         }
 	~ECALSmearer() {
 		delete ecal_config;
-		delete ecalGeom;
 	}
 	
 	void SmearEvent(hddm_s::HDDM *record);
 	
   private:
   	ecal_config_t  *ecal_config;
-	DECALGeometry  *ecalGeom;
+
 };
 
 

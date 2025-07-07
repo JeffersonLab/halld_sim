@@ -68,9 +68,12 @@ OmegaDalitz::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   TVector3 piCross = (pip_omega).Cross(pim_omega);
   double lambda = 4/3. * fabs(piCross.Dot(piCross)) / TMath::Power(1/9. * (omega.M2() - TMath::Power(2*pip.M() + pi0.M(), 2.)), 2.);
   
-  userVars[uv_dalitz_z] = dalitz_z;
-  userVars[uv_dalitz_sin3theta] = dalitz_sin3theta;
   userVars[uv_lambda] = lambda;
+
+  userVars[uv_alpha_term] = 2 * dalitz_z;
+  userVars[uv_beta_term] = 2 * pow(dalitz_z,3/2.) * dalitz_sin3theta;
+  userVars[uv_gamma_term] = 2 * pow(dalitz_z,2);
+  userVars[uv_delta_term] = 2 * pow(dalitz_z,5/2.) * dalitz_sin3theta;
 
   return;
 }
@@ -82,16 +85,18 @@ complex< GDouble >
 OmegaDalitz::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
 
-  GDouble dalitz_z = userVars[uv_dalitz_z];
-  GDouble dalitz_sin3theta = userVars[uv_dalitz_sin3theta];
   GDouble lambda = userVars[uv_lambda];
-
+  GDouble alpha_term = userVars[uv_alpha_term];
+  GDouble beta_term = userVars[uv_beta_term];
+  GDouble gamma_term = userVars[uv_gamma_term];
+  GDouble delta_term = userVars[uv_delta_term];
+  
   // dalitz parameters for 3-body omega decay
-  GDouble G = sqrt( fabs(lambda * (1 + 2 * dalitz_alpha * dalitz_z + 2 * dalitz_beta * pow(dalitz_z,3/2.) * dalitz_sin3theta + 2 * dalitz_gamma * pow(dalitz_z,2) + 2 * dalitz_delta * pow(dalitz_z,5/2.) * dalitz_sin3theta)) );
-
+  
+  GDouble G = sqrt( fabs( lambda *  ( 1 + dalitz_alpha * alpha_term + dalitz_beta * beta_term + dalitz_gamma * gamma_term + dalitz_delta * delta_term ) ) );
+  
   return complex< GDouble >( G );
 }
-
 
 void OmegaDalitz::updatePar( const AmpParameter& par ){
 

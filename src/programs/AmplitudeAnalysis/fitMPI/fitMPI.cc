@@ -46,6 +46,13 @@
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixF0.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixF2.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixA0.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixA2.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
+#include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
+#include "AMPTOOLS_AMPS/Vec_ps_moment.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -394,6 +401,13 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
    AmpToolsInterface::registerAmplitude( SinglePS() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixF0() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixF2() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixA0() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixA2() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
+   AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
+   AmpToolsInterface::registerAmplitude( Vec_ps_moment() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
