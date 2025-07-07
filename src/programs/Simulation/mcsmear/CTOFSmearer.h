@@ -10,7 +10,7 @@
 class ctof_config_t 
 {
   public:
-  ctof_config_t(JEventLoop *loop);
+  ctof_config_t(const std::shared_ptr<const JEvent>& event);
 
   double TSIGMA;
   double PHOTONS_PERMEV;
@@ -23,8 +23,8 @@ class ctof_config_t
 class CTOFSmearer : public Smearer
 {
   public:
- CTOFSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-    ctof_config = new ctof_config_t(loop);
+ CTOFSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+    ctof_config = new ctof_config_t(event);
   }
   ~CTOFSmearer() {
     delete ctof_config;

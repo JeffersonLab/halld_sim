@@ -3,7 +3,7 @@
 //-----------
 // fmwpc_config_t  (constructor)
 //-----------
-fmwpc_config_t::fmwpc_config_t(JEventLoop *loop) 
+fmwpc_config_t::fmwpc_config_t(const std::shared_ptr<const JEvent>& event) 
 {
   // default values
   FMWPC_TSIGMA = 1.0;  // ns
