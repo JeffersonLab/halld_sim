@@ -264,14 +264,14 @@ int main( int argc, char* argv[] ){
       exit(1);
     }
   }
- 	
+
   if( atConfigFile.size() == 0 || outName.size() == 0 ||
       lvString.size() == 0 || uvString.size() == 0 ){
     
     cout << "ERROR:  Missing required arguments:  run gen_amp_v2 -h for help" << endl;
     exit( 1 );
   }
-	
+
   // open config file and be sure only one reaction is specified
   ConfigFileParser parser( atConfigFile );
   ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
@@ -280,7 +280,6 @@ int main( int argc, char* argv[] ){
   assert( cfgInfo->reactionList().size() == 1 );
   ReactionInfo* reaction = cfgInfo->reactionList()[0];
 
-  //
   vector< string > pList = reaction->particleList();
   pair< vector< int >,vector<bool> > lvIndices = parseString( lvString );
   pair< vector< int >,vector<bool> > uvIndices = parseString( uvString );
@@ -290,16 +289,17 @@ int main( int argc, char* argv[] ){
 
   // This section initiates variables needed for EvtGen decay 
   vector< string > truepList;
-  pair< vector< int >,vector<bool> > orderTruelvIndices;
-  pair< vector< int >,vector<bool> > orderTrueuvIndices;
+  pair< vector< int >,vector<bool> > orderTruelvIndices = {};
+  pair< vector< int >,vector<bool> > orderTrueuvIndices = {};
   EvtGenDecayer* decayer = nullptr;
   vector< vector<string> > trueReactionKeyword = cfgInfo->userKeywordArguments("trueReaction");
-  vector< string > keywordArgs = trueReactionKeyword[0];
+  vector<string> keywordArgs;
   truepList = reaction->particleList(); 
-  
+
 
   // Redefinition of variables if keyword is found
   if(trueReactionKeyword.size() == 1){
+  keywordArgs = trueReactionKeyword[0];
   truepList = trueReactionDecay( keywordArgs, pList, uvIndices.first, lvIndices.first, orderTrueuvIndices, orderTruelvIndices);
   }
   for( int m = 0; m < (int)truepList.size(); m++){
@@ -388,7 +388,7 @@ int main( int argc, char* argv[] ){
     locBeamConfigFile<<"PhotonBeamHighEnergy "<<beamHighE<<endl;    // photon beam high energy
     locBeamConfigFile.close();
   }
-	
+
   // get beam properties from configuration file
   BeamProperties beamProp( beamConfigFile );
   TH1D* cobrem_vs_E = (TH1D*)beamProp.GetFlux();
@@ -470,17 +470,19 @@ int main( int argc, char* argv[] ){
       if( count(tempuvIndices.second.begin(), tempuvIndices.second.end(), true) > 0  ){
         ftGen.setUpperVtxMasses( getVertexMasses( temppList, mpBW, tempuvIndices.first, tempuvIndices.second ) );
       }
-      if( count(templvIndices.second.begin(), templvIndices.second.end(), true) > 0 ) ftGen.setUpperVtxMasses( getVertexMasses( temppList, mpBW, templvIndices.first, templvIndices.second ) );
+      if( count(templvIndices.second.begin(), templvIndices.second.end(), true) > 0 ){
+         ftGen.setLowerVtxMasses( getVertexMasses( temppList, mpBW, templvIndices.first, templvIndices.second ) );
+      }
       kin = ftGen.generate(); 
 
       // This section will generate daughter particles for specified decay particles
       if( trueReactionKeyword.size() == 1 ){
-  	int uvIndex = 0; // Quick bookeeping of upper index
-        int lvIndex = 0; // Qucik bookeeping of lower index
-	vector<TLorentzVector> trueReactionVector;
-	trueReactionVector.push_back( kin->particle(0) ); //Add Beam 4-vector to new vector
-	for( int h = 0; h < (int)keywordArgs.size()/2; h++){
-	  if( checkVertex( parseString( keywordArgs[2*h + 1] ).first ) == "lv" ){
+  	  int uvIndex = 0; // Quick bookeeping of upper index
+      int lvIndex = 0; // Qucik bookeeping of lower index
+	    vector<TLorentzVector> trueReactionVector;
+	    trueReactionVector.push_back( kin->particle(0) ); //Add Beam 4-vector to new vector
+	    for( int h = 0; h < (int)keywordArgs.size()/2; h++){
+	    if( checkVertex( parseString( keywordArgs[2*h + 1] ).first ) == "lv" ){
 	    vector< pair<TLorentzVector, int> > children = decayer->decayParticle( kin->particle( h + 1 ), ParticleEnum( checkParticle( temppList[ templvIndices.first[lvIndex] ] ).c_str() ) );
             lvIndex++;
 	    for( auto child_itr = children.begin(); child_itr != children.end(); child_itr++){
@@ -661,8 +663,7 @@ string checkParticle(string particleString){
 // Lastly, we need to generate a new index vector for the upper/lower vertexes  
 
 vector<string> trueReactionDecay(vector<string>& keywordArgs, vector<string> reactionList, vector<int> uvIndices, vector<int> lvIndices, pair< vector<int>,vector<bool> >& orderTrueuvIndices, pair< vector<int>,vector<bool> >& orderTruelvIndices){
-
-vector<int> tempOrderTrueuvIndicesFirst;
+  vector<int> tempOrderTrueuvIndicesFirst;
   vector<bool> tempOrderTrueuvIndicesSecond;
   vector<int> tempOrderTruelvIndicesFirst;
   vector<bool> tempOrderTruelvIndicesSecond;
@@ -672,6 +673,7 @@ vector<int> tempOrderTrueuvIndicesFirst;
   pair< vector<int>, vector<bool> > trueIndices;
   string tempVertexString;
   int tempInt = 0;
+
   //Need the next two ints to keep track of total number of true uv/lv particles
   int tempuvInt = 0;
   int templvInt = 0;
@@ -693,6 +695,7 @@ vector<int> tempOrderTrueuvIndicesFirst;
       tempOrderTruelvIndicesSecond.push_back( false );
     }
   }
+
   // Remove decay indices from uv/lv array. Will be used for non-decaying particles
   for( int k = 0; k < (int)keywordArgs.size()/2; k++){
     trueIndices = parseString( keywordArgs[2*k+1] );
@@ -708,16 +711,17 @@ vector<int> tempOrderTrueuvIndicesFirst;
       }
     }
   }
+
   tempInt++; //This is to make sure index is correct
   // Add the non-decaying particles into new uv/lv array
-  for( int m = 0; m < (int)uvIndices.size() - tempuvInt; m++){
+  for( int m = 0; m < (int)tempuvIndex.size(); m++){
     tempOrderTrueuvIndicesFirst.push_back( tempInt );
     tempOrderTrueuvIndicesSecond.push_back( false );
     tempInt++;
     tempReactionList.push_back( reactionList[ tempuvIndex[m] ] );
   }
 
-  for( int v = 0; v < (int)lvIndices.size() - templvInt; v++){
+  for( int v = 0; v < (int)templvIndex.size(); v++){
     tempOrderTruelvIndicesFirst.push_back( tempInt );
     tempOrderTruelvIndicesSecond.push_back( false );
     tempReactionList.push_back( reactionList[ templvIndex[v] ] );
@@ -736,11 +740,13 @@ vector<int> tempOrderTrueuvIndicesFirst;
     orderTrueuvIndices.second[j] = tempOrderTrueuvIndicesSecond[j];
     cout << "uv " << orderTrueuvIndices.first[j] << endl;
   }
+
   for( int m = 0; m < (int)tempOrderTruelvIndicesFirst.size(); m++){
    orderTruelvIndices.first[m] = tempOrderTruelvIndicesFirst[m];
    orderTruelvIndices.second[m] = tempOrderTruelvIndicesSecond[m];
    cout << "lv " << orderTruelvIndices.first[m] << endl;
   }
+
   return tempReactionList;
 
   
