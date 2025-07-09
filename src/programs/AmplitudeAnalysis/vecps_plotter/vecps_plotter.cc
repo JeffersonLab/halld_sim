@@ -216,6 +216,14 @@ int main( int argc, char* argv[] ){
 	  else if (ivar == VecPsPlotGenerator::kRecoilPsMass)  histname += "MRecoilPs";
 	  else if (ivar == VecPsPlotGenerator::kLambda)  histname += "Lambda";
 	  else if (ivar == VecPsPlotGenerator::kDalitz)  histname += "Dalitz";
+    else if (ivar == VecPsPlotGenerator::kPsiVsCosTheta) histname += "PsiVsCosTheta";
+    else if (ivar == VecPsPlotGenerator::kPsiVsCosThetaH) histname += "PsiVsCosTheta_H";
+    else if (ivar == VecPsPlotGenerator::kPsiVsPhiH) histname += "PsiVsPhi_H";
+    else if (ivar == VecPsPlotGenerator::kProd_AngVsPhi) histname += "Prod_AngVsPhi";
+    else if (ivar == VecPsPlotGenerator::kPhiVsCosTheta) histname += "PhiVsCosTheta";
+    else if (ivar == VecPsPlotGenerator::kPhiHVsCosThetaH) histname += "Phi_HVsCosTheta_H";
+    else if (ivar == VecPsPlotGenerator::kProtonPsMassVsCosTheta) histname += "MProtonPsVsCosTheta";
+    else if (ivar == VecPsPlotGenerator::kVecPsMassVsCosTheta) histname += "MVecPsVsCosTheta";
 	  else continue;	  
 
 	  if (iplot == PlotGenerator::kData) histname += "dat";

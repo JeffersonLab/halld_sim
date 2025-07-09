@@ -36,6 +36,16 @@ void VecPsPlotGenerator::createHistograms( ) {
    bookHistogram( kRecoilPsMass, new Histogram1D( 100, 0.9, 2.9, "MRecoilPs", "Invariant Mass of recoil and bachelor Ps [GeV]" ) );
    bookHistogram( kLambda, new Histogram1D( 110, 0.0, 1.1, "Lambda", "#lambda_{#omega}" ) );
    bookHistogram( kDalitz, new Histogram2D( 100, -2., 2., 100, -2., 2., "Dalitz", "Dalitz XY" ) );
+
+   // custom 2D plots
+   bookHistogram( kPsiVsCosTheta, new Histogram2D( 50, -1*PI, PI, 50, -1., 1., "PsiVsCosTheta", "#Psi [rad.] Vs cos#theta") );
+   bookHistogram( kPsiVsCosThetaH, new Histogram2D( 50, -1*PI, PI, 50, -1., 1., "PsiVsCosTheta_H", "#Psi [rad.] Vs cos#theta_H") );
+   bookHistogram( kPsiVsPhiH, new Histogram2D( 50, -1*PI, PI, 50, -1*PI, PI, "PsiVsPhi_H", "#Psi [rad.] Vs #phi_H [rad.]") );
+   bookHistogram( kProd_AngVsPhi, new Histogram2D( 50, -1*PI, PI, 50, -1*PI, PI, "Prod_AngVsPhi", "Prod_Ang [rad.] Vs #phi [rad.]") );
+   bookHistogram( kPhiVsCosTheta, new Histogram2D( 50, -1*PI, PI, 50, -1., 1., "PhiVsCosTheta", "#phi [rad.] Vs cos#theta") );
+   bookHistogram( kPhiHVsCosThetaH, new Histogram2D( 50, -1*PI, PI, 50, -1., 1., "Phi_HVsCosTheta_H", "#phi_H [rad.] Vs cos#theta_H") );
+   bookHistogram( kProtonPsMassVsCosTheta, new Histogram2D( 100, 0.9, 2.9, 50, -1., 1., "MProtonPsVsCosTheta", "proton bachelor Ps [GeV] Vs cos#theta") );
+   bookHistogram( kVecPsMassVsCosTheta, new Histogram2D( 200, 0.6, 2., 50, -1., 1., "MPVecPsVsCosTheta", "Vec+ps [GeV] Vs cos#theta") );
 }
 
 void
@@ -169,4 +179,12 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    fillHistogram( kLambda, lambda );
    fillHistogram( kDalitz, dalitzx, dalitzy );
 
+   fillHistogram( kPsiVsCosTheta, Phi-prod_angle, cosTheta );   
+   fillHistogram( kPsiVsCosThetaH, Phi-prod_angle, cosThetaH );
+   fillHistogram( kPsiVsPhiH, Phi-prod_angle, PhiH );
+   fillHistogram( kProd_AngVsPhi, prod_angle, Phi );
+   fillHistogram( kPhiVsCosTheta, Phi, cosTheta );
+   fillHistogram( kPhiHVsCosThetaH, PhiH, cosThetaH );
+   fillHistogram( kProtonPsMassVsCosTheta, proton_ps.M(), cosTheta );
+   fillHistogram( kVecPsMassVsCosTheta, X.M(), cosTheta );
 }
