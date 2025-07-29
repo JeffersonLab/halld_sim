@@ -217,12 +217,13 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
     // initialize angular info with the common factor
     // GDouble angle = ((2.0 * J + 1) * (2 * Jv + 1)) / TMath::Sq(4*TMath::Pi());        
+    GDouble angle = ((2.0 * J + 1) * (2 * Jv + 1));
     // NOTE: including the above normalization factor here in the calculation makes 
     // the moments less interpretable (i.e. H0_0000 =/= # of events) but helps to 
     // suppress higher order moments. The "proper" values can be found by rescaling the
     // fit result values by this normalization.
 
-    GDouble angle = 1; // uncomment for no normalization
+    // GDouble angle = 1; // uncomment for no normalization
 
     // calculate the angular distributions depending on the polarization component
     // NOTE: the multiplication of two Wigner D functions gives 2 wignerDsmall functions,
