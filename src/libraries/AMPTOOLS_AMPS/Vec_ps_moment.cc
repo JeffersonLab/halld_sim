@@ -216,7 +216,7 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
     int M = mom.M;
 
     // initialize angular info with the common factor
-    GDouble angle = ((2.0 * J + 1) * (2 * Jv + 1)) / TMath::Sq(4*TMath::Pi());        
+    // GDouble angle = ((2.0 * J + 1) * (2 * Jv + 1)) / TMath::Sq(4*TMath::Pi());        
     // NOTE: including the above normalization factor here in the calculation makes 
     // the moments less interpretable (i.e. H0_0000 =/= # of events) but helps to 
     // suppress higher order moments. The "proper" values can be found by rescaling the
