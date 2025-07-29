@@ -222,7 +222,7 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
     // suppress higher order moments. The "proper" values can be found by rescaling the
     // fit result values by this normalization.
 
-    // GDouble angle = 1; // uncomment for no normalization
+    GDouble angle = 1; // uncomment for no normalization
 
     // calculate the angular distributions depending on the polarization component
     // NOTE: the multiplication of two Wigner D functions gives 2 wignerDsmall functions,
