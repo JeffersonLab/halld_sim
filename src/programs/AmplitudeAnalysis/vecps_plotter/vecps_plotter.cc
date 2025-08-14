@@ -315,7 +315,14 @@ int main( int argc, char* argv[] ){
       if(fullamps[i].find("Real") != std::string::npos) continue;
       if(fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos) continue;
       if(fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
-	    
+
+      // only keep amplitudes from same reaction
+      size_t pos_i = fullamps[i].find("::");
+      size_t pos_j = fullamps[j].find("::");
+      string reaction_i = fullamps[i].substr(0, pos_i);
+      string reaction_j = fullamps[j].substr(0, pos_j);
+      if (reaction_i != reaction_j) continue;
+
       phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
 
     }
