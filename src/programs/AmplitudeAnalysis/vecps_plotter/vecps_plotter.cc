@@ -147,15 +147,15 @@ int main(int argc, char *argv[])
     vector<string> amphistname = {
             "1p",
             "1m",
-            "1pps",
-            "1p0s",
-            "1pms",
-            "1mpp",
-            "1m0p",
-            "1mmp",
-            "1ppd",
-            "1p0d",
-            "1pmd",
+            "1ppS",
+            "1p0S",
+            "1pmS",
+            "1mpP",
+            "1m0P",
+            "1mmP",
+            "1ppD",
+            "1p0D",
+            "1pmD",
         };
     vector<string> reflname = {"PosRefl", "NegRefl"};
 
