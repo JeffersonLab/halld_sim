@@ -141,175 +141,198 @@ int main(int argc, char *argv[])
     // set up an output ROOT file to store histograms
     // ************************
 
-    TFile *plotfile = new TFile(outName.c_str(), "recreate");
-    TH1::AddDirectory(kFALSE);
+    std::vector<std::string> reactionList = results.reactionList();
 
-    string reactionName = results.reactionList()[0];
-    plotGen.enableReaction(reactionName);
-    vector<string> sums = plotGen.uniqueSums();
-    vector<string> amps = plotGen.uniqueAmplitudes();
-    cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
-
-    vector<string> amphistname = {"1pps", "1p0s", "1pms", "1ppd", "1p0d", "1pmd", "1mpp", "1m0p", "1mmp", "1p", "1m"};
-    vector<string> reflname = {"PosRefl", "NegRefl"};
-
-    // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
-    for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++)
+    // create a data file for each reaction
+    for (std::string reactionName : reactionList)
     {
-
-        // loop over desired amplitudes
-        for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++)
+        // Insert reactionName before ".root" ending of outName for each reaction file
+        std::string reactionOutName = outName;
+        size_t pos = reactionOutName.rfind(".root");
+        if (pos != std::string::npos)
         {
+            reactionOutName.insert(pos, "_" + reactionName);
+        }
+        else
+        {
+            reactionOutName += "_" + reactionName;
+        }
 
-            // turn all ampltiudes by default
-            for (unsigned int jamp = 0; jamp < amps.size(); jamp++)
+        TFile *plotfile = new TFile(reactionOutName.c_str(), "recreate");
+        TH1::AddDirectory(kFALSE);
+
+        // disable the other reactions to ensure that only this reaction is plotted
+        for (std::string otherReactionName : reactionList)
+        {
+            if (otherReactionName != reactionName)
             {
-                plotGen.enableAmp(jamp);
+                plotGen.disableReaction(otherReactionName);
             }
+        }
 
-            // turn off unwanted amplitudes and sums
-            if (iamp < amphistname.size())
+        plotGen.enableReaction(reactionName);
+        vector<string> sums = plotGen.uniqueSums();
+        vector<string> amps = plotGen.uniqueAmplitudes();
+        cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
+
+        vector<string> amphistname = {
+            "1p",
+            "1m",
+            "1pps",
+            "1p0s",
+            "1pms",
+            "1mpp",
+            "1m0p",
+            "1mmp",
+            "1ppd",
+            "1p0d",
+            "1pmd",
+        };
+        vector<string> reflname = {"PosRefl", "NegRefl"};
+
+        // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
+        for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++)
+        {
+            // loop over desired amplitudes
+            for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++)
             {
-
-                string locampname = amphistname[iamp];
+                // turn on all amplitudes and sums first, then disable when they don't match the desired strings
+                for (unsigned int jamp = 0; jamp < amps.size(); jamp++)
+                    plotGen.enableAmp(jamp);
 
                 // turn on all sums by default
                 for (unsigned int i = 0; i < sums.size(); i++)
                     plotGen.enableSum(i);
 
-                // turn off unwanted sums for reflectivity (based on naturality)
-                // cout<<"refl = "<<irefl<<endl;
-                if (irefl < 2)
+                // turn off unwanted amplitudes and sums if working with individual amp
+                if (iamp < amphistname.size())
                 {
-                    for (unsigned int i = 0; i < sums.size(); i++)
-                    {
-                        if (reflname[irefl] == "NegRefl")
-                        {
-                            // ImagNegSign & RealPosSign are defined to be the negative reflectivity
-                            // So, we turn off the positive reflectivity here
-                            if (sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos)
-                            {
-                                plotGen.disableSum(i);
-                                // cout<<"disable sum "<<sums[i]<<"\n";
-                            }
-                        }
-                        if (reflname[irefl] == "PosRefl")
-                        {
-                            // And, we turn off the negative reflectivity here
-                            if (sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos)
-                            {
-                                // cout<<"disable sum "<<sums[i]<<"\n";
-                                plotGen.disableSum(i);
-                            }
-                        }
-                    }
-                }
-
-                // turn off unwanted amplitudes
-                for (unsigned int jamp = 0; jamp < amps.size(); jamp++)
-                {
-
-                    if (amps[jamp].find(locampname.data()) == std::string::npos)
-                    {
-                        plotGen.disableAmp(jamp);
-                        // cout<<"disable amplitude "<<amps[jamp]<<endl;
-                    }
-                }
-            }
-
-            cout << "Looping over input data" << endl;
-            // loop over data, accMC, and genMC
-            for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++)
-            {
-                if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd)
-                    continue;
-                bool singleData = irefl == reflname.size() && iamp == amphistname.size();
-                if (iplot == PlotGenerator::kData && !singleData)
-                    continue; // only plot data once
-
-                // loop over different variables
-                for (unsigned int ivar = 0; ivar < VecPsPlotGenerator::kNumHists; ivar++)
-                {
-
-                    // set unique histogram name for each plot (could put in directories...)
-                    string histname = "";
-                    if (ivar == VecPsPlotGenerator::kVecPsMass)
-                        histname += "MVecPs";
-                    else if (ivar == VecPsPlotGenerator::kCosTheta)
-                        histname += "CosTheta";
-                    else if (ivar == VecPsPlotGenerator::kPhi)
-                        histname += "Phi";
-                    else if (ivar == VecPsPlotGenerator::kCosThetaH)
-                        histname += "CosTheta_H";
-                    else if (ivar == VecPsPlotGenerator::kPhiH)
-                        histname += "Phi_H";
-                    else if (ivar == VecPsPlotGenerator::kProd_Ang)
-                        histname += "Prod_Ang";
-                    else if (ivar == VecPsPlotGenerator::kt)
-                        histname += "t";
-                    else if (ivar == VecPsPlotGenerator::kRecoilMass)
-                        histname += "MRecoil";
-                    else if (ivar == VecPsPlotGenerator::kProtonPsMass)
-                        histname += "MProtonPs";
-                    else if (ivar == VecPsPlotGenerator::kRecoilPsMass)
-                        histname += "MRecoilPs";
-                    else if (ivar == VecPsPlotGenerator::kLambda)
-                        histname += "Lambda";
-                    else if (ivar == VecPsPlotGenerator::kDalitz)
-                        histname += "Dalitz";
-                    else if (ivar == VecPsPlotGenerator::kPsiVsCosTheta)
-                        histname += "PsiVsCosTheta";
-                    else if (ivar == VecPsPlotGenerator::kPsiVsCosThetaH)
-                        histname += "PsiVsCosTheta_H";
-                    else if (ivar == VecPsPlotGenerator::kPsiVsPhiH)
-                        histname += "PsiVsPhi_H";
-                    else if (ivar == VecPsPlotGenerator::kProd_AngVsPhi)
-                        histname += "Prod_AngVsPhi";
-                    else if (ivar == VecPsPlotGenerator::kPhiVsCosTheta)
-                        histname += "PhiVsCosTheta";
-                    else if (ivar == VecPsPlotGenerator::kPhiHVsCosThetaH)
-                        histname += "Phi_HVsCosTheta_H";
-                    else if (ivar == VecPsPlotGenerator::kProtonPsMassVsCosTheta)
-                        histname += "MProtonPsVsCosTheta";
-                    else if (ivar == VecPsPlotGenerator::kVecPsMassVsCosTheta)
-                        histname += "MVecPsVsCosTheta";
-                    else
-                        continue;
-
-                    if (iplot == PlotGenerator::kData)
-                        histname += "dat";
-                    if (iplot == PlotGenerator::kBkgnd)
-                        histname += "bkgnd";
-                    if (iplot == PlotGenerator::kAccMC)
-                        histname += "acc";
-                    if (iplot == PlotGenerator::kGenMC)
-                        histname += "gen";
+                    string locampname = amphistname[iamp];
 
                     if (irefl < reflname.size())
                     {
-                        // get name of sum for naming histogram
-                        string sumName = reflname[irefl];
-                        histname += "_";
-                        histname += sumName;
-                    }
-                    if (iamp < amphistname.size())
-                    {
-                        // get name of amp for naming histogram
-                        histname += "_";
-                        histname += amphistname[iamp];
+                        for (unsigned int i = 0; i < sums.size(); i++)
+                        {
+                            if (reflname[irefl] == "NegRefl")
+                            {
+                                // ImagNegSign & RealPosSign are defined to be the negative reflectivity
+                                // So, we turn off the positive reflectivity here
+                                if (sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos)
+                                {
+                                    plotGen.disableSum(i);
+                                    // cout<<"disable sum "<<sums[i]<<"\n";
+                                }
+                            }
+                            if (reflname[irefl] == "PosRefl")
+                            {
+                                // And, we turn off the negative reflectivity here
+                                if (sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos)
+                                    plotGen.disableSum(i);
+                            }
+                        }
                     }
 
-                    Histogram *hist = plotGen.projection(ivar, reactionName, iplot);
-                    TH1 *thist = hist->toRoot();
-                    thist->SetName(histname.c_str());
-                    plotfile->cd();
-                    thist->Write();
+                    // turn off unwanted amplitudes
+                    for (unsigned int jamp = 0; jamp < amps.size(); jamp++)
+                    {
+                        if (amps[jamp].find(locampname.data()) == std::string::npos)
+                            plotGen.disableAmp(jamp);
+                    }
+                } // end loop over individual amplitudes
+
+                cout << "Looping over input data" << endl;
+                // loop over data, accMC, and genMC
+                for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++)
+                {
+                    if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd)
+                        continue;
+                    bool singleData = irefl == reflname.size() && iamp == amphistname.size();
+                    if (iplot == PlotGenerator::kData && !singleData)
+                        continue; // only plot data once
+
+                    // loop over different variables
+                    for (unsigned int ivar = 0; ivar < VecPsPlotGenerator::kNumHists; ivar++)
+                    {
+                        // set unique histogram name for each plot (could put in directories...)
+                        string histname = "";
+                        if (ivar == VecPsPlotGenerator::kVecPsMass)
+                            histname += "MVecPs";
+                        else if (ivar == VecPsPlotGenerator::kCosTheta)
+                            histname += "CosTheta";
+                        else if (ivar == VecPsPlotGenerator::kPhi)
+                            histname += "Phi";
+                        else if (ivar == VecPsPlotGenerator::kCosThetaH)
+                            histname += "CosTheta_H";
+                        else if (ivar == VecPsPlotGenerator::kPhiH)
+                            histname += "Phi_H";
+                        else if (ivar == VecPsPlotGenerator::kProd_Ang)
+                            histname += "Prod_Ang";
+                        else if (ivar == VecPsPlotGenerator::kt)
+                            histname += "t";
+                        else if (ivar == VecPsPlotGenerator::kRecoilMass)
+                            histname += "MRecoil";
+                        else if (ivar == VecPsPlotGenerator::kProtonPsMass)
+                            histname += "MProtonPs";
+                        else if (ivar == VecPsPlotGenerator::kRecoilPsMass)
+                            histname += "MRecoilPs";
+                        else if (ivar == VecPsPlotGenerator::kLambda)
+                            histname += "Lambda";
+                        else if (ivar == VecPsPlotGenerator::kDalitz)
+                            histname += "Dalitz";
+                        else if (ivar == VecPsPlotGenerator::kPsiVsCosTheta)
+                            histname += "PsiVsCosTheta";
+                        else if (ivar == VecPsPlotGenerator::kPsiVsCosThetaH)
+                            histname += "PsiVsCosTheta_H";
+                        else if (ivar == VecPsPlotGenerator::kPsiVsPhiH)
+                            histname += "PsiVsPhi_H";
+                        else if (ivar == VecPsPlotGenerator::kProd_AngVsPhi)
+                            histname += "Prod_AngVsPhi";
+                        else if (ivar == VecPsPlotGenerator::kPhiVsCosTheta)
+                            histname += "PhiVsCosTheta";
+                        else if (ivar == VecPsPlotGenerator::kPhiHVsCosThetaH)
+                            histname += "Phi_HVsCosTheta_H";
+                        else if (ivar == VecPsPlotGenerator::kProtonPsMassVsCosTheta)
+                            histname += "MProtonPsVsCosTheta";
+                        else if (ivar == VecPsPlotGenerator::kVecPsMassVsCosTheta)
+                            histname += "MVecPsVsCosTheta";
+                        else
+                            continue;
+
+                        if (iplot == PlotGenerator::kData)
+                            histname += "dat";
+                        if (iplot == PlotGenerator::kBkgnd)
+                            histname += "bkgnd";
+                        if (iplot == PlotGenerator::kAccMC)
+                            histname += "acc";
+                        if (iplot == PlotGenerator::kGenMC)
+                            histname += "gen";
+
+                        if (irefl < reflname.size())
+                        {
+                            // get name of sum for naming histogram
+                            string sumName = reflname[irefl];
+                            histname += "_";
+                            histname += sumName;
+                        }
+                        if (iamp < amphistname.size())
+                        {
+                            // get name of amp for naming histogram
+                            histname += "_";
+                            histname += amphistname[iamp];
+                        }
+
+                        Histogram *hist = plotGen.projection(ivar, reactionName, iplot);
+                        TH1 *thist = hist->toRoot();
+                        thist->SetName(histname.c_str());
+                        plotfile->cd();
+                        thist->Write();
+                    }
                 }
             }
         }
-    }
 
-    plotfile->Close();
+        plotfile->Close();
+    } // end reaction loop
 
     // model parameters
     cout << "Checking Parameters" << endl;
