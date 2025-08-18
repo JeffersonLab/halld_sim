@@ -170,10 +170,11 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   else {
     cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRnd << " RANDOM PRODUCTION PARS = " << minLL << endl;
     gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
-    if( seedfile.size() != 0 )
+    if( seedfile.size() != 0 ){
       string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
       string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
       gSystem->Exec(Form("cp %s_%d%s %s", seedfileBaseName.data(), minFitTag, seedfileExtension.data(), seedfile.data()));
+    }
   }
 }
 
