@@ -151,7 +151,10 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     ati.finalizeFit(to_string(i));
 
     if( seedfile.size() != 0 && !fitFailed ){
-      string seedfile_rand = seedfile + Form("_%d.txt", i);
+      string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
+      string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
+
+      string seedfile_rand = seedfileBaseName + Form("_%d%s", i, seedfileExtension.data());
       ati.fitResults()->writeSeed( seedfile_rand );
     }
 
@@ -168,7 +171,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRnd << " RANDOM PRODUCTION PARS = " << minLL << endl;
     gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
     if( seedfile.size() != 0 )
-      gSystem->Exec(Form("cp %s_%d.txt %s.txt", seedfile.data(), minFitTag, seedfile.data()));
+      string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
+      string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
+      gSystem->Exec(Form("cp %s_%d%s %s", seedfileBaseName.data(), minFitTag, seedfileExtension.data(), seedfile.data()));
   }
 }
 
@@ -249,7 +254,10 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     ati.finalizeFit(to_string(i));
 
     if( seedfile.size() != 0 && !fitFailed ){
-      string seedfile_scan = seedfile + Form("_scan_%d.txt", i);
+      string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
+      string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
+
+      string seedfile_scan = seedfileBaseName + Form("_scan_%d%s", i, seedfileExtension.data());
       ati.fitResults()->writeSeed( seedfile_scan );
     }
   }
@@ -386,6 +394,16 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
    AmpToolsInterface::registerDataReader( FSRootDataReader() );
+
+   // normalize seedFile file extension if not already set by user
+   if (seedfile.size() != 0){
+     if (seedfile.find(".") == string::npos) seedfile += ".txt";
+     else{
+       // this ensures the file has an extension for cases like "./my_seed_file" 
+       string fileExtension = seedfile.substr(seedfile.find_last_of("."));
+       if (fileExtension.find("/") != string::npos) seedfile += ".txt";
+     }
+   }
 
    if(noFit)
      getLikelihood(cfgInfo);
