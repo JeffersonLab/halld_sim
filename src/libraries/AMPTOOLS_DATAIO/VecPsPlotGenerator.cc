@@ -71,6 +71,7 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    // min particle index for recoil sum
    int min_recoil = 5; 
 
+   // TODO: relevant pol_angle factor can be retrieved here
    // check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
    const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
    for(uint ioption=5; ioption<args.size(); ioption++) {
@@ -141,7 +142,7 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    }
 
    // set polarization angle to zero to see shift in Phi_Prod distributions 
-   double polAngle = 0;
+   double polAngle = 0; // TODO: retrieve from configuration
    TLorentzVector target(0,0,0,0.938);
 
    // Helicity coordinate system
