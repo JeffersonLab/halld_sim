@@ -70,6 +70,8 @@ void VecPsPlotGenerator::projectEvent(Kinematics *kin, const string &reactionNam
     // min particle index for recoil sum
     int min_recoil = 5;
 
+    double polAngle = 0; // set to 0 by default, this will allow one to see shift in Phi distributions
+
     // check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
     const vector<string> args = cfgInfo()->amplitudeList(reactionName, "", "").at(0)->factors().at(0);
     for (uint ioption = 5; ioption < args.size(); ioption++)
