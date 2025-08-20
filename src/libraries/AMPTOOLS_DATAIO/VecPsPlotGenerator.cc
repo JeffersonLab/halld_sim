@@ -75,7 +75,8 @@ void VecPsPlotGenerator::projectEvent(Kinematics *kin, const string &reactionNam
     for (uint ioption = 5; ioption < args.size(); ioption++)
     {
         TString option = args[ioption].c_str();
-        if(ioption==5 && option.IsFloat()) {
+        if (ioption == 5 && option.IsFloat())
+        {
             polAngle = atof(args[5].c_str()); // retrieve polAngle from amplitude args
         }
         if (option.EqualTo("omega3pi"))
@@ -147,7 +148,7 @@ void VecPsPlotGenerator::projectEvent(Kinematics *kin, const string &reactionNam
         recoil += kin->particle(i);
         recoil_ps += kin->particle(i);
     }
-        
+
     TLorentzVector target(0, 0, 0, 0.938);
 
     // Helicity coordinate system
