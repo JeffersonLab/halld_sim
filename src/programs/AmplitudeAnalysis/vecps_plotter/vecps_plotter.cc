@@ -145,18 +145,18 @@ int main(int argc, char *argv[])
 
     // these track which amplitudes, coherent sums, and reflectivities to plot
     vector<string> amphistname = {
-            "1p",
-            "1m",
-            "1ppS",
-            "1p0S",
-            "1pmS",
-            "1mpP",
-            "1m0P",
-            "1mmP",
-            "1ppD",
-            "1p0D",
-            "1pmD",
-        };
+        "1p",
+        "1m",
+        "1ppS",
+        "1p0S",
+        "1pmS",
+        "1mpP",
+        "1m0P",
+        "1mmP",
+        "1ppD",
+        "1p0D",
+        "1pmD",
+    };
     vector<string> reflname = {"PosRefl", "NegRefl"};
 
     // create a data file for each reaction
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
         plotGen.enableReaction(reactionName);
         vector<string> sums = plotGen.uniqueSums();
         vector<string> amps = plotGen.uniqueAmplitudes();
-        cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;        
+        cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
         // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
         for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++)
