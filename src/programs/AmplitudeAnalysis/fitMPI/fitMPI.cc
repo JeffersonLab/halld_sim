@@ -86,7 +86,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
       if(hesse)
          fitManager->hesseEvaluation();
 
-      fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
+      fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() == 0 || fitManager->eMatrixStatus() == 1 );
 
       if( fitFailed )
          cout << "ERROR: fit failed use results with caution..." << endl;
