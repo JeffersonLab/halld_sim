@@ -55,6 +55,8 @@
 #include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
 #include "AMPTOOLS_AMPS/Vec_ps_moment.h"
+#include "UTILITIES/randomized_sdme.h"
+
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"
@@ -114,6 +116,8 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   fitManager->setMaxIterations(maxIter);
 
   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
+  vector< vector<string> > parSDMEKeywords = cfgInfo->userKeywordArguments("parSDME");
+
 
   // keep track of best fit (mininum log-likelihood)
   double minLL = numeric_limits<double>::max();
@@ -127,10 +131,33 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     // re-initialize parameters from configuration file (reset those not randomized)
     ati.reinitializePars();
 
-    // randomize parameters
+    // set maximal fraction of production parameters to randomize
+    cout << "Maximal fraction allowed: " << maxFraction << endl;
     ati.randomizeProductionPars(maxFraction);
-    for(size_t ipar=0; ipar<parRangeKeywords.size(); ipar++) {
-      ati.randomizeParameter(parRangeKeywords[ipar][0], atof(parRangeKeywords[ipar][1].c_str()), atof(parRangeKeywords[ipar][2].c_str()));
+
+    // Initiate SDME values from randomized hermitian matrices  
+    if (parSDMEKeywords.size() > 0) {
+      assert(parSDMEKeywords.size() == 9 && "randomized_sdme() returns exactly 9 SDMEs");
+      std::cout << "Initializing " << parSDMEKeywords.size() << " SDME values from randomized hermitian matrices..." << std::endl;
+      std::vector<double> sdme_values = randomized_sdme(false); // Order: rho000, rho100, rho1m10, rho111, rho001, rho101, rho1m11, rho102, rho1m12
+      for (size_t ipar = 0; ipar < parSDMEKeywords.size(); ipar++) {
+        double init_value = sdme_values[ipar];
+        std::cout << "Initializing " << parSDMEKeywords[ipar][0] << " to value " << init_value << std::endl;
+        ati.randomizeParameter(parSDMEKeywords[ipar][0], init_value, init_value);
+      }
+    }
+
+    // randomize other user-defined parameters
+    if (parRangeKeywords.size() > 0){ 
+      std::cout << "Initializing parRange parameters... " << std::endl;
+      std::cout << "Number of user parameters to randomize: " << parRangeKeywords.size() << std::endl;
+      for (size_t ipar = 0; ipar < parRangeKeywords.size(); ipar++) {
+        std::cout << "Randomizing parameter: " 
+        << parRangeKeywords[ipar][0] << " uniformly in range [" 
+        << parRangeKeywords[ipar][1] << ", " 
+        << parRangeKeywords[ipar][2] << "]" << std::endl;
+        ati.randomizeParameter(parRangeKeywords[ipar][0], atof(parRangeKeywords[ipar][1].c_str()), atof(parRangeKeywords[ipar][2].c_str()));
+      }
     }
 
     if(useMinos)
