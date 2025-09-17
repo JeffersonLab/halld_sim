@@ -7,6 +7,7 @@
 #include <utility>
 #include <map>
 #include <limits>
+#include <tuple>   
 
 #include "TSystem.h"
 
@@ -67,6 +68,25 @@
 using std::complex;
 using namespace std;
 
+void summarizeFits(std::vector<std::tuple<int,bool,int,int,double>>& fitLLs) {
+    if(fitLLs.size() == 0) return;
+    std::sort(fitLLs.begin(), fitLLs.end(), [](const std::tuple<int,bool,int,int,double>& a, const std::tuple<int,bool,int,int,double>& b){ return std::get<4>(a) < std::get<4>(b); });
+    std::ofstream fout("fit_ranking.txt");
+    if(!fout) std::cerr << "Error: cannot open fit_ranking.txt\n";
+    auto print_header = [](std::ostream& os){ os << "\nSUMMARY OF ALL FITS:\n" << std::left << std::setw(6) << "#" << std::setw(9) << "Success" << std::setw(11) << "FitStatus" << std::setw(9) << "eMatrix" << std::setw(14) << "LogL" << '\n'; };
+    auto print_row = [&](std::ostream& os, size_t i){ os << std::left << std::setw(6) << std::get<0>(fitLLs[i]) << std::setw(9) << (std::get<1>(fitLLs[i]) ? "Y" : "N") << std::setw(11) << std::get<2>(fitLLs[i]) << std::setw(9) << std::get<3>(fitLLs[i]) << std::setw(14) << (std::ostringstream() << std::setprecision(8) << std::defaultfloat << std::get<4>(fitLLs[i])).str() << '\n'; };
+    print_header(std::cout);
+    if(fout) print_header(fout);
+    for(size_t i=0; i<fitLLs.size(); ++i) {
+        print_row(std::cout, i);
+        if(fout) print_row(fout, i);
+    }
+    size_t succ = 0; // print overall success rate
+    for (size_t i = 0; i < fitLLs.size(); ++i) if (std::get<1>(fitLLs[i])) ++succ;
+    double pct = fitLLs.empty() ? 0.0 : (100.0 * static_cast<double>(succ) / static_cast<double>(fitLLs.size()));
+    std::cout << "\nSuccess: " << succ << " / " << fitLLs.size() << " (" << std::setprecision(3) << std::fixed << pct << "%)\n";
+}
+
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
   AmpToolsInterface ati( cfgInfo );
 
@@ -123,6 +143,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   double minLL = numeric_limits<double>::max();
   int minFitTag = -1;
 
+  // tuple <index, success_flag, fit_status, eMatrix_status, loglikelihood>
+  vector < tuple<int, bool, int, int, double> > fitLLs; 
+
   for(int i=0; i<numRnd; i++) {
     cout << endl << "###############################" << endl;
     cout << "FIT " << i << " OF " << numRnd << endl;
@@ -132,17 +155,18 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     ati.reinitializePars();
 
     // set maximal fraction of production parameters to randomize
-    cout << "Maximal fraction allowed: " << maxFraction << endl;
+    cout << "Maximal fraction allowed: " << std::setprecision(2) << std::defaultfloat << maxFraction << endl;
     ati.randomizeProductionPars(maxFraction);
 
     // Initiate SDME values from randomized hermitian matrices  
     if (parSDMEKeywords.size() > 0) {
       assert(parSDMEKeywords.size() == 9 && "randomized_sdme() returns exactly 9 SDMEs");
       std::cout << "Initializing " << parSDMEKeywords.size() << " SDME values from randomized hermitian matrices..." << std::endl;
-      std::vector<double> sdme_values = randomized_sdme(false); // Order: rho000, rho100, rho1m10, rho111, rho001, rho101, rho1m11, rho102, rho1m12
+      // Order: rho000, rho100, rho1m10, rho111, rho001, rho101, rho1m11, rho102, rho1m12
+      std::vector<double> sdme_values = randomized_sdme(true); // use normal distribution by default, change to false for uniform distribution
       for (size_t ipar = 0; ipar < parSDMEKeywords.size(); ipar++) {
         double init_value = sdme_values[ipar];
-        std::cout << "Initializing " << parSDMEKeywords[ipar][0] << " to value " << init_value << std::endl;
+        std::cout << "Initializing " << std::setprecision(3) << std::defaultfloat << parSDMEKeywords[ipar][0] << " to value " << init_value << std::endl;
         ati.randomizeParameter(parSDMEKeywords[ipar][0], init_value, init_value);
       }
     }
@@ -176,6 +200,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
     ati.finalizeFit(to_string(i));
+    fitLLs.push_back(std::make_tuple(
+        i, !fitFailed, fitManager->status(), fitManager->eMatrixStatus(), ati.likelihood()
+    ));
 
     if( seedfile.size() != 0 && !fitFailed ){
       string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
@@ -202,6 +229,8 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
       string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
       gSystem->Exec(Form("cp %s_%d%s %s", seedfileBaseName.data(), minFitTag, seedfileExtension.data(), seedfile.data()));
     }
+    // print summary of all fits
+    summarizeFits(fitLLs);
   }
 }
 
@@ -309,6 +338,7 @@ void printAmplitudes( ConfigurationInfo* cfgInfo ){
   }
   return;
 }
+
 
 int main( int argc, char* argv[] ){
 
