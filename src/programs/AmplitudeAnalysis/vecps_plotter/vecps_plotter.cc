@@ -193,10 +193,10 @@ int main(int argc, char *argv[])
         cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
         // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
-        for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++)
+        for (unsigned int irefl = 0; irefl < reflname.size(); irefl++)
         {
             // loop over desired amplitudes
-            for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++)
+            for (unsigned int iamp = 0; iamp < amphistname.size(); iamp++)
             {
                 // turn on all amplitudes and sums first
                 for (unsigned int jamp = 0; jamp < amps.size(); jamp++)
