@@ -193,51 +193,60 @@ int main(int argc, char *argv[])
         cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
         // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
-        for (unsigned int irefl = 0; irefl < reflname.size(); irefl++)
+        for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++)
         {
             // loop over desired amplitudes
-            for (unsigned int iamp = 0; iamp < amphistname.size(); iamp++)
+            for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++)
             {
-                // turn on all amplitudes and sums first
+                // turn on all amplitudes
                 for (unsigned int jamp = 0; jamp < amps.size(); jamp++)
                     plotGen.enableAmp(jamp);
-                for (unsigned int i = 0; i < sums.size(); i++)
-                    plotGen.enableSum(i);
 
-                // now disable sums that don't match the current one (irefl)
-                for (unsigned int i = 0; i < sums.size(); i++)
+                // out of bounds case is for plotting all amplitudes and sums together
+                if (iamp < amphistname.size())  
                 {
-                    if (reflname[irefl] == "NegRefl")
-                    {
-                        // ImagNegSign & RealPosSign are defined to be the negative reflectivity
-                        // So, we turn off the positive reflectivity and background here
-                        if (sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos)
-                            plotGen.disableSum(i);
-                        if (sums[i].find("Bkgd") != std::string::npos)
-                            plotGen.disableSum(i);
-                    }
-                    if (reflname[irefl] == "PosRefl")
-                    {
-                        // similar case for positive reflectivity
-                        if (sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos)
-                            plotGen.disableSum(i);
-                        if (sums[i].find("Bkgd") != std::string::npos)
-                            plotGen.disableSum(i);
-                    }
-                    if (reflname[irefl] == "Bkgd")
-                    {
-                        // similar case for background
-                        if (sums[i].find("Bkgd") == std::string::npos)
-                            plotGen.disableSum(i);
-                    }
-                }
+                    // turn on all sums
+                    for (unsigned int i = 0; i < sums.size(); i++)
+                        plotGen.enableSum(i);
 
-                // turn off unwanted amplitudes
-                string locampname = amphistname[iamp];
-                for (unsigned int jamp = 0; jamp < amps.size(); jamp++)
-                {
-                    if (amps[jamp].find(locampname.data()) == std::string::npos)
-                        plotGen.disableAmp(jamp);
+                    // now disable sums that don't match the current one (irefl)
+                    if (irefl < reflname.size())
+                    {
+                        for (unsigned int i = 0; i < sums.size(); i++)
+                        {
+                            if (reflname[irefl] == "NegRefl")
+                            {
+                                // ImagNegSign & RealPosSign are defined to be the negative reflectivity
+                                // So, we turn off the positive reflectivity and background here
+                                if (sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos)
+                                    plotGen.disableSum(i);
+                                if (sums[i].find("Bkgd") != std::string::npos)
+                                    plotGen.disableSum(i);
+                            }
+                            if (reflname[irefl] == "PosRefl")
+                            {
+                                // similar case for positive reflectivity
+                                if (sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos)
+                                    plotGen.disableSum(i);
+                                if (sums[i].find("Bkgd") != std::string::npos)
+                                    plotGen.disableSum(i);
+                            }
+                            if (reflname[irefl] == "Bkgd")
+                            {
+                                // similar case for background
+                                if (sums[i].find("Bkgd") == std::string::npos)
+                                    plotGen.disableSum(i);
+                            }
+                        }
+                    }
+
+                    // turn off unwanted amplitudes
+                    string locampname = amphistname[iamp];
+                    for (unsigned int jamp = 0; jamp < amps.size(); jamp++)
+                    {
+                        if (amps[jamp].find(locampname.data()) == std::string::npos)
+                            plotGen.disableAmp(jamp);
+                    }
                 }
 
                 cout << "Looping over input data" << endl;
