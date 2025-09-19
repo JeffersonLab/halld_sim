@@ -74,12 +74,15 @@ void VecPsPlotGenerator::projectEvent(Kinematics *kin, const string &reactionNam
 
     // check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
     const vector<string> args = cfgInfo()->amplitudeList(reactionName, "", "").at(0)->factors().at(0);
-    for (uint ioption = 5; ioption < args.size(); ioption++)
+
+    // Cant directly mimic the vec_ps_refl method, since the first arg is args[0] == "Vec_ps_refl"
+    // start searching for extra arguments at 6 instead
+    for (uint ioption = 6; ioption < args.size(); ioption++)
     {
         TString option = args[ioption].c_str();
-        if (ioption == 5 && option.IsFloat())
+        if (ioption == 6 && option.IsFloat())
         {
-            polAngle = atof(args[5].c_str()); // retrieve polAngle from amplitude args
+            polAngle = atof(args[ioption].c_str()); // retrieve polAngle from amplitude args
         }
         if (option.EqualTo("omega3pi"))
             m_3pi = true;
