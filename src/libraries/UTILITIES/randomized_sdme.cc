@@ -30,11 +30,9 @@ std::vector<double> randomized_sdme(bool use_normal_dist) {
     //    where lambda_g = 1, -1 and lambda_V = 1, 0, -1,
     //    then compute normalization N = 0.5 * sum |M|^2.
     std::complex<double> M[2][3];
-    double N = 0.0; 
     for (int i = 0; i < 2; ++i){
       for (int j = 0; j < 3; ++j){
         M[i][j] = std::complex<double>(sample(), sample());
-        N += 0.5 * std::norm(M[i][j]);
       }
     }
         
@@ -47,29 +45,37 @@ std::vector<double> randomized_sdme(bool use_normal_dist) {
     const std::complex<double>& M_m1_p1 = M[0][2];  // M_{-1, +1}
     const std::complex<double>& M_p1_p1 = M[1][2];  // M_{+1, +1}
   
-    // compute SDMEs, from [V. MATHIEU et al. PHYS. REV. D 97, 094003 (2018)]
+    // compute SDMEs, from [Schilling; MATHIEU et al. PHYS. REV. D 97, 094003]
+    const double N =
+    0.5 * ( std::norm(M_p1_m1) + std::norm(M_p1_0) + std::norm(M_p1_p1)
+          + std::norm(M_m1_m1) + std::norm(M_m1_0) + std::norm(M_m1_p1) );
     double Ninv = 1.0 / (1e-12 + N); // small offset to avoid division by zero
     
     // (B1a-c)
-    double rho000  = Ninv * (M_p1_0 * std::conj(M_p1_0)).real();               
-    double rho100  = Ninv * ((M_p1_p1 - M_p1_m1) * std::conj(M_p1_0)).real() * 0.5;   
-    double rho1m10 = Ninv * (M_p1_p1 * std::conj(M_p1_m1)).real();          
+    double rho000  = 0.5 * Ninv * ( (M_p1_0 * std::conj(M_p1_0)).real()
+                                  + (M_m1_0 * std::conj(M_m1_0)).real() );
+
+    double rho100  = 0.5 * Ninv * ( ((M_p1_p1 - M_p1_m1) * std::conj(M_p1_0)).real()
+                                  + ((M_m1_p1 - M_m1_m1) * std::conj(M_m1_0)).real() );
+
+    double rho1m10 = 0.5 * Ninv * ( (M_p1_p1 * std::conj(M_p1_m1)).real()
+                                  + (M_m1_p1 * std::conj(M_m1_m1)).real() );         
     
     // (B1d-e)
-    double rho111  = Ninv * (M_m1_p1 * std::conj(M_p1_p1)).real();
-    double rho001  = Ninv * (M_m1_0 * std::conj(M_p1_0)).real();
+    double rho111  = 0.5 * Ninv * (M_m1_p1 * std::conj(M_p1_p1) + M_p1_m1 * std::conj(M_m1_m1)).real();
+    double rho001  = 0.5 * Ninv * (M_m1_0  * std::conj(M_p1_0 ) + M_p1_0  * std::conj(M_m1_0 )).real();
   
-    // (B1fg)
+    // (B1f-g)
     std::complex<double> prod_m1p1 = M_m1_p1 * std::conj(M_p1_m1);
     std::complex<double> prod_11   = M_p1_p1 * std::conj(M_m1_m1);
-    double rho1m11 = Ninv * (prod_m1p1 + prod_11).real();
-    double rho1m12 = Ninv * (prod_m1p1 - prod_11).imag();
+    double rho1m11 = 0.5 * Ninv * (prod_m1p1 + prod_11).real();
+    double rho1m12 = 0.5 * Ninv * (prod_m1p1 - prod_11).imag();
   
-    // (B1hi)
+    // (B1h-i)
     double re_prod_10   = (M_m1_p1 * std::conj(M_p1_0)).real();
     double re_prod_m10  = (M_p1_p1 * std::conj(M_m1_0)).real();
-    double rho101 = Ninv * (re_prod_10 + re_prod_m10);
-    double rho102 = Ninv * (re_prod_10 - re_prod_m10);
+    double rho101 = 0.5 * Ninv * (re_prod_10 + re_prod_m10);
+    double rho102 = 0.5 * Ninv * (re_prod_10 - re_prod_m10);
   
     // Output vector of 9 SDMEs
     return {
