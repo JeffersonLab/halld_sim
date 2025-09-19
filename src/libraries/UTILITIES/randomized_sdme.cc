@@ -62,8 +62,10 @@ std::vector<double> randomized_sdme(bool use_normal_dist) {
                                   + (M_m1_p1 * std::conj(M_m1_m1)).real() );         
     
     // (B1d-e)
-    double rho111  = 0.5 * Ninv * (M_m1_p1 * std::conj(M_p1_p1) + M_p1_m1 * std::conj(M_m1_m1)).real();
-    double rho001  = 0.5 * Ninv * (M_m1_0  * std::conj(M_p1_0 ) + M_p1_0  * std::conj(M_m1_0 )).real();
+    double rho111  = 0.5 * Ninv * (M_m1_p1 * std::conj(M_p1_p1) 
+                                 + M_p1_m1 * std::conj(M_m1_m1)).real();
+    double rho001  = 0.5 * Ninv * (M_m1_0  * std::conj(M_p1_0 ) 
+                                 + M_p1_0  * std::conj(M_m1_0 )).real();
   
     // (B1f-g)
     std::complex<double> prod_m1p1 = M_m1_p1 * std::conj(M_p1_m1);
