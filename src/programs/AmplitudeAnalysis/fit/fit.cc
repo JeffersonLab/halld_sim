@@ -256,6 +256,32 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
   
   */
   AmpToolsInterface ati( cfgInfo );
+
+  std::cout << "first likelihood "<< ati.likelihood() << std::endl;
+
+  return ati.likelihood();
+
+  // ReactionInfo* reaction = cfgInfo->reaction("omegapi");
+  // std::string oldDataFile;
+  // std::string oldDataReader;
+  // oldDataReader = reaction->data().first;
+  // oldDataFile   = reaction->data().second[0];
+
+  // std::vector<std::string> new_data = {"anglesOmegaPiAmplitude_45.root"};
+  // reaction->setData(oldDataReader, new_data);  
+
+  // std::cout << "Replaced data, call likelihood before reset: " << ati.likelihood() << std::endl;
+
+  // cout << reaction->genMC().first << " " << reaction->genMC().second[0] << endl;
+  // cout << reaction->accMC().first << " " << reaction->accMC().second[0] << endl;
+
+  // ReactionInfo* new_reaction = cfgInfo->reaction("omegapi");
+  // cout << new_reaction->genMC().first << " " << new_reaction->genMC().second[0] << endl;
+  // cout << new_reaction->accMC().first << " " << new_reaction->accMC().second[0] << endl;
+
+  // ati.resetConfigurationInfo(cfgInfo);
+
+  // std::cout << "Replaced data, call likelihood after reset: " << ati.likelihood() << std::endl;
 }
 
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan) {
@@ -506,7 +532,7 @@ int main( int argc, char* argv[] ){
      getLikelihood(cfgInfo);
    else if(printAmps)
      printAmplitudes(cfgInfo);
-   else if(numRnd==0){
+   else if(numRnd==0 && numBootstrap==0){
      if(scanPar=="")
        runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
      else
