@@ -234,6 +234,30 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   }
 }
 
+void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, int numBootstrap, unsigned int bootstrapSeed) {
+  /* 
+  I can actually check what dataReaders the cfgInfo data files are read with, and 
+  replace it with the bootstrap one if not set. 
+  
+  Trouble is that the AmpToolsInterface will always run resetConfigurationInfo if
+  we pass a cfgInfo object to it. Somewhere in here, this will run the dataReaders and 
+  thus load in the data again. The loadEvents explicitly will call the data reader
+  loading. If I can clear and reload just the data events with a new dataReader, this 
+  would be ideal. I'll need to debug to track down when this happens
+  
+  I would effectively be doing the same thing if I create a new AmpToolsInterface object
+  for each bootstrap fit. Somehow I need to load the interface without it trying to load
+  in the new data.
+
+  Also, I should consider allowing a seedfile to be passed here. Would make it easier
+  for user to simply give this the same fit.cfg and seedfile from the rand results, and
+  for this function to handle that for them. All I have to do is have the seedfile be
+  included at the cfgInfo parser, which might have an option to access that directly
+  
+  */
+  AmpToolsInterface ati( cfgInfo );
+}
+
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan) {
   double minVal=0, maxVal=0, stepSize=0;
   int steps=0;
@@ -353,7 +377,9 @@ int main( int argc, char* argv[] ){
    string seedfile;
    string scanPar;
    int numRnd = 0;
+   int numBootstrap = 0;
    unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
+   unsigned int bootstrapSeed=static_cast<unsigned int>(time(NULL)); // TODO: implement this, for now not used since bootstrapreader requires an int
    int maxIter = 10000;
 
    // parse command line
@@ -374,6 +400,12 @@ int main( int argc, char* argv[] ){
       if (arg == "-rs"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  randomSeed = atoi(argv[++i]); } 
+      if (arg == "-b"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  numBootstrap = atoi(argv[++i]); }
+      if (arg == "-bs"){
+         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+         else  bootstrapSeed = atoi(argv[++i]); }
       if (arg == "-m"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
@@ -392,6 +424,8 @@ int main( int argc, char* argv[] ){
          cout << "   -s <output file>\t\t for seeding next fit based on this fit (optional)" << endl;
          cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
          cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
+         cout << "   -b <int>\t\t\t Perform <int> bootstrap fits" << endl;
+         cout << "   -bs <int>\t\t\t Sets the first random seed used by the random number generator for the bootstrap fits. Each subsequent bootstrap fit will use this seed + the bootstrap iteration number. If not set will use the time()" << endl;
          cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          cout << "   -l \t\t\t\t Calculate likelihood and exit without running a fit" << endl; 
@@ -463,6 +497,11 @@ int main( int argc, char* argv[] ){
      }
    }
 
+   if(numRnd > 0 && numBootstrap > 0) {
+     cout << "Error: cannot perform both random parameter fits and bootstrap fits simultaneously. Please pick one or the other. Aborting." << endl;
+     return 1;
+   }
+
    if(noFit)
      getLikelihood(cfgInfo);
    else if(printAmps)
@@ -472,6 +511,9 @@ int main( int argc, char* argv[] ){
        runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
      else
        runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
+   } else if(numBootstrap > 0){
+       cout << "Running " << numBootstrap << " bootstrap fits beginning at seed=" << bootstrapSeed << endl;
+       runBootstrapFits(cfgInfo, useMinos, hesse, maxIter, numBootstrap, bootstrapSeed);
    } else {
      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
      AmpToolsInterface::setRandomSeed(randomSeed);
