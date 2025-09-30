@@ -118,5 +118,5 @@ ROOTDataReaderNumGen::getEvent()
 unsigned int
 ROOTDataReaderNumGen::numEvents() const
 {	
-  return static_cast< unsigned int >( m_inTree->GetEntries() );
+  return static_cast< unsigned int >( 1 );
 }
