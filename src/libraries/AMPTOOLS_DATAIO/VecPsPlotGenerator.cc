@@ -1,5 +1,6 @@
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
+#include "TMath.h"
 
 #include "AMPTOOLS_AMPS/omegapiAngles.h"
 
@@ -160,7 +161,7 @@ void VecPsPlotGenerator::projectEvent(Kinematics *kin, const string &reactionNam
     TLorentzVector Gammap = beam + target;
 
     // Calculate decay angles in helicity frame (same for all vectors)
-    vector<double> locthetaphi = getomegapiAngles(polAngle, vec, X, beam, Gammap);
+    vector<double> locthetaphi = getomegapiAngles(TMath::DegToRad(polAngle), vec, X, beam, Gammap);
 
     // Calculate vector decay angles (unique for each vector)
     vector<double> locthetaphih;
