@@ -1,0 +1,8 @@
+Decay KShort
+1.0 pi+   pi-   PHSP; #[Reconstructed PDG2011]
+Enddecay
+Decay Lambda
+1.0 p+  pi-   PHSP; #[Reconstructed PDG2011]
+Enddecay
+End
+
