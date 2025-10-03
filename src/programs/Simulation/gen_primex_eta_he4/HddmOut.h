@@ -135,45 +135,136 @@ class HddmOut {
       products->in[0].parentid = 0;
       products->in[0].mech = 0;
       products->in[0].momentum = make_s_Momentum();
-      products->in[0].momentum->px = evt.q1.Px();
-      products->in[0].momentum->py = evt.q1.Py();
-      products->in[0].momentum->pz = evt.q1.Pz();
-      products->in[0].momentum->E = evt.q1.E();
+      float px = evt.q1.Px();
+      float py = evt.q1.Py();
+      float pz = evt.q1.Pz();
+      float p = sqrt(px * px + py * py + pz * pz);
+      float E = sqrt(p * p + ParticleMass(evt.t_meso) * ParticleMass(evt.t_meso));
+      products->in[0].momentum->px = px;
+      products->in[0].momentum->py = py;
+      products->in[0].momentum->pz = pz;
+      products->in[0].momentum->E = E;
       
       products->in[1].pdgtype = PDGtype(evt.t_targ);
       if (evt.str_target == "Deuteron") {
-	//products->in[1].type = Deuteron;
 	products->in[1].pdgtype = 1000010020;
       } else if (evt.str_target == "H3" || evt.str_target == "Triton") {
-	//products->in[1].type = Triton;
 	products->in[1].pdgtype = 1000010030;
       } else if (evt.str_target == "He3" || evt.str_target == "Helium-3") {
-	//products->in[1].type = Helium-3;
 	products->in[1].pdgtype = 1000020030;
       } else if (evt.str_target == "He4" || evt.str_target == "Helium") {
-	//products->in[1].type = Helium;
 	products->in[1].pdgtype = 1000020040;
       } else if (evt.str_target == "Be9" || evt.str_target == "Beryllium-9") {
-	//products->in[1].type = Be9;
 	products->in[1].pdgtype = 1000040090;
       } else if (evt.str_target == "Proton") {
-	//products->in[1].type = Proton;
 	products->in[1].pdgtype = 2212;
       } else if (evt.str_target == "Neutron") {
-	//products->in[1].type = Neutron;
 	products->in[1].pdgtype = 2112;
       }
       products->in[1].type = evt.t_targ;
+      products->in[1].id = 2;
+      products->in[1].parentid = 0;
+      products->in[1].mech = 0;
+      products->in[1].momentum = make_s_Momentum();
+      px = evt.q2.Px();
+      py = evt.q2.Py();
+      pz = evt.q2.Pz();
+      p = sqrt(px * px + py * py + pz * pz);
+      E = sqrt(p * p + ParticleMass(evt.t_targ) * ParticleMass(evt.t_targ));
+      products->in[1].momentum->px = px;
+      products->in[1].momentum->py = py;
+      products->in[1].momentum->pz = pz;
+      products->in[1].momentum->E = E;
+
+    } else if (evt.nGen == 3) {
+      products->in[0].type = evt.t_meso;
+      products->in[0].pdgtype = PDGtype(evt.t_meso);
+      products->in[0].id = 1;
+      products->in[0].parentid = 0;
+      products->in[0].mech = 0;
+      products->in[0].momentum = make_s_Momentum();
+      float px = evt.q1.Px();
+      float py = evt.q1.Py();
+      float pz = evt.q1.Pz();
+      float p = sqrt(px * px + py * py + pz * pz);
+      float E = sqrt(p * p + ParticleMass(evt.t_meso) * ParticleMass(evt.t_meso));
+      products->in[0].momentum->px = px;
+      products->in[0].momentum->py = py;
+      products->in[0].momentum->pz = pz;
+      products->in[0].momentum->E = E;
+      
+      products->in[1].pdgtype = PDGtype(evt.t_part);
+      if (evt.str_participant == "Deuteron") {
+	products->in[1].pdgtype = 1000010020;
+      } else if (evt.str_participant == "H3" || evt.str_participant == "Triton") {
+	products->in[1].pdgtype = 1000010030;
+      } else if (evt.str_participant == "He3" || evt.str_participant == "Helium-3") {
+	products->in[1].pdgtype = 1000020030;
+      } else if (evt.str_participant == "He4" || evt.str_participant == "Helium") {
+	products->in[1].pdgtype = 1000020040;
+      } else if (evt.str_participant == "B11" || evt.str_participant == "Boron-11") {
+	products->in[1].pdgtype = 1000050110;
+      } else if (evt.str_participant == "C12" || evt.str_participant == "Carbon") {
+	products->in[1].pdgtype = 1000060120;
+      } else if (evt.str_participant == "Be9" || evt.str_participant == "Beryllium-9") {
+	products->in[1].pdgtype = 1000040090;
+      } else if (evt.str_participant == "Proton") {
+	products->in[1].pdgtype = 2212;
+      } else if (evt.str_participant == "Neutron") {
+	products->in[1].pdgtype = 2112;
+      }
+      products->in[1].type = evt.t_part;
       //cout << PDGtype(evt.t_targ) << endl;
       products->in[1].id = 2;
       products->in[1].parentid = 0;
       products->in[1].mech = 0;
       products->in[1].momentum = make_s_Momentum();
-      products->in[1].momentum->px = evt.q2.Px();
-      products->in[1].momentum->py = evt.q2.Py();
-      products->in[1].momentum->pz = evt.q2.Pz();
-      products->in[1].momentum->E = evt.q2.E();
-    } else if (evt.nGen == 3) {
+      px = evt.q2.Px();
+      py = evt.q2.Py();
+      pz = evt.q2.Pz();
+      p = sqrt(px * px + py * py + pz * pz);
+      E = sqrt(p * p + ParticleMass(evt.t_part) * ParticleMass(evt.t_part));
+      products->in[1].momentum->px = px;
+      products->in[1].momentum->py = py;
+      products->in[1].momentum->pz = pz;
+      products->in[1].momentum->E = E;
+      
+      //if (evt.str_spectator != "Neutron") {
+      products->in[2].pdgtype = PDGtype(evt.t_spec);
+      if (evt.str_spectator == "Deuteron") {
+	products->in[2].pdgtype = 1000010020;
+      } else if (evt.str_spectator == "H3" || evt.str_spectator == "Triton") {
+	products->in[2].pdgtype = 1000010030;
+      } else if (evt.str_spectator == "He3" || evt.str_spectator == "Helium-3") {
+	products->in[2].pdgtype = 1000020030;
+      } else if (evt.str_spectator == "He4" || evt.str_spectator == "Helium") {
+	products->in[2].pdgtype = 1000020040;
+      } else if (evt.str_spectator == "B11" || evt.str_spectator == "Boron-11") {
+	products->in[2].pdgtype = 1000050110;
+      } else if (evt.str_spectator == "C12" || evt.str_spectator == "Carbon") {
+	products->in[2].pdgtype = 1000060120;
+      } else if (evt.str_spectator == "Be9" || evt.str_spectator == "Beryllium-9") {
+	products->in[2].pdgtype = 1000040090;
+      } else if (evt.str_spectator == "Proton") {
+	products->in[2].pdgtype = 2212;
+      } else if (evt.str_spectator == "Neutron") {
+	products->in[2].pdgtype = 2112;
+      }
+      products->in[2].type = evt.t_spec;
+      products->in[2].id = 3;
+      products->in[2].parentid = 0;
+      products->in[2].mech = 0;
+      products->in[2].momentum = make_s_Momentum();
+      px = evt.q3.Px();
+      py = evt.q3.Py();
+      pz = evt.q3.Pz();
+      p = sqrt(px * px + py * py + pz * pz);
+      E = sqrt(p * p + ParticleMass(evt.t_spec) * ParticleMass(evt.t_spec));
+      products->in[2].momentum->px = px;
+      products->in[2].momentum->py = py;
+      products->in[2].momentum->pz = pz;
+      products->in[2].momentum->E = E;
+      //}
     }
     flush_s_HDDM(hddmEvt, ostream);
 
