@@ -60,7 +60,7 @@ using namespace std;
 
 Double_t* m_flat_coh_angle_min_max_cut;//!
 
-TLorentzVector meson_lab(TLorentzVector ISP4, double m2, double m3, double ThetaLAB);
+TLorentzVector meson_lab(TLorentzVector ISP4, double m2, double m3, double ThetaLAB, double PhiLAB);
 TLorentzVector meson_com_pf(double th, double ph, double E, double p, double sintheta, double costheta);
 TLorentzVector doCalEnergy(double BeamEnergy, double nucleusMass, double ParticipantMass, double SpectatorMass, TLorentzVector MesonP4, TLorentzVector RecoilP4);
 //
@@ -424,9 +424,10 @@ int main( int argc, char* argv[] ){
       ThetaLAB = fRandom->Uniform(theta_min, theta_max);
       ThetaLAB *= TMath::DegToRad();
     }
-    TLorentzVector eta_LAB_P4 = meson_lab(ISP4, ParticleMass(t_meson),  ParticleMass(t_target), ThetaLAB);
+    double PhiLAB = fRandom->Uniform(-TMath::Pi(), TMath::Pi());
+    TLorentzVector eta_LAB_P4 = meson_lab(ISP4, ParticleMass(t_meson),  ParticleMass(t_target), ThetaLAB, PhiLAB);
     if (do_flat_qf || m_rfile.Contains("free"))
-      eta_LAB_P4 = meson_lab(ISP4, ParticleMass(t_meson),  ParticleMass(t_participant), ThetaLAB);
+      eta_LAB_P4 = meson_lab(ISP4, ParticleMass(t_meson),  ParticleMass(t_participant), ThetaLAB, PhiLAB);
     TLorentzVector Recoil_LAB_P4 = ISP4 - eta_LAB_P4;
     TLorentzVector eta_COM_P4 = eta_LAB_P4;
     TLorentzVector Recoil_COM_P4 = Recoil_LAB_P4;
@@ -550,7 +551,7 @@ int main( int argc, char* argv[] ){
 	//SpectatorP4 = TLorentzVector(p3_spe, E_spe);
 	h_cop->Fill(fabs(eta_LAB_P4.Phi() - Recoil_LAB_P4.Phi()) * TMath::RadToDeg(), weight);
 
-	TLorentzVector meson_LAB_P4 = meson_lab((BeamP4 + NTargetP4), ParticleMass(t_meson),  ParticleMass(t_participant), eta_LAB_P4.Theta());
+	TLorentzVector meson_LAB_P4 = meson_lab((BeamP4 + NTargetP4), ParticleMass(t_meson),  ParticleMass(t_participant), eta_LAB_P4.Theta(), eta_LAB_P4.Phi());
 	h_mass_diff->Fill(eta_LAB_P4.E() - meson_LAB_P4.E(), weight);
 	
 	if (fabs(Recoil_LAB_P4.M() - ParticleMass(t_participant)) > 1e-13) {
@@ -690,13 +691,13 @@ TLorentzVector meson_com_pf(double th, double ph, double E, double p, double sin
 			E);
 }
 
-TLorentzVector meson_lab(TLorentzVector ISP4, double m2, double m3, double ThetaLAB) {
+TLorentzVector meson_lab(TLorentzVector ISP4, double m2, double m3, double ThetaLAB, double PhiLAB) {
   double p0 = ISP4.P();
   double E0 = ISP4.E();
   //double m2 = M_meson;
   //double m3 = M_target;
   double E_LAB_eta = 0;
-  double PhiLAB = fRandom->Uniform(-TMath::Pi(), TMath::Pi());
+  //double PhiLAB = fRandom->Uniform(-TMath::Pi(), TMath::Pi());
   double a = pow(2.0 * p0 * cos(ThetaLAB), 2) - pow(2.0 * E0, 2);
   double b = 4.0 * pow(E0, 3) - pow(2.0 * p0, 2) * E0 + pow(2.0 * m2, 2) * E0 - pow(2.0 * m3, 2) * E0;
   double c = 2.0 * pow(p0 * E0, 2) - 2.0 * pow(m2 * E0, 2) + 2.0 * pow(m2 * p0, 2) + 2.0 * pow(m3 * E0, 2) - 2.0 * pow(m3 * p0, 2) + 
