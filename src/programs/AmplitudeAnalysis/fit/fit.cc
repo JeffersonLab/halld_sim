@@ -235,53 +235,66 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 }
 
 void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, int numBootstrap, unsigned int bootstrapSeed) {
+  AmpToolsInterface ati( cfgInfo );
   /* 
-  I can actually check what dataReaders the cfgInfo data files are read with, and 
-  replace it with the bootstrap one if not set. 
-  
-  Trouble is that the AmpToolsInterface will always run resetConfigurationInfo if
-  we pass a cfgInfo object to it. Somewhere in here, this will run the dataReaders and 
-  thus load in the data again. The loadEvents explicitly will call the data reader
-  loading. If I can clear and reload just the data events with a new dataReader, this 
-  would be ideal. I'll need to debug to track down when this happens
-  
-  I would effectively be doing the same thing if I create a new AmpToolsInterface object
-  for each bootstrap fit. Somehow I need to load the interface without it trying to load
-  in the new data.
-
   Also, I should consider allowing a seedfile to be passed here. Would make it easier
   for user to simply give this the same fit.cfg and seedfile from the rand results, and
   for this function to handle that for them. All I have to do is have the seedfile be
   included at the cfgInfo parser, which might have an option to access that directly
-  
   */
-  AmpToolsInterface ati( cfgInfo );
 
-  std::cout << "first likelihood "<< ati.likelihood() << std::endl;
+  std::cout << "LIKELIHOOD BEFORE BOOTSTRAPPING  " << ati.likelihood() << std::endl;
 
-  return ati.likelihood();
+  MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
+  fitManager->setMaxIterations(maxIter);
+  
+  vector<tuple<int, bool, int, int, double>> fitLLs;
+  
+  for(int i = 0; i < numBootstrap; i++) {
+    cout << "\n###############################" << endl;
+    cout << "BOOTSTRAP FIT " << i << " OF " << numBootstrap << endl;
+    cout << "###############################\n" << endl;
+    
+    // Reset parameters and bootstrap
+    ati.reinitializePars();
+    ati.bootstrapData(bootstrapSeed + i); // Different seed for each bootstrap iteration    
+    
+    cout << "Bootstrap likelihood: " << ati.likelihood() << endl;
 
-  // ReactionInfo* reaction = cfgInfo->reaction("omegapi");
-  // std::string oldDataFile;
-  // std::string oldDataReader;
-  // oldDataReader = reaction->data().first;
-  // oldDataFile   = reaction->data().second[0];
+    // // Run the fit
+    // if(useMinos) {
+    //   fitManager->minosMinimization();
+    // } else {
+    //   fitManager->migradMinimization();
+    // }
+    
+    // if(hesse) {
+    //   fitManager->hesseEvaluation();
+    // }
+    
+    // bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
+    
+    // if(fitFailed) {
+    //   cout << "ERROR: Bootstrap fit " << i << " failed" << endl;
+    // }
+    
+    // cout << "Final likelihood: " << ati.likelihood() << endl;
+    
+    // ati.finalizeFit(to_string(i) + "_bootstrap");
+    // fitLLs.push_back(make_tuple(i, !fitFailed, fitManager->status(), 
+    //                            fitManager->eMatrixStatus(), ati.likelihood()));
+    
+    // // Disable bootstrap for next iteration
+    // for(auto& reaction : cfgInfo->reactionList()) {
+    //   string reactionName = reaction->reactionName();
+    //   LikelihoodCalculator* likCalc = ati.likelihoodCalculator(reactionName);
+    //   if(likCalc) {
+    //     likCalc->disableBootstrap();
+    //   }
+    // }
+  }
 
-  // std::vector<std::string> new_data = {"anglesOmegaPiAmplitude_45.root"};
-  // reaction->setData(oldDataReader, new_data);  
-
-  // std::cout << "Replaced data, call likelihood before reset: " << ati.likelihood() << std::endl;
-
-  // cout << reaction->genMC().first << " " << reaction->genMC().second[0] << endl;
-  // cout << reaction->accMC().first << " " << reaction->accMC().second[0] << endl;
-
-  // ReactionInfo* new_reaction = cfgInfo->reaction("omegapi");
-  // cout << new_reaction->genMC().first << " " << new_reaction->genMC().second[0] << endl;
-  // cout << new_reaction->accMC().first << " " << new_reaction->accMC().second[0] << endl;
-
-  // ati.resetConfigurationInfo(cfgInfo);
-
-  // std::cout << "Replaced data, call likelihood after reset: " << ati.likelihood() << std::endl;
+  return;
 }
 
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan) {
@@ -405,7 +418,7 @@ int main( int argc, char* argv[] ){
    int numRnd = 0;
    int numBootstrap = 0;
    unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
-   unsigned int bootstrapSeed=static_cast<unsigned int>(time(NULL)); // TODO: implement this, for now not used since bootstrapreader requires an int
+   unsigned int bootstrapSeed=static_cast<unsigned int>(time(NULL));
    int maxIter = 10000;
 
    // parse command line
@@ -455,7 +468,7 @@ int main( int argc, char* argv[] ){
          cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          cout << "   -l \t\t\t\t Calculate likelihood and exit without running a fit" << endl; 
-	 cout << "   -test \t\t\t Print amplitude details for the first 2 data events" << endl;
+	       cout << "   -test \t\t\t Print amplitude details for the first 2 data events" << endl;
          exit(1);}
    }
 
