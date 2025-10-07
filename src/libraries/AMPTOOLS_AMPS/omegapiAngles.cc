@@ -1,131 +1,158 @@
-//The purpose of this function is to return the decay angles of the daughter particle in the helicity frame of the parent.
-//For a two particle decay, the function arguments are the lab frame TLorentzVectors of: the daughter particle, the parent particle, the inverse of the X-axis and the reference Z-axis.
-//For a three particle decay, the function arguments are the same with the addition of the second daughter particle.
-//Please note that in the three particle decay case the normal to the decay plane is calculated as the cross product of momentum vector of the first daughter and the second daughter
-//In theory the function could also return the decay angles in other frames when called with the appropriate argument change.
-//Gottfried-Jackson RF: The z-axis is equal to the direction of flight of the incoming beam photon in the parent rest frame.
-//Adair RF: The z-axis is equal to the direction of flight of the incoming beam photon in the center of mass system.
-
 #include <ctime>
 #include <stdlib.h>
 #include <stdio.h>
-
 #include <cassert>
 #include <iostream>
-#include <string>
 #include <sstream>
-
-
+#include <cmath>
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
-
+#include "TMath.h"
 #include "omegapiAngles.h"
 
-#include <cmath>
-#include <complex>
-#include <vector>
-#include "TMath.h"
 
-vector <double> getomegapiAngles(TLorentzVector daughter, TLorentzVector parent, TLorentzVector InverseOfX, TLorentzVector rf, TLorentzVector seconddaughter)
-{
-//in the case of normal to the piplus+piminus plane angles in the b1 decay the daughter = piplus, parent = omega, InverseOfX = b1, rf = gammap, seconddaughter = piminus
-// boost all to rf
-  TLorentzVector daughter_rf = daughter;
-  TLorentzVector seconddaughter_rf = seconddaughter;
-  TLorentzVector parent_rf = parent;
-  TLorentzVector InverseOfX_rf = InverseOfX;
-  TVector3 rfboost = rf.BoostVector();
-  InverseOfX_rf.Boost(-1.0*rfboost);
-  parent_rf.Boost(-1.0*rfboost);
-  daughter_rf.Boost(-1.0*rfboost);
-  seconddaughter_rf.Boost(-1.0*rfboost);
+vector <double> getVectorDecayAngles( const TLorentzVector& beamPLab,
+                                      const TLorentzVector& particleXLab,
+                                      const TLorentzVector& parentLab, 
+                                      const TLorentzVector& firstDaughterLab, 
+                                      const TLorentzVector& secondDaughterLab){
+  // Calculating the angles of the normal to the piplus+piminus plane 
+  // beamPLab = beam + proton (center of mass), particleXLab = b1, 
+  // parentLab = omega, firstDaughterLab = piplus, secondDaughterLab = piminus
 
-  //Boost daughters and parent to X
-  TLorentzVector daughter_x = daughter_rf;
-  TLorentzVector seconddaughter_x = seconddaughter_rf;
-  TLorentzVector parent_x = parent_rf;
-  TVector3 xboost = InverseOfX_rf.BoostVector();
-  daughter_x.Boost(-1.0*xboost);
-  seconddaughter_x.Boost(-1.0*xboost);
-  parent_x.Boost(-1.0*xboost);
+  // Boost all particles to the (beamPLab) center-of-mass frame (cm)
+  TLorentzVector particleX_cm = particleXLab;
+  TLorentzVector parent_cm = parentLab;
+  TLorentzVector firstDaughter_cm = firstDaughterLab;
+  TLorentzVector secondDaughter_cm = secondDaughterLab;
+  TVector3 cmBoostVector = -beamPLab.BoostVector();
+  particleX_cm.Boost(cmBoostVector);
+  parent_cm.Boost(cmBoostVector);
+  firstDaughter_cm.Boost(cmBoostVector);
+  secondDaughter_cm.Boost(cmBoostVector);
+
+  // Boost parent and daughters to rest frame of particle X (x)
+  TLorentzVector parent_x = parent_cm;
+  TLorentzVector firstDaughter_x = firstDaughter_cm;
+  TLorentzVector secondDaughter_x = secondDaughter_cm;
+  TVector3 xBoost = -particleX_cm.BoostVector();
+  parent_x.Boost(xBoost);
+  firstDaughter_x.Boost(xBoost);
+  secondDaughter_x.Boost(xBoost);
   
-  //boost daughters to parent
-  TLorentzVector daughter_parent = daughter_x;
-  TLorentzVector seconddaughter_parent = seconddaughter_x;
-  TVector3 parentboost = parent_x.BoostVector();
-  daughter_parent.Boost(-1.0*parentboost);
-  seconddaughter_parent.Boost(-1.0*parentboost);
-  TVector3 daughter_parentv = daughter_parent.Vect();
-  TVector3 seconddaughter_parentv = seconddaughter_parent.Vect();
-  
-  //get the unit vectors in space
-  TVector3 daughter_parentunit = (daughter_parentv).Unit();
-  TVector3 seconddaughter_parentunit = (seconddaughter_parentv).Unit();
-  TVector3 normal_parentunit = daughter_parentunit.Cross(seconddaughter_parentunit);
-  TVector3 InverseOfX_rfunit = (InverseOfX_rf.Vect()).Unit();
+  // Boost daughters to parent's rest frame (p)
+  TLorentzVector firstDaughter_p = firstDaughter_x;
+  TLorentzVector secondDaughter_p = secondDaughter_x;
+  TVector3 parentBoost = -parent_x.BoostVector();
+  firstDaughter_p.Boost(parentBoost);
+  secondDaughter_p.Boost(parentBoost);
 
+  // Define the unit vectors for the helicity frame of the parent
+  TVector3 firstDaughter_p_unit = (firstDaughter_p.Vect()).Unit();
+  TVector3 secondDaughter_p_unit = (secondDaughter_p.Vect()).Unit();
+  TVector3 normal_p_unit = firstDaughter_p_unit.Cross(secondDaughter_p_unit);
+
+
+  // The axis of this helicity frame are defined as follows:
+  // z-axis is along the direction of the parent in the X rest frame
+  // y-axis is normal to the decay plane defined by the parent and particle X
+  //        the parent's vector is in the X rest frame and the particle X's
+  //        vector is in the cm frame 
   TVector3 z = (parent_x.Vect()).Unit();
-  TVector3 y = ((InverseOfX_rfunit).Cross(z)).Unit();
+  TVector3 y = ((particleX_cm.Vect()).Cross(z)).Unit();
   TVector3 x = (y.Cross(z)).Unit();
-  
-  // decay vector is normal to decay plane for omega->3pi and one of the ps for vec->ps1+ps2
+
+  // The decay vector is normal to decay plane for omega->3pi
+  // In the case of vec->ps1+ps2, the decay vector is one of the ps
   TVector3 decayVector;
-  if(seconddaughter.E() > 0) decayVector = normal_parentunit;
-  else decayVector = daughter_parentunit;
+  if(secondDaughterLab.E() > 0) decayVector = normal_p_unit;
+  else decayVector = firstDaughter_p_unit;
   
-  TVector3 Angles(decayVector.Dot(x),decayVector.Dot(y),decayVector.Dot(z));
+  TVector3 components(decayVector.Dot(x),decayVector.Dot(y),decayVector.Dot(z));
 
-  double theta = Angles.Theta();
-  double phi = Angles.Phi();
+  double thetaHelicity = components.Theta();
+  double phiHelicity = components.Phi();
 
-  // compute omega dalitz decay variable lambda
-  TVector3 daughterCross = (daughter_parent.Vect()).Cross(seconddaughter_parent.Vect());
-  double m0 = 0.1349766;
-  double mq = 0.1395702;
-  double lambda_max = 3/4. * TMath::Power(1/9. * (5*parent.M2() + 3*(m0*m0 - 4*mq*mq) - 4*sqrt(parent.M2()*parent.M2() + 3*parent.M2()*(m0*m0-mq*mq))), 2); 
-  double lambda = fabs(daughterCross.Dot(daughterCross)) / lambda_max;
+  // Compute the variable lambda for the omega->3pi decay
+  TVector3 daughterCross = (firstDaughter_p.Vect()).Cross(secondDaughter_p.Vect());
+  double m0 = 0.1349766; // mass of pi0
+  double mq = 0.1395702; // mass of charged pions
+  double threePiMass = parentLab.M2();
+  double lambda_max =  (3.0/4.0) *
+      TMath::Power( (1.0/9.0) * (5*threePiMass + 3*(m0*m0 - 4*mq*mq) -
+                   4*sqrt(threePiMass * threePiMass +
+                   3*threePiMass * (m0*m0 - mq*mq))), 2);
+  double lambda = fabs(daughterCross.Mag2()) / lambda_max;
 
-  vector <double> thetaphi{theta, phi, lambda};
-    
-  return thetaphi;
-  
+  return {thetaHelicity, phiHelicity, lambda};
+
 }
-vector <double> getomegapiAngles(double polAngle, TLorentzVector daughter, TLorentzVector parent, TLorentzVector InverseOfX, TLorentzVector rf)
-{
-//in the case of omega angles in b1 decay the daughter = omega, parent = b1, InverseOfX = beam, rf = gammap
-// boost all to rf
-  TLorentzVector daughter_rf = daughter;
-  TLorentzVector parent_rf = parent;
-  TLorentzVector InverseOfX_rf = InverseOfX;
-  TVector3 rfboost = rf.BoostVector();
-  InverseOfX_rf.Boost(-1.0*rfboost);
-  parent_rf.Boost(-1.0*rfboost);
-  daughter_rf.Boost(-1.0*rfboost);
+vector<double> getXDecayAngles( double polAngle, 
+                                const TLorentzVector& beamLab, 
+                                const TLorentzVector& beamPLab,
+                                const TLorentzVector& particleXLab,
+                                const TLorentzVector& daughterLab){
+    // Calculating the helicity angles of omega in  the b1 decay
+    // daughterLab = omega, particleXLab = b1, beamLab = beam,
+    // beamPLab = beam + proton (center of mass)
 
-  //boost daughter to parent
-  TVector3 parentboost = parent_rf.BoostVector();
-  TLorentzVector daughter_parent = daughter_rf;
-  daughter_parent.Boost(-1.0*parentboost);
-  TVector3 daughter_parentv = daughter_parent.Vect();
-  
-  //get the unit vectors in space
-  TVector3 daughter_parentunit = (daughter_parentv).Unit();
-  TVector3 InverseOfX_rfunit = (InverseOfX_rf.Vect()).Unit();
+    // Boost all particles to the (beamPLab) center-of-mass frame (cm)
+    TLorentzVector beam_cm = beamLab;
+    TLorentzVector particleX_cm = particleXLab;
+    TLorentzVector daughter_cm = daughterLab;
+    TVector3 cmBoostVector = -beamPLab.BoostVector();
+    beam_cm.Boost(cmBoostVector);
+    particleX_cm.Boost(cmBoostVector);
+    daughter_cm.Boost(cmBoostVector);
 
-  TVector3 z = (parent_rf.Vect()).Unit();
-  TVector3 y = ((InverseOfX_rfunit).Cross(z)).Unit();
-  TVector3 x = (y.Cross(z)).Unit();
-  
-  TVector3 Angles(daughter_parentunit.Dot(x),daughter_parentunit.Dot(y),daughter_parentunit.Dot(z));
+    // Boost daughter to particle X rest frame (x)
+    TLorentzVector daughter_x = daughter_cm;
+    TVector3 xBoost = -particleX_cm.BoostVector();
+    daughter_x.Boost(xBoost);
 
-  double theta = Angles.Theta();
-  double phi = Angles.Phi();
+    // get the unit vectors in space
+    TVector3 daughter_x_unit = (daughter_x.Vect()).Unit();
+    TVector3 beam_cm_unit = (beam_cm.Vect()).Unit();
 
-  TVector3 eps(cos(polAngle), sin(polAngle), 0.0); 
-  double Phi = atan2(y.Dot(eps), InverseOfX.Vect().Unit().Dot(eps.Cross(y)));
+    // The axis of this helicity frame are defined as follows:
+    // z-axis is along the direction of particle X in the center-of-mass frame
+    // y-axis is normal to the production plane defined by particle X and
+    //        the beam both vectors are expressed in the center-of-mass frame
+    TVector3 z = (particleX_cm.Vect()).Unit();
+    TVector3 y = ((beam_cm_unit).Cross(z)).Unit();
+    TVector3 x = (y.Cross(z)).Unit();
 
-  vector <double> thetaphiPhi{theta, phi, Phi};
-    
-  return thetaphiPhi;
-  
+    // One could use the Gottfried-Jackson frame instead of the helicity frame
+    // The axis would be defined as follows:
+    // z-axis is along the direction of the beam in the particle X rest frame
+    // y-axis is normal to the production plane defined by particle X and
+    //        the beam both vectors are expressed in the center-of-mass frame
+    //        (the same as helicity frame)
+    // TLorentzVector beam_x = beam_cm;
+    // beam_x.Boost(-1.0*xBoost);
+    // TVector3 z = (beam_x.Vect()).Unit();
+    // TVector3 y = ((beam_cm_unit.Vect()).Cross(particleX_cm.Vect())).Unit();
+    // TVector3 x = (y.Cross(z)).Unit();
+
+    TVector3 components(daughter_x_unit.Dot(x), daughter_x_unit.Dot(y),
+                        daughter_x_unit.Dot(z));
+
+    double theta = components.Theta();
+    double phi = components.Phi();
+
+    // Compute the production angle (bigPhi) between the polarization 
+    // angle and the normal to the production plane
+    // But first, make sure the polarization angle is in radians
+    static bool warned = false; // only warn once
+    if(!warned && (fabs(polAngle) > 2 * TMath::Pi())){
+      cerr << "[Notice] getXDecayAngles(): polAngle = " << polAngle
+           << " appears to be in degrees. Converting to radians."
+           << endl;
+      polAngle = DEG_TO_RAD * polAngle;
+      warned = true;
+    }
+    TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // polarization vector
+    double bigPhi = atan2(y.Dot(eps), beamLab.Vect().Unit().Dot(eps.Cross(y)));    
+
+    return {theta, phi, bigPhi};
 }

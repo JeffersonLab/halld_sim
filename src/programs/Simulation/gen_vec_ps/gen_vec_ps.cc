@@ -565,29 +565,31 @@ int main( int argc, char* argv[] ){
 
 					t->Fill(-1*(recoil-target).M2());
 
-                                        TLorentzVector Gammap = beam + target;
-                                        vector <double> loccosthetaphi = getomegapiAngles(polAngle, isobar, resonance, beam, Gammap);
-                                        double cosTheta = cos(loccosthetaphi[0]);
-                                        double phi = loccosthetaphi[1];
+					TLorentzVector Gammap = beam + target;
+                    vector <double> xDecayAngles = getXDecayAngles(polAngle, beam, Gammap, isobar, resonance);
+                    double cosTheta = cos(xDecayAngles[0]);
+                    double phi = xDecayAngles[1];
+					double Phi = xDecayAngles[2];
 
-                                        vector <double> loccosthetaphih = getomegapiAngles( p3, isobar, resonance, Gammap, p4);
-                                        double cosThetaH = cos(loccosthetaphih[0]);
-                                        double phiH = loccosthetaphih[1];
+                    vector <double> vectorDecayAngles = getVectorDecayAngles( Gammap, isobar, resonance, p3, p4);
+                    double cosThetaH = cos(vectorDecayAngles[0]);
+                    double phiH = vectorDecayAngles[1];
+					double lambda_omega = vectorDecayAngles[2];
 
 					M_CosTheta->Fill( resonance.M(), cosTheta);
 					M_Phi->Fill( resonance.M(), phi);
 					M_CosThetaH->Fill( resonance.M(), cosThetaH);
 					M_PhiH->Fill( resonance.M(), phiH);
 
-					double lambda_omega = loccosthetaphih[2];
+					
 					lambda->Fill(lambda_omega);
 
-                                        double Phi = loccosthetaphi[2];
+                                        
 					M_Phi_Prod->Fill( resonance.M(), Phi);
 
-                                        GDouble psi = phi - Phi;
-                                        if(psi < -1*PI) psi += 2*PI;
-                                        if(psi > PI) psi -= 2*PI;
+                    GDouble psi = phi - Phi;
+                    if(psi < -1*PI) psi += 2*PI;
+                    if(psi > PI) psi -= 2*PI;
 
 					CosTheta_psi->Fill( psi, cosTheta);
 
