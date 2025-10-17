@@ -19,9 +19,13 @@ struct tmpEvt_t {
   int nGen;
   TString rxn;
   double weight;
+  Particle_t t_target;
+  Particle_t t_spectator;
+  Particle_t t_participant;
   TLorentzVector beam;
   TLorentzVector target;
   TLorentzVector q[10];
+  Particle_t t_particles[10];
   TLorentzVector recoil;
   int pdg[10];
 };
@@ -39,7 +43,9 @@ class HddmOut {
   s_HDDM_t* hddmEvt;
   s_Origin_t* origin;
   s_Products_t* products;
-
+  Particle_t t_target;
+  Particle_t t_spectator;
+  Particle_t t_participant;
   Particle_t targetType;
   Particle_t beamType;
   
@@ -50,7 +56,9 @@ class HddmOut {
     targetType = Proton;
     beamType = Gamma;
   }
-  
+
+  Particle_t TYPE;
+
   ~HddmOut() {
     close_s_HDDM(ostream);
   }
@@ -71,13 +79,13 @@ class HddmOut {
     reaction->target = target = make_s_Target();
     target->type = targetType;
     target->properties = make_s_Properties();
-    target->properties->charge = ParticleCharge(targetType);
-    target->properties->mass = ParticleMass(targetType);
+    //target->properties->charge = ParticleCharge(targetType);
+    //target->properties->mass = ParticleMass(targetType);
     target->momentum = make_s_Momentum();
-    target->momentum->px = 0;
-    target->momentum->py = 0;
-    target->momentum->pz = 0;
-    target->momentum->E  = ParticleMass(targetType);
+    //target->momentum->px = 0;
+    //target->momentum->py = 0;
+    //target->momentum->pz = 0;
+    //target->momentum->E  = ParticleMass(targetType);
     reaction->beam = beam = make_s_Beam();
     beam->type = beamType;
     beam->properties = make_s_Properties();
@@ -104,22 +112,30 @@ class HddmOut {
     beam->momentum->py = evt.beam.Py();
     beam->momentum->pz = evt.beam.Pz();
     beam->momentum->E  = evt.beam.E();
+
+    target->type = evt.t_target;
+    target->properties->charge = ParticleCharge(evt.t_target);
+    target->properties->mass = ParticleMass(evt.t_target);
+    
+    target->momentum->px = evt.target.Px();
+    target->momentum->py = evt.target.Py();
+    target->momentum->pz = evt.target.Pz();
+    target->momentum->E  = evt.target.E();
+    
+    beam->momentum->px = evt.beam.Px();
+    beam->momentum->py = evt.beam.Py();
+    beam->momentum->pz = evt.beam.Pz();
+    beam->momentum->E  = evt.beam.E();
     
     products->mult = evt.nGen;
     reaction->weight = evt.weight;
+
+    //cout <<"nGen " << evt.nGen << endl;
     
     for (int i = 0; i < evt.nGen; i ++) {
-      Particle_t TYPE;
-      if (evt.pdg[i] == 211) TYPE = PiPlus; 
-      if (evt.pdg[i] == -211) TYPE = PiMinus;
-      if (evt.pdg[i] == 321) TYPE = KPlus; 
-      if (evt.pdg[i] == -321) TYPE = KMinus;
-      if (evt.pdg[i] == 3122) TYPE = Lambda;
-      if (evt.pdg[i] == -3122) TYPE = AntiLambda;
-      if (evt.pdg[i] == 0) TYPE = Unknown;
-      products->in[i].type = TYPE;
-      products->in[i].pdgtype = evt.pdg[i];
-      products->in[i].id = i;
+      products->in[i].type = evt.t_particles[i];
+      products->in[i].pdgtype = PDGtype(evt.t_particles[i]);
+      products->in[i].id = i + 1;
       products->in[i].parentid = 0;
       products->in[i].mech = 0;
       products->in[i].momentum = make_s_Momentum();
@@ -127,6 +143,7 @@ class HddmOut {
       products->in[i].momentum->py = evt.q[i].Py();
       products->in[i].momentum->pz = evt.q[i].Pz();
       products->in[i].momentum->E = evt.q[i].E();
+      //products->in[i].momentum->t = evt.q[i].t();
     }
     
     flush_s_HDDM(hddmEvt, ostream);
