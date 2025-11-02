@@ -61,6 +61,8 @@ Double_t* m_fixed_ecm;//!
 
 TLorentzVector doCalEnergy(double BeamEnergy, double nucleusMass, double ParticipantMass, double SpectatorMass, TLorentzVector MesonP4, TLorentzVector RecoilP4);
 Double_t RelBW(Double_t *x, Double_t *par);
+Double_t RelBW_massdep(Double_t *x, Double_t *par);
+double q_pi(double M, double mPi);
 
 int main( int argc, char* argv[] ){
   
@@ -290,9 +292,14 @@ int main( int argc, char* argv[] ){
     m_Spectator = ReadFile->GetConfigName("spectator"); 
     cout <<"Target is made of " << m_target << " with the participant " << m_Participant << " and spectator " << m_Spectator << endl;
     cout <<"Nucleon Fermi motion is located in " << m_Fermi_file << endl;
+    TString s_iff = "";
+    if (m_target == "Deuteron") s_iff = "sf/fermi-dis-D.txt";
+    if (m_target == "Helium") s_iff = "sf/fermi-dis-He4.txt";
+    if (m_target == "Carbon") s_iff = "sf/fermi-dis-C12.txt";
+    cout << s_iff << endl;
     if (!m_Fermi_file.Contains("SRC-unweighted")) {
       ifstream in;
-      in.open(m_Fermi_file);
+      in.open(s_iff);
       int i = 0;
       while (in.good()) {
 	double pf = 0, val = 0;
@@ -304,7 +311,12 @@ int main( int argc, char* argv[] ){
       }
       in.close();
     } else if (m_Fermi_file.Contains("SRC-unweighted")) {
-      TFile * t_sf = new TFile(m_Fermi_file);
+      TString s_isrc = "";
+      if (m_target == "Deuteron") s_isrc = "SRC-unweighted-spectral-function-nucleus-H2.root";
+      if (m_target == "Helium") s_isrc = "SRC-unweighted-spectral-function-nucleus-He4.root";
+      if (m_target == "Carbon") s_isrc = "SRC-unweighted-spectral-function-nucleus-C12.root";
+      cout << s_isrc << endl;
+      TFile * t_sf = new TFile(s_isrc);
       if (m_Participant == "Neutron") h_sf = (TH2F *) t_sf->Get("src_sf_n");
       if (m_Participant == "Proton") h_sf = (TH2F *) t_sf->Get("src_sf_p");
       if (m_Participant == "Deuteron") h_sf = (TH2F *) t_sf->Get("src_sf_d");
@@ -586,3 +598,32 @@ Double_t RelBW(Double_t *x, Double_t *par) {
   return norm * numerator / denominator;
 }
 
+// M, M0, Gamma0 in MeV; mPi in MeV
+double q_pi(double M, double mPi=0.13957018) {
+    if (M <= 2.0*mPi) return 0.0;
+    double val = 0.5*M * sqrt(1.0 - 4.0*mPi*mPi/(M*M));
+    return val;
+}
+
+Double_t RelBW_massdep(Double_t *x, Double_t *par) {
+  Double_t M   = x[0];         // MeV
+  Double_t M0  = par[0];      // MeV
+  Double_t G0  = par[1];      // MeV (width at resonance)
+  Double_t norm= par[2];
+
+  // pion mass (use charged or neutral as appropriate)
+  const double mPi = 0.13957018; // MeV (pi+)
+  double q    = q_pi(M, mPi);
+  double q0   = q_pi(M0, mPi);
+  double GammaM = 0.0;
+  if (q0 > 0.0 && q > 0.0) {
+      // P-wave (l=1) -> q^3 behavior and  M0/M factor
+      GammaM = G0 * pow(q/q0, 3) * (M0 / M);
+  } else {
+      GammaM = 0.0;
+  }
+
+  double numer = M0 * G0; // keep numerator with on-shell width if you want that convention
+  double denom = (M*M - M0*M0)*(M*M - M0*M0) + (M0*GammaM)*(M0*GammaM);
+  return norm * numer / denom;
+}
