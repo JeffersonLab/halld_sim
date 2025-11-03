@@ -566,6 +566,10 @@ int main( int argc, char* argv[] ){
 					t->Fill(-1*(recoil-target).M2());
 
 					TLorentzVector Gammap = beam + target;
+					if( polAngle == -1 ){
+						fprintf(stderr, "Error: do not use amorphous value (got %d)\n", polAngle);
+        				return -1; 
+					}
                     vector <double> xDecayAngles = getXDecayAngles(polAngle, beam, Gammap, isobar, resonance);
                     double cosTheta = cos(xDecayAngles[0]);
                     double phi = xDecayAngles[1];
