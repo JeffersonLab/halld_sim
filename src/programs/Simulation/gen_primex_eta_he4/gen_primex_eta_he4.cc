@@ -310,14 +310,9 @@ int main( int argc, char* argv[] ){
     m_Spectator = ReadFile->GetConfigName("spectator"); 
     cout <<"Target is made of " << m_target << " with the participant " << m_Participant << " and spectator " << m_Spectator << endl;
     cout <<"Nucleon Fermi motion is located in " << m_Fermi_file << endl;
-    TString s_iff = "";
-    if (m_target == "Deuteron") s_iff = "sf/fermi-dis-D.txt";
-    if (m_target == "Helium") s_iff = "sf/fermi-dis-He4.txt";
-    if (m_target == "Carbon") s_iff = "sf/fermi-dis-C12.txt";
-    cout << s_iff << endl;
     ifstream in;
     if (!m_Fermi_file.Contains("SRC")) {
-      in.open(s_iff);
+      in.open(m_Fermi_file);
       int i = 0;
       while (in.good()) {
 	double pf = 0, val = 0;
@@ -330,12 +325,8 @@ int main( int argc, char* argv[] ){
       in.close();
     }
     if (m_Fermi_file.Contains("SRC-unweighted")) {
-      TString s_isrc = "";
-      if (m_target == "Deuteron") s_isrc = "SRC-unweighted-spectral-function-nucleus-H2.root";
-      if (m_target == "Helium") s_isrc = "SRC-unweighted-spectral-function-nucleus-He4.root";
-      if (m_target == "Carbon") s_isrc = "SRC-unweighted-spectral-function-nucleus-C12.root";
-      cout << s_isrc << endl;
-      TFile * t_sf = new TFile(s_isrc);
+      cout << m_Fermi_file << endl;
+      TFile * t_sf = new TFile(m_Fermi_file);
       if (m_Participant == "Neutron") h_sf = (TH2F *) t_sf->Get("src_sf_n");
       if (m_Participant == "Proton") h_sf = (TH2F *) t_sf->Get("src_sf_p");
       if (m_Participant == "Deuteron") h_sf = (TH2F *) t_sf->Get("src_sf_d");
