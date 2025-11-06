@@ -66,15 +66,15 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
 
       // Compact printing of parsed arguments
       std::cout << "FSRootDataReaderBootstrap initialized with:\n"
-                << "  inFileName:        " << inFileName << "\n"
-                << "  inTreeName:        " << inTreeName << "\n"
-                << "  numParticles:      " << m_numParticles << "\n"
-                << "  friendFileName:    " << (friendFileName.IsEmpty() ? "N/A" : friendFileName.Data()) << "\n"
-                << "  friendTreeName:    " << (friendTreeName.IsEmpty() ? "N/A" : friendTreeName.Data()) << "\n"
-                << "  friendBranchName:  " << (friendBranchName.IsEmpty() ? "N/A" : friendBranchName.Data()) << "\n"
-                << "  fourMomentumPrefix:" << (fourMomentumPrefix.IsEmpty() ? "N/A" : fourMomentumPrefix.Data()) << "\n"
-                << "  randSeed:          " << randSeed << "\n"
-                << std::endl;
+          << "  inFileName:        " << inFileName << "\n"
+          << "  inTreeName:        " << inTreeName << "\n"
+          << "  numParticles:      " << m_numParticles << "\n"
+          << "  friendFileName:    " << (friendFileName.Length() == 0 ? "N/A" : friendFileName.Data()) << "\n"
+          << "  friendTreeName:    " << (friendTreeName.Length() == 0 ? "N/A" : friendTreeName.Data()) << "\n"
+          << "  friendBranchName:  " << (friendBranchName.Length() == 0 ? "N/A" : friendBranchName.Data()) << "\n"
+          << "  fourMomentumPrefix:" << (fourMomentumPrefix.Length() == 0 ? "N/A" : fourMomentumPrefix.Data()) << "\n"
+          << "  randSeed:          " << randSeed << "\n"
+          << std::endl;
 
 
       cout << "******************** WARNING ***********************" << endl;
@@ -114,21 +114,45 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
          m_inTree->SetBranchAddress( sPxPB, &m_PxPB );
          m_inTree->SetBranchAddress( sPyPB, &m_PyPB );
          m_inTree->SetBranchAddress( sPzPB, &m_PzPB );
-         for (unsigned int i = 0; i < m_numParticles; i++){
-            TString sI("");  sI += (i+1);
-            TString sEnPi = fourMomentumPrefix+"EnP"+sI;
-            TString sPxPi = fourMomentumPrefix+"PxP"+sI;
-            TString sPyPi = fourMomentumPrefix+"PyP"+sI;
-            TString sPzPi = fourMomentumPrefix+"PzP"+sI;
-            m_inTree->SetBranchAddress( sEnPi, &m_EnP[i] );
-            m_inTree->SetBranchAddress( sPxPi, &m_PxP[i] );
-            m_inTree->SetBranchAddress( sPyPi, &m_PyP[i] );
-            m_inTree->SetBranchAddress( sPzPi, &m_PzP[i] );
-            if(args.size() >= 6)
-              m_inTree->SetBranchAddress( friendBranchName, &m_weight );
-            else
-              m_weight = 1.0;
+
+         // particle name labels, matching ROOT branch convention
+         std::vector<TString> particleLabels;
+
+         if (m_numParticles == 5) {
+            particleLabels = { 
+                  "1",   // Lambda
+                  "2",   // K+
+                  "3",   // Pi0
+                  "1a",  // Proton from Lambda decay
+                  "1b"   // Pi- from Lambda decay
+            };
+         } 
+         else if (m_numParticles == 3) {
+               particleLabels = { 
+                  "2",    // K+
+                  "1a",  // Proton from Lambda decay
+                  "1b"  // Pi- from Lambda decay
+               };
          }
+
+         for (unsigned int i = 0; i < m_numParticles; i++) {
+            TString label = particleLabels[i];
+            TString sEnPi = fourMomentumPrefix + "EnP" + label;
+            TString sPxPi = fourMomentumPrefix + "PxP" + label;
+            TString sPyPi = fourMomentumPrefix + "PyP" + label;
+            TString sPzPi = fourMomentumPrefix + "PzP" + label;
+        
+            m_inTree->SetBranchAddress(sEnPi, &m_EnP[i]);
+            m_inTree->SetBranchAddress(sPxPi, &m_PxP[i]);
+            m_inTree->SetBranchAddress(sPyPi, &m_PyP[i]);
+            m_inTree->SetBranchAddress(sPzPi, &m_PzP[i]);
+        }
+        
+        // handle event weight
+        if (args.size() >= 6)
+            m_inTree->SetBranchAddress(friendBranchName, &m_weight);
+        else
+            m_weight = 1.0;
       }
 
       // Added: Generate randomized event indices for bootstrap sampling

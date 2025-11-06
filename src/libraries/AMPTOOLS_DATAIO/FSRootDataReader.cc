@@ -61,7 +61,9 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
         cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << " " << args[5] << endl;
       if(args.size()==7)
         cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << " " << args[5] << " " << args[6] << endl;
+      
       if (m_inTree){
+
          TString sEnPB = fourMomentumPrefix+"EnPB";
          TString sPxPB = fourMomentumPrefix+"PxPB";
          TString sPyPB = fourMomentumPrefix+"PyPB";
@@ -70,21 +72,45 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
          m_inTree->SetBranchAddress( sPxPB, &m_PxPB );
          m_inTree->SetBranchAddress( sPyPB, &m_PyPB );
          m_inTree->SetBranchAddress( sPzPB, &m_PzPB );
-         for (unsigned int i = 0; i < m_numParticles; i++){
-            TString sI("");  sI += (i+1);
-            TString sEnPi = fourMomentumPrefix+"EnP"+sI;
-            TString sPxPi = fourMomentumPrefix+"PxP"+sI;
-            TString sPyPi = fourMomentumPrefix+"PyP"+sI;
-            TString sPzPi = fourMomentumPrefix+"PzP"+sI;
-            m_inTree->SetBranchAddress( sEnPi, &m_EnP[i] );
-            m_inTree->SetBranchAddress( sPxPi, &m_PxP[i] );
-            m_inTree->SetBranchAddress( sPyPi, &m_PyP[i] );
-            m_inTree->SetBranchAddress( sPzPi, &m_PzP[i] );
-            if(args.size()>=6)
-              m_inTree->SetBranchAddress( friendBranchName, &m_weight );
-            else
-              m_weight = 1.0;
+
+         // particle name labels, matching ROOT branch convention
+         std::vector<TString> particleLabels;
+
+         if (m_numParticles == 5) {
+            particleLabels = { 
+                "1",   // Lambda
+                "2",   // K+
+                "3",   // Pi0
+                "1a",  // Proton from Lambda decay
+                "1b"   // Pi- from Lambda decay
+            };
+         } 
+         else if (m_numParticles == 3) {
+               particleLabels = { 
+                  "2",    // K+
+                  "1a",  // Proton from Lambda decay
+                  "1b"  // Pi- from Lambda decay
+               };
          }
+
+         for (unsigned int i = 0; i < m_numParticles; i++) {
+            TString label = particleLabels[i];
+            TString sEnPi = fourMomentumPrefix + "EnP" + label;
+            TString sPxPi = fourMomentumPrefix + "PxP" + label;
+            TString sPyPi = fourMomentumPrefix + "PyP" + label;
+            TString sPzPi = fourMomentumPrefix + "PzP" + label;
+        
+            m_inTree->SetBranchAddress(sEnPi, &m_EnP[i]);
+            m_inTree->SetBranchAddress(sPxPi, &m_PxP[i]);
+            m_inTree->SetBranchAddress(sPyPi, &m_PyP[i]);
+            m_inTree->SetBranchAddress(sPzPi, &m_PzP[i]);
+        }
+        
+        // handle event weight
+        if (args.size() >= 6)
+            m_inTree->SetBranchAddress(friendBranchName, &m_weight);
+        else
+            m_weight = 1.0;
       }
 
    }

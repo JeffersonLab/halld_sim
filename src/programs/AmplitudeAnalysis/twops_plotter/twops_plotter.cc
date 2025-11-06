@@ -25,8 +25,12 @@
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/TwoPSMoment.h"
+#include "AMPTOOLS_AMPS/TwoPiAngles.h"
+#include "AMPTOOLS_AMPS/PhaseOffset.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
+#include "AMPTOOLS_AMPS/KStarHyperon.h"
+
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
@@ -37,60 +41,90 @@
 
 typedef TwoPsPlotGenerator TwoPs_PlotGen;
 
-void atiSetup() {
+void atiSetup(){
+  AmpToolsInterface::registerAmplitude( BreitWigner() );
+  AmpToolsInterface::registerAmplitude( Uniform() );
+  AmpToolsInterface::registerAmplitude( Zlm() );
+  AmpToolsInterface::registerAmplitude( PhaseOffset() );
+  AmpToolsInterface::registerAmplitude( ComplexCoeff() );
+  AmpToolsInterface::registerAmplitude( Piecewise() );
+  AmpToolsInterface::registerAmplitude( TwoPSMoment() );
+  AmpToolsInterface::registerAmplitude( TwoPiAngles() );
+  AmpToolsInterface::registerAmplitude( KStarHyperon() );
 
-  AmpToolsInterface::registerAmplitude(BreitWigner());
-  AmpToolsInterface::registerAmplitude(Uniform());
-  AmpToolsInterface::registerAmplitude(Zlm());
-  AmpToolsInterface::registerAmplitude(ComplexCoeff());
-  AmpToolsInterface::registerAmplitude(Piecewise());
-  AmpToolsInterface::registerAmplitude(TwoPSMoment());
-  AmpToolsInterface::registerDataReader(ROOTDataReader());
-  AmpToolsInterface::registerDataReader(FSRootDataReader());
-  AmpToolsInterface::registerDataReader(ROOTDataReaderTEM());
+
+  AmpToolsInterface::registerDataReader( ROOTDataReader() );
+  AmpToolsInterface::registerDataReader( FSRootDataReader() );
+  AmpToolsInterface::registerDataReader( ROOTDataReaderTEM() );
 }
 
 using namespace std;
 
+void printUsage(const string& programName) {
+    cout << endl
+         << " *** Viewing Results Using AmpPlotter and Writing ROOT Histograms *** "
+         << endl
+         << endl;
+    cout << "Usage:" << endl
+         << endl;
+    cout << "\t" << programName << " <results file name> [options]" << endl;
+    cout << endl;
+    cout << "Options:" << endl;
+    cout << "\t-o <file>\t Specify the output file path (default: twops_plot.root)" << endl;
+    cout << "\t-g       \t Enable GUI display" << endl;
+    cout << "\t-n       \t Skip plotting to save time" << endl;
+    cout << "\t-h       \t Show this help message" << endl
+         << endl;
+}
+
 int main(int argc, char *argv[]) {
 
-  // ************************
-  // usage
-  // ************************
+     // ************************
+    // usage
+    // ************************
 
-  cout << endl
-       << " *** Viewing Results Using AmpPlotter and writing root histograms "
-          "*** "
-       << endl
-       << endl;
-
-  if (argc < 2) {
-    cout << "Usage:" << endl << endl;
-    cout << "\ttwops_plotter <results file name> -o <output file name>" << endl
-         << endl;
-    return 0;
-  }
-
-  bool showGui = false;
-  string outName = "twops_plot.root";
-  string resultsName(argv[1]);
-  for (int i = 2; i < argc; i++) {
-
-    string arg(argv[i]);
-
-    if (arg == "-g") {
-      showGui = true;
+    if (argc < 2) {
+        printUsage(argv[0] ? argv[0] : "twops_plotter");
+        return 0;
     }
-    if (arg == "-o") {
-      outName = argv[++i];
+
+    // Check for "-h" or invalid argv[1]
+    string arg1(argv[1]);
+    if (arg1 == "-h") {
+        printUsage(argv[0] ? argv[0] : "twops_plotter");
+        return 0;
     }
-    if (arg == "-h") {
-      cout << endl << " Usage for: " << argv[0] << endl << endl;
-      cout << "\t -o <file>\t output file path" << endl;
-      cout << "\t -g <file>\t show GUI" << endl;
-      exit(1);
+
+    // Default values
+    bool showGui = false;
+    bool plotFlag = true;
+    string outName = "twops_plot.root";
+    string resultsName = argv[1]; // Assign the first argument as results file name
+
+    // Process additional command-line arguments
+    for (int i = 2; i < argc; ++i) {
+        string arg(argv[i]);
+        if (arg == "-g") {
+            showGui = true;
+        } else if (arg == "-n") {
+            plotFlag = false;
+        } else if (arg == "-o") {
+            if (i + 1 < argc) {
+                outName = argv[++i];
+            } else {
+                cerr << "Error: Missing argument for option '-o'" << endl;
+                return 1;
+            }
+        } else if (arg == "-h") {
+            printUsage(argv[0]);
+            return 0;
+        } else {
+            cerr << "Error: Unknown option '" << arg << "'" << endl;
+            printUsage(argv[0]);
+            return 1;
+        }
     }
-  }
+
 
   // ************************
   // parse the command line parameters
@@ -98,7 +132,7 @@ int main(int argc, char *argv[]) {
 
   cout << "Fit results file name    = " << resultsName << endl;
   cout << "Output file name    = " << outName << endl << endl;
-
+  cout << "Plot Flag: " << (plotFlag ? "Enabled" : "Disabled") << endl;
   // ************************
   // load the results and display the configuration info
   // ************************
@@ -125,171 +159,230 @@ int main(int argc, char *argv[]) {
   // set up an output ROOT file to store histograms
   // ************************
 
-  TFile *plotfile = new TFile(outName.c_str(), "recreate");
-  TH1::AddDirectory(kFALSE);
-
-  string reactionName = results.reactionList()[0];
-  plotGen.enableReaction(reactionName);
-  vector<string> sums = plotGen.uniqueSums();
-  vector<string> amps = plotGen.uniqueAmplitudes();
-  cout << "Reaction " << reactionName << " enabled with " << sums.size()
-       << " sums and " << amps.size() << " amplitudes" << endl;
-
-  vector<string> amphistname = {"S0+", "S0-", "P-1+", "P-1-", "P0+", "P0-",
-                                "P1+", "P1-", "S0",   "P-1",  "P0",  "P1"};
+ 
+  vector<string> amphistname = {""}; 
+  // {"S0+", "S0-", 
+  //   "P-1+", "P-1-", "P0+", "P0-", "P1+", "P1-",  
+  //   "D0+", "D0-", "D1+", "D1-", "D2+", "D2-", "D-1+", "D-1-", "D-2+", "D-2-",
+  //   "S0",   "P-1",  "P0",  "P1", "D0",  "D1",  "D2",  "D-1",  "D-2",
+  //   "S",  "P",  "D"};
   vector<string> reflname = {"PosRefl", "NegRefl"};
 
-  // loop over sum configurations (one for each of the individual contributions,
-  // and the combined sum of all)
-  for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++) {
+  // string reactionName = results.reactionList()[0];
+  // plotGen.enableReaction(reactionName);
+  // vector<string> sums = plotGen.uniqueSums();
+  // vector<string> amps = plotGen.uniqueAmplitudes();
+  // cout << "Reaction " << reactionName << " enabled with " << sums.size()
+  //      << " sums and " << amps.size() << " amplitudes" << endl;
 
-    // loop over desired amplitudes
-    for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++) {
+  // Plot diagnostic histograms in a .root file
+  if(plotFlag){
+    TFile *plotfile = new TFile(outName.c_str(), "recreate");
+    TH1::AddDirectory(kFALSE);
 
-      // turn all ampltiudes by default
-      for (unsigned int jamp = 0; jamp < amps.size(); jamp++) {
-        plotGen.enableAmp(jamp);
-      }
+    for (const auto& reactionName : results.reactionList()) {
+      plotGen.enableReaction( reactionName );
+          
+      cout << "Reaction " << reactionName << " enabled " <<endl;
+      
+      vector<string> sums = plotGen.uniqueSums();
+      vector<string> amps = plotGen.uniqueAmplitudes();
+      cout << "with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl; 
 
-      // turn off unwanted amplitudes and sums
-      if (iamp < amphistname.size()) {
+      // loop over sum configurations (one for each of the individual contributions,
+      // and the combined sum of all)
+      for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++) {
 
-        string locampname = amphistname[iamp];
+        // loop over desired amplitudes
+        for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++) {
 
-        // turn on all sums by default
-        for (unsigned int i = 0; i < sums.size(); i++)
-          plotGen.enableSum(i);
-
-        // turn off unwanted sums for reflectivity (based on naturality)
-        // cout<<"refl = "<<irefl<<endl;
-        if (irefl < 2) {
-          for (unsigned int i = 0; i < sums.size(); i++) {
-            if (reflname[irefl] == "NegRefl") {
-              // ImagNegSign & RealPosSign are defined to be the negative
-              // reflectivity So, we turn off the positive reflectivity here
-              if (sums[i].find("ReZ_1+P") != std::string::npos ||
-                  sums[i].find("ImZ_1-P") != std::string::npos) {
-                plotGen.disableSum(i);
-                // cout<<reflname[irefl]<<" disable sum "<<sums[i]<<"\n";
-              }
-            }
-            if (reflname[irefl] == "PosRefl") {
-              // And, we turn off the negative reflectivity here
-              if (sums[i].find("ImZ_1+P") != std::string::npos ||
-                  sums[i].find("ReZ_1-P") != std::string::npos) {
-                plotGen.disableSum(i);
-                // cout<<reflname[irefl]<<" disable sum "<<sums[i]<<"\n";
-              }
-            }
+          // turn all ampltiudes by default
+          for (unsigned int jamp = 0; jamp < amps.size(); jamp++) {
+            plotGen.enableAmp(jamp);
           }
-        }
 
-        // turn off unwanted amplitudes
-        for (unsigned int jamp = 0; jamp < amps.size(); jamp++) {
-
-          if (amps[jamp].find(locampname.data()) == std::string::npos) {
-            plotGen.disableAmp(jamp);
-            // cout<<"disable amplitude "<<amps[jamp]<<endl;
-          }
-        }
-      }
-
-      cout << "Looping over input data" << endl;
-      // loop over data, accMC, and genMC
-      for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++) {
-        if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd)
-          continue;
-        bool singleData =
-            irefl == reflname.size() && iamp == amphistname.size();
-        if (iplot == PlotGenerator::kData && !singleData)
-          continue; // only plot data once
-
-        // loop over different variables
-        for (unsigned int ivar = 0; ivar < TwoPsPlotGenerator::kNumHists;
-             ivar++) {
-
-          // set unique histogram name for each plot (could put in
-          // directories...)
-          string histname = "";
-          if (ivar == TwoPsPlotGenerator::k2PsMass)
-            histname += "M2Ps";
-          else if (ivar == TwoPsPlotGenerator::kLambdaKMass)
-            histname += "MLambdaK";
-          else if (ivar == TwoPsPlotGenerator::kLambdaPiMass)
-            histname += "MLambdaPi";
-          else if (ivar == TwoPsPlotGenerator::kPiCosTheta)
-            histname += "CosTheta";
-          else if (ivar == TwoPsPlotGenerator::kPhiK)
-            histname += "PhiK";
-          else if (ivar == TwoPsPlotGenerator::kPhiPi)
-            histname += "PhiPi";
-          else if (ivar == TwoPsPlotGenerator::kPhiLambda)
-            histname += "PhiLambda";
-          else if (ivar == TwoPsPlotGenerator::kThetaK)
-            histname += "ThetaK";
-          else if (ivar == TwoPsPlotGenerator::kThetaPi)
-            histname += "ThetaPi";
-          else if (ivar == TwoPsPlotGenerator::kThetaLambda)
-            histname += "ThetaLambda";
-          else if (ivar == TwoPsPlotGenerator::kMomK)
-            histname += "MomK";
-          else if (ivar == TwoPsPlotGenerator::kMomPi)
-            histname += "MomPi";
-          else if (ivar == TwoPsPlotGenerator::kMomLambda)
-            histname += "MomLambda";
-          else if (ivar == TwoPsPlotGenerator::kPhi)
-            histname += "Phi";
-          else if (ivar == TwoPsPlotGenerator::kphi)
-            histname += "phi";
-          else if (ivar == TwoPsPlotGenerator::kPsi)
-            histname += "psi";
-          else if (ivar == TwoPsPlotGenerator::kt)
-            histname += "t";
-          else
-            continue;
-
-          if (iplot == PlotGenerator::kData)
-            histname += "dat";
-          if (iplot == PlotGenerator::kBkgnd)
-            histname += "bkgnd";
-          if (iplot == PlotGenerator::kAccMC)
-            histname += "acc";
-          if (iplot == PlotGenerator::kGenMC)
-            histname += "gen";
-
-          if (irefl < reflname.size()) {
-            // get name of sum for naming histogram
-            string sumName = reflname[irefl];
-            histname += "_";
-            histname += sumName;
-          }
+          // turn off unwanted amplitudes and sums
           if (iamp < amphistname.size()) {
-            // get name of amp for naming histogram
-            histname += "_";
-            histname += amphistname[iamp];
+
+            string locampname = amphistname[iamp];
+
+            // turn on all sums by default
+            for (unsigned int i = 0; i < sums.size(); i++)
+              plotGen.enableSum(i);
+
+            // turn off unwanted sums for reflectivity (based on naturality)
+            // cout<<"refl = "<<irefl<<endl;
+            if (irefl < 2) {
+              for (unsigned int i = 0; i < sums.size(); i++) {
+                if (reflname[irefl] == "NegRefl") {
+                  // ImagNegSign & RealPosSign are defined to be the negative
+                  // reflectivity So, we turn off the positive reflectivity here
+                  if (sums[i].find("ReZ_1+P") != std::string::npos ||
+                      sums[i].find("ImZ_1-P") != std::string::npos) {
+                    plotGen.disableSum(i);
+                    // cout<<reflname[irefl]<<" disable sum "<<sums[i]<<"\n";
+                  }
+                }
+                if (reflname[irefl] == "PosRefl") {
+                  // And, we turn off the negative reflectivity here
+                  if (sums[i].find("ImZ_1+P") != std::string::npos ||
+                      sums[i].find("ReZ_1-P") != std::string::npos) {
+                    plotGen.disableSum(i);
+                    // cout<<reflname[irefl]<<" disable sum "<<sums[i]<<"\n";
+                  }
+                }
+              }
+            }
+
+            // turn off unwanted amplitudes
+            for (unsigned int jamp = 0; jamp < amps.size(); jamp++) {
+
+              if (amps[jamp].find(locampname.data()) == std::string::npos) {
+                plotGen.disableAmp(jamp);
+                // cout<<"disable amplitude "<<amps[jamp]<<endl;
+              }
+            }
           }
 
-          Histogram *hist = plotGen.projection(ivar, reactionName, iplot);
-          TH1 *thist = hist->toRoot();
-          thist->SetName(histname.c_str());
-          plotfile->cd();
-          thist->Write();
-        }
-      }
-    }
-  }
+          cout << "Looping over input data" << endl;
+          // loop over data, accMC, and genMC
+          for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++) {
+            //if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd)
+            // if (iplot == PlotGenerator::kGenMC)
+            //   continue;
+            bool singleData =
+                irefl == reflname.size() && iamp == amphistname.size();
+            if (iplot == PlotGenerator::kData && !singleData)
+              continue; // only plot data once
 
-  plotfile->Close();
+            // loop over different variables
+            for (unsigned int ivar = 0; ivar < TwoPsPlotGenerator::kNumHists;
+                ivar++) {
+
+              // set unique histogram name for each plot (could put in
+              // directories...)
+              string histname = "";
+              if (ivar == TwoPsPlotGenerator::k2PsMass)
+                histname += "M2Ps";
+              else if (ivar == TwoPsPlotGenerator::kLambdaKMass)
+                histname += "MLambdaK";
+              else if (ivar == TwoPsPlotGenerator::kLambdaPiMass)
+                histname += "MLambdaPi";
+              else if (ivar == TwoPsPlotGenerator::kLambdaMass)
+                histname += "MLambda";
+              else if (ivar == TwoPsPlotGenerator::kdaughter1Mass)
+                histname += "Mdaughter1"; // Proton mass
+              else if (ivar == TwoPsPlotGenerator::kdaughter2Mass)
+                histname += "Mdaughter2"; // Pi- mass
+              else if (ivar == TwoPsPlotGenerator::kPiCosTheta)
+                histname += "CosTheta";
+              else if (ivar == TwoPsPlotGenerator::kPhiK)
+                histname += "PhiK";
+              else if (ivar == TwoPsPlotGenerator::kPhiPi)
+                histname += "PhiPi";
+              else if (ivar == TwoPsPlotGenerator::kPhiLambda)
+                histname += "PhiLambda";
+              else if (ivar == TwoPsPlotGenerator::kThetaK)
+                histname += "ThetaK";
+              else if (ivar == TwoPsPlotGenerator::kThetaPi)
+                histname += "ThetaPi";
+              else if (ivar == TwoPsPlotGenerator::kThetaLambda)
+                histname += "ThetaLambda";
+              else if (ivar == TwoPsPlotGenerator::kMomK)
+                histname += "MomK";
+              else if (ivar == TwoPsPlotGenerator::kMomPi)
+                histname += "MomPi";
+              else if (ivar == TwoPsPlotGenerator::kMomLambda)
+                histname += "MomLambda";
+              else if (ivar == TwoPsPlotGenerator::kPhi_LAB)
+                histname += "Phi_LAB";
+              else if (ivar == TwoPsPlotGenerator::kPhi)
+                histname += "Phi";
+              else if (ivar == TwoPsPlotGenerator::kphi)
+                histname += "phi";
+              else if (ivar == TwoPsPlotGenerator::kPsi)
+                histname += "psi";
+              else if (ivar == TwoPsPlotGenerator::kt)
+                histname += "t";
+              else if (ivar == TwoPsPlotGenerator::kCosTheta_LambdaHel)
+                histname += "cosTheta_LambdaHel";
+              else if (ivar == TwoPsPlotGenerator::kphi_LambdaHel)
+                histname += "phi_LambdaHel";
+              else if (ivar == TwoPsPlotGenerator::kPhi_LambdaHel)
+                histname += "Phi_LambdaHel";
+              else if (ivar == TwoPsPlotGenerator::kPsi_LambdaHel)
+                histname += "psi_LambdaHel";
+              else if (ivar == TwoPsPlotGenerator::kCosThetaX_LambdaHel)
+                histname += "cosThetaX_LambdaHel";
+              else if (ivar == TwoPsPlotGenerator::kCosThetaY_LambdaHel)
+                histname += "cosThetaY_LambdaHel";
+              else if (ivar == TwoPsPlotGenerator::kCosThetaZ_LambdaHel)
+                histname += "cosThetaZ_LambdaHel";
+              else if (ivar == TwoPsPlotGenerator::kCosThetaX_Lambda)
+                histname += "cosThetaX_Lambda";
+              else if (ivar == TwoPsPlotGenerator::kCosThetaY_Lambda)
+                histname += "cosThetaY_Lambda";
+              else if (ivar == TwoPsPlotGenerator::kCosThetaZ_Lambda)
+                histname += "cosThetaZ_Lambda";
+              else
+                continue;
+
+              if (iplot == PlotGenerator::kData)
+                histname += "dat";
+              if (iplot == PlotGenerator::kBkgnd)
+                histname += "bkgnd";
+              if (iplot == PlotGenerator::kAccMC)
+                histname += "acc";
+              if (iplot == PlotGenerator::kGenMC)
+                histname += "gen";
+
+              if (irefl < reflname.size()) {
+                // get name of sum for naming histogram
+                string sumName = reflname[irefl];
+                histname += "_";
+                histname += sumName;
+              }
+              if (iamp < amphistname.size()) {
+                // get name of amp for naming histogram
+                histname += "_";
+                histname += amphistname[iamp];
+              }
+
+              // add reaction name
+              histname += "_";
+              histname += reactionName;
+
+              Histogram *hist = plotGen.projection(ivar, reactionName, iplot);
+              TH1 *thist = hist->toRoot();
+              thist->SetName(histname.c_str());
+              plotfile->cd();
+              thist->Write();
+            }
+          } // end of loop over plots
+        } // end of loop over amplitudes
+      }// end of loop over reflectivity 
+    } // end of reaction loop
+    plotfile->Close();
+  } // end of plotFlag check
+
 
   // model parameters
   cout << "Checking Parameters" << endl;
 
   // parameters to check
-  vector<string> pars;
+  vector<string> pars = {
+    "rho000", "rho100", "rho1m10",
+    "rho111", "rho001", "rho101", "rho1m11",
+    "rho102", "rho1m12",
+    "Sigma", "Ox", "P", "T", "Oz"
+  };
+
+  
 
   // file for writing parameters (later switch to putting in ROOT file)
-  ofstream outfile;
-  outfile.open("twops_fitPars.txt");
+  size_t dotPos = resultsName.find_last_of('.');
+  string outFileName = ((dotPos != string::npos) ? resultsName.substr(0, dotPos) : resultsName) + "_fitPars.txt";
+  ofstream outfile(outFileName);
 
   for (unsigned int i = 0; i < pars.size(); i++) {
     double parValue = results.parValue(pars[i]);
@@ -352,6 +445,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // intensity +/- error
+  // error = \sqrt{\Sum_{ij} (deriv[i] * deriv[j] * errorMatrix[i][j])}
   for (int i = 0; i < nAmps; i++) {
     if (!ampsumPosRefl[i].empty()) {
       outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i]

@@ -20,6 +20,9 @@ public:
     k2PsMass = 0,
     kLambdaKMass,
     kLambdaPiMass,
+    kLambdaMass,
+    kdaughter1Mass, // Proton mass
+    kdaughter2Mass, // Pi- mass
     kPiCosTheta,
     kPhiK,
     kPhiPi,
@@ -30,10 +33,21 @@ public:
     kMomK,
     kMomPi,
     kMomLambda,
+    kPhi_LAB,
     kPhi,
     kphi,
     kPsi,
     kt,
+    kCosThetaX_Lambda,
+    kCosThetaY_Lambda,
+    kCosThetaZ_Lambda,
+    kCosThetaX_LambdaHel,
+    kCosThetaY_LambdaHel,
+    kCosThetaZ_LambdaHel,
+    kCosTheta_LambdaHel,
+    kPhi_LambdaHel,
+    kphi_LambdaHel,
+    kPsi_LambdaHel,
     kNumHists // Total number of histograms
   };
 
