@@ -9,7 +9,10 @@
 #include "TLorentzRotation.h"
 #include "TMath.h"
 #include "omegapiAngles.h"
+#include "IUAmpTools/AmpToolsInterface.h"
+#include "IUAmpTools/report.h"
 
+static const char* kModule = "omegapiAngles";
 
 vector <double> getVectorDecayAngles( const TLorentzVector& beamPLab,
                                       const TLorentzVector& particleXLab,
@@ -142,10 +145,11 @@ vector<double> getXDecayAngles( double polAngle,
 
     // Compute the production angle (bigPhi) between the polarization 
     // angle and the normal to the production plane
-    // But first, make sure the polarization angle is in radians
+    // But first, make sure the polarization angle is in radians  
     static bool warned = false; // only warn once
     if(!warned && (fabs(polAngle) > 2 * TMath::Pi())){
-      cerr << "[Notice] getXDecayAngles(): polAngle = " << polAngle
+      report( NOTICE, kModule )
+           << " getXDecayAngles(): polAngle = " << polAngle
            << " appears to be in degrees. Converting to radians."
            << endl;
       polAngle = DEG_TO_RAD * polAngle;

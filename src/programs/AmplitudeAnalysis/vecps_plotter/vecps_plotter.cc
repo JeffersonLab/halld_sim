@@ -122,11 +122,12 @@ int main(int argc, char* argv[]) {
     // ************************
     // set up an output ROOT file to store histograms
     // ************************
-    // Loop over different polarization files assuming 4 polarizations
+    // Loop over different polarization files 
     // the default will remain to just use a single file
     // ************************
-    for (int polFile = 0; polFile < 4; polFile++) {
-        if (polFile > 0) break;  // TEMPORARY - REMOVE TO ENABLE 4 POL FILES
+    size_t nReactions = results.reactionList().size();
+    for (int polFile = 0; polFile < nReactions; polFile++) {
+        if (polFile > 0) break;  // TEMPORARY - REMOVE TO ENABLE ALL POL FILES
         string reactionName = results.reactionList()[polFile];
         outName = reactionName + ".root";
 
@@ -146,9 +147,9 @@ int main(int argc, char* argv[]) {
 
         // loop over sum configurations (one for each of the individual
         // contributions, and the combined sum of all)
-        for (unsigned int irefl = 0; irefl < reflname.size(); irefl++) {
+        for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++) {
             // loop over desired amplitudes
-            for (unsigned int iamp = 0; iamp < amphistname.size(); iamp++) {
+            for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++) {
                 // turn all ampltiudes by default
                 for (unsigned int jamp = 0; jamp < amps.size(); jamp++) {
                     plotGen.enableAmp(jamp);
