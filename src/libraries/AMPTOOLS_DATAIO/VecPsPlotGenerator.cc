@@ -1,7 +1,7 @@
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 
 #include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
 #include "IUAmpTools/Histogram1D.h"

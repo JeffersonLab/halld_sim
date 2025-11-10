@@ -8,11 +8,11 @@
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 #include "TMath.h"
-#include "omegapiAngles.h"
+#include "vecPsAngles.h"
 #include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/report.h"
 
-static const char* kModule = "omegapiAngles";
+static const char* kModule = "vecPsAngles";
 
 vector <double> getVectorDecayAngles( const TLorentzVector& beamPLab,
                                       const TLorentzVector& particleXLab,
@@ -151,6 +151,7 @@ vector<double> getXDecayAngles( double polAngle,
       report( NOTICE, kModule )
            << " getXDecayAngles(): polAngle = " << polAngle
            << " appears to be in degrees. Converting to radians."
+           << " This message will only be shown once."
            << endl;
       polAngle = DEG_TO_RAD * polAngle;
       warned = true;

@@ -28,8 +28,8 @@
 //        direction of the incoming beam in the particle X rest frame.
 // Adair RF: The z-axis is equal to the direction of the incoming beam
 //        in the center of mass system.
-#if !defined(OMEGAPIANGLES)
-#define OMEGAPIANGLES
+#if !defined(VECPSANGLES)
+#define VECPSANGLES
 
 #include <string>
 #include <complex>

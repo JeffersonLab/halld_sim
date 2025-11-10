@@ -146,9 +146,12 @@ int main(int argc, char* argv[]) {
         const vector<string> reflname = {"PosRefl", "NegRefl"};
 
         // loop over sum configurations (one for each of the individual
-        // contributions, and the combined sum of all)
+        // contributions [when irefl < reflname.size()], and the combined sum
+        // of all [when irefl == reflname.size()])
         for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++) {
-            // loop over desired amplitudes
+            // loop over desired amplitudes (one for each of the individual
+            // contributions [when iamp < amphistname.size()], and the combined
+            // sum of all [when iamp == amphistname.size()])
             for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++) {
                 // turn all ampltiudes by default
                 for (unsigned int jamp = 0; jamp < amps.size(); jamp++) {

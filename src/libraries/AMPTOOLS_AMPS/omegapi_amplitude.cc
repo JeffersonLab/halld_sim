@@ -19,7 +19,7 @@
 #include "clebschGordan.h"
 #include "wignerD.h"
 #include "breakupMomentum.h"
-#include "omegapiAngles.h"
+#include "vecPsAngles.h"
 
 #include <cmath>
 #include <complex>

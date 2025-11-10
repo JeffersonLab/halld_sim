@@ -18,7 +18,7 @@
 #include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Vec_ps_moment.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"

@@ -19,7 +19,7 @@
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"

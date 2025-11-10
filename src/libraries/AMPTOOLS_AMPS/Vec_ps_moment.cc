@@ -19,7 +19,7 @@ Modified by: Kevin Scheuer
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/Vec_ps_moment.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 
 Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   UserAmplitude< Vec_ps_moment >( args )
