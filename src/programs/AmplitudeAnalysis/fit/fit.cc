@@ -43,6 +43,7 @@
 #include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/VecPs_3pi_refl.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
@@ -432,6 +433,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+   AmpToolsInterface::registerAmplitude( VecPs_3pi_refl() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
    AmpToolsInterface::registerAmplitude( ComplexCoeff() );
    AmpToolsInterface::registerAmplitude( OmegaDalitz() );
