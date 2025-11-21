@@ -380,7 +380,7 @@ int main( int argc, char* argv[] ){
   if (m_meson == "Rho0") {
     double Gamma = 0.1474;
     double mass = ParticleMass(t_meson);
-    fBW = new TF1("fBW", RelBW_massdep, 0.4, 1.1, 3);
+    fBW = new TF1("fBW", RelBW, 0.4, 1.1, 3);
     fBW->SetParameters(mass, Gamma, 1.0);
   }
 
