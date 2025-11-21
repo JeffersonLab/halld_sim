@@ -175,7 +175,8 @@ void ParseCommandLineArguments(int narg, char* argv[])
 // Cross section dsigma/dt derived from Laget(2005)
 double CrossSection(double s,double t,double p_gamma,double p_eta,double theta){
   // Coupling constants 
-  double c_rho_p_p=0.92/137.;
+  //double c_rho_p_p=0.92/137.;
+  double c_rho_p_p=0.5/137.; // using Phys.Rev.C59:435-441,1999
   double c_omega_p_p=6.44/137.;
   double c_gamma_p_p=1./(137.*137.);
   double c_phi_p_p=0.72/137.;
