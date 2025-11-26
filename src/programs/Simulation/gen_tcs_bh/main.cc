@@ -30,6 +30,8 @@ int main(int argc, char *argv[]){
 	reaction = genSettings.reaction;
 	static int indexrun = genSettings.indexrun;
 	int runNum = genSettings.runNum;
+	TString Tablepath = genSettings.xsecTablepath;
+	cout << "tablepath in main: " << Tablepath << endl;
 
 	cout << "Program starts" << endl;
     const bool DEBUG_TABLE = true;
@@ -63,7 +65,7 @@ int main(int argc, char *argv[]){
 	// HDDM output file
 	HddmOut hddmGo(genSettings.outFile);
 	/////////////////////////////////////////////////////////////////////////////
-//	if (genSettings.outFormat==00){ }else{
+//	if (genSettings.outFormat==00){ }else{}
 	// save in the tree
 	static long long int FirstEvent, EventNumber, TrueEventNumber;
 	static float param_initfile[30]; // all parameters from input file
@@ -199,7 +201,9 @@ int main(int argc, char *argv[]){
 			}
 
 		// BH peaks, read table to position
-        cfi=Form("Data/scanBHsing_fullrange.dat");
+        // cfi=Form("Data/scanBHsing_fullrange.dat"); //Tablepath
+        cfi=Form(Tablepath+"/scanBHsing_fullrange.dat");
+        cout << "full path in main: " << cfi << endl;
         cutfile.open(cfi.c_str()); cout<<"table "<<cfi<<endl;
         if (!cutfile) { cout<<"  ERROR: Table for thetaphi cut cannot open. use set.csh "<<endl; file->Close(); return 7;}
 

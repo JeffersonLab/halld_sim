@@ -16,6 +16,7 @@
 #include "Utils.h"
 #include <unistd.h>
 #include "Constants.h"
+#include "genSettings_t.h"
 
 class FillTables {
 

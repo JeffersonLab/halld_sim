@@ -6,6 +6,8 @@ using namespace std;
 
 int FillTables::FillTable(int reaction, TableProvider& table_provider){
 
+	genSettings_t genSettings0;
+	TString Tablepath0 = genSettings0.xsecTablepath;
         printf("Start to fill all the tables ...");
 
         ifstream infile1x,infile1z;
@@ -26,28 +28,34 @@ int FillTables::FillTable(int reaction, TableProvider& table_provider){
                 if (protonorneutron==1){
                         if (targetpoldir==1 || targetpoldir==2){
                                 cout<<"Read table for circularly polarized photon and transversely polarized target"<<endl;
-                                ff1x=Form("Data/grid_table_tcs_circperp.dat");
+                                ff1x=Form(Tablepath0+"/grid_table_tcs_circperp.dat");
+                                //ff1x=Form("Data/grid_table_tcs_circperp.dat");
                         } else {
                                 if (beampolartype==1){
                                         cout<<"Read table for linearly polarized photon and longitudinally polarized target"<<endl;
-                                        ff1x=Form("Data/grid_table_tcs_linlong.dat");
+                                        ff1x=Form(Tablepath0+"/grid_table_tcs_linlong.dat");
+                                        //ff1x=Form("Data/grid_table_tcs_linlong.dat");
                                 } else {
                                         cout<<"Read table for circularly polarized photon and longitudinally polarized target"<<endl;
-                                        ff1x=Form("Data/grid_table_tcs_circlong.dat");
+                                        ff1x=Form(Tablepath0+"/grid_table_tcs_circlong.dat");
+                                        //ff1x=Form("Data/grid_table_tcs_circlong.dat");
                                 }
                         }
                 } else if (protonorneutron==2){
                         cout<<"Read cross section off neutron"<<endl;
                         if (targetpoldir==1 || targetpoldir==2){
                                 cout<<"Read table for circularly polarized photon and transversely polarized target"<<endl;
-                                ff1x=Form("Data/grid_table_tcs_neutron_circperp.dat");
+                                ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circperp.dat");
+                                //ff1x=Form("Data/grid_table_tcs_neutron_circperp.dat");
                         } else {
                                 if (beampolartype==1){
                                         cout<<"Read table for linearly polarized photon and longitudinally polarized target"<<endl;
-                                        ff1x=Form("Data/grid_table_tcs_neutron_linlong.dat");
+                                        ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_linlong.dat");
+                                        //ff1x=Form("Data/grid_table_tcs_neutron_linlong.dat");
                                 } else {
                                         cout<<"Read table for circularly polarized photon and longitudinally polarized target"<<endl;
-                                        ff1x=Form("Data/grid_table_tcs_neutron_circlong.dat");
+                                        ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circlong.dat");
+                                        //ff1x=Form("Data/grid_table_tcs_neutron_circlong.dat");
                                 }
                         }
 

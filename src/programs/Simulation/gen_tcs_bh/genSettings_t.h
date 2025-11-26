@@ -94,6 +94,7 @@ struct genSettings_t {
 							// default=0 if not used
 
     // --- File configuration --------------------------------------------------
+    TString xsecTablepath;
     char outFile[180];    // output filename
     //string outFile;
 	int indexrun;
@@ -145,8 +146,10 @@ struct genSettings_t {
         // Filenames
 		indexrun = *(ReadFile->GetConfig1Par("indexrun"));
 		seedentry = *(ReadFile->GetConfig1Par("seedentry")); 	 // default seed
+	xsecTablepath = ReadFile->GetConfigName("xsecpath");
         TString outFile0 = ReadFile->GetConfigName("outFile");
         //strcpy(outFile, ReadFile->GetConfigName("outFile").Data());
+        //strcpy(xsecTablepath, xsecTablepath0.Data());
         strcpy(outFile, outFile0.Data());
         //strcpy(outFile, "tcs_bh_output.hddm");
     }

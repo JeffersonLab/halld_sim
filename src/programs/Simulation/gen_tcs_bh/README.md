@@ -34,7 +34,7 @@ copy the command; paste in terminal; press "Enter";
             * Output files
 ----------------------------------------------
 
-Output are store in: tcs_bh_output#.hddm,  tcs_bh_output_#.root and the logs files are stored in tcs_bh_output_#.log
+Output are store in: tcs_bh_output.hddm i.e name use in tcs_bh.cfg file,  tcs_bh_output_#.root and the logs files are stored in tcs_bh_output_#.log
 
 Note:
 "#" is any number set as index in the configuration file to distinguish different runs
