@@ -32,6 +32,7 @@ public:
 
   // flux stored by channel
   flux_t taghflux;
+  flux_t tagmflux;
 	
 private:
 
@@ -41,6 +42,7 @@ private:
   void fillFluxFromROOT();
   void fillPolFromROOT();
   void fillFluxFromCCDB();
+  void fillTaggedFluxFromCCDB();
   void fillPolFromCCDB();
   void fillPolFixed();
   double PSAcceptance(double Egamma, double norm, double min, double max);
@@ -49,6 +51,7 @@ private:
   std::map<std::string,double> mBeamParametersMap;
   std::map<std::string,std::string> mBeamHistNameMap;
 
+  bool mIsCCDBTaggedFlux;
   bool mIsCCDBFlux, mIsCCDBPol;
   bool mIsROOTFlux, mIsROOTPol;
   bool mIsPolFixed;
