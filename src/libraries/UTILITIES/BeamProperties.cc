@@ -117,9 +117,10 @@ bool BeamProperties::parseConfig(){
 		else if(words[0].find("ROOTFlux") != std::string::npos) {
 			if(words[1] == "ccdb")
 				mIsCCDBFlux = true;
-			else if (words[1] == "tagged-ccdb")
+			else if (words[1] == "tagged-ccdb") {
 			        mIsCCDBTaggedFlux = true;
-			else {
+				cout << "tagged-ccdb" << endl;
+			} else {
 				mIsROOTFlux = true;
 				mBeamHistNameMap.insert( std::pair<std::string,std::string>( words[0].data(), words[1].data() ) );
 			}
@@ -316,7 +317,7 @@ double BeamProperties::PSAcceptance(double Egamma, double norm, double min, doub
 // create histograms for flux from CCDB for specified run number  and polarization fraction
 void BeamProperties::fillFluxFromCCDB() {
 
-	cout<<endl<<"BeamProperties: Using flux from CCDB run "<<mRunNumber<<endl;
+	cout<<endl<<"BeamProperties: Using untagged flux from CCDB run "<<mRunNumber<<endl;
 
 	// Parse environment variables for CCDB setup
 	const char *calib_url = getenv("JANA_CALIB_URL");
@@ -476,7 +477,7 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	}
 	Elows_tagm.push_back(tagm_scaled_energy[highest_tagm][2] * photon_endpoint[0]);	// add high energy edge for last counter
 	sort(Elows_tagm.begin(), Elows_tagm.end());
-      	fluxVsEgamma = new TH1D("BeamProperties_FluxVsEgamma", "Flux vs. E_{#gamma}", (int) ((Ehigh - Elow) / 10.), Elow, Ehigh);
+	fluxVsEgamma = new TH1D("BeamProperties_FluxVsEgamma", "Flux vs. E_{#gamma}", (int) ((Ehigh - Elow) * 1e3 / 10.), Elow, Ehigh);
 
 	// Get tagged flux from CCDB and fill histogram (if they exist)
 	try{
@@ -494,7 +495,7 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 		cout << "ERROR: Failed to find flux table in CCDB for run " << mRunNumber << endl;
 		exit(101);
 	}
-		
+	
 	for(uint i=0; i<taghflux.size(); i++) {
 		double energy = 0.5*(tagh_scaled_energy[i][1]+tagh_scaled_energy[i][2]) * photon_endpoint[0];
 		double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
