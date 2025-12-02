@@ -7,6 +7,8 @@ using namespace std;
 
 // CONFIGURATION SETTINGS FOR TCS GENERATOR
 struct genSettings_t {
+ 	static TString globalCfgFile;
+
  	int reaction;       //reaction (1 -> TCS; 11-> TCS phase space)
 						//    1) tcs = TCS exclusive production of lepton pair from gamma or e beam"<<endl;
 					   	//	  - phase space for exclusive processes (flags):"<<endl;
@@ -104,7 +106,7 @@ struct genSettings_t {
 // LOAD SETTINGS FROM CONFIG FILE
         genSettings_t() {
         MyReadConfig * ReadFile = new MyReadConfig();
-        ReadFile->ReadConfigFile("tcs_bh.cfg");  // generator config file
+        ReadFile->ReadConfigFile(globalCfgFile);  // generator config file
 		reaction    	 = *(ReadFile->GetConfig1Par("reaction"));       // TCS
         // Beam settings
         beamtype        = *(ReadFile->GetConfig1Par("beamtype"));       // fixed-energy photon beam
