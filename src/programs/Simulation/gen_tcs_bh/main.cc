@@ -26,12 +26,22 @@ int reaction;
 int main(int argc, char *argv[]){
     // Start timer
     auto start = std::chrono::high_resolution_clock::now();
+    
+    TString configfile = "tcs_bh.cfg";
+        
+
+    if (argc > 1){ configfile = argv[1];}
+    genSettings_t::globalCfgFile = configfile;
+
 	genSettings_t genSettings;
 	reaction = genSettings.reaction;
 	static int indexrun = genSettings.indexrun;
 	int runNum = genSettings.runNum;
 	TString Tablepath = genSettings.xsecTablepath;
-	cout << "tablepath in main: " << Tablepath << endl;
+	std::cout << "Using config: " << configfile << std::endl;
+        std::cout << "xsecTablepath: " << genSettings.xsecTablepath << std::endl;
+        std::cout << "output file:   " << genSettings.outFile << std::endl;
+  
 
 	cout << "Program starts" << endl;
     const bool DEBUG_TABLE = true;
@@ -47,8 +57,8 @@ int main(int argc, char *argv[]){
 	ReactionKinTwo CMlabT;
 
 	long long int seedentry = genSettings.seedentry;
-	if (argc > 3) seedentry = (long long int) stoll(argv[3]);
-    cout<<"Generate events for reaction: "<<argv[1]<<" (index "<<reaction<<")"<<endl;
+//	if (argc > 3) seedentry = (long long int) stoll(argv[3]);
+//    cout<<"Generate events for reaction: "<<argv[1]<<" (index "<<reaction<<")"<<endl;
 
 	TFile *file;  // Declare the file pointer
 	file = new TFile(Form("tcs_bh_output_%d.root", indexrun),"RECREATE");
@@ -65,7 +75,6 @@ int main(int argc, char *argv[]){
 	// HDDM output file
 	HddmOut hddmGo(genSettings.outFile);
 	/////////////////////////////////////////////////////////////////////////////
-//	if (genSettings.outFormat==00){ }else{}
 	// save in the tree
 	static long long int FirstEvent, EventNumber, TrueEventNumber;
 	static float param_initfile[30]; // all parameters from input file
@@ -128,13 +137,13 @@ int main(int argc, char *argv[]){
 		// JLab TCS mode
 		if (reaction==1){
 			check=Variables_TCS(); // read external option file
-			if (check!=1) { cout<<"ERROR: CHECK OPTION FILE AND DON'T CHANGE LINES INSIDE\nRETURN"<<endl; file->Close(); return 0; }
+			if (check!=1) { cout<<"ERROR: CHECK OPTION FILE AND DON'T CHANGE LINES INSIDE\nRETURN"<<endl; file->Close(); return 15; }
 			check=VariablesValues_TCS();  // read options and check validity
-			if (check!=1) { cout<<"ERROR: CHECK VARIABLES VALUES IN OPTION FILE\n RETURN"<<endl;file->Close();return 0; }
+			if (check!=1) { cout<<"ERROR: CHECK VARIABLES VALUES IN OPTION FILE\n RETURN"<<endl;file->Close();return 15; }
 
 			printf("\n Load tables... this step may take some time...");
 				check = filltable.FillTable(reaction ,ddvcs_table_provider); // read cross sections from external file and put it in arrays
-				if (check!=1) { cout<<"ERROR: no tables file \n RETURN"<<endl;file->Close(); return 0; }
+				if (check!=1) { cout<<"ERROR: no tables file \n RETURN"<<endl;file->Close(); return 15; }
 				else printf ("..done\n ");
 
 			bremgam_integral = rad_ob.InitBrmProfile(Eelectron,EMINI, EMAXI);
@@ -195,9 +204,9 @@ int main(int argc, char *argv[]){
 		} else if (reaction==11){
 
 		check = Variables_PSEEPHOTO_FIX();
-		if (check!=1) { cout<<"ERROR: CHECK OPTION FILE AND DON'T CHANGE LINES INSIDE  "<<endl; file->Close(); return 0; }
+		if (check!=1) { cout<<"ERROR: CHECK OPTION FILE AND DON'T CHANGE LINES INSIDE  "<<endl; file->Close(); return 15; }
 		check=VariablesValues_PSTCSFIX();
-		if (check!=1) { cout<<"ERROR: CHECK VARIABLES VALUES IN OPTION FILE   \n RETURN"<<endl; file->Close(); return 0; }
+		if (check!=1) { cout<<"ERROR: CHECK VARIABLES VALUES IN OPTION FILE   \n RETURN"<<endl; file->Close(); return 15; }
 			}
 
 		// BH peaks, read table to position
@@ -738,5 +747,5 @@ int main(int argc, char *argv[]){
 
 	logfile<<"Elapsed time: "<< elapsed.count() << " seconds" <<endl;
 
-	return 100;
+	return 0;
 } // end main
