@@ -465,6 +465,7 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	// Setup custom histogram for filling flux from CCDB
 	double Elow  = mBeamParametersMap.at("PhotonBeamLowEnergy"); // histogram min energy
 	double Ehigh = mBeamParametersMap.at("PhotonBeamHighEnergy"); // histogram max energy
+	/*
 	int highest_tagh = 0;
 	vector<double> Elows_tagh;
 	for(int i=tagh_scaled_energy.size()-1; i>=0; i--) {
@@ -487,6 +488,7 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	}
 	Elows_tagm.push_back(tagm_scaled_energy[highest_tagm][2] * photon_endpoint[0]);	// add high energy edge for last counter
 	sort(Elows_tagm.begin(), Elows_tagm.end());
+	*/
 	fluxVsEgamma = new TH1D("BeamProperties_FluxVsEgamma", "Flux vs. E_{#gamma}", (int) ((Ehigh - Elow) * 1e6), Elow, Ehigh);
 
 	// Get tagged flux from CCDB and fill histogram (if they exist)
@@ -509,11 +511,12 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	for(uint i=0; i<taghflux.size(); i++) {
 	  e_low = tagh_scaled_energy[i][1] * endpoint_calib[0] + delta_e;
 	  e_high = tagh_scaled_energy[i][2] * endpoint_calib[0] + delta_e;
+	  int nbin = (int) ((e_high - e_low) * 1e6);
 	  //double energy = 0.5*(tagh_scaled_energy[i][1]+tagh_scaled_energy[i][2]) * photon_endpoint[0];
 	  for (int e = ((int) (e_low * 1e6)); e <= ((int) (e_high * 1e6)); e ++) {
 	    double energy = e * 1e-6;
 	    double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
-	    double flux = taghflux[i][1]/accept;
+	    double flux = taghflux[i][1]/accept/((double) nbin);
 	    if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
 	    if(e_low_tagm <= energy && energy <= e_high_tagm) flux = 0; // remove very low acceptance regions to avoid fluctuations
 	    fluxVsEgamma->Fill(energy, flux);
@@ -523,11 +526,12 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	for(uint i=0; i<tagmflux.size(); i++) {
 	  e_low = tagm_scaled_energy[i][1] * endpoint_calib[0] + delta_e;
 	  e_high = tagm_scaled_energy[i][2] * endpoint_calib[0] + delta_e;
+	  int nbin = (int) ((e_high - e_low) * 1e6);
 	  //double energy = 0.5*(tagm_scaled_energy[i][1]+tagm_scaled_energy[i][2]) * photon_endpoint[0];
 	  for (int e = ((int) (e_low * 1e6)); e <= ((int) (e_high * 1e6)); e ++) {
 	    double energy = e * 1e-6;
 	    double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
-	    double flux = tagmflux[i][1]/accept;
+	    double flux = tagmflux[i][1]/accept/((double) nbin);
 	    if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
 	    fluxVsEgamma->Fill(energy, flux);
 	  }
