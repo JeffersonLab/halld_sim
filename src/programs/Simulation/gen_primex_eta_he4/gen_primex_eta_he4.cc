@@ -271,7 +271,17 @@ int main( int argc, char* argv[] ){
     if (m_meson == "pi0") m_meson = "Pi0";
     if (m_meson == "eta") m_meson = "Eta";
     if (m_meson == "eta'") m_meson = "EtaPrime";
-    if (m_meson == "omega") m_meson = "Omega";
+    if (m_meson == "omega") {
+      m_meson = "Omega";
+      cout << " Omega special " << endl;
+      if (ReadFile->GetConfigName("sc1") != "" && ReadFile->GetConfigName("sc2") != "") {
+	cout << " that decays " << endl;
+	m_sc[0] = ReadFile->GetConfigName("sc1");
+	m_sc[1] = ReadFile->GetConfigName("sc2");
+	if (m_sc[0] == "Gamma") m_sc[0] = "Photon";
+	if (m_sc[1] == "Gamma") m_sc[1] = "Photon";
+      }
+    }
     if (m_meson == "rho0" || m_meson == "Rho0") {
       m_meson = "Rho0";
       cout << " Rho0 special " << endl;
@@ -279,6 +289,8 @@ int main( int argc, char* argv[] ){
 	cout << " that decays " << endl;
 	m_sc[0] = ReadFile->GetConfigName("sc1");
 	m_sc[1] = ReadFile->GetConfigName("sc2");
+	if (m_sc[0] == "Gamma") m_sc[0] = "Photon";
+	if (m_sc[1] == "Gamma") m_sc[1] = "Photon";
       }
     }
     if (m_meson != "Eta" && m_meson != "EtaPrime" && m_meson != "Pi0" && m_meson != "Omega" && m_meson != "Rho0") {
@@ -315,7 +327,7 @@ int main( int argc, char* argv[] ){
   Particle_t t_spectator = Gamma;
   Particle_t t_participant = Gamma;
 
-  if (m_meson == "Rho0") {
+  if (m_meson == "Rho0" || m_meson == "Omega") {
     if (m_sc[0] != "" && m_sc[1] != "") {
       cout << m_meson << " decay into " << m_sc[0] << " and " << m_sc[1] << endl;
       t_sc1 = ParticleEnum(m_sc[0].Data());
@@ -433,7 +445,9 @@ int main( int argc, char* argv[] ){
 
   TH1F * h_meson_mass = new TH1F("meson_mass","; Mass [GeV];Events #", 2000, 0., 2.);
   TH1F * h_meson_theta = new TH1F("meson_theta","; cos;Events #", 2000, -1., 1.);
-  
+  TLorentzVector sc1P4_lab(0, 0, 0, 0);
+  TLorentzVector sc2P4_lab(0, 0, 0, 0);
+    
   for (int i = 0; i < nEvents; ++i) {
     if (i%1000 == 1)
       cout << "event " << i <<endl;
@@ -477,8 +491,9 @@ int main( int argc, char* argv[] ){
       mass = fBW->GetRandom();
     }
     h_meson_mass->Fill(mass);
-    TLorentzVector sc1P4_lab(0, 0, 0, 0);
-    TLorentzVector sc2P4_lab(0, 0, 0, 0);
+    sc1P4_lab = TLorentzVector(0, 0, 0, 0);
+    sc2P4_lab = TLorentzVector(0, 0, 0, 0);
+    
     double PhiLAB = fRandom->Uniform(-TMath::Pi(), TMath::Pi());
     TLorentzVector eta_LAB_P4 = meson_lab(ISP4, mass,  ParticleMass(t_target), ThetaLAB, PhiLAB);
     if (do_flat_qf || m_rfile.Contains("free"))
@@ -639,7 +654,7 @@ int main( int argc, char* argv[] ){
       }
     }
         
-    if (m_meson == "Rho0") {
+    if (m_meson == "Rho0" || m_meson == "Omega") {
       double m_sc1 = ParticleMass(t_sc1); // GeV
       double m_sc2 = ParticleMass(t_sc2); // GeV
       
@@ -717,7 +732,7 @@ int main( int argc, char* argv[] ){
 	//cout <<"I am here 2 "<<endl;
 	tmpEvt.q2 = He4_LAB_P4;
 	tmpEvt.nGen = 2;
-      } else if (ng_max == 0 && m_Fermi_file != "" && m_meson != "Rho0") {
+      } else if (ng_max == 0 && m_Fermi_file != "" && m_sc[0] == "") {
 	//cout <<"I am here 3 "<<endl;
 	//cout <<"part x " << ParticipantP4.X() << " y " << ParticipantP4.Y() << " z " << ParticipantP4.Z() << " e " << ParticipantP4.E() << " m " << ParticipantP4.M() << endl;
 	//cout <<"spec x " << SpectatorP4.X() << " y " << SpectatorP4.Y() << " z " << SpectatorP4.Z() << " e " << SpectatorP4.E() << " m " << SpectatorP4.M() << endl;
@@ -733,7 +748,7 @@ int main( int argc, char* argv[] ){
 	tmpEvt.t_part = t_participant;
 	tmpEvt.t_spec = t_spectator;
 	tmpEvt.nGen = 3;
-      } else if (ng_max == 0 && m_Fermi_file != "" && m_meson == "Rho0") {
+      } else if (ng_max == 0 && m_Fermi_file != "" && m_sc[0] != "" && m_sc[1] != "") {
 	//cout <<"I am here 3 "<<endl;
 	//cout <<"part x " << ParticipantP4.X() << " y " << ParticipantP4.Y() << " z " << ParticipantP4.Z() << " e " << ParticipantP4.E() << " m " << ParticipantP4.M() << endl;
 	//cout <<"spec x " << SpectatorP4.X() << " y " << SpectatorP4.Y() << " z " << SpectatorP4.Z() << " e " << SpectatorP4.E() << " m " << SpectatorP4.M() << endl;
@@ -754,7 +769,7 @@ int main( int argc, char* argv[] ){
 	tmpEvt.t_part = t_participant;
 	tmpEvt.t_spec = t_spectator;
 	tmpEvt.nGen = 4;
-      } else if (ng_max == 0 && m_Fermi_file == "" && m_meson == "Rho0") {
+      } else if (ng_max == 0 && m_Fermi_file == "" && m_sc[0] != "" && m_sc[1] != "") {
 	tmpEvt.str_decay = "decaying";
 	tmpEvt.q1 = sc1P4_lab;
 	tmpEvt.q2 = sc2P4_lab;
