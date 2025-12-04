@@ -404,6 +404,12 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 
 	cout<<endl<<"BeamProperties: Using tagged flux from CCDB run "<<mRunNumber<<endl;
 
+	TRandom3* fRandom = new TRandom3();  
+	TTimeStamp * time_st = new TTimeStamp();
+	double_t timeseed = time_st->GetNanoSec();
+	// random number initialization (set to 0 by default)
+	fRandom->SetSeed(timeseed);
+	
 	// Parse environment variables for CCDB setup
 	const char *calib_url = getenv("JANA_CALIB_URL");
 	if(!calib_url) {
@@ -432,8 +438,9 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	double PSmax = psAccept[0][2];
 
 	// Get tagger energy parameters from CCDB
-	vector< double > photon_endpoint;
+	vector< double > photon_endpoint, endpoint_calib;
 	vector< vector<double> > tagh_scaled_energy, tagm_scaled_energy;
+	calib->GetCalib(endpoint_calib, "PHOTON_BEAM/hodoscope/endpoint_calib");
 	calib->GetCalib(photon_endpoint, "PHOTON_BEAM/endpoint_energy");
 	calib->GetCalib(tagh_scaled_energy, "PHOTON_BEAM/hodoscope/scaled_energy_range");
 	calib->GetCalib(tagm_scaled_energy, "PHOTON_BEAM/microscope/scaled_energy_range");
@@ -442,14 +449,17 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	double e_high_tagh = 0;
 	double e_low_tagm = 0;
 	double e_high_tagm = 0;
-
+	double delta_e = 0;
+	if (endpoint_calib.size() > 0 && photon_endpoint.size() > 0)
+	  delta_e = photon_endpoint[0] - endpoint_calib[0];
+	
 	if (tagh_scaled_energy.size() > 0) {
-	  e_low_tagh = tagh_scaled_energy[tagh_scaled_energy.size() - 1][1] * photon_endpoint[0];
-	  e_high_tagh = tagh_scaled_energy[0][2] * photon_endpoint[0];
+	  e_low_tagh = tagh_scaled_energy[tagh_scaled_energy.size() - 1][1] * photon_endpoint[0] + delta_e;
+	  e_high_tagh = tagh_scaled_energy[0][2] * photon_endpoint[0] + delta_e;
 	}
 	if (tagm_scaled_energy.size() > 0) {
-	  e_low_tagm = tagm_scaled_energy[tagm_scaled_energy.size() - 1][1] * photon_endpoint[0];
-	  e_high_tagm = tagm_scaled_energy[0][2] * photon_endpoint[0];
+	  e_low_tagm = tagm_scaled_energy[tagm_scaled_energy.size() - 1][1] * photon_endpoint[0] + delta_e;
+	  e_high_tagm = tagm_scaled_energy[0][2] * photon_endpoint[0] + delta_e;
 	}
 	
 	// Setup custom histogram for filling flux from CCDB
@@ -477,7 +487,7 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	}
 	Elows_tagm.push_back(tagm_scaled_energy[highest_tagm][2] * photon_endpoint[0]);	// add high energy edge for last counter
 	sort(Elows_tagm.begin(), Elows_tagm.end());
-	fluxVsEgamma = new TH1D("BeamProperties_FluxVsEgamma", "Flux vs. E_{#gamma}", (int) ((Ehigh - Elow) * 1e3 / 10.), Elow, Ehigh);
+	fluxVsEgamma = new TH1D("BeamProperties_FluxVsEgamma", "Flux vs. E_{#gamma}", (int) ((Ehigh - Elow) * 1e6), Elow, Ehigh);
 
 	// Get tagged flux from CCDB and fill histogram (if they exist)
 	try{
@@ -495,22 +505,28 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 		cout << "ERROR: Failed to find flux table in CCDB for run " << mRunNumber << endl;
 		exit(101);
 	}
-	
+	double e_low = 0, e_high = 0;
 	for(uint i=0; i<taghflux.size(); i++) {
-		double energy = 0.5*(tagh_scaled_energy[i][1]+tagh_scaled_energy[i][2]) * photon_endpoint[0];
-		double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
-		double flux = taghflux[i][1]/accept;
-		if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
-		if(e_low_tagm <= energy && energy <= e_high_tagm) flux = 0; // remove very low acceptance regions to avoid fluctuations
-		fluxVsEgamma->Fill(energy, flux);
+	  e_low = tagh_scaled_energy[i][1] * photon_endpoint[0] + delta_e;
+	  e_high = tagh_scaled_energy[i][2] * photon_endpoint[0] + delta_e;
+	  //double energy = 0.5*(tagh_scaled_energy[i][1]+tagh_scaled_energy[i][2]) * photon_endpoint[0];
+	  double energy = fRandom->Uniform(e_low, e_high);
+	  double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
+	  double flux = taghflux[i][1]/accept;
+	  if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
+	  if(e_low_tagm <= energy && energy <= e_high_tagm) flux = 0; // remove very low acceptance regions to avoid fluctuations
+	  fluxVsEgamma->Fill(energy, flux);
 	}
 
 	for(uint i=0; i<tagmflux.size(); i++) {
-		double energy = 0.5*(tagm_scaled_energy[i][1]+tagm_scaled_energy[i][2]) * photon_endpoint[0];
-		double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
-		double flux = tagmflux[i][1]/accept;
-		if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
-		fluxVsEgamma->Fill(energy, flux);
+	  e_low = tagm_scaled_energy[i][1] * photon_endpoint[0] + delta_e;
+	  e_high = tagm_scaled_energy[i][2] * photon_endpoint[0] + delta_e;
+	  //double energy = 0.5*(tagm_scaled_energy[i][1]+tagm_scaled_energy[i][2]) * photon_endpoint[0];
+	  double energy = fRandom->Uniform(e_low, e_high);
+	  double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
+	  double flux = tagmflux[i][1]/accept;
+	  if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
+	  fluxVsEgamma->Fill(energy, flux);
 	}
 
 	if (fluxVsEgamma->Integral() == 0){
