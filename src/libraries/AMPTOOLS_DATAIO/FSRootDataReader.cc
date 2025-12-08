@@ -80,11 +80,13 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
             m_inTree->SetBranchAddress( sPxPi, &m_PxP[i] );
             m_inTree->SetBranchAddress( sPyPi, &m_PyP[i] );
             m_inTree->SetBranchAddress( sPzPi, &m_PzP[i] );
-            if(args.size()>=6)
-              m_inTree->SetBranchAddress( friendBranchName, &m_weight );
-            else
-              m_weight = 1.0;
          }
+         if(args.size()>=6)
+            m_inTree->SetBranchAddress( friendBranchName, &m_weight );
+         else if (m_inTree->GetBranch(friendBranchName) != NULL)
+            m_inTree->SetBranchAddress( friendBranchName, &m_weight );
+         else
+            m_weight = 1.0;
       }
 
    }
