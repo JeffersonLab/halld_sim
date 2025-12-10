@@ -125,9 +125,11 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
             m_inTree->SetBranchAddress( sPyPi, &m_PyP[i] );
             m_inTree->SetBranchAddress( sPzPi, &m_PzP[i] );
             if(args.size() >= 6)
-              m_inTree->SetBranchAddress( friendBranchName, &m_weight );
+               m_inTree->SetBranchAddress( friendBranchName, &m_weight );
+            else if (m_inTree->GetBranch(friendBranchName))
+               m_inTree->SetBranchAddress( friendBranchName, &m_weight );
             else
-              m_weight = 1.0;
+               m_weight = 1.0;
          }
       }
 
