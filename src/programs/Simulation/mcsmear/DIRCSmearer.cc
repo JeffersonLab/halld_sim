@@ -15,7 +15,7 @@ dirc_config_t::dirc_config_t(const std::shared_ptr<const JEvent>& event)
 	// get time smearing from CCDB
 	cout<<"get DIRC/mc_parms parameters from calibDB"<<endl;
 	map<string, double> mc_parms;
-	if(DEvent::GetCalib("DIRC/mc_parms", mc_parms)) {
+	if(DEvent::GetCalib(event, "DIRC/mc_parms", mc_parms)) {
 		jerr << "Problem loading DIRC/mc_parms from CCDB!" << endl;
 	} else {
 		DIRC_EFFIC_SCALE = mc_parms["PAR0"];
@@ -34,9 +34,9 @@ dirc_config_t::dirc_config_t(const std::shared_ptr<const JEvent>& event)
 		jout << "Error loading /DIRC/North/channel_status !" << endl;
 	if (DEvent::GetCalib(event, "/DIRC/South/channel_status", dChannelStatus[1]))
 		jout << "Error loading /DIRC/South/channel_status !" << endl;
-	if (DEvent::GetCalib("/DIRC/North/channel_effic", dChannelEffic[0]))
+	if (DEvent::GetCalib(event, "/DIRC/North/channel_effic", dChannelEffic[0]))
                 jout << "Error loading /DIRC/North/channel_effic !" << endl;
-        if (DEvent::GetCalib("/DIRC/South/channel_effic", dChannelEffic[1]))
+        if (DEvent::GetCalib(event, "/DIRC/South/channel_effic", dChannelEffic[1]))
                 jout << "Error loading /DIRC/South/channel_effic !" << endl;
 }
 
