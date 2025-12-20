@@ -1,48 +1,41 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
-#include "TClass.h"
-#include "TApplication.h"
-#include "TGClient.h"
-#include "TROOT.h"
-#include "TH1.h"
-#include "TStyle.h"
-#include "TClass.h"
-#include "TFile.h"
-#include "TMultiGraph.h"
-#include "TGraphErrors.h"
-
-#include "IUAmpTools/AmpToolsInterface.h"
-#include "IUAmpTools/FitResults.h"
-
-#include "AmpPlotter/PlotterMainWindow.h"
-#include "AmpPlotter/PlotFactory.h"
-
-#include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
+#include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/ComplexCoeff.h"
+#include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/PhaseOffset.h"
+#include "AMPTOOLS_AMPS/Piecewise.h"
+#include "AMPTOOLS_AMPS/Uniform.h"
+#include "AMPTOOLS_AMPS/Vec_ps_moment.h"
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
-#include "AMPTOOLS_DATAIO/FSRootDataReader.h"
-#include "AMPTOOLS_AMPS/BreitWigner.h"
-#include "AMPTOOLS_AMPS/Uniform.h"
-#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
-#include "AMPTOOLS_AMPS/PhaseOffset.h"
-#include "AMPTOOLS_AMPS/ComplexCoeff.h"
-#include "AMPTOOLS_AMPS/Piecewise.h"
-#include "AMPTOOLS_AMPS/OmegaDalitz.h"
-#include "AMPTOOLS_AMPS/Vec_ps_moment.h"
-
-#include "MinuitInterface/MinuitMinimizationManager.h"
+#include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
+#include "AmpPlotter/PlotFactory.h"
+#include "AmpPlotter/PlotterMainWindow.h"
+#include "IUAmpTools/AmpToolsInterface.h"
 #include "IUAmpTools/ConfigFileParser.h"
 #include "IUAmpTools/ConfigurationInfo.h"
+#include "IUAmpTools/FitResults.h"
+#include "MinuitInterface/MinuitMinimizationManager.h"
+#include "TApplication.h"
+#include "TClass.h"
+#include "TFile.h"
+#include "TGClient.h"
+#include "TGraphErrors.h"
+#include "TH1.h"
+#include "TMultiGraph.h"
+#include "TROOT.h"
+#include "TStyle.h"
 
 typedef VecPsPlotGenerator vecps_PlotGen;
 
-void atiSetup()
-{
-
+void atiSetup() {
     AmpToolsInterface::registerAmplitude(BreitWigner());
     AmpToolsInterface::registerAmplitude(Uniform());
     AmpToolsInterface::registerAmplitude(Vec_ps_refl());
@@ -59,22 +52,21 @@ void atiSetup()
 
 using namespace std;
 
-int main(int argc, char *argv[])
-{
-
+int main(int argc, char* argv[]) {
     // ************************
     // usage
     // ************************
 
     cout << endl
-         << " *** Viewing Results Using AmpPlotter and writing root histograms *** " << endl
+         << " *** Viewing Results Using AmpPlotter and writing root histograms "
+            "*** "
+         << endl
          << endl;
 
-    if (argc < 2)
-    {
-        cout << "Usage:" << endl
-             << endl;
-        cout << "\tvecps_plotter <results file name> -o <output file name>" << endl
+    if (argc < 2) {
+        cout << "Usage:" << endl << endl;
+        cout << "\tvecps_plotter <results file name> -o <output file name>"
+             << endl
              << endl;
         return 0;
     }
@@ -82,24 +74,17 @@ int main(int argc, char *argv[])
     bool showGui = false;
     string outName = "vecps_plot.root";
     string resultsName(argv[1]);
-    for (int i = 2; i < argc; i++)
-    {
-
+    for (int i = 2; i < argc; i++) {
         string arg(argv[i]);
 
-        if (arg == "-g")
-        {
+        if (arg == "-g") {
             showGui = true;
         }
-        if (arg == "-o")
-        {
+        if (arg == "-o") {
             outName = argv[++i];
         }
-        if (arg == "-h")
-        {
-            cout << endl
-                 << " Usage for: " << argv[0] << endl
-                 << endl;
+        if (arg == "-h") {
+            cout << endl << " Usage for: " << argv[0] << endl << endl;
             cout << "\t -o <file>\t output file path" << endl;
             cout << "\t -g <file>\t show GUI" << endl;
             exit(1);
@@ -111,18 +96,18 @@ int main(int argc, char *argv[])
     // ************************
 
     cout << "Fit results file name    = " << resultsName << endl;
-    cout << "Output file name    = " << outName << endl
-         << endl;
+    cout << "Output file name    = " << outName << endl << endl;
 
     // ************************
     // load the results and display the configuration info
     // ************************
+    cout << "Initializing AmpTools interface..." << endl;
+    atiSetup();
+    cout << "Interface initialized." << endl;
 
     cout << "Loading Fit results" << endl;
     FitResults results(resultsName);
-    if (!results.valid())
-    {
-
+    if (!results.valid()) {
         cout << "Invalid fit results in file:  " << resultsName << endl;
         exit(1);
     }
@@ -130,10 +115,7 @@ int main(int argc, char *argv[])
     // ************************
     // set up the plot generator
     // ************************
-    cout << "before atisetup();" << endl;
-    atiSetup();
     cout << "Plotgen results" << endl;
-
     vecps_PlotGen plotGen(results, PlotGenerator::kNoGenMC);
     cout << " Initialized ati and PlotGen" << endl;
 
@@ -341,128 +323,130 @@ int main(int argc, char *argv[])
         }
 
         plotfile->Close();
-    } // end reaction loop
 
-    // model parameters
-    cout << "Checking Parameters" << endl;
+        // The next calculations only need to happen for the first file
+        // and we do not need to repeat for each polarization
+        if (polFile > 0) continue;
+                
+        // model parameters
+        cout << "Checking Parameters" << endl;
 
-    // parameters to check
-    vector<string> pars;
+        // parameters to check
+        vector<string> pars;
 
-    pars.push_back("dsratio");
+        pars.push_back("dsratio");
 
-    // file for writing parameters (later switch to putting in ROOT file)
-    ofstream outfile;
-    outfile.open("vecps_fitPars.txt");
+        // file for writing parameters (later switch to putting in ROOT file)
+        ofstream outfile;
+        outfile.open("vecps_fitPars.txt");
 
-    for (unsigned int i = 0; i < pars.size(); i++)
-    {
-        double parValue = results.parValue(pars[i]);
-        double parError = results.parError(pars[i]);
-        outfile << parValue << "\t" << parError << "\t" << endl;
-    }
+        for (unsigned int i = 0; i < pars.size(); i++) {
+            double parValue = results.parValue(pars[i]);
+            double parError = results.parError(pars[i]);
+            outfile << parValue << "\t" << parError << "\t" << endl;
+        }
 
-    outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
-    vector<string> fullamps = plotGen.fullAmplitudes();
-    for (unsigned int i = 0; i < fullamps.size(); i++)
-    {
-        vector<string> useamp;
-        useamp.push_back(fullamps[i]);
-        outfile << "FIT FRACTION " << fullamps[i] << " = "
-                << results.intensity(useamp).first /
-                       results.intensity().first
-                << " +- "
-                << results.intensity(useamp).second /
-                       results.intensity().first
-                << endl;
-    }
+        outfile << "TOTAL EVENTS = " << results.intensity().first << " +- "
+                << results.intensity().second << endl;
+        vector<string> fullamps = plotGen.fullAmplitudes();
+        for (unsigned int i = 0; i < fullamps.size(); i++) {
+            vector<string> useamp;
+            useamp.push_back(fullamps[i]);
+            outfile << "FIT FRACTION " << fullamps[i] << " = "
+                    << results.intensity(useamp).first /
+                           results.intensity().first
+                    << " +- "
+                    << results.intensity(useamp).second /
+                           results.intensity().first
+                    << endl;
+        }
 
-    const int nAmps = amphistname.size();
-    vector<string> ampsumPosRefl[nAmps];
-    vector<string> ampsumNegRefl[nAmps];
-    vector<pair<string, string>> phaseDiffNames;
+        const int nAmps = amphistname.size();
+        vector<string> ampsumPosRefl[nAmps];
+        vector<string> ampsumNegRefl[nAmps];
+        vector<pair<string, string> > phaseDiffNames;
 
-    for (unsigned int i = 0; i < fullamps.size(); i++)
-    {
+        for (unsigned int i = 0; i < fullamps.size(); i++) {
+            // combine amplitudes with names defined above
+            for (int iamp = 0; iamp < nAmps; iamp++) {
+                string locampname = amphistname[iamp];
 
-        // combine amplitudes with names defined above
-        for (int iamp = 0; iamp < nAmps; iamp++)
-        {
-            string locampname = amphistname[iamp];
-
-            if (fullamps[i].find("::" + locampname) == std::string::npos)
-                continue;
-            // cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
-
-            // select reflectivity
-            if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos)
-            {
-                ampsumNegRefl[iamp].push_back(fullamps[i]);
+                if (fullamps[i].find("::" + locampname) == std::string::npos)
+                    continue;
+                // cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
+                // ignore amps without a "sign" as they might not interfere
+                if (fullamps[i].find("Sign") == std::string::npos) continue;
+                // select reflectivity
+                if (fullamps[i].find("ImagNegSign") != std::string::npos ||
+                    fullamps[i].find("RealPosSign") != std::string::npos) {
+                    ampsumNegRefl[iamp].push_back(fullamps[i]);
+                } else {
+                    ampsumPosRefl[iamp].push_back(fullamps[i]);
+                }
             }
-            else
-            {
-                ampsumPosRefl[iamp].push_back(fullamps[i]);
+
+            // second loop over amplitudes to get phase difference names
+            for (unsigned int j = i + 1; j < fullamps.size(); j++) {
+                // only keep amplitudes from the same coherent sum (and ignore
+                // constrained Real)
+                if (fullamps[i].find("Real") != std::string::npos) continue;
+                // ignore amps without a "sign" as they might not interfere
+                if (fullamps[i].find("Sign") == std::string::npos) continue;
+                if (fullamps[i].find("ImagNegSign") != std::string::npos &&
+                    fullamps[j].find("ImagNegSign") == std::string::npos)
+                    continue;
+                if (fullamps[i].find("ImagPosSign") != std::string::npos &&
+                    fullamps[j].find("ImagPosSign") == std::string::npos)
+                    continue;
+
+                phaseDiffNames.push_back(
+                    std::make_pair(fullamps[i], fullamps[j]));
             }
         }
 
-        // second loop over amplitudes to get phase difference names
-        for (unsigned int j = i + 1; j < fullamps.size(); j++)
-        {
-
-            // only keep amplitudes from the same coherent sum (and ignore constrained Real)
-            if (fullamps[i].find("Real") != std::string::npos)
-                continue;
-            if (fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos)
-                continue;
-            if (fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos)
-                continue;
-
-            // only keep amplitudes from same reaction
-            size_t pos_i = fullamps[i].find("::");
-            size_t pos_j = fullamps[j].find("::");
-            string reaction_i = fullamps[i].substr(0, pos_i);
-            string reaction_j = fullamps[j].substr(0, pos_j);
-            if (reaction_i != reaction_j)
-                continue;
-
-            phaseDiffNames.push_back(std::make_pair(fullamps[i], fullamps[j]));
+        for (int i = 0; i < nAmps; i++) {
+            if (ampsumPosRefl[i].empty()) continue;
+            outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i]
+                    << " = "
+                    << results.intensity(ampsumPosRefl[i]).first /
+                           results.intensity().first
+                    << " +- "
+                    << results.intensity(ampsumPosRefl[i]).second /
+                           results.intensity().first
+                    << endl;
+            outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i]
+                    << " = "
+                    << results.intensity(ampsumNegRefl[i]).first /
+                           results.intensity().first
+                    << " +- "
+                    << results.intensity(ampsumNegRefl[i]).second /
+                           results.intensity().first
+                    << endl;
         }
-    }
 
-    for (int i = 0; i < nAmps; i++)
-    {
-        if (ampsumPosRefl[i].empty())
-            continue;
-        outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = "
-                << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
-                << results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
-        outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = "
-                << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
-                << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
-    }
-
-    cout << "Computing phase differences" << endl;
-    for (unsigned int i = 0; i < phaseDiffNames.size(); i++)
-    {
-        pair<double, double> phaseDiff = results.phaseDiff(phaseDiffNames[i].first, phaseDiffNames[i].second);
-        outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
+        cout << "Computing phase differences" << endl;
+        for (unsigned int i = 0; i < phaseDiffNames.size(); i++) {
+            pair<double, double> phaseDiff = results.phaseDiff(
+                phaseDiffNames[i].first, phaseDiffNames[i].second);
+            outfile << "PHASE DIFF " << phaseDiffNames[i].first << " "
+                    << phaseDiffNames[i].second << " " << phaseDiff.first << " "
+                    << phaseDiff.second << endl;
+        }
     }
 
     // covariance matrix
-    vector<vector<double>> covMatrix;
+    vector<vector<double> > covMatrix;
     covMatrix = results.errorMatrix();
 
     // ************************
     // start the GUI
     // ************************
 
-    if (showGui)
-    {
-
+    if (showGui) {
         cout << ">> Plot generator ready, starting GUI..." << endl;
 
         int dummy_argc = 0;
-        char *dummy_argv[] = {};
+        char* dummy_argv[] = {};
         TApplication app("app", &dummy_argc, dummy_argv);
 
         gStyle->SetFillColor(10);

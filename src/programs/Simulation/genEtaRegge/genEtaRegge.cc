@@ -175,7 +175,8 @@ void ParseCommandLineArguments(int narg, char* argv[])
 // Cross section dsigma/dt derived from Laget(2005)
 double CrossSection(double s,double t,double p_gamma,double p_eta,double theta){
   // Coupling constants 
-  double c_rho_p_p=0.92/137.;
+  //double c_rho_p_p=0.92/137.;
+  double c_rho_p_p=0.5/137.; // using Phys.Rev.C59:435-441,1999
   double c_omega_p_p=6.44/137.;
   double c_gamma_p_p=1./(137.*137.);
   double c_phi_p_p=0.72/137.;
@@ -370,9 +371,9 @@ void WriteEvent(unsigned int eventNumber,TLorentzVector &beam,TLorentzVector &ta
    for (unsigned int i=0;i<particle_vectors.size();i++,ps->mult++){
      Particle_t my_particle=particle_types[i];
      if(particle_decayed[i])
-	     ps->in[ps->mult].type = UnknownParticle;  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
-	 else
-	     ps->in[ps->mult].type = my_particle;
+       ps->in[ps->mult].type = UnknownParticle;  // zero out particle type info so that hdgeant won't decay the particle.  maybe there is a better way?
+     else
+       ps->in[ps->mult].type = my_particle;
      ps->in[ps->mult].pdgtype = PDGtype(my_particle);
      ps->in[ps->mult].id = part_ind++; /* unique value for this particle within the event */
      ps->in[ps->mult].parentid = 0;  /* All internally generated particles have no parent */
@@ -1194,6 +1195,7 @@ int main(int narg, char *argv[])
 			if (particle_types[j]!=UnknownParticle) {
 				output_particle_vectors.push_back(*phase_space.GetDecay(j));
 				output_particle_types.push_back(particle_types[j]);
+				output_particle_decays.push_back(false);
 			} else {
 				TGenPhaseSpace phase_space2;
 				phase_space2.SetDecay(*phase_space.GetDecay(j),num_res_decay_particles,
@@ -1206,6 +1208,7 @@ int main(int narg, char *argv[])
 				for (unsigned int im=0;im<num_res_decay_particles;im++){
 					output_particle_types.push_back(res_particle_types[im]);
 					output_particle_vectors.push_back(*phase_space2.GetDecay(im));
+					output_particle_decays.push_back(false);
 				}
 			}
 		}

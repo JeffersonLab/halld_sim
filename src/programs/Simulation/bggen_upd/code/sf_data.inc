@@ -2,7 +2,7 @@ C---  COMMON for the spectral function data
 C---  2023/11/16
 C
       INTEGER MXSFB
-      PARAMETER (MXSFB=100)
+      PARAMETER (MXSFB=1000)
       COMMON/SF_DATA/   SF_A                 ! A mass of the nucleus
      +                 ,NE_SF                ! number of bins in E
      +                 ,NP_SF                ! number of bins in P

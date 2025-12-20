@@ -19,7 +19,7 @@ Modified by: Kevin Scheuer
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/Vec_ps_moment.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 
 Vec_ps_moment::Vec_ps_moment( const vector< string >& args ) :
   UserAmplitude< Vec_ps_moment >( args )
@@ -176,29 +176,31 @@ Vec_ps_moment::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   TLorentzVector Gammap = beam + target;
 
   // Calculate decay angles in helicity frame (same for all vectors)
-  vector <double> locthetaphi = getomegapiAngles(eps.Phi(), vec, X, beam, Gammap);
+  vector <double> xDecayAngles = getXDecayAngles(eps.Phi(), beam, Gammap, X, vec);
 
   // Calculate vector decay angles (unique for each vector)
-  vector <double> locthetaphih;
+  vector <double> vectorDecayAngles;
   if(m_3pi) 
   {
-    locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
+    vectorDecayAngles = getVectorDecayAngles( Gammap, X, vec,
+                                              vec_daught1, vec_daught2);
   }
   else 
   {
-    locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
+    vectorDecayAngles = getVectorDecayAngles(Gammap, X, vec,
+                                        vec_daught1, TLorentzVector(0,0,0,0));
   }
     
   // the theta angles need to be in degrees for the wignerDSmall function
-  GDouble theta = locthetaphi[0] * 180.0 / TMath::Pi();
-  GDouble thetaH = locthetaphih[0] * 180.0 / TMath::Pi();
+  GDouble theta = xDecayAngles[0] * 180.0 / TMath::Pi();
+  GDouble thetaH = vectorDecayAngles[0] * 180.0 / TMath::Pi();
 
   // simply label the phi angles for easier reading
-  GDouble phi = locthetaphi[1];
-  GDouble phiH = locthetaphih[1];
+  GDouble phi = xDecayAngles[1];
+  GDouble phiH = vectorDecayAngles[1];
 
   // polarized components need cos(2Phi) and sin(2Phi), which take angles in radians
-  GDouble prodAngle = locthetaphi[2];
+  GDouble prodAngle = xDecayAngles[2];
   GDouble cos2prodAngle = TMath::Cos(2*prodAngle);
   GDouble sin2prodAngle = TMath::Sin(2*prodAngle);
 
