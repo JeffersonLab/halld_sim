@@ -326,7 +326,8 @@ int main(int argc, char* argv[]) {
 
         // The next calculations only need to happen for the first file
         // and we do not need to repeat for each polarization
-        if (polFile > 0) continue;
+        if (reactionName != reactionList[0])
+            continue;
                 
         // model parameters
         cout << "Checking Parameters" << endl;
