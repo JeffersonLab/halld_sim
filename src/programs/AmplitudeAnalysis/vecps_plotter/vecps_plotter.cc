@@ -235,7 +235,7 @@ int main(int argc, char* argv[]) {
                 // loop over data, accMC, and genMC
                 for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++)
                 {
-                    if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd)
+                    if (iplot == PlotGenerator::kGenMC)
                         continue;
                     bool singleData = irefl == reflname.size() && iamp == amphistname.size();
                     if (iplot == PlotGenerator::kData && !singleData)
