@@ -399,6 +399,10 @@ int main(int argc, char* argv[]) {
                 if (fullamps[i].find("ImagPosSign") != std::string::npos &&
                     fullamps[j].find("ImagPosSign") == std::string::npos)
                     continue;
+                // ignore phases between different reactions
+                if (fullamps[i].substr(0, fullamps[i].find("::")) !=
+                    fullamps[j].substr(0, fullamps[j].find("::")))
+                    continue;
 
                 phaseDiffNames.push_back(
                     std::make_pair(fullamps[i], fullamps[j]));
