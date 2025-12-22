@@ -92,8 +92,24 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
 
       ifstream fileexists( inFileName.c_str() );
       if (fileexists){
+         fileexists.close();
          m_inFile = new TFile( inFileName.c_str() );
+         if (!m_inFile || m_inFile->IsZombie()) {
+            cout << "FSRootDataReader WARNING:  Cannot open file... " << inFileName << endl;
+            m_inFile = NULL;
+            m_inTree = NULL;
+            return;
+         }
          m_inTree = static_cast<TTree*>( m_inFile->Get( inTreeName.c_str() ) );
+
+         if (!m_inTree) {
+            cout << "FSRootDataReader WARNING:  Cannot open tree... " << inTreeName << endl;
+            m_inFile->Close();
+            delete m_inFile;
+            m_inFile = NULL;
+            m_inTree = NULL;
+            return;
+         }
          if(args.size() >= 5)
             m_inTree->AddFriend(friendTreeName, friendFileName);
       }
@@ -101,6 +117,7 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
          cout << "FSRootDataReaderBootstrap WARNING:  Cannot find file... " << inFileName << endl;
          m_inFile = NULL;
          m_inTree = NULL;
+         return;
       }
 
 
