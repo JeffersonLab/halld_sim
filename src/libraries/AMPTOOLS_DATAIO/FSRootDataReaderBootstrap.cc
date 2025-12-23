@@ -89,10 +89,9 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
           friendTreeName = args[4];
           weightBranchName = args[5];
           fourMomentumPrefix = args[6];
-
-          else if (args.size() == 8) {
-              randSeed = atoi(args[7].c_str());
-          }
+      }
+      else if (args.size() == 8) {
+          randSeed = atoi(args[7].c_str());
       }
 
       // Initialize random number generator with provided seed
