@@ -16,20 +16,46 @@ using namespace std;
 
 #include <iostream> // Include for printing
 
+// Constructor expects one of the following argument patterns:
+//
+// 3 args: inFileName inTreeName numParticles
+//         - Basic usage with default branch names, weight branch, and seed=0
+//
+// 4 args: inFileName inTreeName numParticles {fourMomentumPrefix|randSeed}
+//         - If arg[3] is integer: used as randSeed
+//         - Otherwise: used as fourMomentumPrefix
+//
+// 5 args: inFileName inTreeName numParticles fourMomentumPrefix randSeed
+//         - Adds custom prefix and random seed
+//
+// 6 args: inFileName inTreeName numParticles {fourMomentumPrefix|friendFileName} {randSeed|friendTreeName} weightBranchName
+//         - If arg[4] is integer: first case of fourMomentumPrefix, randSeed
+//         - Otherwise: second case of friendFileName, friendTreeName
+//
+// 7 args: inFileName inTreeName numParticles friendFileName friendTreeName weightBranchName fourMomentumPrefix
+//         - Adds friend tree and custom prefix
+//
+// 8 args: inFileName inTreeName numParticles friendFileName friendTreeName weightBranchName fourMomentumPrefix randSeed
+//         - Full specification with friend tree, custom prefix, and random seed
+//
 FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& args ) :
    UserDataReader< FSRootDataReaderBootstrap >(args),
    m_eventCounter( 0 ){
 
-      assert((args.size() >= 3 && args.size() <= 5) || (args.size() >= 6 && args.size() <= 8));
+      // Validate argument count
+      assert((args.size() >= 3 && args.size() <= 8));
+      
+      // Parse required arguments
       string inFileName(args[0]);
       string inTreeName(args[1]);
       m_numParticles = atoi(args[2].c_str());
       assert (m_numParticles < 50);
       
+      // Parse optional arguments based on count
       TString fourMomentumPrefix = "";
       TString friendFileName = "";
       TString friendTreeName = "";
-      TString friendBranchName = "weight";
+      TString weightBranchName = "weight"; // default weight branch name
       int randSeed = 0;
 
       auto isInteger = [](const string& s) {
@@ -47,35 +73,29 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
           fourMomentumPrefix = args[3];
           randSeed = atoi(args[4].c_str());
       } 
-      else if (args.size() >= 6) {
+      else if (args.size() == 6) {
+          if (isInteger(args[4])) {
+               fourMomentumPrefix = args[3];
+               randSeed = atoi(args[4].c_str());
+               weightBranchName = args[5];
+          } else {
+              friendFileName = args[3];
+              friendTreeName = args[4];
+              weightBranchName = args[5];
+          }
+      }
+      else if (args.size() >= 7) {
           friendFileName = args[3];
           friendTreeName = args[4];
-          friendBranchName = args[5];
-
-          if (args.size() == 7) {
-              fourMomentumPrefix = args[6];
-          }
-          else if (args.size() == 8) {
-              fourMomentumPrefix = args[6];
-              randSeed = atoi(args[7].c_str());
-          }
+          weightBranchName = args[5];
+          fourMomentumPrefix = args[6];
+      }
+      else if (args.size() == 8) {
+          randSeed = atoi(args[7].c_str());
       }
 
       // Initialize random number generator with provided seed
       m_randGenerator = new TRandom3(randSeed);
-
-      // Compact printing of parsed arguments
-      std::cout << "FSRootDataReaderBootstrap initialized with:\n"
-          << "  inFileName:        " << inFileName << "\n"
-          << "  inTreeName:        " << inTreeName << "\n"
-          << "  numParticles:      " << m_numParticles << "\n"
-          << "  friendFileName:    " << (friendFileName.Length() == 0 ? "N/A" : friendFileName.Data()) << "\n"
-          << "  friendTreeName:    " << (friendTreeName.Length() == 0 ? "N/A" : friendTreeName.Data()) << "\n"
-          << "  friendBranchName:  " << (friendBranchName.Length() == 0 ? "N/A" : friendBranchName.Data()) << "\n"
-          << "  fourMomentumPrefix:" << (fourMomentumPrefix.Length() == 0 ? "N/A" : fourMomentumPrefix.Data()) << "\n"
-          << "  randSeed:          " << randSeed << "\n"
-          << std::endl;
-
 
       cout << "******************** WARNING ***********************" << endl;
       cout << "*  You are using the boostrap data reader, which   *" << endl;
@@ -84,18 +104,17 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
       cout << "*  due to random oversampling of the input file.   *" << endl;
       cout << "****************************************************" << endl;
       cout << endl;
-      cout << "   Random Seed:  " << randSeed << endl << endl;
-
 
       TH1::AddDirectory( kFALSE );
       gSystem->Load( "libTree" );
 
+      // Open input file and tree
       ifstream fileexists( inFileName.c_str() );
       if (fileexists){
          fileexists.close();
          m_inFile = new TFile( inFileName.c_str() );
          if (!m_inFile || m_inFile->IsZombie()) {
-            cout << "FSRootDataReader WARNING:  Cannot open file... " << inFileName << endl;
+            cout << "FSRootDataReaderBootstrap WARNING:  Cannot open file... " << inFileName << endl;
             m_inFile = NULL;
             m_inTree = NULL;
             return;
@@ -103,14 +122,15 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
          m_inTree = static_cast<TTree*>( m_inFile->Get( inTreeName.c_str() ) );
 
          if (!m_inTree) {
-            cout << "FSRootDataReader WARNING:  Cannot open tree... " << inTreeName << endl;
+            cout << "FSRootDataReaderBootstrap WARNING:  Cannot open tree... " << inTreeName << endl;
             m_inFile->Close();
             delete m_inFile;
             m_inFile = NULL;
             m_inTree = NULL;
             return;
          }
-         if(args.size() >= 5)
+         
+         if(friendFileName != "" && friendTreeName != "")
             m_inTree->AddFriend(friendTreeName, friendFileName);
       }
       else{
@@ -121,7 +141,11 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
       }
 
 
-
+      cout << "Opening Tree: " << inFileName << " " << inTreeName << " (numParticles=" << m_numParticles << ")";
+      if (fourMomentumPrefix != "") cout << " fourMomentumPrefix=" << fourMomentumPrefix;
+      if (friendFileName != "") cout << " friendFile=" << friendFileName << " friendTree=" << friendTreeName;
+      if (weightBranchName != "weight") cout << " weightBranch=" << weightBranchName;
+      cout << " randSeed=" << randSeed << endl << endl;
       if (m_inTree){
          TString sEnPB = fourMomentumPrefix+"EnPB";
          TString sPxPB = fourMomentumPrefix+"PxPB";
@@ -141,16 +165,18 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
             m_inTree->SetBranchAddress( sPxPi, &m_PxP[i] );
             m_inTree->SetBranchAddress( sPyPi, &m_PyP[i] );
             m_inTree->SetBranchAddress( sPzPi, &m_PzP[i] );
-            if(args.size() >= 6)
-               m_inTree->SetBranchAddress( friendBranchName, &m_weight );
-            else if (m_inTree->GetBranch(friendBranchName))
-               m_inTree->SetBranchAddress( friendBranchName, &m_weight );
-            else
-               m_weight = 1.0;
          }
+         
+         // Set up weight branch if it exists, otherwise default to 1.0
+         if (friendFileName != "")
+            m_inTree->SetBranchAddress( weightBranchName, &m_weight );
+         else if (m_inTree->GetBranch(weightBranchName) != NULL)
+            m_inTree->SetBranchAddress( weightBranchName, &m_weight );
+         else
+            m_weight = 1.0;
       }
 
-      // Added: Generate randomized event indices for bootstrap sampling
+      // Generate randomized event indices for bootstrap sampling
       unsigned int nEvents = numEvents();
       for( unsigned int i = 0; i < nEvents; ++i ){
          m_entryOrder.insert( (unsigned int)floor( m_randGenerator->Rndm() * nEvents ) );
