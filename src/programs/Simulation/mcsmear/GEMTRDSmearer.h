@@ -4,6 +4,8 @@
 #define _GEMTRDSMEARER_H_
 
 #include "Smearer.h"
+#include <map>
+#include <utility>
 
 class gemtrd_config_t 
 {
@@ -36,6 +38,10 @@ public:
   
   void SmearEvent(hddm_s::HDDM *record);
   double GetStripCharge(double q,int strip) const;
+  double AsicResponse(double t_ns) const;
+  double EmulateSignal(double t,vector<pair<double,double>>&hits) const;
+  void MakeHits(int plane,int strip,vector<pair<double,double>>&data,
+		hddm_s::GemtrdChamberList::iterator iter) const;
   
 private:
   class strip_hit_t{
