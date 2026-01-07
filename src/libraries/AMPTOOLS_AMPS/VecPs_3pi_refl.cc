@@ -109,12 +109,15 @@ VecPs_3pi_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
     }
   }
 
-  //Particles order has been changed to gamma,piplusU,piplusL,piminusB,piminusI,proton
+  // Definitions for my previous final state particles order
+   //  TLorentzVector recoil ( pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0] ); 
+  //  TLorentzVector ps(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]); // 3rd  
+  //Now, Final state particles order is the following: proton,piminusB,piminusI,piplusU,piplusL
   
-  TLorentzVector recoil ( pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0] ); 
-
+  TLorentzVector recoil ( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
+  
   // common vector and pseudoscalar P4s
-  TLorentzVector ps(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]); // 3rd
+  TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); // 1st after proton
   TLorentzVector vec, vec_daught1, vec_daught2; // compute for each final state below 
 
   // omega ps proton, omega -> 3pi (6 particles)
@@ -134,7 +137,7 @@ VecPs_3pi_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	  // (vec 2-body) ps proton, vec 2-body -> pipi, KK (5 particles)
 	  // (vec 2-body) pi- Delta++, vec 2-body -> pipi, KK (6 particles)
 	  // (vec 2-body) K+ Lambda, vec 2-body -> Kpi (6 particles)
-	  vec_daught1 = TLorentzVector(pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0]);
+	  vec_daught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
 	  vec_daught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
 	  vec = vec_daught1 + vec_daught2;
   }
