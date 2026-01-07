@@ -15,6 +15,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReaderBootstrap.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -425,6 +426,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderWithTCut>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderTEM>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<FSRootDataReader>() );
+   AmpToolsInterface::registerDataReader( DataReaderMPI<FSRootDataReaderBootstrap>() );
 
    // normalize seedFile file extension if not already set by user
    if (seedfile.size() != 0){
