@@ -137,7 +137,7 @@ int main( int argc, char* argv[] ){
   vector<string> amps = plotGen.uniqueAmplitudes();
   cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-  vector<string> amphistname = {"0-P"}; //, "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "1-P-", "1-P0", "1-P+"};
+  vector<string> amphistname = {"0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"};
   vector<string> reflname = {"PosRefl", "NegRefl"};
 
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
@@ -204,16 +204,18 @@ int main( int argc, char* argv[] ){
 	  
 	  // set unique histogram name for each plot (could put in directories...)
 	  string histname =  "";
-	  if (ivar == VecPs3PiPlotGenerator::kVecPsMass)  histname += "MVecPs";
-	  else if (ivar == VecPs3PiPlotGenerator::kCosTheta)  histname += "CosTheta";
-	  else if (ivar == VecPs3PiPlotGenerator::kPhi)  histname += "Phi";
-	  else if (ivar == VecPs3PiPlotGenerator::kCosThetaH)  histname += "CosTheta_H";
-	  else if (ivar == VecPs3PiPlotGenerator::kPhiH)  histname += "Phi_H";
-	  else if (ivar == VecPs3PiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
-	  else if (ivar == VecPs3PiPlotGenerator::kt)  histname += "t";
-	  else if (ivar == VecPs3PiPlotGenerator::kRecoilMass)  histname += "MRecoil";
-	  else if (ivar == VecPs3PiPlotGenerator::kProtonPsMass)  histname += "MProtonPs";
-	  else if (ivar == VecPs3PiPlotGenerator::kRecoilPsMass)  histname += "MRecoilPs";
+
+	  if (ivar == VecPs3PiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
+	  else if (ivar == VecPs3PiPlotGenerator::kCosTheta)  histname += "CosTheta_GJ";
+	  else if (ivar == VecPs3PiPlotGenerator::kPhi)  histname += "Phi_GJ";
+	  else if (ivar == VecPs3PiPlotGenerator::kCosThetaH)  histname += "CosTheta_HF";
+	  else if (ivar == VecPs3PiPlotGenerator::kPhiH)  histname += "Phi_HF";
+	  else if (ivar == VecPs3PiPlotGenerator::kVecMass)  histname += "MVec";
+	  else if (ivar == VecPs3PiPlotGenerator::kVecPsMass)  histname += "MVecPs";
+	  else if (ivar == VecPs3PiPlotGenerator::kt)  histname += "minust";
+	  else if (ivar == VecPs3PiPlotGenerator::kRecoilMass)  histname += "ProtonPiplusL_M";
+	  else if (ivar == VecPs3PiPlotGenerator::kProtonPsMass)  histname += "ProtonPiminus_M";
+	  else if (ivar == VecPs3PiPlotGenerator::kRecoilPsMass)  histname += "ProtonPiplusLPiminus_M";
 	  else continue;	  
 
 	  if (iplot == PlotGenerator::kData) histname += "_data";

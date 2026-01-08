@@ -17,7 +17,7 @@ class VecPs3PiPlotGenerator : public PlotGenerator
 public:
   
   // create an index for different histograms
-  enum { kVecPsMass = 0, kCosTheta = 1, kPhi = 2, kCosThetaH = 3, kPhiH = 4, kProd_Ang = 5, kt = 6, kRecoilMass = 7, kProtonPsMass = 8, kRecoilPsMass = 9, kNumHists};
+  enum { kProd_Ang = 0, kCosTheta = 1, kPhi = 2, kCosThetaH = 3, kPhiH = 4, kVecMass = 5, kVecPsMass = 6, kt = 7, kRecoilMass = 8, kProtonPsMass = 9, kRecoilPsMass = 10, kNumHists};
 
   VecPs3PiPlotGenerator( const FitResults& results, Option opt);
   VecPs3PiPlotGenerator( const FitResults& results );

@@ -1,7 +1,7 @@
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/decayAngles.h"
 
 #include "AMPTOOLS_DATAIO/VecPs3PiPlotGenerator.h"
 #include "IUAmpTools/Histogram1D.h"
@@ -24,16 +24,20 @@ PlotGenerator( )
 void VecPs3PiPlotGenerator::createHistograms( ) {
   cout << " calls to bookHistogram go here" << endl;
   
-   bookHistogram( kVecPsMass, new Histogram1D( 200, 0.2, 3.2, "MVecPs", "Invariant Mass of Vec+Ps [GeV]") );
-   bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta", "cos#theta" ) );
-   bookHistogram( kPhi, new Histogram1D( 50, -1*PI, PI, "Phi", "#phi [rad.]" ) );
-   bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_H", "cos#theta_H" ) );
-   bookHistogram( kPhiH, new Histogram1D( 50, -1*PI, PI, "Phi", "#phi_H [rad.]" ) );
-   bookHistogram( kProd_Ang, new Histogram1D( 50, -1*PI, PI, "Prod_Ang", "Prod_Ang [rad.]" ) );
-   bookHistogram( kt, new Histogram1D( 100, 0, 2.0 , "t", "-t" ) );
-   bookHistogram( kRecoilMass, new Histogram1D( 100, 0.9, 1.9 , "MRecoil", "Invariant Mass of Recoil [GeV]" ) );
-   bookHistogram( kProtonPsMass, new Histogram1D( 200, 0.8, 3.8, "MProtonPs", "Invariant Mass of proton and bachelor pi- [GeV]" ) );
-   bookHistogram( kRecoilPsMass, new Histogram1D( 200, 1.0, 4.0, "MRecoilPs", "Invariant Mass of recoil and bachelor pi- [GeV]" ) );
+   bookHistogram( kProd_Ang, new Histogram1D( 50, -PI, PI, "ProdAng", "Production Angle Lab frame [rad.]" ) );
+   bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta_GJ", "cos#theta Gottfried-Jackson frame [rad.]" ) );
+   bookHistogram( kPhi, new Histogram1D( 50, -PI, PI, "Phi_GJ", "#phi Gottfried-Jackson frame [rad.]" ) );
+   bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_HF", "cos#theta Helicity frame [rad.]" ) );
+   bookHistogram( kPhiH, new Histogram1D( 50, -PI, PI, "Phi_HF", "#phi Helicity frame [rad.]" ) );
+
+   bookHistogram( kVecMass, new Histogram1D( 200, 0., 3., "MVec", "m(2#pi)  [GeV]") );
+   bookHistogram( kVecPsMass, new Histogram1D( 200, 0.2, 3.2, "MVecPs", "m(3#pi)  [GeV]") );
+   bookHistogram( kt, new Histogram1D( 100, 0, 1.0 , "t", "-t  [GeV^{2}]" ) );
+   bookHistogram( kRecoilMass, new Histogram1D( 100, 0.9, 1.9 , "ProtonPiplusL_M", "m(p#pi^{+}_{L}) [GeV]" ) );
+   
+   bookHistogram( kProtonPsMass, new Histogram1D( 200, 0.8, 3.8, "ProtonPiminus_M", "m(p#pi^{-}) [GeV]" ) );
+   bookHistogram( kRecoilPsMass, new Histogram1D( 200, 1.0, 4.0, "ProtonPiplusLPiminus_M", "m(p#pi^{+}_{L}#pi^{-}) [GeV]" ) );
+ 
 }
 
 void
@@ -48,13 +52,17 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin ){
 void
 VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
+  // Fixed target
+   TLorentzVector target(0,0,0,0.938272);
+
+  
    //cout << "project event" << endl;
    TLorentzVector beam   = kin->particle( 0 );
-   TLorentzVector proton = kin->particle( 5 );
-   TLorentzVector piplusL = kin->particle( 2 );
-   TLorentzVector bach = kin->particle( 3 );
-   TLorentzVector vec_daught1 = kin->particle( 1 );
+   TLorentzVector proton = kin->particle( 1 );
+   TLorentzVector bach = kin->particle( 2 );
+   TLorentzVector vec_daught1 = kin->particle( 3 );
    TLorentzVector vec_daught2 = kin->particle( 4 );
+   TLorentzVector piplusL = kin->particle( 5 );
 
    
 
@@ -82,49 +90,40 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
    const vector < string > momentArgs = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
    for (uint ioption=0; ioption<momentArgs.size(); ioption++) {
           TString option = momentArgs[ioption].c_str();
-      if(option.EqualTo("Vec_ps_moment")) m_3pi = true;
+      IF(OPTION.EQUALTO("VEC_PS_MOMENT")) M_3PI = TRUE;
    }
 
 
-  //No dalitz plot for a 2-body decay, vec 2-body -> pippim
 
-
-
-   //CHECK FROM HERE ON !!
-
-   // set polarization angle to zero to see shift in Phi_Prod distributions 
-   double polAngle = 0;
-   TLorentzVector target(0,0,0,0.938272);
-
-   // Helicity coordinate system
-   TLorentzVector Gammap = beam + target;
-
-   // Calculate decay angles in helicity frame (same for all vectors)
-   vector <double> locthetaphi = getomegapiAngles(polAngle, vec, X, beam, Gammap);
-
-   // Calculate vector decay angles (unique for each vector)
-   vector <double> locthetaphih;
-   locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
-
+   //Momentum transfer
    double Mandt = fabs((target-recoil).M2());
-   double recoil_mass = recoil.M();  
+   
+   //Calculate production angle in the Gottfried-Jackson frame
+   GDouble prod_angle = getPhiProd(beam_polAngle, X, beam, target, 2, true);
 
-   GDouble cosTheta = TMath::Cos(locthetaphi[0]);
-   GDouble Phi = locthetaphi[1];
-   GDouble cosThetaH = TMath::Cos(locthetaphih[0]);
-   GDouble PhiH = locthetaphih[1];
-   GDouble prod_angle = locthetaphi[2];
+   // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
+   vector <double> thetaPhiAnglesTwoStep = getTwoStepAngles(X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
 
+
+   GDouble cosTheta = TMath::Cos(thetaPhiAnglesTwoStep[0]);
+   GDouble phi = thetaPhiAnglesTwoStep[1];
+   GDouble cosThetaH = TMath::Cos(thetaPhiAnglesTwoStep[2]);
+   GDouble phiH = thetaPhiAnglesTwoStep[3];
+   
+   
 
    //cout << "calls to fillHistogram go here" << endl;
-   fillHistogram( kVecPsMass, X.M() );
+   fillHistogram( kProd_Ang, prod_angle );
    fillHistogram( kCosTheta, cosTheta );
    fillHistogram( kPhi, Phi );
    fillHistogram( kCosThetaH, cosThetaH );
    fillHistogram( kPhiH, PhiH );
-   fillHistogram( kProd_Ang, prod_angle );
+
+   fillHistogram( kVecMass, vec.M() );
+   fillHistogram( kVecPsMass, X.M() );
+
    fillHistogram( kt, Mandt );
-   fillHistogram( kRecoilMass, recoil_mass );
+   fillHistogram( kRecoilMass, recoil.M() );
    fillHistogram( kProtonPsMass, proton_ps.M() );
    fillHistogram( kRecoilPsMass, recoil_ps.M() );
 

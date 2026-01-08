@@ -13,7 +13,7 @@
 #include "AMPTOOLS_AMPS/VecPs_3pi_refl.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
-#include "AMPTOOLS_AMPS/ThreePiAnglesPWA.h"
+#include "AMPTOOLS_AMPS/decayAngles.h"
 #include "AMPTOOLS_AMPS/barrierFactor.h"
 
 #include "UTILITIES/BeamProperties.h"
@@ -174,34 +174,28 @@ VecPs_3pi_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 
   // Final meson system P4
   TLorentzVector X = vec + ps;
+  /// Fixed target
+  TLorentzVector target(0,0,0,0.938272);
 
-  ///////////////// Boost Particles and Get Angles/////////////////////
 
-  TLorentzVector target(0,0,0,0.938);
-  // Helicity coordinate system
-  TLorentzVector beamP = beam + target;
+  //Calculate production angle in the Gottfried-Jackson frame
+  GDouble prod_angle = getPhiProd(beam_polAngle, X, beam, target, 2, true);
 
-  // Calculate decay angles for X in helicity frame (same for all vectors)
-  // Change getXDecayAngles to get Gottfried-Jackson angles if needed
-  // Note: it also calculates the production angle
-  vector <double> xDecayAngles = getXDecayAngles( beam_polAngle, beam, beamP, X, vec);
-
-  // Calculate vector decay angles (unique for each vector)
-  vector <double> vectorDecayAngles;
+  // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
+  vector <double> thetaPhiAnglesTwoStep;
   if(m_3pi){
-    vectorDecayAngles = getVectorDecayAngles( beamP, X, vec,
-                                              vec_daught1, vec_daught2);
+    thetaPhiAnglesTwoStep = getTwoStepAngles(X, vec, vec_daught1, vec_daught2, beam, target, 2, true);
   }
   else{
-    vectorDecayAngles = getVectorDecayAngles( beamP, X, vec,
-                                        vec_daught1, TLorentzVector(0,0,0,0));
-  }
+    thetaPhiAnglesTwoStep = getTwoStepAngles(X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
+  }    
+  
 
-  GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
-  GDouble phi = xDecayAngles[1];
-  GDouble prod_angle = xDecayAngles[2]; // bigPhi
-  GDouble cosThetaH = TMath::Cos(vectorDecayAngles[0]);
-  GDouble phiH = vectorDecayAngles[1];
+  
+  GDouble cosTheta = TMath::Cos(thetaPhiAnglesTwoStep[0]);
+  GDouble phi = thetaPhiAnglesTwoStep[1];
+  GDouble cosThetaH = TMath::Cos(thetaPhiAnglesTwoStep[2]);
+  GDouble phiH = thetaPhiAnglesTwoStep[3];
   GDouble m_X = X.M();
   GDouble m_vec = vec.M();
   GDouble m_ps = ps.M();
