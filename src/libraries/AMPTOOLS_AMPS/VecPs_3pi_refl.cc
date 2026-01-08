@@ -13,7 +13,7 @@
 #include "AMPTOOLS_AMPS/VecPs_3pi_refl.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
-#include "AMPTOOLS_AMPS/vecPsAngles.h"
+#include "AMPTOOLS_AMPS/ThreePiAnglesPWA.h"
 #include "AMPTOOLS_AMPS/barrierFactor.h"
 
 #include "UTILITIES/BeamProperties.h"
