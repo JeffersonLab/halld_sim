@@ -11,18 +11,18 @@ gemtrd_config_t::gemtrd_config_t(const std::shared_ptr<const JEvent>& event)
   GEMTRD_XYSIGMA = 0.01; // cm
   GEMTRD_THRESHOLD = 10.;
   GEMTRD_INTEGRAL_TO_AMPLITUDE=1./28.8; // copied from CDC
+  GEMTRD_INSTALLED=true;
   
-  
-  // Get the geometry
-  DGeometry* locGeometry = DEvent::GetDGeometry(event);
-  GEMTRDx=0.,GEMTRDy=0.;
-  vector<double>gemtrdx,gemtrdy;
-  if (locGeometry->GetGEMTRDxy_vec(gemtrdx,gemtrdy)){
-    GEMTRDx=gemtrdx[0];
-    GEMTRDy=gemtrdy[0];
+  map<string,string> installed;
+  DEvent::GetCalib(event, "/TRD/install_status", installed);
+  if(atoi(installed["status"].data()) == 0){
+    GEMTRD_INSTALLED=false;
   }
-
-  
+  else {
+    // Get the geometry
+    DGeometry* locGeometry = DEvent::GetDGeometry(event);
+    locGeometry->GetGEMTRDxy_vec(GEMTRDx,GEMTRDy);
+  }
 }
 
 //-----------
@@ -30,6 +30,8 @@ gemtrd_config_t::gemtrd_config_t(const std::shared_ptr<const JEvent>& event)
 //-----------
 void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
 {
+  if (gemtrd_config->GEMTRD_INSTALLED==false) return;
+      
   const double v=0.0033; // drift velocity, cm/ns
   // from figure 8a in arXiv:1110.6761 at E=1.5 keV/cm
   
@@ -45,6 +47,7 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
   hddm_s::GemtrdChamberList::iterator iter;
   for (iter = chambers.begin(); iter != chambers.end(); ++iter) {
     iter->deleteGemtrdHits();
+    int chamber=iter->getLayer()-1;
     
     // Keep lists of strips that have hits
     map<int,vector<pair<double,double>>>x_strip_hits;
@@ -78,8 +81,11 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
       }
       
       // Distribute charge over strips
-      int strip_y0=528/2-int(10.*(y-gemtrd_config->GEMTRDy));
-      int strip_x0=720/2-int(10*(x-gemtrd_config->GEMTRDx));
+      int strip_y0=528/2-int(10.*(y-gemtrd_config->GEMTRDy[chamber]));
+      if (chamber==1){
+	strip_y0=528/2+int(10.*(y-gemtrd_config->GEMTRDy[chamber]));
+      }
+      int strip_x0=720/2-int(10*(x-gemtrd_config->GEMTRDx[chamber]));
       for (int strip=-10;strip<=10;strip++){
 	// Assume a symmetric charge distribution in x and y
 	double q_strip=GetStripCharge(q,strip);
@@ -89,12 +95,12 @@ void GEMTRDSmearer::SmearEvent(hddm_s::HDDM *record)
 	  x_strip_hits[mystrip].push_back(make_pair(q_strip,t));
 	}
 	mystrip=strip+strip_y0;
-	if (mystrip>0&&mystrip<433){
+	if (mystrip>0&&mystrip<529){
 	  y_strip_hits[mystrip].push_back(make_pair(q_strip,t));
 	}
       }
     }
-
+    
     for (auto siter=x_strip_hits.begin(); siter!=x_strip_hits.end(); ++siter){
       MakeHits(1,siter->first,siter->second,iter);
     }
@@ -175,6 +181,7 @@ void GEMTRDSmearer::MakeHits(int plane,int strip,
 	// found peak
 	hddm_s::GemtrdHitList hits = iter->addGemtrdHits();
 	double t=8.*double(i);
+	hits().setChamber(iter->getLayer());
 	hits().setT(t);
 	hits().setQ(samples[i]);
 	hits().setPlane(plane);
