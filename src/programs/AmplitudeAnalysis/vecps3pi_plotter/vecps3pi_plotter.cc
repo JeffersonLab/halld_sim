@@ -131,6 +131,9 @@ int main( int argc, char* argv[] ){
   TFile* plotfile = new TFile( outName.c_str(), "recreate");
   TH1::AddDirectory(kFALSE);
 
+  TDirectory* plotfiledir = plotfile->mkdir("Contributions");  
+
+  
   string reactionName = results.reactionList()[0];
   plotGen.enableReaction( reactionName );
   vector<string> sums = plotGen.uniqueSums();
@@ -139,40 +142,37 @@ int main( int argc, char* argv[] ){
 
   vector<string> amphistname = {"0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"};
   vector<string> reflname = {"PosRefl", "NegRefl"};
-
+  string locampname;
+  
   // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
   for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
 
     // loop over desired amplitudes 
     for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
 
-      // turn all ampltiudes by default 
-      for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
-	plotGen.enableAmp( jamp );
-      }
+      // turn on all ampltiudes by default 
+      for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) plotGen.enableAmp( jamp );
+      
+      if (iamp < amphistname.size()){
+	// amplitude name
+	locampname = amphistname[iamp];	
 
-      // turn off unwanted amplitudes and sums
-      if (iamp < amphistname.size()) {
-	
-        string locampname = amphistname[iamp];
-	
 	// turn on all sums by default
-	for (unsigned int i = 0; i < sums.size(); i++) plotGen.enableSum(i);
-
-	// turn off unwanted sums for reflectivity (based on naturality)
-	//cout<<"refl = "<<irefl<<endl;
+	for (unsigned int jsum = 0; jsum < sums.size(); jsum++) plotGen.enableSum(jsum);
+	
+	//Arrange the negative and positive reflectivity sums by excluding the opposite reflectivity terms
+    	//Negative reflectivity: "ImagNegSign" & "RealPosSign", as in the config file
+	//Positive reflectivity: "RealNegSign" & "ImagPosSign", as in the config file
+	   	
 	if (irefl < 2) {
 	  for (unsigned int i = 0; i < sums.size(); i++){
 	    if( reflname[irefl] == "NegRefl" ){
-	      //ImagNegSign & RealPosSign are defined to be the negative reflectivity
-	      //So, we turn off the positive reflectivity here
 	      if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos){
 		plotGen.disableSum(i);
 		//cout<<"disable sum "<<sums[i]<<"\n";
 	      }
 	    }
 	    if( reflname[irefl] == "PosRefl" ){
-	      //And, we turn off the negative reflectivity here
 	      if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
 		//cout<<"disable sum "<<sums[i]<<"\n";
 		plotGen.disableSum(i);
@@ -180,24 +180,21 @@ int main( int argc, char* argv[] ){
 	    }
 	  }	 
 	}
+	  
+	//Pick up the right amplitude by excluding all nonmatching amplitude names
+	 for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
+	    if( amps[jamp].find(locampname.data()) == std::string::npos )  plotGen.disableAmp( jamp );
 
-	// turn off unwanted amplitudes
-        for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) {
+      } // close if (iamp < amphistname.size())
 
-	  if( amps[jamp].find(locampname.data()) == std::string::npos ) {
-	    plotGen.disableAmp( jamp );
-	    //cout<<"disable amplitude "<<amps[jamp]<<endl;
-	  }
-	}
 
-      }
-
+    
       cout << "Looping over input data" << endl;
       // loop over data, accMC, and genMC
       for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
-	if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd) continue;
-	bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
-	if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
+		if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd) continue;
+		bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
+		if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
 	
 	// loop over different variables
 	for (unsigned int ivar  = 0; ivar  < VecPs3PiPlotGenerator::kNumHists; ivar++){
@@ -238,7 +235,8 @@ int main( int argc, char* argv[] ){
 	  Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
 	  TH1* thist = hist->toRoot();
 	  thist->SetName(histname.c_str());
-	  plotfile->cd();
+	  if (iamp < amphistname.size())  plotfiledir->cd();
+	  else plotfile->cd();
 	  thist->Write();
 	  
 	}
@@ -258,7 +256,7 @@ int main( int argc, char* argv[] ){
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
-  outfile.open( "vecps_fitPars.txt" );
+  outfile.open( "vecps3pi__fitPars.txt" );
 
   for(unsigned int i = 0; i<pars.size(); i++) {
     double parValue = results.parValue( pars[i] );

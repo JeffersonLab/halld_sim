@@ -140,7 +140,7 @@ VecPs_3pi_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     }
   }
   
-  TLorentzVector recoil( pKin[1][1]+pkin[5][1], pKin[1][2]+pkin[5][2], pKin[1][3]+pkin[5][3], pKin[1][0]+pKin[5][0] ); 
+  TLorentzVector recoil( pKin[1][1]+pKin[5][1], pKin[1][2]+pKin[5][2], pKin[1][3]+pKin[5][3], pKin[1][0]+pKin[5][0] ); 
 
   // Fill in four-vectors for final state particles
   // 1st after proton is always the pseudoscalar meson

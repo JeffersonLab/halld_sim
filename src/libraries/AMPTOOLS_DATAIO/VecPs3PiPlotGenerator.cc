@@ -7,6 +7,37 @@
 #include "IUAmpTools/Histogram1D.h"
 #include "IUAmpTools/Kinematics.h"
 
+
+
+// Function to check if a string is a valid number
+static bool isValidNumber(const string& argInput, double &value){
+    char* end = nullptr;
+    errno = 0;  // reset global error
+    value = std::strtod(argInput.c_str(), &end);
+
+    // Check if 
+    // (1) no conversion was performed 
+    // (2) there are leftover characters
+    // (3) an overflow/underflow occurred   
+    if(end == argInput.c_str() || *end != '\0' || errno != 0) {
+        return false;  // not a valid number
+    }
+    // If end points to the end of string, it's fully numeric
+    return true;
+}
+
+
+static double parseValidatedNumber(const string& label, const string& argInput){
+    double tmpValue = 0.0;
+    if(!isValidNumber(argInput, tmpValue)){
+      throw std::invalid_argument("Vec_ps_refl: invalid " + label + ": " + argInput);
+    }
+    return tmpValue;
+}
+
+
+
+
 /* Constructor to display FitResults */
 VecPs3PiPlotGenerator::VecPs3PiPlotGenerator( const FitResults& results, Option opt ) :
 PlotGenerator( results, opt )
@@ -24,11 +55,11 @@ PlotGenerator( )
 void VecPs3PiPlotGenerator::createHistograms( ) {
   cout << " calls to bookHistogram go here" << endl;
   
-   bookHistogram( kProd_Ang, new Histogram1D( 50, -PI, PI, "ProdAng", "Production Angle Lab frame [rad.]" ) );
-   bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta_GJ", "cos#theta Gottfried-Jackson frame [rad.]" ) );
-   bookHistogram( kPhi, new Histogram1D( 50, -PI, PI, "Phi_GJ", "#phi Gottfried-Jackson frame [rad.]" ) );
-   bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_HF", "cos#theta Helicity frame [rad.]" ) );
-   bookHistogram( kPhiH, new Histogram1D( 50, -PI, PI, "Phi_HF", "#phi Helicity frame [rad.]" ) );
+   bookHistogram( kProd_Ang, new Histogram1D( 50, -PI, PI, "ProdAng", "Production Angle [rad.]" ) );
+   bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta_GJ", "cos#theta^{[GJ]} [rad.]" ) );
+   bookHistogram( kPhi, new Histogram1D( 50, -PI, PI, "Phi_GJ", "#phi^{[GJ]} [rad.]" ) );
+   bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_HF", "cos#theta^{[HF]} [rad.]" ) );
+   bookHistogram( kPhiH, new Histogram1D( 50, -PI, PI, "Phi_HF", "#phi^{[HF]} [rad.]" ) );
 
    bookHistogram( kVecMass, new Histogram1D( 200, 0., 3., "MVec", "m(2#pi)  [GeV]") );
    bookHistogram( kVecPsMass, new Histogram1D( 200, 0.2, 3.2, "MVecPs", "m(3#pi)  [GeV]") );
@@ -52,10 +83,13 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin ){
 void
 VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
+   // We use only default 2-body vector decay (set flag in config file for omega->3pi)
+   bool m_3pi = false;  
+  
   // Fixed target
    TLorentzVector target(0,0,0,0.938272);
 
-  
+   
    //cout << "project event" << endl;
    TLorentzVector beam   = kin->particle( 0 );
    TLorentzVector proton = kin->particle( 1 );
@@ -63,34 +97,31 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
    TLorentzVector vec_daught1 = kin->particle( 3 );
    TLorentzVector vec_daught2 = kin->particle( 4 );
    TLorentzVector piplusL = kin->particle( 5 );
-
    
 
-   // final meson system P4
-   TLorentzVector vec = vec_daught1 + vec_daught2;
-   TLorentzVector X = vec + bach;
+   // Final state P4 momenta
+   TLorentzVector X = vec_daught1 + vec_daught2 + bach;
    TLorentzVector recoil = proton + piplusL;
-   
-   TLorentzVector proton_ps = proton + bach;
-   TLorentzVector recoil_ps = recoil + bach;
-   
-   
-   // We use only default 2-body vector decay (set flag in config file for omega->3pi)
-   bool m_3pi = false;  
 
+   //Momenta for the 1st permutation   
+   TLorentzVector vec_a = vec_daught1 + vec_daught2;
+   TLorentzVector proton_ps_a = proton + bach;
+   TLorentzVector recoil_ps_a = recoil + bach;
+   
+   //Momenta for the 2nd permutation (bach <=> vec_daught1)  
+   TLorentzVector vec_b = bach + vec_daught2;
+   TLorentzVector proton_ps_b = proton + vec_daught1;
+   TLorentzVector recoil_ps_b = recoil + vec_daught1;
 
-   // check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
+   
+
+   // Properly read polarization angle from config file if provided
+   double beam_polAngle=0;
+   // Check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
    const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
    for(uint ioption=5; ioption<args.size(); ioption++) {
           TString option = args[ioption].c_str();
-	  if(option.EqualTo("omega3pi")) m_3pi = true;
-   }
-
-   // if the amplitude is a moment, force the 3pi decay as it's currently the only one handled by it
-   const vector < string > momentArgs = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
-   for (uint ioption=0; ioption<momentArgs.size(); ioption++) {
-          TString option = momentArgs[ioption].c_str();
-      IF(OPTION.EQUALTO("VEC_PS_MOMENT")) M_3PI = TRUE;
+	  if(ioption == 6) beam_polAngle = parseValidatedNumber("polarization angle", args[6]);
    }
 
 
@@ -102,29 +133,64 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
    GDouble prod_angle = getPhiProd(beam_polAngle, X, beam, target, 2, true);
 
    // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
-   vector <double> thetaPhiAnglesTwoStep = getTwoStepAngles(X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
+   // Angles for the 1st permutation
+   vector <double> thetaPhiAnglesTwoStep_a = getTwoStepAngles(X, vec_a, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
 
+   // Angles for the 2nd permutation (bach <=> vec_daught1)
+   vector <double> thetaPhiAnglesTwoStep_b = getTwoStepAngles(X, vec_b, bach, TLorentzVector(0,0,0,0), beam, target, 2, true);
 
-   GDouble cosTheta = TMath::Cos(thetaPhiAnglesTwoStep[0]);
-   GDouble phi = thetaPhiAnglesTwoStep[1];
-   GDouble cosThetaH = TMath::Cos(thetaPhiAnglesTwoStep[2]);
-   GDouble phiH = thetaPhiAnglesTwoStep[3];
    
+   //Symmetrized angles and masses will be passed as vectors of unit length   
+   vector <double> cosTheta_a = {TMath::Cos(thetaPhiAnglesTwoStep_a[0])};
+   vector <double> cosTheta_b = {TMath::Cos(thetaPhiAnglesTwoStep_b[0])};
+
+   vector <double> phi_a = {thetaPhiAnglesTwoStep_a[1]};
+   vector <double> phi_b = {thetaPhiAnglesTwoStep_b[1]};
+
+   vector <double> cosThetaH_a = {TMath::Cos(thetaPhiAnglesTwoStep_a[2])};
+   vector <double> cosThetaH_b = {TMath::Cos(thetaPhiAnglesTwoStep_b[2])};
+   
+   vector <double> phiH_a = {thetaPhiAnglesTwoStep_a[3]};
+   vector <double> phiH_b = {thetaPhiAnglesTwoStep_b[3]};
+   
+   vector <double> vec_mass_a = {vec_a.M()};
+   vector <double> vec_mass_b = {vec_b.M()};
+   
+   vector <double> protonps_mass_a = {proton_ps_a.M()};
+   vector <double> protonps_mass_b = {proton_ps_b.M()};
+   
+   vector <double> recoilps_mass_a = {recoil_ps_a.M()};
+   vector <double> recoilps_mass_b = {recoil_ps_b.M()};
+
    
 
-   //cout << "calls to fillHistogram go here" << endl;
+   //First, insensitive to the symmetrization quantities
    fillHistogram( kProd_Ang, prod_angle );
-   fillHistogram( kCosTheta, cosTheta );
-   fillHistogram( kPhi, Phi );
-   fillHistogram( kCosThetaH, cosThetaH );
-   fillHistogram( kPhiH, PhiH );
-
-   fillHistogram( kVecMass, vec.M() );
-   fillHistogram( kVecPsMass, X.M() );
-
    fillHistogram( kt, Mandt );
    fillHistogram( kRecoilMass, recoil.M() );
-   fillHistogram( kProtonPsMass, proton_ps.M() );
-   fillHistogram( kRecoilPsMass, recoil_ps.M() );
+   fillHistogram( kVecPsMass, X.M() );
 
+
+   //Now, symmetrized quantities 
+   fillHistogram( kCosTheta, cosTheta_a, 0.5 );
+   fillHistogram( kPhi, phi_a, 0.5 );
+   fillHistogram( kCosThetaH, cosThetaH_a, 0.5 );
+   fillHistogram( kPhiH, phiH_a, 0.5 );
+
+   fillHistogram( kVecMass, vec_mass_a, 0.5 );
+   fillHistogram( kProtonPsMass, protonps_mass_a, 0.5 );
+   fillHistogram( kRecoilPsMass, recoilps_mass_a, 0.5 );
+   
+   fillHistogram( kCosTheta, cosTheta_b, 0.5 );
+   fillHistogram( kPhi, phi_b, 0.5 );
+   fillHistogram( kCosThetaH, cosThetaH_b, 0.5 );
+   fillHistogram( kPhiH, phiH_b, 0.5 );
+
+   fillHistogram( kVecMass, vec_mass_b, 0.5 );
+   fillHistogram( kProtonPsMass, protonps_mass_b, 0.5 );
+   fillHistogram( kRecoilPsMass, recoilps_mass_b, 0.5 );
+
+
+   
+   
 }

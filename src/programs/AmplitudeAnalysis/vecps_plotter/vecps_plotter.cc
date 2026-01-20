@@ -126,8 +126,8 @@ int main(int argc, char* argv[]) {
     // the default will remain to just use a single file
     // ************************
     size_t nReactions = results.reactionList().size();
-    for (int polFile = 0; polFile < nReactions; polFile++) {
-        if (polFile > 0) break;  // TEMPORARY - REMOVE TO ENABLE ALL POL FILES
+    for (unsigned int polFile = 0; polFile < nReactions; polFile++) {
+      
         string reactionName = results.reactionList()[polFile];
         outName = reactionName + ".root";
 
