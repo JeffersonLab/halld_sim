@@ -56,9 +56,9 @@ void VecPs3PiPlotGenerator::createHistograms( ) {
   cout << " calls to bookHistogram go here" << endl;
   
    bookHistogram( kProd_Ang, new Histogram1D( 50, -PI, PI, "ProdAng", "Production Angle [rad.]" ) );
-   bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta_GJ", "cos#theta^{[GJ]} [rad.]" ) );
+   bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta_GJ", "cos#theta^{[GJ]}" ) );
    bookHistogram( kPhi, new Histogram1D( 50, -PI, PI, "Phi_GJ", "#phi^{[GJ]} [rad.]" ) );
-   bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_HF", "cos#theta^{[HF]} [rad.]" ) );
+   bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_HF", "cos#theta^{[HF]}" ) );
    bookHistogram( kPhiH, new Histogram1D( 50, -PI, PI, "Phi_HF", "#phi^{[HF]} [rad.]" ) );
 
    bookHistogram( kVecMass, new Histogram1D( 200, 0., 3., "MVec", "m(2#pi)  [GeV]") );
@@ -83,8 +83,8 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin ){
 void
 VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
-   // We use only default 2-body vector decay (set flag in config file for omega->3pi)
-   bool m_3pi = false;  
+   // We work only with a 2-body vector decay 
+
   
   // Fixed target
    TLorentzVector target(0,0,0,0.938272);
@@ -173,21 +173,25 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
 
    //Now, symmetrized quantities 
    fillHistogram( kCosTheta, cosTheta_a, 0.5 );
-   fillHistogram( kPhi, phi_a, 0.5 );
-   fillHistogram( kCosThetaH, cosThetaH_a, 0.5 );
-   fillHistogram( kPhiH, phiH_a, 0.5 );
-
-   fillHistogram( kVecMass, vec_mass_a, 0.5 );
-   fillHistogram( kProtonPsMass, protonps_mass_a, 0.5 );
-   fillHistogram( kRecoilPsMass, recoilps_mass_a, 0.5 );
-   
    fillHistogram( kCosTheta, cosTheta_b, 0.5 );
+ 
+   fillHistogram( kPhi, phi_a, 0.5 );
    fillHistogram( kPhi, phi_b, 0.5 );
+ 
+   fillHistogram( kCosThetaH, cosThetaH_a, 0.5 );
    fillHistogram( kCosThetaH, cosThetaH_b, 0.5 );
+ 
+   fillHistogram( kPhiH, phiH_a, 0.5 );
    fillHistogram( kPhiH, phiH_b, 0.5 );
 
+   
+   fillHistogram( kVecMass, vec_mass_a, 0.5 );
    fillHistogram( kVecMass, vec_mass_b, 0.5 );
+  
+   fillHistogram( kProtonPsMass, protonps_mass_a, 0.5 );
    fillHistogram( kProtonPsMass, protonps_mass_b, 0.5 );
+  
+   fillHistogram( kRecoilPsMass, recoilps_mass_a, 0.5 );
    fillHistogram( kRecoilPsMass, recoilps_mass_b, 0.5 );
 
 

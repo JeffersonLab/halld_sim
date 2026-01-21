@@ -74,7 +74,7 @@ int main( int argc, char* argv[] ){
   }
 
   bool showGui = false;
-  string outName = "vecps3pi_plot.root";
+  string outName = "vecps3pi_histos.root";
   string resultsName(argv[1]);
   for (int i = 2; i < argc; i++){
 
@@ -127,65 +127,80 @@ int main( int argc, char* argv[] ){
     // ************************
     // set up an output ROOT file to store histograms
     // ************************
+     TFile* plotfile = new TFile( outName.c_str(), "recreate");
+     TH1::AddDirectory(kFALSE);
 
-  TFile* plotfile = new TFile( outName.c_str(), "recreate");
-  TH1::AddDirectory(kFALSE);
+     //*************************
+     // Loop over different polarization files 
+    // *************************
+     size_t nReactions = results.reactionList().size();
 
-  TDirectory* plotfiledir = plotfile->mkdir("Contributions");  
+
+  for (unsigned int polType = 0; polType < nReactions; polType++) {
+    //    if (polType > 0) break;  // TEMPORARY
+    
+    string reactionName = results.reactionList()[polType];
+
+    //WRITING SEPARATE FILES FOR DIFF POLS    
+    //  outName = reactionName + ".root";
+    //TFile* plotfile = new TFile( outName.c_str(), "recreate");
+    //TH1::AddDirectory(kFALSE);
+
+    string dirname = "Contributions_"+reactionName;
+    TDirectory* plotfiledir = plotfile->mkdir(dirname.c_str());  
 
   
-  string reactionName = results.reactionList()[0];
-  plotGen.enableReaction( reactionName );
-  vector<string> sums = plotGen.uniqueSums();
-  vector<string> amps = plotGen.uniqueAmplitudes();
-  cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
+    plotGen.enableReaction( reactionName );
+    vector<string> sums = plotGen.uniqueSums();
+    vector<string> amps = plotGen.uniqueAmplitudes();
+    cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-  vector<string> amphistname = {"0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"};
-  vector<string> reflname = {"PosRefl", "NegRefl"};
-  string locampname;
+    vector<string> amphistname = {"0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"};
+    vector<string> reflname = {"PosRefl", "NegRefl"};
+    string locampname;
   
-  // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
-  for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
+    // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
+    for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
 
-    // loop over desired amplitudes 
-    for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
+      // loop over desired amplitudes 
+      for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
 
-      // turn on all ampltiudes by default 
-      for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) plotGen.enableAmp( jamp );
+	// turn on all ampltiudes by default 
+	for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) plotGen.enableAmp( jamp );
       
-      if (iamp < amphistname.size()){
-	// amplitude name
-	locampname = amphistname[iamp];	
+	if (iamp < amphistname.size()){
+	  // amplitude name
+	  locampname = amphistname[iamp];	
 
-	// turn on all sums by default
-	for (unsigned int jsum = 0; jsum < sums.size(); jsum++) plotGen.enableSum(jsum);
+	  // turn on all sums by default
+	  for (unsigned int jsum = 0; jsum < sums.size(); jsum++) plotGen.enableSum(jsum);
 	
-	//Arrange the negative and positive reflectivity sums by excluding the opposite reflectivity terms
-    	//Negative reflectivity: "ImagNegSign" & "RealPosSign", as in the config file
-	//Positive reflectivity: "RealNegSign" & "ImagPosSign", as in the config file
+	  //Arrange the negative and positive reflectivity sums by excluding the opposite reflectivity terms
+	  //Negative reflectivity: "ImagNegSign" & "RealPosSign", as in the config file
+	  //Positive reflectivity: "RealNegSign" & "ImagPosSign", as in the config file
 	   	
-	if (irefl < 2) {
-	  for (unsigned int i = 0; i < sums.size(); i++){
-	    if( reflname[irefl] == "NegRefl" ){
-	      if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos){
-		plotGen.disableSum(i);
-		//cout<<"disable sum "<<sums[i]<<"\n";
+	  if (irefl < 2) {
+	    for (unsigned int i = 0; i < sums.size(); i++){
+	      if( reflname[irefl] == "NegRefl" ){
+		if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos){
+		  plotGen.disableSum(i);
+		  //cout<<"disable sum "<<sums[i]<<"\n";
+		}
 	      }
-	    }
-	    if( reflname[irefl] == "PosRefl" ){
-	      if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
-		//cout<<"disable sum "<<sums[i]<<"\n";
-		plotGen.disableSum(i);
+	      if( reflname[irefl] == "PosRefl" ){
+		if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
+		  //cout<<"disable sum "<<sums[i]<<"\n";
+		  plotGen.disableSum(i);
+		}
 	      }
-	    }
-	  }	 
-	}
+	    }	 
+	  }
 	  
-	//Pick up the right amplitude by excluding all nonmatching amplitude names
-	 for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
+	  //Pick up the right amplitude by excluding all nonmatching amplitude names
+	  for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
 	    if( amps[jamp].find(locampname.data()) == std::string::npos )  plotGen.disableAmp( jamp );
 
-      } // close if (iamp < amphistname.size())
+	} // close if (iamp < amphistname.size())
 
 
     
@@ -200,19 +215,19 @@ int main( int argc, char* argv[] ){
 	for (unsigned int ivar  = 0; ivar  < VecPs3PiPlotGenerator::kNumHists; ivar++){
 	  
 	  // set unique histogram name for each plot (could put in directories...)
-	  string histname =  "";
+	  string histname = reactionName;
 
-	  if (ivar == VecPs3PiPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
-	  else if (ivar == VecPs3PiPlotGenerator::kCosTheta)  histname += "CosTheta_GJ";
-	  else if (ivar == VecPs3PiPlotGenerator::kPhi)  histname += "Phi_GJ";
-	  else if (ivar == VecPs3PiPlotGenerator::kCosThetaH)  histname += "CosTheta_HF";
-	  else if (ivar == VecPs3PiPlotGenerator::kPhiH)  histname += "Phi_HF";
-	  else if (ivar == VecPs3PiPlotGenerator::kVecMass)  histname += "MVec";
-	  else if (ivar == VecPs3PiPlotGenerator::kVecPsMass)  histname += "MVecPs";
-	  else if (ivar == VecPs3PiPlotGenerator::kt)  histname += "minust";
-	  else if (ivar == VecPs3PiPlotGenerator::kRecoilMass)  histname += "ProtonPiplusL_M";
-	  else if (ivar == VecPs3PiPlotGenerator::kProtonPsMass)  histname += "ProtonPiminus_M";
-	  else if (ivar == VecPs3PiPlotGenerator::kRecoilPsMass)  histname += "ProtonPiplusLPiminus_M";
+	  if (ivar == VecPs3PiPlotGenerator::kProd_Ang)  histname += "_Prod_Ang";
+	  else if (ivar == VecPs3PiPlotGenerator::kCosTheta)  histname += "_CosTheta_GJ";
+	  else if (ivar == VecPs3PiPlotGenerator::kPhi)  histname += "_Phi_GJ";
+	  else if (ivar == VecPs3PiPlotGenerator::kCosThetaH)  histname += "_CosTheta_HF";
+	  else if (ivar == VecPs3PiPlotGenerator::kPhiH)  histname += "_Phi_HF";
+	  else if (ivar == VecPs3PiPlotGenerator::kVecMass)  histname += "_MVec";
+	  else if (ivar == VecPs3PiPlotGenerator::kVecPsMass)  histname += "_MVecPs";
+	  else if (ivar == VecPs3PiPlotGenerator::kt)  histname += "_minust";
+	  else if (ivar == VecPs3PiPlotGenerator::kRecoilMass)  histname += "_ProtonPiplusL_M";
+	  else if (ivar == VecPs3PiPlotGenerator::kProtonPsMass)  histname += "_ProtonPiminus_M";
+	  else if (ivar == VecPs3PiPlotGenerator::kRecoilPsMass)  histname += "_ProtonPiplusLPiminus_M";
 	  else continue;	  
 
 	  if (iplot == PlotGenerator::kData) histname += "_data";
@@ -244,8 +259,13 @@ int main( int argc, char* argv[] ){
     }
   }
 
-  plotfile->Close();
+    //plotfile->Close(); //in case a few 'reaction' files are generated
 
+  
+  // The next calculations only need to happen for the first file
+  // and we do not need to repeat for each polarization
+  if (polType > 0) continue;
+  
   // model parameters
   cout << "Checking Parameters" << endl;
   
@@ -256,7 +276,7 @@ int main( int argc, char* argv[] ){
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
-  outfile.open( "vecps3pi__fitPars.txt" );
+  outfile.open( "vecps3pi__fitpars.txt" );
 
   for(unsigned int i = 0; i<pars.size(); i++) {
     double parValue = results.parValue( pars[i] );
@@ -321,13 +341,16 @@ int main( int argc, char* argv[] ){
           << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
   }
 
-cout<<"Computing phase differences"<<endl;
+  cout<<"Computing phase differences"<<endl;
   for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
 	  pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
 	  outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
-
   }
+  }// end of loop over 'reactions'
 
+  
+  plotfile->Close();
+  
   // covariance matrix
   vector< vector< double > > covMatrix;
   covMatrix = results.errorMatrix();

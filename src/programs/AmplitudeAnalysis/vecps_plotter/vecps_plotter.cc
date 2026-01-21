@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
       
         string reactionName = results.reactionList()[polFile];
         outName = reactionName + ".root";
-
+ 
         TFile* plotfile = new TFile(outName.c_str(), "recreate");
         TH1::AddDirectory(kFALSE);
 
