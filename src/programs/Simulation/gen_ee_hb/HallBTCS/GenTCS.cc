@@ -11,6 +11,8 @@
 //#include "kin_funcs.cc"
 #include "kin_funcs.h"
 #include <TLorentzVector.h>
+#include "UTILITIES/BeamProperties.h"
+#include "UTILITIES/MyReadConfig.h"
 
 // #include "CobremsGenerator.hh"
 
@@ -32,6 +34,8 @@ int main(int argc, char **argv)
   int run = 10000;
   int Nsim = 25000;
   int seedVal = 0;
+
+  string  beamconfigfile = "beam.config"; //beam cfg file - think about setting this on the command line
 
   //COMMAND LINE PARSING
   char *argptr;
@@ -66,24 +70,36 @@ int main(int argc, char **argv)
   const double Me = 0.00051;
   const double t_lim = -1.5; // limit of t distribution Max(|t|)
 
+
+  
+    if (beamconfigfile == "") {
+    cout << "No beam configuration file: run gen_ee -h for help " << endl;
+    exit(1);
+  }
+
+  
+  // Get beam properties from configuration file
+  TH1D * cobrem_vs_E = 0;
+  if (beamconfigfile != "") {
+    BeamProperties beamProp( beamconfigfile );
+    cobrem_vs_E = (TH1D*)beamProp.GetFlux();
+  }
+
   //GET THE HISTOGRAM FOR COHERENT BREMSTRAHLUNG SPECTRUM
   const double eLower = 8.;
   const double eUpper = 11.8;
 
   TH1D* hGvsE;
-  string photonSpectrumFile="cobrems.root";
-  TFile *inCoBrem=new TFile(photonSpectrumFile.c_str()); //Using spectrum from Richard
-  hGvsE=(TH1D*)inCoBrem->Get("cobrem_vs_E");
+  //TFile *inCoBrem=new TFile(genSettings.inFileBrem); //Using spectrum from Richard
+  //hGvsE=(TH1D*)inCoBrem->Get("cobrem_vs_E");
+  hGvsE=(TH1D*)cobrem_vs_E;
   TH1D* hGvsEout = (TH1D*)hGvsE->Clone("hGvsEout");
-  hGvsEout->Reset();
-  hGvsEout->Rebin(30);
+  //hGvsEout->Reset();
+  //hGvsEout->Rebin(20);
   int eBinLow = hGvsE->GetXaxis()->FindBin(eLower);
   int eBinHigh = hGvsE->GetXaxis()->FindBin(eUpper);
   hGvsE->GetXaxis()->SetRange(eBinLow,eBinHigh);
   double gMax = hGvsE->GetMaximum();
-
-  //const double Eb = 12.;
-  //const double Eg = Eb;
 
   
   

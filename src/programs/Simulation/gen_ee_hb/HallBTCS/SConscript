@@ -6,8 +6,12 @@ import sbms
 Import('*')
 
 env = env.Clone()
-	
+
+AMPTOOLS_LIBS = "UTILITIES"
+env.AppendUnique(LIBS = AMPTOOLS_LIBS.split())
+
 sbms.AddHDDM(env)
 sbms.AddROOT(env)
+sbms.AddUtilities(env)
 sbms.executable(env, 'gen_ee_hb')
 #sbms.executable(env)
