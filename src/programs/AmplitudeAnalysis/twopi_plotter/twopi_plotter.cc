@@ -24,6 +24,7 @@
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 
 typedef TwoPiPlotGenerator PlotGen;
 
@@ -34,6 +35,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
+  AmpToolsInterface::registerDataReader( FSRootDataReader() );
 }
 
 using namespace std;
@@ -148,6 +150,7 @@ int main( int argc, char* argv[] ){
         if (iplot == PlotGenerator::kData) histname += "dat";
         if (iplot == PlotGenerator::kAccMC) histname += "acc";
         if (iplot == PlotGenerator::kGenMC) histname += "gen";
+        if (iplot == PlotGenerator::kBkgnd) histname += "bkg";
 
         if (isum < sums.size()){
           //ostringstream sdig;  sdig << (isum + 1);
