@@ -86,6 +86,13 @@ def mk_setenv_csh(env):
 	str += 'setenv HDDS_HOME %s\n' % os.getenv('HDDS_HOME', '$HOME/hdds')
 	str += '\n'
 
+	# HDDM
+	str += '# HDDM\n'
+	str += 'setenv HDDM_HOME %s\n' % os.getenv('HDDM_HOME', '$HOME/hddm')
+	str += 'setenv PATH ${HDDM_HOME}/bin:${PATH}\n'
+	str += 'setenv HDDM_DIR $HDDM_HOME\n'
+	str += '\n'
+
 	# JANA
 	str += '# JANA\n'
 	str += 'setenv JANA_HOME %s\n' % os.getenv('JANA_HOME', '$HOME/jana')
@@ -194,11 +201,32 @@ def mk_setenv_csh(env):
 		str += 'setenv ETROOT %s\n' % etroot
 		str += 'setenv %s ${ETROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
 	
+	# SQLITE
+	sqlite = os.getenv('SQLITE_HOME')
+	sqliteversion = os.getenv('SQLITE_VERSION')
+	if sqlite != None:
+		str += '# SQLITE\n'
+		str += 'setenv SQLITE_HOME %s\n' % sqlite
+		str += 'setenv SQLITE_VERSION %s\n' % sqliteversion
+		str += '\n'
+
 	# SQLITECPP
 	sqlitecpp = os.getenv('SQLITECPP_HOME')
+	sqlitecppversion = os.getenv('SQLITECPP_VERSION')
 	if sqlitecpp != None:
 		str += '# SQLITECPP\n'
 		str += 'setenv SQLITECPP_HOME %s\n' % sqlitecpp
+		str += 'setenv SQLITECPP_VERSION %s\n' % sqlitecppversion
+
+	# EVTGEN
+	evtgen = os.getenv('EVTGENDIR')
+	evtgenversion = os.getenv('EVTGEN_VERSION')
+	if evtgen != None:
+		str += '# EVTGEN\n'
+		str += 'setenv EVTGENDIR %s\n' % evtgen
+		str += 'setenv EVTGEN_VERSION %s\n' % evtgenversion
+		str += 'setenv EVTGEN_DECAY_FILE %s/share/DECAY.DEC\n' % evtgen
+		str += 'setenv EVTGEN_PARTICLE_DEFINITIONS %s/share/evt.pdl\n' % evtgen
 
 	# Make sure output directory exists
 	try:
@@ -277,6 +305,13 @@ def mk_setenv_bash(env):
 	# HDDS
 	str += '# HDDS\n'
 	str += 'export HDDS_HOME=%s\n' % os.getenv('HDDS_HOME', '$HOME/hdds')
+	str += '\n'
+
+	# HDDM
+	str += '# HDDM\n'
+	str += 'export HDDM_HOME=%s\n' % os.getenv('HDDM_HOME', '$HOME/hddm')
+	str += 'export PATH=${HDDM_HOME}/bin:${PATH}\n'
+	str += 'export HDDM_DIR=$HDDM_HOME\n'
 	str += '\n'
 
 	# JANA
@@ -387,11 +422,33 @@ def mk_setenv_bash(env):
 		str += 'export ETROOT=%s\n' % etroot
 		str += 'export %s=${ETROOT}/lib:${%s}\n' % (LDLPV, LDLPV)
 
+	# SQLITE
+	sqlite = os.getenv('SQLITE_HOME')
+	sqliteversion = os.getenv('SQLITE_VERSION')
+	if sqlite != None:
+		str += '# SQLITE\n'
+		str += 'export SQLITE_HOME=%s\n' % sqlite
+		str += 'export SQLITE_VERSION=%s\n' % sqliteversion
+		str += '\n'
+
 	# SQLITECPP
 	sqlitecpp = os.getenv('SQLITECPP_HOME')
+	sqlitecppversion = os.getenv('SQLITECPP_VERSION')
 	if sqlitecpp != None:
 		str += '# SQLITECPP\n'
 		str += 'export SQLITECPP_HOME=%s\n' % sqlitecpp
+		str += 'export SQLITECPP_VERSION=%s\n' % sqlitecppversion
+
+	# EVTGEN
+	evtgen = os.getenv('EVTGENDIR')
+	evtgenversion = os.getenv('EVTGEN_VERSION')
+	if evtgen != None:
+		str += '# EVTGEN\n'
+		str += 'export EVTGENDIR=%s\n' % evtgen
+		str += 'export EVTGEN_VERSION=%s\n' % evtgenversion
+		str += 'export EVTGEN_DECAY_FILE=%s/share/DECAY.DEC\n' % evtgen
+		str += 'export EVTGEN_PARTICLE_DEFINITIONS=%s/share/evt.pdl\n' % evtgen
+
 
 	# Make sure output directory exists
 	try:
