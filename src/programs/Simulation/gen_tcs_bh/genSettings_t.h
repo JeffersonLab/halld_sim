@@ -13,7 +13,13 @@ struct genSettings_t {
 						//    1) tcs = TCS exclusive production of lepton pair from gamma or e beam"<<endl;
 					   	//	  - phase space for exclusive processes (flags):"<<endl;
 					    //	  11) ps_eephoto_fix = TCS phase space for fix target exp. (no weight),"<<endl;
-
+    
+    int genType;		// To store a type (TCS, BH, TCS+BH) events in output filename.hddm and subsequently pass it through Halld Geant4 setup to simulate only that type of event
+				// Note: the ROOT file stores all the events with individual reaction type weight
+				// genType = 1: Generate "TCS Only" 
+				// genType = 2: Generate "BH Only" 
+				// genType = 3: Generate "TCS + BH" 
+				
     // --- Beam configuration -------------------------------------------------
     int beamtype;          // Electron beam=1 (equivalent photon approximation) or photon beam=0
 
@@ -62,8 +68,9 @@ struct genSettings_t {
     double mt_Min;        // minimal -t; limits in -t (maximal range: 0.04 < -t < 2.02 GeV2)
     double mt_Max;        // maximal -t
 
-    double Qp2Min;        // minimal Q'²; limits in Q'2 (maximal range: 3.8 < Q'2 < 9.2 GeV2)
+    double Qp2Min;        // minimal Q'²; limits in Q'2 (maximal range: 0.8 < Q'2 < 9.2 GeV2)
     double Qp2Max;        // maximal Q'²
+    int Qp2_LimitType;      //limits in Q'2 (Low limit=1 : maximal range: 0.8 < Q'2 < 5.5 GeV2),(High limit=2 : maximal range: 3.8 < Q'2 < 9.2 GeV2) & (full limit=3 : maximal range: 0.8 < Q'2 < 9.2 GeV2)
 
     double thetaCMMin;    // outgoing lepton CM theta_min (deg); outgoing lepton angle in CM frame (maximal range= 30 < th < 150 degree)
     double thetaCMMax;    // outgoing lepton CM theta_max (deg)
@@ -108,6 +115,7 @@ struct genSettings_t {
         MyReadConfig * ReadFile = new MyReadConfig();
         ReadFile->ReadConfigFile(globalCfgFile);  // generator config file
 		reaction    	 = *(ReadFile->GetConfig1Par("reaction"));       // TCS
+		genType 	= *(ReadFile->GetConfig1Par("genType")); 
         // Beam settings
         beamtype        = *(ReadFile->GetConfig1Par("beamtype"));       // fixed-energy photon beam
         EphotonMin      = *(ReadFile->GetConfig1Par("EphotonMin"));
@@ -133,6 +141,7 @@ struct genSettings_t {
         mt_Max          = *(ReadFile->GetConfig1Par("mt_Max"));
         Qp2Min          = *(ReadFile->GetConfig1Par("Qp2Min"));
         Qp2Max          = *(ReadFile->GetConfig1Par("Qp2Max"));
+        Qp2_LimitType   = *(ReadFile->GetConfig1Par("Qp2_LimitType"));
 
         thetaCMMin      = *(ReadFile->GetConfig1Par("thetaCMMin"));
         thetaCMMax      = *(ReadFile->GetConfig1Par("thetaCMMax"));
@@ -148,7 +157,7 @@ struct genSettings_t {
         // Filenames
 		indexrun = *(ReadFile->GetConfig1Par("indexrun"));
 		seedentry = *(ReadFile->GetConfig1Par("seedentry")); 	 // default seed
-	xsecTablepath = ReadFile->GetConfigName("xsecpath");
+	    xsecTablepath = ReadFile->GetConfigName("xsecpath");
         TString outFile0 = ReadFile->GetConfigName("outFile");
         //strcpy(outFile, ReadFile->GetConfigName("outFile").Data());
         //strcpy(xsecTablepath, xsecTablepath0.Data());
