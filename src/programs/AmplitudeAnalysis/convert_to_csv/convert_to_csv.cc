@@ -9,42 +9,293 @@
  *  but instead provide a vector of files to the individual scripts
  */
 
+#include <algorithm>
+#include <charconv>
+#include <filesystem>
+#include <iostream>
+#include <limits>
+#include <regex>
 #include <string>
 #include <vector>
 
-int main(std::vector<std::string_view> args(argv, argv + argc))
-{
+// forward declarations
+std::vector<std::string> sort_files(const std::vector<std::string> &files, int sort_index);
+bool are_valid_fit_files(const std::vector<std::string> &files);
 
-    // parse args
+int main(int argc, char *argv[])
+{
+    std::vector<std::string_view> args(argv, argv + argc);
+
+    // ==== PARSE ARGUMENTS ====
+    // required arguments
     std::vector<std::string> input_files;
-    std::string output_file;
+    std::string output_file = "";
+
+    // optional arguments
+    bool sorted = false;
+    int sort_index = -1;
+    bool acceptance_corrected = false;
+    bool create_data_file = false;
+    bool covariance = false;
+    bool correlation = false;
+    bool verbose = false;
+    bool preview = false;
+    std::string mass_branch = "M4Pi"; // TODO: change by building up from AmpTools 4-vectors
+
+    auto print_help = []()
+    {
+        std::cout << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH]"
+                  << " [-s] [--sort-index INDEX] [-a] [-d] [-m MASS_BRANCH] [-p] [-v]"
+                  << " [--corelation] [--covariance] [-d]\n"
+                  << "  -i INPUT_FILES:\t\tFull path to the .fit file(s)\n"
+                  << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n"
+                  << "  -s, --sort:\t\t\tSort files by last number in the file name or path (default:true)\n"
+                  << "  --sort-index INDEX:\t\tWhat number in file path to sort by (default:-1, so last number in path is used)\n"
+                  << "  -a --acceptance-correct:\tWhether to acceptance correct intensities (default:true)\n"
+                  << "  -d --data-file:\t\tCreate separate data file (default:false)\n"
+                  << "  -m --mass-branch:\t\tBranch name for final mass spectrum of interest (default:M4Pi)\n"
+                  << "  -p --preview:\t\t\tPrint files to be processed, but don't run (default:false)\n"
+                  << "  -v --verbose:\t\t\tPrint information from converter scripts as they run\n"
+                  << "  --correlation:\t\tSave correlation matrix to separate csv file\n"
+                  << "  --covariance:\t\t\tSave covariance matrix to separate csv file\n"
+                  << "  -h, --help:\t\t\tShow this help message\n";
+    };
+
+    // first check if help message is requested
     for (const auto &arg : args)
     {
-
-        // parse input files
-        if (arg.find("--input") != std::string_view::npos || arg.find("-i") != std::string_view::npos)
+        if (arg == "-h" || arg == "--help")
         {
-            // Skip the flag itself and collect all following arguments until next flag
-            auto it = std::find(args.begin(), args.end(), arg);
-            if (it != args.end()) {
-                ++it;
-                while (it != args.end() && !it->starts_with("-")) {
-                    input_files.push_back(*it);
-                    ++it;
-                }
+            print_help();
+            return 0;
+        }
+    }
+
+    // helper to distinguish flags from negative numbers
+    auto is_flag = [](std::string_view s)
+    {
+        return s.starts_with("-") && s.size() > 1 && !std::isdigit(static_cast<unsigned char>(s[1]));
+    };
+
+    for (size_t i = 1; i < args.size(); ++i)
+    {
+        auto arg = args[i];
+
+        if (arg == "-i" || arg == "--input")
+        {
+            // collect all following arguments until next flag
+            while (i + 1 < args.size() && !is_flag(args[i + 1]))
+            {
+                input_files.emplace_back(args[++i]);
             }
         }
-        else if (arg.find("--output") != std::string_view::npos || arg.find("-o") != std::string_view::npos)
+        else if (arg == "-o" || arg == "--output")
         {
-            // parse output file
+            if (i + 1 < args.size() && !is_flag(args[i + 1]))
+            {
+                output_file = std::string(args[++i]);
+            }
+            else
+            {
+                std::cerr << "Error: -o/--output requires a value. See help message.\n";
+                print_help();
+                return 1;
+            }
+        }
+        else if (arg == "-s" || arg == "--sort")
+        {
+            sorted = true;
+        }
+        else if (arg == "--sort-index")
+        {
+            if (i + 1 < args.size() && !is_flag(args[i + 1]))
+            {
+                auto val = args[++i];
+                auto [ptr, ec] = std::from_chars(val.data(), val.data() + val.size(), sort_index);
+                if (ec != std::errc())
+                {
+                    std::cerr << "Error: --sort-index requires a valid integer. See help message.\n";
+                    print_help();
+                    return 1;
+                }
+            }
+            else
+            {
+                std::cerr << "Error: --sort-index requires a value. See help message.\n";
+                print_help();
+                return 1;
+            }
+        }
+        else if (arg == "-a" || arg == "--acceptance-correct")
+        {
+            acceptance_corrected = true;
+        }
+        else if (arg == "-d" || arg == "--data-file")
+        {
+            create_data_file = true;
+        }
+        else if (arg == "--covariance")
+        {
+            covariance = true;
+        }
+        else if (arg == "--correlation")
+        {
+            correlation = true;
+        }
+        else if (arg == "-v" || arg == "--verbose")
+        {
+            verbose = true;
+        }
+        else if (arg == "-p" || arg == "--preview")
+        {
+            preview = true;
+        }
+        else if (arg == "-m" || arg == "--mass-branch")
+        {
+            if (i + 1 < args.size() && !is_flag(args[i + 1]))
+            {
+                mass_branch = std::string(args[++i]);
+            }
+            else
+            {
+                std::cerr << "Error: -m/--mass-branch requires a value. See help message.\n";
+                print_help();
+                return 1;
+            }
+        }
+        else if (is_flag(arg))
+        {
+            std::cerr << "Unknown argument: " << arg << "\n";
+            print_help();
+            return 1;
         }
     }
 
-    // TEMP: print out input files
-    for (const auto &file : input_files)
+    if (input_files.empty())
     {
-        std::cout << "Input file: " << file << std::endl;
+        std::cerr << "Input files must be provided. See help message." << "\n";
+        print_help();
+        return 1;
+    }
+    if (output_file.empty())
+    {
+        std::cerr << "Output file must be provided. See help message." << "\n";
+        print_help();
+        return 1;
     }
 
+    // ensure only .fit files are provided
+    if (!are_valid_fit_files(input_files))
+    {
+        std::cerr << "One or more input files are not valid .fit files.\n";
+        return 1;
+    }
+
+    // sort files if requested
+    if (sorted)
+        input_files = sort_files(input_files, sort_index);
+
+    if (preview)
+    {
+        std::cout << "Preview mode enabled. Printing files and exiting\n";
+        for (const auto &file : input_files)
+        {
+            std::cout << "\t" << file << "\n";
+        }
+        return 0;
+    }
+
+    // extract fit results
+    // TODO: use Utilities to get fit result extractor class
+
+    if (create_data_file)
+        ; // TODO: execute extract_data to create data file
+
+    if (correlation)
+        ; // TODO: implement saving correlation matrix
+    if (covariance)
+        ; // TODO: implement saving covariance matrix
+
     return 0;
+}
+
+
+/**
+ * @brief Sort files based on a number extracted from the file path
+ *
+ * Extracts all numbers (including decimals) from each file path and sorts based on
+ * the number at the specified index position.
+ *
+ * @param[in] files Vector of file paths to sort
+ * @param[in] sort_index Index of the number to sort by (supports negative indexing).
+ *  Default -1 means use the last number found in the path.
+ * @return std::vector<std::string> Sorted vector of file paths
+ */
+std::vector<std::string> sort_files(const std::vector<std::string> &files, int sort_index)
+{
+    auto extract_number = [sort_index](const std::string &path) -> double
+    {
+        // Regex pattern to match integers and decimal numbers
+        std::regex number_pattern(R"(\d*\.?\d+)");
+        std::vector<double> numbers;
+
+        // Find all numbers in the path
+        auto begin = std::sregex_iterator(path.begin(), path.end(), number_pattern);
+        auto end = std::sregex_iterator();
+
+        for (auto it = begin; it != end; ++it)
+        {
+            numbers.push_back(std::stod(it->str()));
+        }
+
+        if (numbers.empty())
+        {
+            return std::numeric_limits<double>::infinity();
+        }
+
+        int index = sort_index;
+
+        // handle negative indexing
+        if (index < 0)
+        {
+            index = static_cast<int>(numbers.size()) + index;
+        }
+
+        // Return the number at the specified index, or infinity if out of bounds
+        if (index >= 0 && index < static_cast<int>(numbers.size()))
+        {
+            return numbers[index];
+        }
+
+        return std::numeric_limits<double>::infinity();
+    };
+
+    // Create a copy and sort it
+    std::vector<std::string> sorted_files = files;
+    std::sort(sorted_files.begin(), sorted_files.end(),
+              [&extract_number](const std::string &a, const std::string &b)
+              {
+                  return extract_number(a) < extract_number(b);
+              });
+
+    return sorted_files;
+}
+
+/**
+ * @brief Check if all provided files are .fit files
+ *
+ * @param[in] files Vector of file paths to check
+ * @return true
+ * @return false if any file is not a .fit file or does not exist
+ */
+bool are_valid_fit_files(const std::vector<std::string> &files)
+{
+    for (const auto &file : files)
+    {
+        if (std::filesystem::path(file).extension() != ".fit" || !std::filesystem::exists(file))
+        {
+            return false;
+        }
+    }
+    return true;
 }
