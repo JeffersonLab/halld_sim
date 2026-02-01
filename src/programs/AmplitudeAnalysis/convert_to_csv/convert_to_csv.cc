@@ -210,7 +210,8 @@ int main(int argc, char *argv[])
     // TODO: create csv file and stringstream to hold data
 
     // extract fit results
-    for (const auto& file : input_files) {
+    for (const auto &file : input_files)
+    {
         FitConverter converter(file, acceptance_corrected);
         break; // TODO: remove this break after testing
     }
@@ -225,7 +226,6 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
 
 /**
  * @brief Sort files based on a number extracted from the file path
