@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "UTILITIES/FitConverter.h"
+
 // forward declarations
 std::vector<std::string> sort_files(const std::vector<std::string> &files, int sort_index);
 bool are_valid_fit_files(const std::vector<std::string> &files);
@@ -205,8 +207,13 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    // TODO: create csv file and stringstream to hold data
+
     // extract fit results
-    // TODO: use Utilities to get fit result extractor class
+    for (const auto& file : input_files) {
+        FitConverter converter(file, acceptance_corrected);
+        break; // TODO: remove this break after testing
+    }
 
     if (create_data_file)
         ; // TODO: execute extract_data to create data file
