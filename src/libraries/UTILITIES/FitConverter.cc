@@ -70,16 +70,16 @@ void FitConverter::extract()
             report(DEBUG, kModule) << "\t" << amp << "\n";
     }
 
-    // Calculate single amplitude intensities
+    // Calculate unique amplitude intensities
     for (const auto &pair : m_constrained_amps)
     {
         const std::string &unique_amp = pair.first;
         const std::vector<std::string> &full_amps = pair.second;
 
         std::pair<double, double> intensity = m_fit_results.intensity(full_amps, m_is_acceptance_corrected);
-        m_single_amp_intensities[unique_amp] = intensity;
+        m_unique_amp_intensities[unique_amp] = intensity;
 
-        report(DEBUG, kModule) << "Single amplitude intensity for "
+        report(DEBUG, kModule) << "Unique amplitude intensity for "
                                << unique_amp
                                << " = "
                                << intensity.first
@@ -170,6 +170,22 @@ std::set<std::string> FitConverter::uniqueAmpNames() const
     return unique_names;
 }
 
+std::set<std::string> FitConverter::uniqueSumAmpNames() const
+{
+    std::set<std::string> unique_names;
+    for (const auto &amplitude : m_fit_results.ampList())
+    {
+        size_t first_colon = amplitude.find("::");
+        size_t last_colon = amplitude.rfind("::");
+        if (first_colon != std::string::npos && last_colon != std::string::npos && first_colon != last_colon)
+        {
+            std::string sum_amp_name = amplitude.substr(first_colon + 2, last_colon - first_colon - 2);
+            unique_names.insert(sum_amp_name);
+        }
+    }
+    return unique_names;
+}
+
 std::string FitConverter::getCSVHeader() const
 {
     std::string header = "file,";
@@ -188,8 +204,8 @@ std::string FitConverter::getCSVHeader() const
     {
         header += pair.first + "_re," + pair.first + "_im,";
     }
-    // single amplitude intensities
-    for (const auto &pair : m_single_amp_intensities)
+    // unique amplitude intensities
+    for (const auto &pair : m_unique_amp_intensities)
     {
         header += pair.first + "," + pair.first + "_err,";
     }
@@ -233,8 +249,8 @@ std::string FitConverter::getCSVRow() const
     {
         row += std::to_string(pair.second.real()) + "," + std::to_string(pair.second.imag()) + ",";
     }
-    // single amplitude intensities
-    for (const auto &pair : m_single_amp_intensities)
+    // unique amplitude intensities
+    for (const auto &pair : m_unique_amp_intensities)
     {
         row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
     }
@@ -342,12 +358,56 @@ std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmp
 {
     std::map<std::string, std::vector<std::string>> constrained_amp_map;
 
+    if (ampNamesAreConstrained())
+    {
+        for (const auto &unique_amp : uniqueAmpNames())
+        {
+            // the bool assures us that all terms with this amp name are constrained to
+            // each other
+            std::vector<TermInfo *> shared_terms = m_cfg_info->termList("", "", unique_amp);
+
+            // store the full names of the constrained amplitudes
+            for (const auto &term : shared_terms)
+                constrained_amp_map[unique_amp].push_back(term->fullName());
+        }
+        return constrained_amp_map;
+    }
+
+    if (sumAmpNamesAreConstrained())
+    {
+        for (const auto &unique_sum_amp : uniqueSumAmpNames())
+        {
+            std::string sum = unique_sum_amp.substr(0, unique_sum_amp.find("::"));
+            std::string amp = unique_sum_amp.substr(unique_sum_amp.find("::") + 2);
+            // the bool assures us that all terms with this sum::amp name are
+            // constrained to each other
+            std::vector<TermInfo *> shared_terms = m_cfg_info->termList("", sum, amp);
+
+            // store the full names of the constrained amplitudes
+            for (const auto &term : shared_terms)
+                constrained_amp_map[unique_sum_amp].push_back(term->fullName());
+        }
+        return constrained_amp_map;
+    }
+
+    // if we reach here, neither assumption held, so just map full amplitude names to 
+    // themselves
+    for (const auto &amplitude : m_fit_results.ampList())
+    {
+        constrained_amp_map[amplitude] = {amplitude};
+    }
+    return constrained_amp_map;
+}
+
+
+bool FitConverter::ampNamesAreConstrained() const
+{
     for (const auto &unique_amp : uniqueAmpNames())
     {
         std::vector<TermInfo *> shared_terms = m_cfg_info->termList("", "", unique_amp);
 
-        // we assume terms with common amplitude names are all constrained to each other
-        // so use first term to check this
+        // we assume terms with common amplitude names are all constrained to each
+        // other, so use first term to check this
         std::vector<TermInfo *> constrained_terms = shared_terms[0]->constraints();
 
         // filter constrained terms to only those with the same amplitude name
@@ -359,7 +419,8 @@ std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmp
                 ++it;
         }
 
-        // The constrained terms does not include the self term, so add it back in for comparison
+        // The constrained terms does not include the self term, so add it back in for 
+        // comparison
         constrained_terms.push_back(shared_terms[0]);
 
         // Compare the two sets of terms to ensure they are the same
@@ -367,24 +428,45 @@ std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmp
         std::sort(constrained_terms.begin(), constrained_terms.end());
         if (shared_terms != constrained_terms)
         {
-            report(ERROR, kModule) << "amplitude name "
-                                   << unique_amp
-                                   << " has inconsistent constraints among terms sharing this name."
-                                   << "\n";
-            report(ERROR, kModule) << "shared terms:\n";
-            for (const auto &term : shared_terms)
-                report(ERROR, kModule) << "\t" << term->fullName() << "\n";
-            report(ERROR, kModule) << "constrained terms:\n";
-            for (const auto &term : constrained_terms)
-                report(ERROR, kModule) << "\t" << term->fullName() << "\n";
+            return false;
+        }
+    }
+    return true;
+}
 
-            assert(false);
+bool FitConverter::sumAmpNamesAreConstrained() const
+{
+    for (const auto &unique_sum_amp : uniqueSumAmpNames())
+    {
+        std::string sum = unique_sum_amp.substr(0, unique_sum_amp.find("::"));
+        std::string amp = unique_sum_amp.substr(unique_sum_amp.find("::") + 2);
+
+        std::vector<TermInfo *> shared_terms = m_cfg_info->termList("", sum, amp);
+
+        // we assume terms with common sum::amp names are all constrained to each
+        // other, so use first term to check this
+        std::vector<TermInfo *> constrained_terms = shared_terms[0]->constraints();
+
+        // filter constrained terms to only those with the same sum::amp name
+        for (auto it = constrained_terms.begin(); it != constrained_terms.end();)
+        {
+            if ((*it)->fullName().find(unique_sum_amp) == std::string::npos)
+                it = constrained_terms.erase(it);
+            else
+                ++it;
         }
 
-        // store the full names of the constrained amplitudes
-        for (const auto &term : constrained_terms)
-            constrained_amp_map[unique_amp].push_back(term->fullName());
-    }
+        // The constrained terms does not include the self term, so add it back in for 
+        // comparison
+        constrained_terms.push_back(shared_terms[0]);
 
-    return constrained_amp_map;
+        // Compare the two sets of terms to ensure they are the same
+        std::sort(shared_terms.begin(), shared_terms.end());
+        std::sort(constrained_terms.begin(), constrained_terms.end());
+        if (shared_terms != constrained_terms)
+        {
+            return false;
+        }
+    }
+    return true;
 }

@@ -2,9 +2,9 @@
  * @file FitConverter.h
  * @author Kevin Scheuer
  * @brief Class for converting AmpTools fit results to any format
- * @date 2026-01-31
+ * @date 2026-02-01
  *
- * Note that this currently is built to convert to CSV, but the class can be extended
+ * @note that this currently is built to convert to CSV, but the class can be extended
  * to convert to any other format by accessing the various containers that store
  * the fit results.
  */
@@ -137,6 +137,16 @@ public:
      */
     std::set<std::string> uniqueAmpNames() const;
 
+    /**
+     * @brief return set of all unique coherent sum + amp names in a fit result
+     * 
+     * A "full" amplitude is a "reaction::sum::ampName" string, so this extracts all
+     * unique "sum::ampName" strings
+     * 
+     * @return std::set<std::string> 
+     */
+    std::set<std::string> uniqueSumAmpNames() const;
+
     bool isValid() const { return m_fit_results.valid(); }
 
     /**
@@ -175,13 +185,13 @@ public:
     constrainedAmps() const { return m_constrained_amps; }
 
     /**
-     * @brief Map of single amplitude intensities to their values and errors
+     * @brief Map of unique amplitude intensities to their values and errors
      *
-     * Contains the intensity (and error) for each unique amplitude name,
-     * calculated using all the constrained amplitudes for that name.
+     * Contains the intensity (and error) for each unique amplitude grouping,
+     * calculated using all the constrained amplitudes for that group.
      */
     const std::map<std::string, std::pair<double, double>> &
-    singleAmpIntensities() const { return m_single_amp_intensities; }
+    uniqueAmpIntensities() const { return m_unique_amp_intensities; }
 
     /**
      * @brief Map of unique amplitude names to their production coefficients
@@ -228,19 +238,47 @@ private:
     std::map<std::string, double> m_standard_results;
     std::map<std::string, std::pair<double, double>> m_parameters;
     std::map<std::string, std::vector<std::string>> m_constrained_amps;
-    std::map<std::string, std::pair<double, double>> m_single_amp_intensities;
+    std::map<std::string, std::pair<double, double>> m_unique_amp_intensities;
     std::map<std::string, std::complex<double>> m_production_coefficients;
     std::map<std::pair<std::string, std::string>, std::pair<double, double>> m_phase_differences;
     std::vector<std::vector<double>> m_error_matrix;
 
     /**
-     * @brief Finds and returns a map of unique amplitude names to their constrained full amplitudes
+     * @brief Get map of unique amplitude groups to their constrained full amplitudes
      *
-     * This assumes that all terms sharing the same amplitude name are constrained to each other.
+     * This attempts to identify the unique strings that can be a coupled to a set of
+     * constrained amplitudes. For a "full" amplitude string of the form
+     * "reaction::sum::ampName", it first assumes that amplitudes with the same ampName
+     * are constrained to each other, across reactions and sums. If not, it peels back a
+     * layer and assumes that amplitudes with the same "sum::ampName" are constrained to
+     * each other, across reactions. If that fails, it simply saves a mapping of the
+     * full amplitude to itself. The map keys are whats extracted as the unique
+     * amplitude names (ampName, sum::ampName, or full amplitude), and the values are
+     * vectors of the full amplitude strings that are constrained to each other.
      *
-     * @throw ERROR If the above assumption is violated
+     * @note the keys are whats written to the CSV, and is why it first attempts to 
+     * extract just the ampName for simplicity.
      */
     std::map<std::string, std::vector<std::string>> findConstrainedAmps() const;
+
+
+    /**
+     * @brief Checks if amplitude names are constrained to each other
+     * 
+     * A "full" amplitude is a "reaction::sum::ampName" string, so this checks if all
+     * amplitudes with the same "ampName" are constrained to each other across reactions
+     * and sums.
+     */
+    bool ampNamesAreConstrained() const;
+
+    /**
+     * @brief Checks if coherent sum + amplitude names are constrained to each other
+     * 
+     * A "full" amplitude is a "reaction::sum::ampName" string, so this checks if all
+     * amplitudes with the same "sum::ampName" are constrained to each other across
+     * reactions.     
+     */
+    bool sumAmpNamesAreConstrained() const;
 
     static const char *kModule;
 };
