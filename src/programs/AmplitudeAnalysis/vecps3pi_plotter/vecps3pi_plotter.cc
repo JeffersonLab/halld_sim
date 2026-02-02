@@ -210,6 +210,8 @@ int main( int argc, char* argv[] ){
 	} // close if (iamp < amphistname.size())
 
 
+	
+	// GENERATE HISTOGRAMS BY MEANS OF PLOT GENERATOR	
     
       cout << "Looping over input data" << endl;
       // loop over data, accMC, and genMC
@@ -222,9 +224,7 @@ int main( int argc, char* argv[] ){
 		if ( iplot == PlotGenerator::kBkgnd && !singleData ) continue; // only plot background once
 		if ( iplot == PlotGenerator::kAccMC && singleFlatWave ) continue; // only plot Flat wave once
 
-
 		
-
 		
 	// loop over different variables
 	for (unsigned int ivar  = 0; ivar  < VecPs3PiPlotGenerator::kNumHists; ivar++){
@@ -271,11 +271,13 @@ int main( int argc, char* argv[] ){
 	  
 	}
       }
-    }
-  }
+    } // end of loop over amplitudes
+   } // end of loop over sum configurations
 
     //plotfile->Close(); //in case a few 'reaction' files are generated
 
+
+    // CALCULATE INTENSITY FRACTIONS AND PHASE DIFFERENCES
   
   // The next calculations only need to happen for the first file
   // and we do not need to repeat for each polarization
@@ -302,7 +304,8 @@ int main( int argc, char* argv[] ){
   outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
   vector<string> fullamps = plotGen.fullAmplitudes();
   for (unsigned int i = 0; i < fullamps.size(); i++){
-    vector<string> useamp;  useamp.push_back(fullamps[i]);
+    vector<string> useamp;
+    useamp.push_back(fullamps[i]);
     outfile << "FIT FRACTION " << fullamps[i] << " = "
          << results.intensity(useamp).first /
             results.intensity().first <<  " +- "
@@ -321,14 +324,14 @@ int main( int argc, char* argv[] ){
     for(int iamp=0; iamp<nAmps; iamp++) {
 	    string locampname = amphistname[iamp];
 	    
-	    if(fullamps[i].find("::" + locampname) == std::string::npos) continue;
+	    if (fullamps[i].find("::" + locampname) == std::string::npos) continue;
 	    //cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
 
 	    // select reflectivity
-	    if(fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
+	    if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
 	      ampsumNegRefl[iamp].push_back(fullamps[i]);
 	    }
-	    else {
+	    if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos) {
 	      ampsumPosRefl[iamp].push_back(fullamps[i]);
 	    }
     }
