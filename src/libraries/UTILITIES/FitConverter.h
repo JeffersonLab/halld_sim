@@ -60,17 +60,43 @@ public:
      * @brief Construct a FitConverter for a single fit file
      * @param[in] filename Path to the .fit file
      * @param[in] acceptance_correct Whether to use acceptance-corrected intensities
+     * @param[in] mute_warning Suppress warning about free parameters if true
      * @throw ERROR If the fit file cannot be read or is invalid
      */
-    FitConverter(const std::string &filename, const bool &acceptance_correct = false);
+    FitConverter(
+        const std::string &filename,
+        const bool &acceptance_correct = false,
+        bool mute_warning = false);
 
     /**
      * @brief Extract fit data from the .fit file
      */
     void extract();
 
-    // TODO: implement these methods
+    /**
+     * @brief Get CSV header string for the fit results
+     *
+     * Constructs a comma-separated header string based on the keys of the various
+     * containers storing the fit results.
+     *
+     * @note It is crucial that the order of entries in the header matches the order of
+     * values in getCSVRow().
+     *
+     * @return Comma-separated header string
+     */
     std::string getCSVHeader() const;
+
+    /**
+     * @brief Get CSV row string for the fit results
+     *
+     * Constructs a comma-separated row string based on the values of the various
+     * containers storing the fit results.
+     *
+     * @note It is crucial that the order of values in this row matches the order of
+     * entries in getCSVHeader().
+     *
+     * @return Comma-separated row string
+     */
     std::string getCSVRow() const;
 
     /**
@@ -95,11 +121,11 @@ public:
     const std::map<std::string, double> &standardResults() const { return m_standard_results; }
 
     /**
-     * @brief Map of AmpTools parameters and their values
+     * @brief Map of AmpTools parameters and their values and errors
      *
      * Ignores production coefficients, which typically have "::" in their names
      */
-    const std::map<std::string, double> &parameters() const { return m_parameters; }
+    const std::map<std::string, std::pair<double, double>> &parameters() const { return m_parameters; }
 
     /**
      * @brief Map of unique amplitude names and their related constrained amplitudes
@@ -158,7 +184,7 @@ private:
 
     // see accessor methods for descriptions
     std::map<std::string, double> m_standard_results;
-    std::map<std::string, double> m_parameters;
+    std::map<std::string, std::pair<double, double>> m_parameters;
     std::map<std::string, std::vector<std::string>> m_constrained_amps;
     std::map<std::string, std::pair<double, double>> m_single_amp_intensities;
     std::map<std::string, std::complex<double>> m_production_coefficients;
@@ -166,9 +192,9 @@ private:
 
     /**
      * @brief Finds and returns a map of unique amplitude names to their constrained full amplitudes
-     * 
+     *
      * This assumes that all terms sharing the same amplitude name are constrained to each other.
-     * 
+     *
      * @throw ERROR If the above assumption is violated
      */
     std::map<std::string, std::vector<std::string>> findConstrainedAmps() const;

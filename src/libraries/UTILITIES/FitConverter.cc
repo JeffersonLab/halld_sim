@@ -19,10 +19,10 @@
 
 const char *FitConverter::kModule = "FitConverter";
 
-FitConverter::FitConverter(const std::string &filename, const bool &acceptance_correct) : m_fit_file(filename),
-                                                                                          m_fit_results(filename),
-                                                                                          m_cfg_info(m_fit_results.configInfo()),
-                                                                                          m_is_acceptance_corrected(acceptance_correct)
+FitConverter::FitConverter(const std::string &filename, const bool &acceptance_correct, bool mute_warning) : m_fit_file(filename),
+                                                                                                             m_fit_results(filename, mute_warning),
+                                                                                                             m_cfg_info(m_fit_results.configInfo()),
+                                                                                                             m_is_acceptance_corrected(acceptance_correct)
 {
     if (!m_fit_results.valid())
     {
@@ -51,11 +51,11 @@ void FitConverter::extract()
     for (const auto &par_name : m_fit_results.parNameList())
     {
         if (par_name.find("::") == std::string::npos)
-            m_parameters[par_name] = m_fit_results.parValue(par_name);
+            m_parameters[par_name] = {m_fit_results.parValue(par_name), m_fit_results.parError(par_name)};
     }
     for (const auto &pair : m_parameters)
     {
-        report(DEBUG, kModule) << "Parameter: " << pair.first << " = " << pair.second << "\n";
+        report(DEBUG, kModule) << "Parameter: " << pair.first << " = " << pair.second.first << " +/- " << pair.second.second << "\n";
     }
 
     // Build map of unique amplitude names and their constrained amplitudes
@@ -167,6 +167,87 @@ std::set<std::string> FitConverter::uniqueAmpNames() const
         }
     }
     return unique_names;
+}
+
+std::string FitConverter::getCSVHeader() const
+{
+    std::string header = "file,";
+    // standard results
+    for (const auto &pair : m_standard_results)
+    {
+        header += pair.first + ",";
+    }
+    // parameters
+    for (const auto &pair : m_parameters)
+    {
+        header += pair.first + "," + pair.first + "_err,";
+    }
+    // production coefficients
+    for (const auto &pair : m_production_coefficients)
+    {
+        header += pair.first + "_re," + pair.first + "_im,";
+    }
+    // single amplitude intensities
+    for (const auto &pair : m_single_amp_intensities)
+    {
+        header += pair.first + "," + pair.first + "_err,";
+    }
+    // phase differences
+    for (const auto &pair : m_phase_differences)
+    {
+        std::string full_amp1 = pair.first.first;
+        std::string full_amp2 = pair.first.second;
+
+        // extract unique amplitude names from full amplitude strings
+        size_t last_colon1 = full_amp1.rfind("::");
+        size_t last_colon2 = full_amp2.rfind("::");
+        std::string amp1 = (last_colon1 != std::string::npos) ? full_amp1.substr(last_colon1 + 2) : full_amp1;
+        std::string amp2 = (last_colon2 != std::string::npos) ? full_amp2.substr(last_colon2 + 2) : full_amp2;
+
+        header += amp1 + "_" + amp2 + "," + amp1 + "_" + amp2 + "_err,";
+    }
+    // remove trailing comma
+    if (!header.empty() && header.back() == ',')
+    {
+        header.pop_back();
+    }
+    return header;
+}
+
+std::string FitConverter::getCSVRow() const
+{
+    std::string row = m_fit_file + ",";
+    // standard results
+    for (const auto &pair : m_standard_results)
+    {
+        row += std::to_string(pair.second) + ",";
+    }
+    // parameters
+    for (const auto &pair : m_parameters)
+    {
+        row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
+    }
+    // production coefficients
+    for (const auto &pair : m_production_coefficients)
+    {
+        row += std::to_string(pair.second.real()) + "," + std::to_string(pair.second.imag()) + ",";
+    }
+    // single amplitude intensities
+    for (const auto &pair : m_single_amp_intensities)
+    {
+        row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
+    }
+    // phase differences
+    for (const auto &pair : m_phase_differences)
+    {
+        row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
+    }
+    // remove trailing comma
+    if (!row.empty() && row.back() == ',')
+    {
+        row.pop_back();
+    }
+    return row;
 }
 
 std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmps() const

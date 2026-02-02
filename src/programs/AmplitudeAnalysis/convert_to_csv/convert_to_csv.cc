@@ -10,12 +10,17 @@
 #include <charconv>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <limits>
 #include <regex>
 #include <string>
 #include <vector>
 
 #include "UTILITIES/FitConverter.h"
+#include "IUAmpTools/report.h"
+
+const char *kModule = "convert_to_csv";
 
 // forward declarations
 std::vector<std::string> sort_files(const std::vector<std::string> &files, int sort_index);
@@ -183,11 +188,19 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // ==== VALIDATE INPUTS ====
+
     // ensure only .fit files are provided
     if (!are_valid_fit_files(input_files))
     {
         std::cerr << "One or more input files are not valid .fit files.\n";
         return 1;
+    }
+
+    // guarantee that output file ends with .csv
+    if (std::filesystem::path(output_file).extension() != ".csv")
+    {
+        output_file += ".csv";
     }
 
     // sort files if requested
@@ -204,25 +217,49 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    // TODO: create csv file and stringstream to hold data
+    // ==== PROCESS FILES AND WRITE TO CSV ====
+    std::ofstream result_file(output_file);
+    std::stringstream csv_data;
+    bool header_written = false;
+    std::string first_file_header;
 
     // extract fit results
     for (const auto &file : input_files)
     {
-        FitConverter converter(file, acceptance_corrected);
+        if (verbose)
+            report(INFO, kModule) << "Processing file: " << file << "\n";
+        FitConverter converter(file, acceptance_corrected, !verbose);
 
-        // TODO: write header and rows to csv, and check that header is identical 
-        // for all files. Use AmpTools report feature to error out if not.
-        break; // TODO: remove this break after testing
+        if (!header_written)
+        {
+            std::string header = converter.getCSVHeader();
+            csv_data << header << "\n";
+            header_written = true;
+            first_file_header = header;
+        }
+        else
+        {
+            std::string header = converter.getCSVHeader();
+            if (header != first_file_header)
+            {
+                report(ERROR, kModule) << "File "
+                                       << file
+                                       << " has a different CSV header than the first file. Aborting\n";
+                return 1;
+            }
+        }
+        csv_data << converter.getCSVRow() << "\n";
     }
+    result_file << csv_data.str();
+    result_file.close();
 
     if (create_data_file)
-        ; // TODO: execute extract_data to create data file
+        ; // TODO: execute extract_data to create data file. Use output_file_data.csv as output name
 
     if (correlation)
-        ; // TODO: implement saving correlation matrix
+        ; // TODO: implement saving correlation matrix. Use output_file_correlation.csv as output name
     if (covariance)
-        ; // TODO: implement saving covariance matrix
+        ; // TODO: implement saving covariance matrix. Use output_file_covariance.csv as output name
 
     return 0;
 }
