@@ -3,6 +3,7 @@ Time Like Compton Scattering Event Generator
 
 Based on Marie Boer Code:
 https://hallaweb.jlab.org/wiki/index.php/DDVCS_and_TCS_event_generator
+https://hallaweb.jlab.org/wiki/index.php/DEEPGen_event_generator
 
 ----------------------------------------------
             * Configuration file
@@ -21,7 +22,7 @@ Zero Step: if Data directory is missing or symbolic links to data are missing: r
 First Step: Set your desire events generator settings in the configuration file "tcs_bh.cfg"
 
 Second Step: Be in the directory: "src" (go 3 directories back from "gen_tcs_bh" directory) and run the command
-scons -j4 install
+scons -j20 install
 It compile the project with scons
 
 Third Step: be in the directory: "gen_tcs_bh"  then run the command below in a terminal
