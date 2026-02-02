@@ -100,6 +100,36 @@ public:
     std::string getCSVRow() const;
 
     /**
+     * @brief Get the CSV header string for the covariance matrix
+     *
+     * @return std::string "file, parameter, par1, par2, ..., parN"
+     */
+    std::string getCSVCovarianceMatrixHeader() const;
+
+    /**
+     * @brief Get the CSV representation of the covariance matrix
+     *
+     * Every row corresponds to a parameter, with the first two columns being the file
+     * and parameter name, followed by the covariance values with all other parameters.
+     */
+    std::string getCSVCovarianceMatrix() const;
+
+    /**
+     * @brief Get the CSV header string for the correlation matrix
+     *
+     * @return std::string "file, parameter, par1, par2, ..., parN"
+     */
+    std::string getCSVCorrelationMatrixHeader() const;
+
+    /**
+     * @brief Get the CSV representation of the correlation matrix
+     *
+     * Every row corresponds to a parameter, with the first two columns being the file
+     * and parameter name, followed by the correlation values with all other parameters.
+     */
+    std::string getCSVCorrelationMatrix() const;
+
+    /**
      * @brief return set of all unique amplitude names in a fit result
      *
      * A "full" amplitude is a "reaction::sum::ampName" string, so this extracts all
@@ -174,6 +204,18 @@ public:
     const std::map<std::pair<std::string, std::string>, std::pair<double, double>> &
     phaseDifferences() const { return m_phase_differences; }
 
+    /**
+     * @brief Get the covariance matrix of the fit parameters.
+     *
+     * The error matrix is a 2D vector where each entry [i][j] corresponds to
+     * the covariance between parameter i and parameter j. The order of the rows and
+     * columns matches the order of parameters in FitResults::parNameList(). Note
+     * that we do include production parameters in this matrix, as opposed to the
+     * m_parameters map which excludes them.
+     */
+    const std::vector<std::vector<double>> &
+    errorMatrix() const { return m_error_matrix; }
+
     ~FitConverter() = default;
 
 private:
@@ -189,6 +231,7 @@ private:
     std::map<std::string, std::pair<double, double>> m_single_amp_intensities;
     std::map<std::string, std::complex<double>> m_production_coefficients;
     std::map<std::pair<std::string, std::string>, std::pair<double, double>> m_phase_differences;
+    std::vector<std::vector<double>> m_error_matrix;
 
     /**
      * @brief Finds and returns a map of unique amplitude names to their constrained full amplitudes

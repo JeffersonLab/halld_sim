@@ -22,7 +22,8 @@ const char *FitConverter::kModule = "FitConverter";
 FitConverter::FitConverter(const std::string &filename, const bool &acceptance_correct, bool mute_warning) : m_fit_file(filename),
                                                                                                              m_fit_results(filename, mute_warning),
                                                                                                              m_cfg_info(m_fit_results.configInfo()),
-                                                                                                             m_is_acceptance_corrected(acceptance_correct)
+                                                                                                             m_is_acceptance_corrected(acceptance_correct),
+                                                                                                             m_error_matrix(m_fit_results.errorMatrix())
 {
     if (!m_fit_results.valid())
     {
@@ -248,6 +249,93 @@ std::string FitConverter::getCSVRow() const
         row.pop_back();
     }
     return row;
+}
+
+std::string FitConverter::getCSVCovarianceMatrixHeader() const
+{
+    std::string header = "file,parameter";
+    for (const auto &par : m_fit_results.parNameList())
+    {
+        header += "," + par;
+    }
+    return header;
+}
+
+std::string FitConverter::getCSVCorrelationMatrixHeader() const
+{
+    return getCSVCovarianceMatrixHeader(); // same header format
+}
+
+std::string FitConverter::getCSVCovarianceMatrix() const
+{
+    std::string csv;
+    for (long unsigned int row = 0; row < m_error_matrix.size(); row++)
+    {
+        const std::string row_par = m_fit_results.parNameList()[row];
+        csv += m_fit_file + "," + row_par;
+
+        for (long unsigned int col = 0; col < m_error_matrix[row].size(); col++)
+        {
+            const std::string col_par = m_fit_results.parNameList()[col];
+
+            // double check that our indexing is correct
+            if (m_error_matrix[row][col] != m_fit_results.covariance(row_par, col_par))
+            {
+                report(ERROR, kModule) << "Mismatch in covariance values between parameters "
+                                       << row_par << " and " << col_par << ".\n";
+                assert(false);
+            }
+
+            csv += "," + std::to_string(m_error_matrix[row][col]);
+        }
+
+        // don't add newline to last row, to avoid extra blank line at end of file
+        // and to match the style of the other csv functions
+        if (row != m_error_matrix.size() - 1)
+            csv += "\n";
+    }
+    return csv;
+}
+
+std::string FitConverter::getCSVCorrelationMatrix() const
+{
+    std::string csv;
+    for (long unsigned int row = 0; row < m_error_matrix.size(); row++)
+    {
+        const std::string row_par = m_fit_results.parNameList()[row];
+        const double row_par_error = m_fit_results.parError(row_par);
+        csv += m_fit_file + "," + row_par;
+
+        for (long unsigned int col = 0; col < m_error_matrix[row].size(); col++)
+        {
+            const std::string col_par = m_fit_results.parNameList()[col];
+            const double col_par_error = m_fit_results.parError(col_par);
+
+            // double check that our indexing is correct
+            if (m_error_matrix[row][col] != m_fit_results.covariance(row_par, col_par))
+            {
+                report(ERROR, kModule) << "Mismatch in covariance values between parameters "
+                                       << row_par << " and " << col_par << ".\n";
+                assert(false);
+            }
+
+            // avoid division by zero
+            if (row_par_error == 0.0 || col_par_error == 0.0)
+            {
+                csv += ",0.0"; // set correlation to 0 if error is zero
+                continue;
+            }
+
+            double correlation = m_error_matrix[row][col] / (row_par_error * col_par_error);
+            csv += "," + std::to_string(correlation);
+        }
+
+        // don't add newline to last row, to avoid extra blank line at end of file
+        // and to match the style of the other csv functions
+        if (row != m_error_matrix.size() - 1)
+            csv += "\n";
+    }
+    return csv;
 }
 
 std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmps() const

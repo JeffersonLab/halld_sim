@@ -218,12 +218,11 @@ int main(int argc, char *argv[])
     }
 
     // ==== PROCESS FILES AND WRITE TO CSV ====
-    std::ofstream result_file(output_file);
-    std::stringstream csv_data;
+    std::stringstream csv_result_data, csv_cov_data, csv_corr_data;
     bool header_written = false;
-    std::string first_file_header;
+    std::string first_file_result_header, first_file_cov_header, first_file_corr_header;
 
-    // extract fit results
+    // extract fit results, and optionally the cov/corr matrices
     for (const auto &file : input_files)
     {
         if (verbose)
@@ -233,33 +232,89 @@ int main(int argc, char *argv[])
         if (!header_written)
         {
             std::string header = converter.getCSVHeader();
-            csv_data << header << "\n";
+            csv_result_data << header << "\n";
             header_written = true;
-            first_file_header = header;
+            first_file_result_header = header;
+
+            if (covariance)
+            {
+                std::string cov_header = converter.getCSVCovarianceMatrixHeader();
+                csv_cov_data << cov_header << "\n";
+                first_file_cov_header = cov_header;
+            }
+
+            if (correlation)
+            {
+                std::string corr_header = converter.getCSVCorrelationMatrixHeader();
+                csv_corr_data << corr_header << "\n";
+                first_file_corr_header = corr_header;
+            }
         }
         else
         {
             std::string header = converter.getCSVHeader();
-            if (header != first_file_header)
+            if (header != first_file_result_header)
             {
                 report(ERROR, kModule) << "File "
                                        << file
                                        << " has a different CSV header than the first file. Aborting\n";
                 return 1;
             }
+
+            if (covariance)
+            {
+                std::string cov_header = converter.getCSVCovarianceMatrixHeader();
+                if (cov_header != first_file_cov_header)
+                {
+                    report(ERROR, kModule) << "File "
+                                           << file
+                                           << " has a different covariance CSV header than the first file. Aborting\n";
+                    return 1;
+                }
+            }
+            if (correlation)
+            {
+                std::string corr_header = converter.getCSVCorrelationMatrixHeader();
+                if (corr_header != first_file_corr_header)
+                {
+                    report(ERROR, kModule) << "File "
+                                           << file
+                                           << " has a different correlation CSV header than the first file. Aborting\n";
+                    return 1;
+                }
+            }
         }
-        csv_data << converter.getCSVRow() << "\n";
+        csv_result_data << converter.getCSVRow() << "\n";
+
+        if (covariance)
+            csv_cov_data << converter.getCSVCovarianceMatrix() << "\n";
+        if (correlation)
+            csv_corr_data << converter.getCSVCorrelationMatrix() << "\n";
     }
-    result_file << csv_data.str();
+    std::ofstream result_file(output_file);
+    result_file << csv_result_data.str();
     result_file.close();
+
+    if (covariance)
+    {        
+        std::filesystem::path output_path(output_file);
+        std::string covariance_file = (output_path.parent_path() / (output_path.stem().string() + "_covariance.csv")).string();
+        std::ofstream cov_file(covariance_file);
+        std::cout << covariance_file << "\n";
+        cov_file << csv_cov_data.str();
+        cov_file.close();
+    }
+    if (correlation)
+    {
+        std::filesystem::path output_path(output_file);
+        std::string correlation_file = (output_path.parent_path() / (output_path.stem().string() + "_correlation.csv")).string();
+        std::ofstream corr_file(correlation_file);
+        corr_file << csv_corr_data.str();
+        corr_file.close();
+    }
 
     if (create_data_file)
         ; // TODO: execute extract_data to create data file. Use output_file_data.csv as output name
-
-    if (correlation)
-        ; // TODO: implement saving correlation matrix. Use output_file_correlation.csv as output name
-    if (covariance)
-        ; // TODO: implement saving covariance matrix. Use output_file_covariance.csv as output name
 
     return 0;
 }
