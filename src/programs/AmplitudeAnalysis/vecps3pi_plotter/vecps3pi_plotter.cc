@@ -137,7 +137,7 @@ int main( int argc, char* argv[] ){
 
 
   for (unsigned int polType = 0; polType < nReactions; polType++) {
-    //    if (polType > 0) break;  // TEMPORARY
+
     
     string reactionName = results.reactionList()[polType];
 
@@ -155,8 +155,8 @@ int main( int argc, char* argv[] ){
     vector<string> amps = plotGen.uniqueAmplitudes();
     cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-    vector<string> amphistname = {"0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"};
-    vector<string> reflname = {"PosRefl", "NegRefl"};
+    vector<string> amphistname = {"Flat","0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"};
+    vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
     string locampname;
   
     // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
@@ -175,20 +175,27 @@ int main( int argc, char* argv[] ){
 	  // turn on all sums by default
 	  for (unsigned int jsum = 0; jsum < sums.size(); jsum++) plotGen.enableSum(jsum);
 	
-	  //Arrange the negative and positive reflectivity sums by excluding the opposite reflectivity terms
+	  //Arrange the negative and positive reflectivity sums 
 	  //Negative reflectivity: "ImagNegSign" & "RealPosSign", as in the config file
 	  //Positive reflectivity: "RealNegSign" & "ImagPosSign", as in the config file
 	   	
-	  if (irefl < 2) {
+	  if (irefl < 3) {
 	    for (unsigned int i = 0; i < sums.size(); i++){
 	      if( reflname[irefl] == "NegRefl" ){
-		if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos){
+		if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos || sums[i].find("UniBG") != std::string::npos){
 		  plotGen.disableSum(i);
 		  //cout<<"disable sum "<<sums[i]<<"\n";
 		}
 	      }
 	      if( reflname[irefl] == "PosRefl" ){
-		if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos) {
+		if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos || sums[i].find("UniBG") != std::string::npos) {
+		  //cout<<"disable sum "<<sums[i]<<"\n";
+		  plotGen.disableSum(i);
+		}
+	      }
+	      if( reflname[irefl] == "Uniform" ){
+		if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos
+		   || sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos) {
 		  //cout<<"disable sum "<<sums[i]<<"\n";
 		  plotGen.disableSum(i);
 		}
@@ -207,10 +214,18 @@ int main( int argc, char* argv[] ){
       cout << "Looping over input data" << endl;
       // loop over data, accMC, and genMC
       for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
-		if (iplot == PlotGenerator::kGenMC || iplot == PlotGenerator::kBkgnd) continue;
 		bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
+		bool singleFlatWave = (irefl == 0 && iamp > 0) || (irefl > 0 && iamp == 0);
+		
+		if (iplot == PlotGenerator::kGenMC) continue; 
 		if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
-	
+		if ( iplot == PlotGenerator::kBkgnd && !singleData ) continue; // only plot background once
+		if ( iplot == PlotGenerator::kAccMC && singleFlatWave ) continue; // only plot Flat wave once
+
+
+		
+
+		
 	// loop over different variables
 	for (unsigned int ivar  = 0; ivar  < VecPs3PiPlotGenerator::kNumHists; ivar++){
 	  
@@ -241,7 +256,7 @@ int main( int argc, char* argv[] ){
 	    histname += "_";
 	    histname += sumName;
 	  }
-	  if (iamp < amphistname.size()) {
+	  if (iamp > 0 && iamp < amphistname.size()) {
 	    // get name of amp for naming histogram  
 	    histname += "_";
 	    histname += amphistname[iamp];
@@ -250,8 +265,8 @@ int main( int argc, char* argv[] ){
 	  Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
 	  TH1* thist = hist->toRoot();
 	  thist->SetName(histname.c_str());
-	  if (iamp < amphistname.size())  plotfiledir->cd();
-	  else plotfile->cd();
+	  if (iamp > 0 && iamp < amphistname.size())  plotfiledir->cd();
+	  else  plotfile->cd();
 	  thist->Write();
 	  
 	}
