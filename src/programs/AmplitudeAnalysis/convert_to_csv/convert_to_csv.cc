@@ -4,9 +4,6 @@
  * @brief
  * @date 2026-01-30
  *
- * TODO:
- *  this is basically replacement for python script, so it will need to loop over args
- *  but instead provide a vector of files to the individual scripts
  */
 
 #include <algorithm>
@@ -213,6 +210,9 @@ int main(int argc, char *argv[])
     for (const auto &file : input_files)
     {
         FitConverter converter(file, acceptance_corrected);
+
+        // TODO: write header and rows to csv, and check that header is identical 
+        // for all files. Use AmpTools report feature to error out if not.
         break; // TODO: remove this break after testing
     }
 
