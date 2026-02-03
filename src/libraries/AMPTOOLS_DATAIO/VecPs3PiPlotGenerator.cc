@@ -55,11 +55,11 @@ PlotGenerator( )
 void VecPs3PiPlotGenerator::createHistograms( ) {
   cout << " calls to bookHistogram go here" << endl;
   
-   bookHistogram( kProd_Ang, new Histogram1D( 50, -PI, PI, "ProdAng", "Production Angle [rad.]" ) );
+   bookHistogram( kProd_Ang, new Histogram1D( 50, -180., 180., "ProdAng", "Production Angle [deg.]" ) );
    bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta_GJ", "cos#theta^{[GJ]}" ) );
-   bookHistogram( kPhi, new Histogram1D( 50, -PI, PI, "Phi_GJ", "#phi^{[GJ]} [rad.]" ) );
+   bookHistogram( kPhi, new Histogram1D( 50, -180., 180., "Phi_GJ", "#phi^{[GJ]} [deg.]" ) );
    bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_HF", "cos#theta^{[HF]}" ) );
-   bookHistogram( kPhiH, new Histogram1D( 50, -PI, PI, "Phi_HF", "#phi^{[HF]} [rad.]" ) );
+   bookHistogram( kPhiH, new Histogram1D( 50, -180., 180., "Phi_HF", "#phi^{[HF]} [deg.]" ) );
 
    bookHistogram( kVecMass, new Histogram1D( 200, 0., 3., "MVec", "m(2#pi)  [GeV]") );
    bookHistogram( kVecPsMass, new Histogram1D( 200, 0.2, 3.2, "MVecPs", "m(3#pi)  [GeV]") );
@@ -130,7 +130,7 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
    double Mandt = fabs((target-recoil).M2());
    
    //Calculate production angle in the Gottfried-Jackson frame
-   GDouble prod_angle = getPhiProd(beam_polAngle, X, beam, target, 2, true);
+   double prod_angle = TMath::RadToDeg()*getPhiProd(beam_polAngle, X, beam, target, 2, true);
 
    // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
    // Angles for the 1st permutation
@@ -144,14 +144,14 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
    vector <double> cosTheta_a = {TMath::Cos(thetaPhiAnglesTwoStep_a[0])};
    vector <double> cosTheta_b = {TMath::Cos(thetaPhiAnglesTwoStep_b[0])};
 
-   vector <double> phi_a = {thetaPhiAnglesTwoStep_a[1]};
-   vector <double> phi_b = {thetaPhiAnglesTwoStep_b[1]};
+   vector <double> phi_a = {TMath::RadToDeg()*thetaPhiAnglesTwoStep_a[1]};
+   vector <double> phi_b = {TMath::RadToDeg()*thetaPhiAnglesTwoStep_b[1]};
 
    vector <double> cosThetaH_a = {TMath::Cos(thetaPhiAnglesTwoStep_a[2])};
    vector <double> cosThetaH_b = {TMath::Cos(thetaPhiAnglesTwoStep_b[2])};
    
-   vector <double> phiH_a = {thetaPhiAnglesTwoStep_a[3]};
-   vector <double> phiH_b = {thetaPhiAnglesTwoStep_b[3]};
+   vector <double> phiH_a = {TMath::RadToDeg()*thetaPhiAnglesTwoStep_a[3]};
+   vector <double> phiH_b = {TMath::RadToDeg()*thetaPhiAnglesTwoStep_b[3]};
    
    vector <double> vec_mass_a = {vec_a.M()};
    vector <double> vec_mass_b = {vec_b.M()};

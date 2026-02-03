@@ -123,19 +123,26 @@ int main( int argc, char* argv[] ){
 
   vecps_PlotGen plotGen( results , PlotGenerator::kNoGenMC );
   cout << " Initialized ati and PlotGen" << endl;
-
+  
     // ************************
     // set up an output ROOT file to store histograms
     // ************************
      TFile* plotfile = new TFile( outName.c_str(), "recreate");
      TH1::AddDirectory(kFALSE);
 
+    //*************************
+    // Arrange Amplitude and Sum names
+    //*****************************
+    vector<string> amphistname = {"Flat","0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"};
+    vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
+
+     
      //*************************
-     // Loop over different polarization files 
+     // Loop over different polarization types 
     // *************************
      size_t nReactions = results.reactionList().size();
 
-
+          
   for (unsigned int polType = 0; polType < nReactions; polType++) {
 
     
@@ -155,8 +162,6 @@ int main( int argc, char* argv[] ){
     vector<string> amps = plotGen.uniqueAmplitudes();
     cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-    vector<string> amphistname = {"Flat","0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"};
-    vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
     string locampname;
   
     // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
@@ -273,15 +278,15 @@ int main( int argc, char* argv[] ){
       }
     } // end of loop over amplitudes
    } // end of loop over sum configurations
+  }// end of loop over 'reactions'
 
-    //plotfile->Close(); //in case a few 'reaction' files are generated
+  plotfile->Close(); 
 
 
-    // CALCULATE INTENSITY FRACTIONS AND PHASE DIFFERENCES
-  
-  // The next calculations only need to happen for the first file
-  // and we do not need to repeat for each polarization
-  if (polType > 0) continue;
+
+  // CALCULATE INTENSITY FRACTIONS AND PHASE DIFFERENCES
+  // Alll 'reactions' are already turned on
+  // The next calculations only need to happen one time
   
   // model parameters
   cout << "Checking Parameters" << endl;
@@ -364,10 +369,9 @@ int main( int argc, char* argv[] ){
 	  pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
 	  outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
   }
-  }// end of loop over 'reactions'
 
   
-  plotfile->Close();
+  //  plotfile->Close();
   
   // covariance matrix
   vector< vector< double > > covMatrix;
