@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     bool correlation = false;
     bool verbose = false;
     bool preview = false;
-    std::string mass_branch = "M4Pi"; // TODO: change by building up from AmpTools 4-vectors
+    std::string mass_branch = "M4Pi"; // TODO: change by building up from AmpTools 4-vectors. Instead option for lower vertex indices, and possibly isobar indices
 
     auto print_help = []()
     {
