@@ -16,6 +16,7 @@
 #include "TKey.h"
 #include "TClass.h"
 #include "TTree.h"
+#include "TLorentzVector.h"
 
 const char *RootDataConverter::kModule = "RootDataConverter";
 
@@ -30,56 +31,37 @@ RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warn
         assert(false);
     }
     setLowerVertexIndices({1}); // default to index 1 being the lower vertex particle
+
+    // set data, background, genMC, and accMC files
+    m_data_files = dataFiles();
+    m_background_files = backgroundFiles();
+    m_genMC_files = genMCFiles();
+    m_accMC_files = accMCFiles();
+
+    m_background_files_exist = !m_background_files.empty();
+
+    validateDataFiles();
+    validateBackgroundFiles(); // if no bkgnd files exist, warns user that weights assumed to be in data tree
+    validateGenMCFiles();
+    validateAccMCFiles();
+
+    m_data_tree_name = dataTreeName();
+    m_background_tree_name = backgroundTreeName();
+    m_genMC_tree_name = genMCTreeName();
+    m_accMC_tree_name = accMCTreeName();
+
     extract();
 }
 
 void RootDataConverter::extract()
 {
-    // extract data files, background files, genMC, and accMC files
-    std::vector<std::string> data_files = findFiles("data");
-    std::vector<std::string> background_files = findFiles("background");
-    std::vector<std::string> genMC_files = findFiles("genMC");
-    std::vector<std::string> accMC_files = findFiles("accMC");
-
-    if (data_files.empty())
-    {
-        report(ERROR, kModule) << "No data files found in fit results for file: "
-                               << m_fit_file << "\n";
-    }
-    if (background_files.empty() && !m_mute_warnings)
-    {
-        report(WARNING, kModule) << "No background files found in fit results for file: "
-                                 << m_fit_file
-                                 << ". Assuming weights are stored directly in the data"
-                                 << " trees.\n";
-    }
-    if (genMC_files.empty())
-    {
-        report(ERROR, kModule) << "No genMC files found in fit results for file: "
-                               << m_fit_file << "\n";
-    }
-    if (accMC_files.empty())
-    {
-        report(ERROR, kModule) << "No accMC files found in fit results for file: "
-                               << m_fit_file << "\n";
-    }
-
-    // get tree names for each file
-    std::string data_tree_name = dataTreeName();
-    std::string background_tree_name = (background_files.empty()) ? "" : backgroundTreeName();
-    std::string genMC_tree_name = genMCTreeName();
-    std::string accMC_tree_name = accMCTreeName();
-
     // get weight branch name. If weight branch is not found, will return empty string
     // and we'll assume weights of 1.0 later
     std::string weight_branch_name;
-    if (background_files.empty())
-        weight_branch_name = weightBranchName("data", data_tree_name);
+    if (m_background_files_exist)
+        weight_branch_name = weightBranchName("background", m_background_tree_name);        
     else
-        weight_branch_name = weightBranchName("background", background_tree_name);
-
-    // get beamE branch name
-    std::string beamE_branch_name = beamEBranchName("data");
+        weight_branch_name = weightBranchName("data", m_data_tree_name);
 
     // TODO: next step is to calculate t from the beam and lower vertex particle
     // 4-vectors. Look at other plotters for reference. Then calculate the upper
@@ -154,22 +136,22 @@ std::string RootDataConverter::findTreeName(const std::string &file_type) const
     if (file_type == "data")
     {
         file_pair = m_cfg_info->reaction(reaction)->data();
-        file_path = findFiles("data")[0];
+        file_path = m_data_files[0];
     }
     else if (file_type == "background")
     {
         file_pair = m_cfg_info->reaction(reaction)->background();
-        file_path = findFiles("background")[0];
+        file_path = m_background_files[0];
     }
     else if (file_type == "genMC")
     {
         file_pair = m_cfg_info->reaction(reaction)->genMC();
-        file_path = findFiles("genMC")[0];
+        file_path = m_genMC_files[0];
     }
     else if (file_type == "accMC")
     {
         file_pair = m_cfg_info->reaction(reaction)->accMC();
-        file_path = findFiles("accMC")[0];
+        file_path = m_accMC_files[0];
     }
     else
     {
@@ -256,12 +238,12 @@ std::string RootDataConverter::weightBranchName(
     if (file_type == "data")
     {
         file_pair = m_cfg_info->reaction(reaction)->data();
-        root_file = findFiles("data")[0];
+        root_file = m_data_files[0];
     }
     else if (file_type == "background")
     {
         file_pair = m_cfg_info->reaction(reaction)->background();
-        root_file = findFiles("background")[0];
+        root_file = m_background_files[0];
     }
     else
     {
@@ -301,7 +283,7 @@ std::string RootDataConverter::weightBranchName(
         // proceed to check for weight branches in the main tree
     }
 
-    // otherwise, simply check if "weight" or "Weight" branch exists in the tree
+    // simply check if "weight" or "Weight" branch exists in the tree
     TFile *f = TFile::Open(root_file.c_str());
     if (!f || f->IsZombie())
     {
@@ -339,69 +321,54 @@ std::string RootDataConverter::weightBranchName(
     }
 }
 
-std::string beamEBranchName(const std::string &file_type) const
+
+double RootDataConverter::calculateMandelstamT() const
 {
-    std::string file_path;
-    std::string tree_name;
-    if (file_type == "data")
+    // TODO: this is the basic start, and then you can get the lower vertex particle
+    // 4-vector. Its simple for a proton since its just the PxP1, etc 4 vectors, but
+    // for baryon decays I'll need to look at other plotters to see if boosts need to 
+    // occur first. The other hangup is that if I'm doing all this, I might as well 
+    // make the -t histogram as well, so need to think about how to structure this.
+    // probably make some generic tHist, massHist, and beamHist functions that can 
+    // do all these calculations and histogram filling. Then from there the edges,
+    // centers, errors, etc can be calculated. I suppose if 4-vectors are used I don't 
+    // need to calculate bin edges from the hist, because I can just get the max/min
+    // values directly from the 4-vectors.
+    TLorentzVector beam = beamLorentzVector(tree);
+    TLorentzVector target(0, 0, 0, 0.938); // target proton at rest
+}
+
+
+TLorentzVector RootDataConverter::beamLorentzVector(TTree* tree) const
+{
+    double EnPB, PxPB, PyPB, PzPB;
+
+    tree->SetBranchAddress("EnPB", &EnPB);
+    tree->SetBranchAddress("PxPB", &PxPB);
+    tree->SetBranchAddress("PyPB", &PyPB);
+    tree->SetBranchAddress("PzPB", &PzPB);
+
+    return TLorentzVector(PxPB, PyPB, PzPB, EnPB);
+}
+
+void RootDataConverter::validateFiles(const std::vector<std::string> &files,
+                                       const std::string &file_type) const
+{
+    if (files.empty() && file_type != "background")
     {
-        file_path = findFiles("data")[0];
-        tree_name = dataTreeName();
+        report(ERROR, kModule) << "No " 
+                               << file_type << " files found in fit results for file: "
+                               << m_fit_file << "\n";
     }
-    else if (file_type == "background")
+    else if (files.empty() && file_type == "background" && !m_mute_warnings)
     {
-        file_path = findFiles("background")[0];
-        tree_name = backgroundTreeName();
-    }
-    else if (file_type == "genMC")
-    {
-        file_path = findFiles("genMC")[0];
-        tree_name = genMCTreeName();
-    }
-    else if (file_type == "accMC")
-    {
-        file_path = findFiles("accMC")[0];
-        tree_name = accMCTreeName();
+        report(WARNING, kModule) << "No background files found in fit results for file: "
+                                 << m_fit_file
+                                 << ". Assuming weights are stored directly in the data"
+                                 << " trees.\n";
     }
     else
     {
-        report(ERROR, kModule) << "Unknown file type requested: "
-                               << file_type
-                               << "\n";
-        assert(false);
-    }
-
-    TFile *f = TFile::Open(file_path.c_str());
-    if (!f || f->IsZombie())
-    {
-        report(ERROR, kModule) << "Error opening ROOT file: " + file_path + "\n";
-        assert(false);
-    }
-    TTree *tree = f->Get<TTree>(tree_name.c_str());
-    if (!tree)
-    {
-        report(ERROR, kModule) << "Error: Tree '" + tree_name + "' not found in file: " + file_path + "\n";
-        assert(false);
-    }
-
-    if (tree->GetBranch("E_Beam"))
-    {
-        f->Close();
-        return "E_Beam";
-    }
-    else if (tree->GetBranch("EnPB"))
-    {
-        f->Close();
-        return "EnPB";
-    }
-    else
-    {
-        f->Close();
-        report(ERROR, kModule) << "Error: beamE branch not found in tree '"
-                               << tree_name
-                               << "' in file: "
-                               << file_path
-                               << "\n";
-        assert(false);
+        return; // files are valid
     }
 }

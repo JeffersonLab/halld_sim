@@ -135,6 +135,13 @@ public:
      */
     std::vector<std::string> accMCFiles() const { return findFiles("accMC"); };
 
+    
+    void validateDataFiles() const { validateFiles(m_data_files, "data"); }
+    void validateBackgroundFiles() const { validateFiles(m_background_files, "background"); }
+    void validateGenMCFiles() const { validateFiles(m_genMC_files, "genMC"); }
+    void validateAccMCFiles() const { validateFiles(m_accMC_files, "accMC"); }
+
+
     /**
      * @brief data tree name associated with the fit results
      * If one tree exists in the data files, that tree name is returned. Otherwise,
@@ -191,17 +198,6 @@ public:
         const std::string &tree_name) const;
 
     /**
-     * @brief Get the name of the beam energy branch
-     *
-     * @note Currently only searches for "E_Beam" and "EnPB" branch names, as these are
-     * most common.
-     *
-     * @param[in] file_type The type of file ("data", "background", "genMC", "accMC")
-     * @return std::string beam energy branch name
-     */
-    std::string beamEBranchName(const std::string &file_type) const;
-
-    /**
      * @brief Get 4-momenta indices for lower vertex particles
      *
      * An AmpTools ROOT tree contains 4-vectors for all particles in the event. The
@@ -246,6 +242,18 @@ private:
     std::vector<int> m_isobar_indices;       ///< Indices of isobar particles in the data 4-vectors
     bool m_mute_warnings;                    ///< Whether to mute warnings about missing background files
 
+    const std::vector<std::string> m_data_files;
+    const std::vector<std::string> m_background_files;
+    const std::vector<std::string> m_genMC_files;
+    const std::vector<std::string> m_accMC_files;
+
+    bool m_background_files_exist;
+
+    const std::string m_data_tree_name;
+    const std::string m_background_tree_name;
+    const std::string m_genMC_tree_name;
+    const std::string m_accMC_tree_name;
+
     // these are the standard headers for the CSV output
     std::vector<std::string> m_headers = {
         // TODO: ugly, should be better way like was done in FitConverter
@@ -282,6 +290,9 @@ private:
      * @return std::vector<std::string> where each element is an absolute path to a file of the given type
      */
     std::vector<std::string> findFiles(const std::string &file_type) const;
+
+    void validateFiles(const std::vector<std::string> &files,
+                       const std::string &file_type) const;
 
     /**
      * @brief Find the tree name associated with the fit results
