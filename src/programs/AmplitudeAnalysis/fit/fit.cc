@@ -485,7 +485,7 @@ int main( int argc, char* argv[] ){
 
    if(noFit)
      getLikelihood(cfgInfo);
-   if(createDummyFit)
+   else if(createDummyFit)
      saveDummyFit(cfgInfo);
    else if(printAmps)
      printAmplitudes(cfgInfo);
