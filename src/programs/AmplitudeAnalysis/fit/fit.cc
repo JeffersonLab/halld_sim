@@ -113,6 +113,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
 
   if( fitFailed ){
     cout << "ERROR: fit failed use results with caution..." << endl;
+    cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
     return 1e6;
   }
 
@@ -195,8 +196,10 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
     bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() < eMatrixRequirement);
 
-    if( fitFailed )
+    if( fitFailed ){
       cout << "ERROR: fit failed use results with caution..." << endl;
+      cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
+    }
 
     cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
@@ -304,8 +307,10 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
     bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() < eMatrixRequirement);
 
-    if( fitFailed )
+    if( fitFailed ){
       cout << "ERROR: fit failed use results with caution..." << endl;
+      cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
+    }
 
     cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
