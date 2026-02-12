@@ -6,6 +6,7 @@
 #include "IUAmpTools/AmpParameter.h"
 #include "GPUManager/GPUCustomTypes.h"
 
+#include "TH1D.h"
 #include <string>
 #include <complex>
 #include <vector>
@@ -38,6 +39,15 @@ private:
   Int_t PhaseFactor;
   AmpParameter polFrac;
   Int_t flat;
+  bool InitPol = false;
+  
+  GDouble polAngle;
+
+  TH1D *totalFlux_vs_E;
+  TH1D *polFlux_vs_E;
+  TH1D *polFrac_vs_E;
+
+
 
 };
 
