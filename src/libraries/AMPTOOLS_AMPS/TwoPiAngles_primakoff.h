@@ -40,11 +40,8 @@ private:
   AmpParameter polFrac;
   Int_t flat;
   bool InitPol = false;
-  
-  GDouble polAngle;
 
-  TH1D *totalFlux_vs_E;
-  TH1D *polFlux_vs_E;
+  double polFraction;
   TH1D *polFrac_vs_E;
 
 

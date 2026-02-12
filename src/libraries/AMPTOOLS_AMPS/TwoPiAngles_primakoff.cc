@@ -28,15 +28,18 @@ UserAmplitude< TwoPiAngles_primakoff >( args )
 	// BeamProperties configuration file
 	TString beamConfigFile = args[2].c_str();
 	cout << "TwoPiAngles_primakoff  Init: beamConfigFile=" << beamConfigFile << endl;
+	TString polFrac_vs_E_fname = "TPOL2022-05_standard.root";
+	TString polFrac_vs_E_hname = "hPol45";
 	if (! InitPol) {
-	  cout << "TwoPiAngles_primakoff  Init 1: InitPol=" << InitPol << endl;
-	  BeamProperties beamProp(beamConfigFile);
-	  polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
-	  polAngle = beamProp.GetPolAngle();
+          polFraction = 0.; 
+          TFile* f = new TFile(polFrac_vs_E_fname);
+          polFrac_vs_E = (TH1D*)f->Get(polFrac_vs_E_hname);
+          if (polFrac_vs_E == NULL ) {
+	    cout << "*** TwoPiAngles_primakoff  Init: Undefined polFrac_vs_E=" << polFrac_vs_E << endl;
+	    exit(1);
+	  }
 	  InitPol = true;
-	  cout << "TwoPiAngles_primakoff  Init 2: InitPol=" << InitPol << " polAngle= " << polAngle << endl;
 	}
-	cout << "TwoPiAngles_primakoff  Init 3: phipol=" << phipol << " polFrac=" << polFrac << endl;
 	
 	m_rho = atoi( args[3].c_str() );  // Jz component of rho
 	PhaseFactor  =atoi( args[4].c_str() ) ;  // prefix factor to amplitudes in computation
@@ -105,12 +108,21 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
         if(psi < -1*PI) psi += 2*PI;
         if  (psi > PI) psi -= 2*PI;
 
-	cout << " recoil_res Angles="; recoil_res.Vect().Print();
+	/*cout << " recoil_res Angles="; recoil_res.Vect().Print();
 	cout << " p1_res Angles="; p1_res.Vect().Print();
 	cout << "phi= " << phi << endl;
-	cout << " psi=" << psi << endl;
-	double polFraction = 0.7;  // Get energy-dependenet polarization fraction
-	cout << " beam="; beam.Print();
+	cout << " psi=" << psi << endl;*/
+	double polFraction = 0.;  // Get energy-dependenet polarization fraction
+	// cout << " beam E=" << beam.E() << endl;
+
+        int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+        if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+	  polFraction = 0.;
+         }
+	else {
+	  polFraction = polFrac_vs_E->GetBinContent(bin);
+         }
+	cout << " beam E=" << beam.E() <<  " polFrac =" << polFrac << " polFraction=" << polFraction << endl;
      
 
 	switch (PhaseFactor) {
