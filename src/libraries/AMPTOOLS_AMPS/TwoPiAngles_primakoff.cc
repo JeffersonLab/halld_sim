@@ -8,22 +8,41 @@
 
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
+#include "TFile.h"
+
 
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles_primakoff.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
+#include "UTILITIES/BeamProperties.h"
 
 TwoPiAngles_primakoff::TwoPiAngles_primakoff( const vector< string >& args ) :
 UserAmplitude< TwoPiAngles_primakoff >( args )
 {
-	assert( args.size() == 5 );
+	assert( args.size() == 6 );
 	
 	phipol  = atof(args[0].c_str() )*3.14159/180.; // azimuthal angle of the photon polarization vector in the lab. Convert to radians.
-	polFrac  = AmpParameter( args[1] ); // fraction of polarization (0-1)
-	m_rho = atoi( args[2].c_str() );  // Jz component of rho 
-	PhaseFactor  = AmpParameter( args[3] );  // prefix factor to amplitudes in computation
-	flat = atoi( args[4].c_str() );  // flat=1 uniform angles, flat=0 use YLMs 
+	polFrac  = AmpParameter( args[1] ); // fraction of polarization (0-1)  // use temporarily for beam configuration file
+
+	// BeamProperties configuration file
+	TString beamConfigFile = args[2].c_str();
+	cout << "TwoPiAngles_primakoff  Init: beamConfigFile=" << beamConfigFile << endl;
+	if (! InitPol) {
+	  cout << "TwoPiAngles_primakoff  Init 1: InitPol=" << InitPol << endl;
+	  BeamProperties beamProp(beamConfigFile);
+	  polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+	  polAngle = beamProp.GetPolAngle();
+	  InitPol = true;
+	  cout << "TwoPiAngles_primakoff  Init 2: InitPol=" << InitPol << " polAngle= " << polAngle << endl;
+	}
+	cout << "TwoPiAngles_primakoff  Init 3: phipol=" << phipol << " polFrac=" << polFrac << endl;
+	
+	m_rho = atoi( args[3].c_str() );  // Jz component of rho
+	PhaseFactor  =atoi( args[4].c_str() ) ;  // prefix factor to amplitudes in computation
+	flat = atoi( args[5].c_str() );  // flat=1 uniform angles, flat=0 use YLMs
+
+	cout << "TwoPiAngles_primakoff  Init: phipol=" << phipol << " polFrac=" << polFrac << " m_rho=" << m_rho << " PhaseFactor=" << PhaseFactor << " flat=" << flat << endl;
 
 	assert( ( phipol >= 0.) && (phipol <= 2*3.14159));
 	assert( ( polFrac >= 0 ) && ( polFrac <= 1 ) );
@@ -31,6 +50,7 @@ UserAmplitude< TwoPiAngles_primakoff >( args )
         assert( ( PhaseFactor == 0 ) || ( PhaseFactor == 1 ) || ( PhaseFactor == 2 ) || ( PhaseFactor == 3 ));
 	assert( (flat == 0) || (flat == 1) );
 
+	cout << "TwoPiAngles_primakoff  Init: Before Return" << endl;
 	// need to register any free parameters so the framework knows about them
 	registerParameter( polFrac );
 }
@@ -85,33 +105,32 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
         if(psi < -1*PI) psi += 2*PI;
         if  (psi > PI) psi -= 2*PI;
 
-	/*cout << " recoil_res Angles="; recoil_res.Vect().Print();
+	cout << " recoil_res Angles="; recoil_res.Vect().Print();
 	cout << " p1_res Angles="; p1_res.Vect().Print();
-	cout << "Phi_pip= " << Phi_pip << endl;
-	cout << "Phi= " << Phi << endl;
-	cout << "Phi_prod= " << Phi_prod << endl;
 	cout << "phi= " << phi << endl;
-	cout << " psi=" << psi << endl;*/
+	cout << " psi=" << psi << endl;
+	double polFraction = 0.7;  // Get energy-dependenet polarization fraction
+	cout << " beam="; beam.Print();
      
 
 	switch (PhaseFactor) {
         case 0:
 	  Mrho = m_rho;
-	  Amp = G_SQRT(1-polFrac)*(-G_SIN(Phi)* Y( 0, Mrho, CosTheta, phi) );
+	  Amp = G_SQRT(1-polFraction)*(-G_SIN(Phi)* Y( 0, Mrho, CosTheta, phi) );
 	  break;
         case 1:
 	  Mrho = m_rho;
-	  Amp = G_SQRT(1+polFrac)*(G_COS(Phi)* Y( 0, Mrho, CosTheta, phi)  );
+	  Amp = G_SQRT(1+polFraction)*(G_COS(Phi)* Y( 0, Mrho, CosTheta, phi)  );
 	  break;
         case 2:
 	  Mrho = m_rho;
 	  factor = exp(-i*Phi)* Y( 1, Mrho, CosTheta, phi);
-	  Amp = G_SQRT(1-polFrac)* imag(factor);
+	  Amp = G_SQRT(1-polFraction)* imag(factor);
 	  break;
         case 3:
 	  Mrho = m_rho;
 	  factor = exp(-i*Phi)* Y( 1, Mrho, CosTheta, phi);
-	  Amp = G_SQRT(1+polFrac)* real(factor);
+	  Amp = G_SQRT(1+polFraction)* real(factor);
 	  break;
 	}
 
