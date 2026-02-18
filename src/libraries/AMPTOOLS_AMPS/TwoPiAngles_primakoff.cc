@@ -20,18 +20,19 @@
 TwoPiAngles_primakoff::TwoPiAngles_primakoff( const vector< string >& args ) :
 UserAmplitude< TwoPiAngles_primakoff >( args )
 {
-	assert( args.size() == 6 );
+	assert( args.size() == 7 );
 	
 	phipol  = atof(args[0].c_str() )*3.14159/180.; // azimuthal angle of the photon polarization vector in the lab. Convert to radians.
 	polFrac  = AmpParameter( args[1] ); // fraction of polarization (0-1)  // use temporarily for beam configuration file
 
 	// BeamProperties configuration file
-	TString beamConfigFile = args[2].c_str();
-	cout << "TwoPiAngles_primakoff  Init: beamConfigFile=" << beamConfigFile << endl;
-	TString polFrac_vs_E_fname = "TPOL2022-05_standard.root";
-	TString polFrac_vs_E_hname = "hPol45";
-	if (! InitPol) {
+	// TString beamConfigFile = args[2].c_str();
+	// cout << "TwoPiAngles_primakoff  Init: beamConfigFile=" << beamConfigFile << endl;
+	TString polFrac_vs_E_fname = args[2].c_str();
+	TString polFrac_vs_E_hname = args[3].c_str();
+	if (! InitPol && polFrac <= 0) {
           polFraction = 0.; 
+	  cout << "TwoPiAngles_primakoff  Init: polFrac_vs_E_fname=" << polFrac_vs_E_fname << " polFrac_vs_E_hname=" << polFrac_vs_E_hname << endl;
           TFile* f = new TFile(polFrac_vs_E_fname);
           polFrac_vs_E = (TH1D*)f->Get(polFrac_vs_E_hname);
           if (polFrac_vs_E == NULL ) {
@@ -40,10 +41,12 @@ UserAmplitude< TwoPiAngles_primakoff >( args )
 	  }
 	  InitPol = true;
 	}
-	
-	m_rho = atoi( args[3].c_str() );  // Jz component of rho
-	PhaseFactor  =atoi( args[4].c_str() ) ;  // prefix factor to amplitudes in computation
-	flat = atoi( args[5].c_str() );  // flat=1 uniform angles, flat=0 use YLMs
+	else {
+	  cout << "TwoPiAngles_primakoff  Init: Use constant Polarization Fraction=" << polFrac << endl;
+	}
+	m_rho = atoi( args[4].c_str() );  // Jz component of rho
+	PhaseFactor  =atoi( args[5].c_str() ) ;  // prefix factor to amplitudes in computation
+	flat = atoi( args[6].c_str() );  // flat=1 uniform angles, flat=0 use YLMs
 
 	cout << "TwoPiAngles_primakoff  Init: phipol=" << phipol << " polFrac=" << polFrac << " m_rho=" << m_rho << " PhaseFactor=" << PhaseFactor << " flat=" << flat << endl;
 
@@ -53,7 +56,6 @@ UserAmplitude< TwoPiAngles_primakoff >( args )
         assert( ( PhaseFactor == 0 ) || ( PhaseFactor == 1 ) || ( PhaseFactor == 2 ) || ( PhaseFactor == 3 ));
 	assert( (flat == 0) || (flat == 1) );
 
-	cout << "TwoPiAngles_primakoff  Init: Before Return" << endl;
 	// need to register any free parameters so the framework knows about them
 	registerParameter( polFrac );
 }
@@ -90,7 +92,7 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
 	TLorentzVector p1_res = resonanceBoost * p1;
 
         // choose helicity frame: z-axis opposite recoil target in rho rest frame. Note that for Primakoff recoil is defined as missing P4
-        TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();   
+        TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();  
         TVector3 z = -1. * recoil_res.Vect().Unit();
         TVector3 x = y.Cross(z).Unit();
         TVector3 angles( (p1_res.Vect()).Dot(x),
@@ -113,17 +115,20 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
 	cout << "phi= " << phi << endl;
 	cout << " psi=" << psi << endl;*/
 	double polFraction = 0.;  // Get energy-dependenet polarization fraction
-	// cout << " beam E=" << beam.E() << endl;
 
-        int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
-        if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
-	  polFraction = 0.;
-         }
-	else {
-	  polFraction = polFrac_vs_E->GetBinContent(bin);
-         }
+	if (polFrac <= 0) {
+           int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+           if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+	     polFraction = 0.;
+           }
+	   else {
+	      polFraction = polFrac_vs_E->GetBinContent(bin);
+            }
+	  }
+	  else {
+	    polFraction = polFrac;
+	  }
 	cout << " beam E=" << beam.E() <<  " polFrac =" << polFrac << " polFraction=" << polFraction << endl;
-     
 
 	switch (PhaseFactor) {
         case 0:
