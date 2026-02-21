@@ -42,7 +42,7 @@
       data radColDist/76.0/
       data colDiam/0.0034/
       data beamEmit/1e-8/
-      data radThick/20e-6/
+      data radThick/50e-6/
 
       data fhalo/0.0/
       data bfield/-999.0/
