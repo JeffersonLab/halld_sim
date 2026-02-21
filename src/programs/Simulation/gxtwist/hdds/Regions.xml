@@ -18,8 +18,10 @@
   <!-- The tagger dipole field map -->
 
   <region name="tagger_dipole_field" comment="TOSCA tagger dipole magnetic field map">
-    <mappedBfield map="file://TOSCA_tagger_dipole-15000G.map" encoding="utf-8"
-                  maxBfield="18e3" unit="G">
+    <!--mappedBfield map="file://TOSCA_tagger_dipole-15000G.map" encoding="utf-8"
+                  maxBfield="18e3" unit="G"-->
+    <mappedBfield map="file://TOSCA_tagger_dipole-4800G.map" encoding="utf-8"
+                  maxBfield="5e3" unit="G">
       <grid type="cartesian">
         <samples axis="x" n="101" bounds="0 -100" unit_length="cm">
           <samples axis="z" n="401" bounds="0 400" unit_length="cm"> 

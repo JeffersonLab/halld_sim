@@ -45,7 +45,7 @@ c  - delta_theta = spread in initial track polar angle, full width (degrees)
 c  - delta_phi = spread in initial track azimuthal angle, full width (degrees)
 c
 c   particle  momentum  theta  phi  delta_momentum delta_theta delta_phi
-KINE   103      12.0        0.   0.      0.              0.        360.
+KINE   103      3.300        0.   0.     0.0            0.        360.
 
 c The SCAP card determines the vertex position for the particle gun.  It
 c supports the following three arguments, all of which default to 0.
@@ -62,7 +62,7 @@ c  - motar_thick_cm = thickness of the Moller iron target
 c  - motar_z_cm = placement distance downstream of the goniometer
 c
 c    motar_angle_deg  motar_thick_cm  motar_z_cm
-FEMO    30.              0.1             100.
+cFEMO    30.              0.1             100.
 
 c If you specify a non-zero value for vertex_x and/or vertex_y above then
 c all tracks will emerge from the given point.  If you leave them at zero,
