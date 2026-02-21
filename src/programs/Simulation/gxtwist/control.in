@@ -18,9 +18,9 @@ c instructs HDGeant to open ./phi-1680.hddm, skip the first 25 events and then
 c process the following 100 input events and stop.  If the end of the file is
 c reached before the event count specified in card TRIG is exhausted then the
 c processing will stop at the end of file.
-TRIG 10000
+TRIG 100000
 cINFILE 'rhop.hddm'
-cBEAM 12. 9.
+BEAM 3.833 1.2
 RUNG 9999
 
 c Commenting out the following line will disable simulated hits output.
