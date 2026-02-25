@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
+#include <math.h>
 
 #include "TROOT.h"
 #include "TFile.h"
