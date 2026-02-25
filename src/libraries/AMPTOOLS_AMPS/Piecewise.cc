@@ -94,7 +94,7 @@ Piecewise::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 #ifdef AMPTOOLS_GDOUBLE_FP64
   long tempBin = 0;
 #else
-  int tempBin = 0;
+  long int tempBin = 0;
 #endif
   
   for(int i=0; i<m_nBins; i++) {
