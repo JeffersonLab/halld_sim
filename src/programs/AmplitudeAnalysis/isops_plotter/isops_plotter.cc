@@ -20,14 +20,14 @@
 #include "AmpPlotter/PlotterMainWindow.h"
 #include "AmpPlotter/PlotFactory.h"
 
-#include "AMPTOOLS_DATAIO/VecPs3PiPlotGenerator.h"
+#include "AMPTOOLS_DATAIO/IsoPsPlotGenerator.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
-#include "AMPTOOLS_AMPS/VecPs_3pi_refl.h"
+#include "AMPTOOLS_AMPS/Iso_ps_refl.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
@@ -38,13 +38,13 @@
 #include "IUAmpTools/ConfigFileParser.h"
 #include "IUAmpTools/ConfigurationInfo.h"
 
-typedef VecPs3PiPlotGenerator vecps_PlotGen;
+
 
 void atiSetup(){
   
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerAmplitude( Uniform() );
-  AmpToolsInterface::registerAmplitude( VecPs_3pi_refl() );
+  AmpToolsInterface::registerAmplitude( Iso_ps_refl() );
   AmpToolsInterface::registerAmplitude( PhaseOffset() );
   AmpToolsInterface::registerAmplitude( ComplexCoeff() );
   AmpToolsInterface::registerAmplitude( Piecewise() );
@@ -69,12 +69,12 @@ int main( int argc, char* argv[] ){
 
   if (argc < 2){
     cout << "Usage:" << endl << endl;
-    cout << "\tvecps3pi_plotter <results file name> -o <output file name>" << endl << endl;
+    cout << "\tisops_plotter <results file name> -o <output file name>" << endl << endl;
     return 0;
   }
 
   bool showGui = false;
-  string outName = "vecps3pi_histos.root";
+  string outName = "isops_histos.root";
   string resultsName(argv[1]);
   for (int i = 2; i < argc; i++){
 
@@ -121,7 +121,7 @@ int main( int argc, char* argv[] ){
   atiSetup();
         cout << "Plotgen results"<< endl;
 
-	vecps_PlotGen plotGen( results, PlotGenerator::kNoGenMC ); // optional can be omitted
+	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // optional can be omitted
   cout << " Initialized ati and PlotGen" << endl;
 
  
@@ -236,22 +236,22 @@ int main( int argc, char* argv[] ){
 		
 		
 	// loop over different variables
-	for (unsigned int ivar  = 0; ivar  < VecPs3PiPlotGenerator::kNumHists; ivar++){
+	for (unsigned int ivar  = 0; ivar  < IsoPsPlotGenerator::kNumHists; ivar++){
 	  
 	  // set unique histogram name for each plot (could put in directories...)
 	  string histname = reactionName;
 
-	  if (ivar == VecPs3PiPlotGenerator::kProd_Ang)  histname += "_Prod_Ang";
-	  else if (ivar == VecPs3PiPlotGenerator::kCosTheta)  histname += "_CosTheta_GJ";
-	  else if (ivar == VecPs3PiPlotGenerator::kPhi)  histname += "_Phi_GJ";
-	  else if (ivar == VecPs3PiPlotGenerator::kCosThetaH)  histname += "_CosTheta_HF";
-	  else if (ivar == VecPs3PiPlotGenerator::kPhiH)  histname += "_Phi_HF";
-	  else if (ivar == VecPs3PiPlotGenerator::kVecMass)  histname += "_MVec";
-	  else if (ivar == VecPs3PiPlotGenerator::kVecPsMass)  histname += "_MVecPs";
-	  else if (ivar == VecPs3PiPlotGenerator::kt)  histname += "_minust";
-	  else if (ivar == VecPs3PiPlotGenerator::kRecoilMass)  histname += "_ProtonPiplusL_M";
-	  else if (ivar == VecPs3PiPlotGenerator::kProtonPsMass)  histname += "_ProtonPiminus_M";
-	  else if (ivar == VecPs3PiPlotGenerator::kRecoilPsMass)  histname += "_ProtonPiplusLPiminus_M";
+	  if (ivar == IsoPsPlotGenerator::kProd_Ang)  histname += "_Prod_Ang";
+	  else if (ivar == IsoPsPlotGenerator::kCosTheta)  histname += "_CosTheta_GJ";
+	  else if (ivar == IsoPsPlotGenerator::kPhi)  histname += "_Phi_GJ";
+	  else if (ivar == IsoPsPlotGenerator::kCosThetaH)  histname += "_CosTheta_HF";
+	  else if (ivar == IsoPsPlotGenerator::kPhiH)  histname += "_Phi_HF";
+	  else if (ivar == IsoPsPlotGenerator::kIsoMass)  histname += "_MIso";
+	  else if (ivar == IsoPsPlotGenerator::kIsoPsMass)  histname += "_MIsoPs";
+	  else if (ivar == IsoPsPlotGenerator::kt)  histname += "_minust";
+	  else if (ivar == IsoPsPlotGenerator::kRecoilMass)  histname += "_ProtonPiplusL_M";
+	  else if (ivar == IsoPsPlotGenerator::kProtonPsMass)  histname += "_ProtonPiminus_M";
+	  else if (ivar == IsoPsPlotGenerator::kRecoilPsMass)  histname += "_ProtonPiplusLPiminus_M";
 	  else continue;	  
 
 	  if (iplot == PlotGenerator::kData) histname += "_data";

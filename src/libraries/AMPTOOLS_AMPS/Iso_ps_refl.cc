@@ -10,7 +10,7 @@
 #include "TFile.h"
 
 #include "IUAmpTools/Kinematics.h"
-#include "AMPTOOLS_AMPS/VecPs_3pi_refl.h"
+#include "AMPTOOLS_AMPS/Iso_ps_refl.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/decayAngles.h"
@@ -38,79 +38,81 @@ static bool isValidNumber(const string& argInput, double &value){
 static double parseValidatedNumber(const string& label, const string& argInput){
     double tmpValue = 0.0;
     if(!isValidNumber(argInput, tmpValue)){
-      throw std::invalid_argument("VecPs_3pi_refl: invalid " + label + ": " + argInput);
+      throw std::invalid_argument("Iso_ps_refl: invalid " + label + ": " + argInput);
     }
     return tmpValue;
 }
 
 
-VecPs_3pi_refl::VecPs_3pi_refl( const vector< string >& args ) :
-UserAmplitude< VecPs_3pi_refl >( args ){
+Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) :
+UserAmplitude< Iso_ps_refl >( args ){
 
-  // 5 possibilities to initialize this amplitude:
+  // This function is only for the two-body Isobar decay: xi -> pipi
+  
+  // 6 possibilities to initialize this amplitude:
+  // <S>: isobar spin
   // <J>: total spin, 
-  // <m>: spin projection, 
+  // <m>: total spin projection, 
   // <l>: partial wave, 
   // <r>: +1/-1 for real/imaginary part; 
   // <s>: +1/-1 sign in P_gamma term
-  
-  // Resonance spin J
-  m_j = static_cast<int>(parseValidatedNumber("J", args[0])); 
-  // Spin projection (Lambda)
-  m_m = static_cast<int>(parseValidatedNumber("M", args[1])); 
-  // Partial wave L
-  m_l = static_cast<int>(parseValidatedNumber("L", args[2])); 
-  // Real (+1) or imaginary (-1)
-  m_r = static_cast<int>(parseValidatedNumber("Re/Im", args[3])); 
-  // Sign for polarization in amplitude
-  m_s = static_cast<int>(parseValidatedNumber("P_gamma sign", args[4])); 
 
+  // Isobar spin S
+  m_s = static_cast<int>(parseValidatedNumber("S",args[0]));  
+  // Resonance spin J
+  m_j = static_cast<int>(parseValidatedNumber("J", args[1])); 
+  // Spin projection (Lambda)
+  m_m = static_cast<int>(parseValidatedNumber("M", args[2])); 
+  // Partial wave L
+  m_l = static_cast<int>(parseValidatedNumber("L", args[3])); 
+  // Real (+1) or imaginary (-1)
+  m_real = static_cast<int>(parseValidatedNumber("Re/Im", args[4])); 
+  // Sign for polarization in amplitude
+  m_sign = static_cast<int>(parseValidatedNumber("P_gamma sign", args[5])); 
+
+  
   // make sure values are reasonable
+  assert(m_s >= 0 && m_s <= 2);
   assert( abs( m_m ) <= m_j );
-  // m_r = +1 for real
-  // m_r = -1 for imag
-  assert( abs( m_r ) == 1 );
-  // m_s = +1 for 1 + Pgamma
-  // m_s = -1 for 1 - Pgamma
-  assert( abs( m_s ) == 1 );
+  // m_real = +1 for real
+  // m_real = -1 for imag
+  assert( abs( m_real ) == 1 );
+  // m_sign = +1 for 1 + Pgamma
+  // m_sign = -1 for 1 - Pgamma
+  assert( abs( m_sign ) == 1 );
 
   // Default polarization information stored in tree
   m_polInTree = true;
 
-  // Default is 2-body vector decay (set flag in config file for omega->3pi)
-  m_3pi = false;
-
   // Loop over any additional amplitude arguments to change defaults
-  for(uint ioption=5; ioption<args.size(); ioption++) {
+  for(uint ioption=6; ioption<args.size(); ioption++) {
 	  TString option = args[ioption].c_str();
     // Polarization provided in configuration file
-    if(ioption==5){
+    if(ioption==6){
       m_polInTree = false;
 
-      polAngle = parseValidatedNumber("polarization angle", args[5]);    
+      polAngle = parseValidatedNumber("polarization angle", args[6]);    
 
-      TString polOption = args[6].c_str();
+      TString polOption = args[7].c_str();
       if(polOption.Contains(".root")){
         polFraction = 0.0;
         TFile* f = new TFile(polOption);
-        polFrac_vs_E = (TH1D*)f->Get(args[7].c_str());
+        polFrac_vs_E = (TH1D*)f->Get(args[8].c_str());
         if(polFrac_vs_E  != nullptr ){
           throw std::runtime_error(
-            "VecPs_3pi_refl ERROR: Could not find histogram '" + args[7] +
+            "Iso_ps_refl ERROR: Could not find histogram '" + args[8] +
             "' in file " + std::string(polOption.Data()));
         }
       }
       else{
-        polFraction = parseValidatedNumber("polarization fraction", args[6]);
+        polFraction = parseValidatedNumber("polarization fraction", args[7]);
       }
     }
-    // Check for omega->3pi option
-	  if(option.EqualTo("omega3pi")) m_3pi = true;
   }  
 }
 
 void
-VecPs_3pi_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
+Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 
   TLorentzVector beam;
   TVector3 eps;
@@ -139,43 +141,22 @@ VecPs_3pi_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 		    beam_polFraction = polFrac_vs_E->GetBinContent(bin);
     }
   }
-  
-  TLorentzVector recoil( pKin[1][1]+pKin[5][1], pKin[1][2]+pKin[5][2], pKin[1][3]+pKin[5][3], pKin[1][0]+pKin[5][0] ); 
+
 
   // Fill in four-vectors for final state particles
-  // 1st after proton is always the pseudoscalar meson
-  TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); 
-  // Compute vector meson from its decay products
+  TLorentzVector target(0,0,0,0.938272);   // Fixed target
+  TLorentzVector recoil( pKin[1][1]+pKin[5][1], pKin[1][2]+pKin[5][2], pKin[1][3]+pKin[5][3], pKin[1][0]+pKin[5][0] ); // Recoiling baryon
+  TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]);     // 1st after proton is always the pseudoscalar meson
+
+  
+  // Compute isobar meson from its decay products (xi -> pipi)
   // Make sure the order of daughters is correct in the config file!
-  TLorentzVector vec, vec_daught1, vec_daught2; 
-
-
-  if(m_3pi){
-    // Omega ps proton, omega -> 3pi (6 particles)
-    // Omega pi- Delta++, omega -> 3pi (7 particles)
-	  TLorentzVector pi0(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
-	  TLorentzVector pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
-	  TLorentzVector pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
-	  vec = pi0 + pip + pim;
-	  vec_daught1 = pip;
-	  vec_daught2 = pim;
-  }
-  else{
-	  // Omega ps proton, omega -> pi0 g (4 particles)
-	  // Omega pi- Delta++, omega -> pi0 g (5 particles)
-
-	  // (vec 2-body) ps proton, vec 2-body -> pipi, KK (5 particles)
-	  // (vec 2-body) pi- Delta++, vec 2-body -> pipi, KK (6 particles)
-	  // (vec 2-body) K+ Lambda, vec 2-body -> Kpi (6 particles)
-	  vec_daught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
-	  vec_daught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
-	  vec = vec_daught1 + vec_daught2;
-  }
+  TLorentzVector iso_daught1(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+  TLorentzVector iso_daught2(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+  TLorentzVector iso = iso_daught1 + iso_daught2;
 
   // Final meson system P4
-  TLorentzVector X = vec + ps;
-  /// Fixed target
-  TLorentzVector target(0,0,0,0.938272);
+  TLorentzVector X = iso + ps;
 
 
   //Calculate production angle in the Gottfried-Jackson frame
@@ -183,45 +164,39 @@ VecPs_3pi_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 
   // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
   vector <double> thetaPhiAnglesTwoStep;
-  if(m_3pi){
-    thetaPhiAnglesTwoStep = getTwoStepAngles(X, vec, vec_daught1, vec_daught2, beam, target, 2, true);
-  }
-  else{
-    thetaPhiAnglesTwoStep = getTwoStepAngles(X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
-  }    
-  
+  thetaPhiAnglesTwoStep = getTwoStepAngles(X, iso, iso_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
 
+  
   
   GDouble cosTheta = TMath::Cos(thetaPhiAnglesTwoStep[0]);
   GDouble phi = thetaPhiAnglesTwoStep[1];
   GDouble cosThetaH = TMath::Cos(thetaPhiAnglesTwoStep[2]);
   GDouble phiH = thetaPhiAnglesTwoStep[3];
   GDouble m_X = X.M();
-  GDouble m_vec = vec.M();
+  GDouble m_iso = iso.M();
   GDouble m_ps = ps.M();
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
 
-  for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
-	  GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
-          amplitude += conj(wignerD(m_j, m_m, lambda, cosTheta, phi)) *
-                       hel_amp * conj(wignerD(1, lambda, 0, cosThetaH, phiH));
+  for (int lambda = -m_s; lambda <= m_s; lambda++) { // sum over helicities
+	  GDouble hel_amp = clebschGordan(m_l, m_s, 0, lambda, m_j, lambda);
+          amplitude += conj(wignerD(m_j, m_m, lambda, cosTheta, phi))*hel_amp*conj(wignerD(m_s, lambda, 0, cosThetaH, phiH));
   }
 
-  GDouble factor = sqrt(1 + m_s * beam_polFraction);
+  GDouble factor = sqrt(1 + m_sign * beam_polFraction);
   complex <GDouble> zjm = 0;
   // - -> + in prod_angle
   complex <GDouble> rotateY = polar((GDouble)1., (GDouble)(-1. * prod_angle ));  
 
-  if (m_r == 1)
+  if (m_real == 1)
 	  zjm = real(amplitude * rotateY);
-  if (m_r == -1) 
+  if (m_real == -1) 
 	  zjm = i*imag(amplitude * rotateY);
 
   // E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
-  double kinFactor = barrierFactor(m_X, m_l, m_vec, m_ps);
-  //kinFactor *= sqrt(3.) * sqrt(2.*m_l + 1.);
+  double kinFactor = barrierFactor(m_X, m_l, m_iso, m_ps);
+  //kinFactor *= sqrt(2.*m_s + 1.) * sqrt(2.*m_l + 1.);
   factor *= kinFactor;
 
   userVars[uv_ampRe] = ( factor * zjm ).real();
@@ -234,12 +209,12 @@ VecPs_3pi_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 /////////////////////// Amplitude Calculation //////////////////////////
 
 complex< GDouble >
-VecPs_3pi_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
+Iso_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
   return complex< GDouble >( userVars[uv_ampRe], userVars[uv_ampIm] );
 }
 
-void VecPs_3pi_refl::updatePar( const AmpParameter& par ){
+void Iso_ps_refl::updatePar( const AmpParameter& par ){
 
   // could do expensive calculations here on parameter updates  
 }
@@ -248,9 +223,9 @@ void VecPs_3pi_refl::updatePar( const AmpParameter& par ){
 #ifdef GPU_ACCELERATION
 
 void
-VecPs_3pi_refl::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
+Iso_ps_refl::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-	GPUVecPs_3pi_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS );
+	GPUIso_ps_refl_exec( dimGrid, dimBlock, GPU_AMP_ARGS );
 
 }
 

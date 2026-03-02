@@ -3,7 +3,7 @@
 
 #include "AMPTOOLS_AMPS/decayAngles.h"
 
-#include "AMPTOOLS_DATAIO/VecPs3PiPlotGenerator.h"
+#include "AMPTOOLS_DATAIO/IsoPsPlotGenerator.h"
 #include "IUAmpTools/Histogram1D.h"
 #include "IUAmpTools/Kinematics.h"
 
@@ -30,7 +30,7 @@ static bool isValidNumber(const string& argInput, double &value){
 static double parseValidatedNumber(const string& label, const string& argInput){
     double tmpValue = 0.0;
     if(!isValidNumber(argInput, tmpValue)){
-      throw std::invalid_argument("Vec_ps_refl: invalid " + label + ": " + argInput);
+      throw std::invalid_argument("Iso_ps_refl: invalid " + label + ": " + argInput);
     }
     return tmpValue;
 }
@@ -39,13 +39,13 @@ static double parseValidatedNumber(const string& label, const string& argInput){
 
 
 /* Constructor to display FitResults */
-VecPs3PiPlotGenerator::VecPs3PiPlotGenerator( const FitResults& results, Option opt ) :
+IsoPsPlotGenerator::IsoPsPlotGenerator( const FitResults& results, Option opt ) :
 PlotGenerator( results, opt )
 {
 	createHistograms();
 }
 
-VecPs3PiPlotGenerator::VecPs3PiPlotGenerator( const FitResults& results ) :
+IsoPsPlotGenerator::IsoPsPlotGenerator( const FitResults& results ) :
 PlotGenerator( results )
 {
 	createHistograms();
@@ -53,13 +53,13 @@ PlotGenerator( results )
 
 
 /* Constructor for event generator (no FitResult) */
-VecPs3PiPlotGenerator::VecPs3PiPlotGenerator( ) :
+IsoPsPlotGenerator::IsoPsPlotGenerator( ) :
 PlotGenerator( )
 {
 	createHistograms();
 }
 
-void VecPs3PiPlotGenerator::createHistograms( ) {
+void IsoPsPlotGenerator::createHistograms( ) {
   cout << " calls to bookHistogram go here" << endl;
   
    bookHistogram( kProd_Ang, new Histogram1D( 50, -180., 180., "ProdAng", "Production Angle [deg.]" ) );
@@ -68,8 +68,8 @@ void VecPs3PiPlotGenerator::createHistograms( ) {
    bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_HF", "cos#theta^{[HF]}" ) );
    bookHistogram( kPhiH, new Histogram1D( 50, -180., 180., "Phi_HF", "#phi^{[HF]} [deg.]" ) );
 
-   bookHistogram( kVecMass, new Histogram1D( 200, 0., 3., "MVec", "m(2#pi)  [GeV]") );
-   bookHistogram( kVecPsMass, new Histogram1D( 200, 0.2, 3.2, "MVecPs", "m(3#pi)  [GeV]") );
+   bookHistogram( kIsoMass, new Histogram1D( 200, 0., 3., "MIso", "m(2#pi)  [GeV]") );
+   bookHistogram( kIsoPsMass, new Histogram1D( 200, 0.2, 3.2, "MIsoPs", "m(3#pi)  [GeV]") );
    bookHistogram( kt, new Histogram1D( 100, 0, 1.0 , "t", "-t  [GeV^{2}]" ) );
    bookHistogram( kRecoilMass, new Histogram1D( 100, 0.9, 1.9 , "ProtonPiplusL_M", "m(p#pi^{+}_{L}) [GeV]" ) );
    
@@ -79,7 +79,7 @@ void VecPs3PiPlotGenerator::createHistograms( ) {
 }
 
 void
-VecPs3PiPlotGenerator::projectEvent( Kinematics* kin ){
+IsoPsPlotGenerator::projectEvent( Kinematics* kin ){
 
   // this function will make this class backwards-compatible with older versions
   // (v0.10.x and prior) of AmpTools, but will not be able to properly obtain
@@ -88,7 +88,7 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin ){
 }
 
 void
-VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
+IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
    // We work only with a 2-body vector decay 
 
@@ -124,7 +124,7 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
 
    // Properly read polarization angle from config file if provided
    double beam_polAngle=0;
-   // Check config file for optional parameters -- we assume here that the first amplitude in the list is a Vec_ps_refl amplitude
+   // Check config file for optional parameters -- we assume here that the first amplitude in the list is a Iso_ps_refl amplitude
    const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
    for(uint ioption=5; ioption<args.size(); ioption++) {
           TString option = args[ioption].c_str();
@@ -175,7 +175,7 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
    fillHistogram( kProd_Ang, prod_angle );
    fillHistogram( kt, Mandt );
    fillHistogram( kRecoilMass, recoil.M() );
-   fillHistogram( kVecPsMass, X.M() );
+   fillHistogram( kIsoPsMass, X.M() );
 
 
    //Now, symmetrized quantities 
@@ -192,8 +192,8 @@ VecPs3PiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName
    fillHistogram( kPhiH, phiH_b, 0.5 );
 
    
-   fillHistogram( kVecMass, vec_mass_a, 0.5 );
-   fillHistogram( kVecMass, vec_mass_b, 0.5 );
+   fillHistogram( kIsoMass, vec_mass_a, 0.5 );
+   fillHistogram( kIsoMass, vec_mass_b, 0.5 );
   
    fillHistogram( kProtonPsMass, protonps_mass_a, 0.5 );
    fillHistogram( kProtonPsMass, protonps_mass_b, 0.5 );
