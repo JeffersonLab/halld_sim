@@ -15,6 +15,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReaderBootstrap.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
