@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -406,8 +407,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
-   AmpToolsInterface::registerAmplitude( VecPs_3pi_refl() );
    AmpToolsInterface::registerAmplitude( Iso_ps_refl() );
+   AmpToolsInterface::registerAmplitude( VecPs_3pi_refl() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( Flatte() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );

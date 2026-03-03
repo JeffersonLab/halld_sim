@@ -1,4 +1,4 @@
-#if !(defined VCPS3PIPLOTGENERATOR)
+#if !(defined VECPS3PIPLOTGENERATOR)
 #define VECPS3PIPLOTGENERATOR
 
 #include <vector>
