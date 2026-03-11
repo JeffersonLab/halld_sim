@@ -27,8 +27,10 @@
   <composition name="taggerFocalPlane">
     <!--posXYZ volume="microscopePackage" X_Y_Z="-13.0 0 380.0"/>
     <posXYZ volume="microscopeReadoutBox" X_Y_Z="-50.0 -110.0 380.0"/-->
-    <posXYZ volume="microscopePackage" X_Y_Z="-13.0 0 792.0" rot="0 2 0" unit_angle="deg"/>
-    <posXYZ volume="microscopeReadoutBox" X_Y_Z="-50.0 -110.0 780.0" rot="0 2 0" unit_angle="deg"/>
+    <!--posXYZ volume="microscopePackage" X_Y_Z="-13.0 0 792.0" rot="0 2 0" unit_angle="deg"/>
+    <posXYZ volume="microscopeReadoutBox" X_Y_Z="-50.0 -110.0 792.0" rot="0 2 0" unit_angle="deg"/-->
+    <posXYZ volume="microscopePackage" X_Y_Z="-15.1 0 806.4" rot="0 2 0" unit_angle="deg"/>
+    <posXYZ volume="microscopeReadoutBox" X_Y_Z="-52.1 -110.0 806.4" rot="0 2 0" unit_angle="deg"/>
     <posXYZ volume="fixedArray" X_Y_Z="-13.0 0 455.0"/>
     <posXYZ volume="ENDP" X_Y_Z="-13.0 0 50.0"/>
   </composition>
