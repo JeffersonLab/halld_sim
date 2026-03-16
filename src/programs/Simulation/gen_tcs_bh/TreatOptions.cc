@@ -4,14 +4,71 @@
 #include <unistd.h>
 using namespace std;
 
-extern const int NEB, NT ,NQp2, NTh, NPhi;
-extern const double EMINI, EMAXI, TMINI, TMAXI, QP2MINI, QP2MAXI, PHIMINI, PHIMAXI, THMINI, THMAXI, alphaEM, m_el, PI;
+/*
+extern int NEB, NT ,NQp2, NTh, NPhi;
+extern double EMINI, EMAXI, TMINI, TMAXI, QP2MINI, QP2MAXI, PHIMINI, PHIMAXI, THMINI, THMAXI; 
+extern const double alphaEM, m_el, PI;
+
 extern double yy_min, yy_max, Phi_LH, tt, Egamma, Qp2, Q2, Phi_CMV, Theta_CMV, yy, phi_beam, Xbj, Eproton, crossA, eta_min, eta_max;
-extern const int thmE, thmQ, thmT;
-extern const float thmEmin, thmEmax, thmQmin, thmQmax, thmTmin, thmTmax;
+extern int thmE, thmQ, thmT;
+extern float thmEmin, thmEmax, thmQmin, thmQmax, thmTmin, thmTmax;
+*/
+
+ int NEB, NT ,NQp2, NTh, NPhi;
+ int NPhis, NPsis; //added
+ float CosThetaMaxTCS; // added
+ double EMINI, EMAXI, TMINI, TMAXI, QP2MINI, QP2MAXI, PHIMINI, PHIMAXI, THMINI, THMAXI; 
+ double PHISMINI, PHISMAXI, PSISMINI, PSISMAXI; //added
+ extern const double alphaEM, m_el, PI;
+
+ extern double yy_min, yy_max, Phi_LH, tt, Egamma, Qp2, Q2, Phi_CMV, Theta_CMV, yy, phi_beam, Xbj, Eproton, crossA, eta_min, eta_max;
+ int thmE, thmQ, thmT;
+ float thmEmin, thmEmax, thmQmin, thmQmax, thmTmin, thmTmax;
 
 ////////////////////////////////////////////////////
 
+
+void settcsbins(int Qp2_LimitType3){
+	if (Qp2_LimitType3==1){
+	    // Binning for Low Q'2 TCS
+	    NEB=13; NT=30; NQp2=15; NTh=25; NPhi=20; NPhis=20; NPsis=20; // tablev11 costh<1
+	    CosThetaMaxTCS = 1;// 0.9995;
+	    EMINI=5.0; EMAXI=11.5; TMINI=0.04; TMAXI=1.54; QP2MINI=0.8; QP2MAXI=5.3; // table v11
+	    PHIMINI=3.; PHIMAXI=363.; THMINI=30.; THMAXI=155.; 
+	    PHISMINI = 0; PHISMAXI=360; PSISMINI = 0; PSISMAXI = 360;
+
+	    // table cuts (TCS)
+	    thmE=14; thmQ=30; thmT=40;
+	    thmEmin=5; thmEmax=12; thmQmin=0.8; thmQmax=9.3; thmTmin=0.02; thmTmax=2.02;
+	    }
+
+	// ****** High Q'2 TCS ******
+	if (Qp2_LimitType3==2){
+	    // Binning for High Q'2 TCS
+	    NEB=13; NT=33; NQp2=18; NTh=20; NPhi=20; NPhis=20; NPsis=20; // tablev11 costh<1
+	    CosThetaMaxTCS = 1;// 0.9995;
+	    EMINI=5.0; EMAXI=11.5; TMINI=0.04; TMAXI=2.02; QP2MINI=3.8; QP2MAXI=9.2; // table v11
+	    PHIMINI=3.; PHIMAXI=363.; THMINI=30.; THMAXI=150.; PHISMINI = 0; PHISMAXI=360; PSISMINI = 0; PSISMAXI = 360;
+
+	    // table cuts (TCS)
+	    thmE=14; thmQ=20; thmT=40;
+	    thmEmin=5; thmEmax=12; thmQmin=3.8; thmQmax=9.3; thmTmin=0.02; thmTmax=2.02;
+	    }
+
+	// ****** Full Q'2 TCS ****** to be edited when table values becomes available
+	if (Qp2_LimitType3==3){
+	    // Binning for Full Q'2 TCS
+	    NEB=13; NT=33; NQp2=18; NTh=20; NPhi=20; NPhis=20; NPsis=20; // tablev11 costh<1
+	    CosThetaMaxTCS = 1;// 0.9995;
+	    EMINI=5.0; EMAXI=11.5; TMINI=0.04; TMAXI=2.02; QP2MINI=3.8; QP2MAXI=9.2; // table v11
+	    PHIMINI=3.; PHIMAXI=363.; THMINI=30.; THMAXI=150.; PHISMINI = 0; PHISMAXI=360; PSISMINI = 0; PSISMAXI = 360;
+
+	    // table cuts (TCS)
+	    thmE=14; thmQ=20; thmT=40;
+	    thmEmin=5; thmEmax=12; thmQmin=0.8; thmQmax=9.3; thmTmin=0.02; thmTmax=2.02;
+	    }
+	return ;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 

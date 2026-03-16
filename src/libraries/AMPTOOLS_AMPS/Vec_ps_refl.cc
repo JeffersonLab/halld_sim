@@ -15,6 +15,7 @@
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/vecPsAngles.h"
 #include "AMPTOOLS_AMPS/barrierFactor.h"
+#include "IUAmpTools/report.h"
 
 #include "UTILITIES/BeamProperties.h"
 
@@ -83,18 +84,20 @@ UserAmplitude< Vec_ps_refl >( args ){
   // Loop over any additional amplitude arguments to change defaults
   for(uint ioption=5; ioption<args.size(); ioption++) {
 	  TString option = args[ioption].c_str();
-    // Polarization provided in configuration file
+    // These lines set the polarization angles and fractions to the ones
+    // in the AmpTools configuration file. These can be either by
+    // hard-coding the values or by reading from a histogram in a root file.
     if(ioption==5){
       m_polInTree = false;
-
-      polAngle = parseValidatedNumber("polarization angle", args[5]);    
-
+      polAngle = parseValidatedNumber("polarization angle", args[5]); 
+    }   
+    if(ioption==6){
       TString polOption = args[6].c_str();
       if(polOption.Contains(".root")){
         polFraction = 0.0;
         TFile* f = new TFile(polOption);
         polFrac_vs_E = (TH1D*)f->Get(args[7].c_str());
-        if(polFrac_vs_E  != nullptr ){
+        if(polFrac_vs_E  == nullptr ){
           throw std::runtime_error(
             "Vec_ps_refl ERROR: Could not find histogram '" + args[7] +
             "' in file " + std::string(polOption.Data()));
@@ -102,6 +105,7 @@ UserAmplitude< Vec_ps_refl >( args ){
       }
       else{
         polFraction = parseValidatedNumber("polarization fraction", args[6]);
+
       }
     }
     // Check for omega->3pi option
@@ -135,6 +139,17 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 	    int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
 	    if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
 		    beam_polFraction = 0.0;
+        // Warn if using events outside histogram range
+        static bool warned_hist = false; // only warn once
+        if(!warned_hist){
+          report( NOTICE )
+           << " Energy for polFraction: " << pKin[0][0]
+           << " appears to be outside histogram range."
+           << " the value will be set to zero." 
+           << " This message will only be shown once."
+           << endl;
+          warned_hist = true;
+        }
 	    } else
 		    beam_polFraction = polFrac_vs_E->GetBinContent(bin);
     }

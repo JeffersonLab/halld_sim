@@ -38,11 +38,14 @@ int main(int argc, char *argv[]){
 	static int indexrun = genSettings.indexrun;
 	int runNum = genSettings.runNum;
 	TString Tablepath = genSettings.xsecTablepath;
+	int Qp2_LimitType0 = genSettings.Qp2_LimitType;
 	std::cout << "Using config: " << configfile << std::endl;
         std::cout << "xsecTablepath: " << genSettings.xsecTablepath << std::endl;
         std::cout << "output file:   " << genSettings.outFile << std::endl;
-  
-
+        std::cout << "Qp2_LimitType:   " << genSettings.Qp2_LimitType << std::endl;
+        std::cout << "genType:   " << genSettings.genType << std::endl; 
+        std::cout << "beamPolarType:   " << genSettings.beamPolarType << std::endl;  
+	settcsbins(Qp2_LimitType0);
 	cout << "Program starts" << endl;
     const bool DEBUG_TABLE = true;
     if(DEBUG_TABLE) cout << "[DT] Initialization... " << endl << "[DT] Table Provider creation ... ";
@@ -211,7 +214,10 @@ int main(int argc, char *argv[]){
 
 		// BH peaks, read table to position
         // cfi=Form("Data/scanBHsing_fullrange.dat"); //Tablepath
-        cfi=Form(Tablepath+"/scanBHsing_fullrange.dat");
+        //cfi=Form(Tablepath+"/scanBHsing_fullrange.dat");
+        if (Qp2_LimitType0==1){cfi=Form(Tablepath+"/scanBHsing_fullrange_LQ2.dat");}
+		if (Qp2_LimitType0==2){cfi=Form(Tablepath+"/scanBHsing_fullrange_HQ2.dat");}
+		if (Qp2_LimitType0==3){cfi=Form(Tablepath+"/scanBHsing_fullrange_FQ2.dat");}                
         cout << "full path in main: " << cfi << endl;
         cutfile.open(cfi.c_str()); cout<<"table "<<cfi<<endl;
         if (!cutfile) { cout<<"  ERROR: Table for thetaphi cut cannot open. use set.csh "<<endl; file->Close(); return 7;}
@@ -705,6 +711,11 @@ int main(int argc, char *argv[]){
 		tmpEvt.nGen = 3;
 		tmpEvt.rxn = 2;  //the rxn number 2 is for proton as recoil in HDDM i.e HddmOut.h
 		//tmpEvt.weight = fullWeight;
+		if (genSettings.genType == 0){ } 	//TCS + BH without any weight
+		if (genSettings.genType == 1){ tmpEvt.weight = W_TCS;}  //TCS only
+		if (genSettings.genType == 2){ tmpEvt.weight = W_BH;}  //BH only
+		if ((genSettings.genType == 3) && (genSettings.beamPolarType == 0) ){ tmpEvt.weight = W_tot_unpol;}  //unpol TCS + BH combine
+		if ((genSettings.genType == 3) && (genSettings.beamPolarType == 1 || genSettings.beamPolarType == 2 || genSettings.beamPolarType == 3 )){ tmpEvt.weight = W_tot_pol;}  //pol TCS + BH combine
 		hddmGo.write(tmpEvt,runNum,TrueEventNumber);
 
 		if (evv%1000==0) cout<<" "<<evv<<" events ... ";
@@ -712,8 +723,8 @@ int main(int argc, char *argv[]){
 		}
 		//********************* end of generating event by event *********************************//
 
-	logfile<<indexrun<<" "<<NTotEvents<<" "<<TrueEventNumber<<" "<<phase_space<<endl;
-	logfile<<"Above: run_index, N_tot_file, N_ActualGen, PhaseSpace:"<<endl;
+	logfile<<indexrun<<" "<<NTotEvents<<" "<<TrueEventNumber<<" "<<phase_space<<" "<<Qp2_LimitType0<<" "<<genSettings.genType<<endl;
+	logfile<<"Above: run_index, N_tot_file, N_ActualGen, PhaseSpace, Qp2_LimitType, genType: "<<endl;
 	logfile<<"Below: gen param (order of input file):"<<endl;
 
 	for (int i=0;i<30;i++){
