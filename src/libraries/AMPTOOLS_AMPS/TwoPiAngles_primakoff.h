@@ -6,6 +6,7 @@
 #include "IUAmpTools/AmpParameter.h"
 #include "GPUManager/GPUCustomTypes.h"
 
+#include "TRandom1.h"
 #include "TH1D.h"
 #include <string>
 #include <complex>
@@ -42,7 +43,7 @@ private:
   bool InitPol = false;
 
   double polFraction;
-  TH1D *polFrac_vs_E;
+  TH1D *polFrac_vs_E=NULL;
 
 
 

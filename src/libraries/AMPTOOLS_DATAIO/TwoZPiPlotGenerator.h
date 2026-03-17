@@ -1,6 +1,7 @@
 #if !(defined TWOZPIPLOTGENERATOR)
 #define TWOZPIPLOTGENERATOR
 
+#include "TRandom1.h"
 #include <vector>
 #include <string>
 

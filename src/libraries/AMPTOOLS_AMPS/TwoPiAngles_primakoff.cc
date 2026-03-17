@@ -32,12 +32,18 @@ UserAmplitude< TwoPiAngles_primakoff >( args )
 	TString polFrac_vs_E_hname = args[3].c_str();
 	if (! InitPol && polFrac <= 0) {
           polFraction = 0.; 
-	  cout << "TwoPiAngles_primakoff  Init: polFrac_vs_E_fname=" << polFrac_vs_E_fname << " polFrac_vs_E_hname=" << polFrac_vs_E_hname << endl;
-          TFile* f = new TFile(polFrac_vs_E_fname);
-          polFrac_vs_E = (TH1D*)f->Get(polFrac_vs_E_hname);
+	  // cout << "TwoPiAngles_primakoff  Init: polFrac_vs_E_fname=" << polFrac_vs_E_fname << " polFrac_vs_E_hname=" << polFrac_vs_E_hname << endl;
+          // TFile* f = new TFile(polFrac_vs_E_fname);
+          // polFrac_vs_E = (TH1D*)f->Get(polFrac_vs_E_hname);  
+          Int_t const nbins=10;
+	  Double_t xlo=5.05;
+	  Double_t xhi=6.05;
+          Double_t xbin_mean[nbins]={5.1,5.2,5.3,5.4,5.5,5.6,5.7,5.8,5.9,6.0};
+          Double_t content_mean[nbins]={0.649351,0.672864,0.688222,0.700452,0.717672,0.722537,0.721527,0.658503,0.38531,0.346376}; 
           if (polFrac_vs_E == NULL ) {
-	    cout << "*** TwoPiAngles_primakoff  Init: Undefined polFrac_vs_E=" << polFrac_vs_E << endl;
-	    exit(1);
+	      cout << "TwoPiAngles_primakoff  Init: Create Histogram polFrac_vs_E" << endl;
+              polFrac_vs_E = new TH1D ("polFrac_vs_E","TPOL Average Polarizations for CPP",nbins,xlo,xhi);
+              polFrac_vs_E->FillN(nbins,xbin_mean,content_mean);
 	  }
 	  InitPol = true;
 	}
@@ -90,17 +96,31 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
 	TLorentzVector beam_res = resonanceBoost * beam;
 	TLorentzVector recoil_res = resonanceBoost * recoil;
 	TLorentzVector p1_res = resonanceBoost * p1;
+	TLorentzVector p2_res = resonanceBoost * p2;
 
         // choose helicity frame: z-axis opposite recoil target in rho rest frame. Note that for Primakoff recoil is defined as missing P4
         TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();  
         TVector3 z = -1. * recoil_res.Vect().Unit();
         TVector3 x = y.Cross(z).Unit();
-        TVector3 angles( (p1_res.Vect()).Dot(x),
+        TVector3 angles1( (p1_res.Vect()).Dot(x),
                          (p1_res.Vect()).Dot(y),
                          (p1_res.Vect()).Dot(z) );
+        TVector3 angles2( (p2_res.Vect()).Dot(x),
+                         (p2_res.Vect()).Dot(y),
+                         (p2_res.Vect()).Dot(z) );
 
-        GDouble CosTheta = angles.CosTheta();
-        GDouble phi = angles.Phi();
+
+	// Pick pi0 randomly between pi01 and pi02
+        TRandom1 *r1 = new TRandom1();
+        GDouble CosTheta; 
+        if (r1->Rndm() > 0.5) {
+	  CosTheta = angles1.CosTheta();
+	      }
+       else {
+	  CosTheta = angles2.CosTheta();
+	      }
+   
+        GDouble phi = angles1.Phi();
         // GDouble sinSqTheta = G_SIN(angles.Theta())*G_SIN(angles.Theta());
         // GDouble sin2Theta = G_SIN(2.*angles.Theta());
 
@@ -128,7 +148,7 @@ TwoPiAngles_primakoff::calcAmplitude( GDouble** pKin ) const {
 	  else {
 	    polFraction = polFrac;
 	  }
-	cout << " beam E=" << beam.E() <<  " polFrac =" << polFrac << " polFraction=" << polFraction << endl;
+	// cout << " beam E=" << beam.E() <<  " polFrac =" << polFrac << " polFraction=" << polFraction << endl;
 
 	switch (PhaseFactor) {
         case 0:

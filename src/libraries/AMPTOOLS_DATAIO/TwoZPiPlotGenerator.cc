@@ -14,7 +14,7 @@ PlotGenerator( results )
   
   // bookHistogram( k2PiMass, new Histogram1D( 200, 0., 2.0, "M2pi", "Invariant Mass of #pi^{+} #pi^{-}") );
   bookHistogram( k2PiMass, new Histogram1D( 30, 0.2, 0.8, "M2pi", "Invariant Mass of #pi#pi") );
-  bookHistogram( kPiPCosTheta, new Histogram1D( 50, -1., 1., "cosTheta", "cos( #theta ) of Resonance Production") );
+  bookHistogram( kPiPCosTheta, new Histogram1D( 25, -1., 1., "cosTheta", "cos( #theta ) of Resonance Production") );
 
   bookHistogram( kPhiPiPlus,  new Histogram1D( 50, -1*PI, PI, "PhiPiPlus",  "#Phi_{#pi_{+}}" ) );
   bookHistogram( kPhiPiMinus, new Histogram1D( 50, -1*PI, PI, "PhiPiMinus", "#Phi_{#pi_{-}}" ) );
@@ -61,6 +61,7 @@ TwoZPiPlotGenerator::projectEvent( Kinematics* kin ){
   TLorentzVector beam_res = resonanceBoost * beam;
   TLorentzVector recoil_res = resonanceBoost * recoil;
   TLorentzVector p1_res = resonanceBoost * p1;
+  TLorentzVector p2_res = resonanceBoost * p2;
 
   // choose helicity frame: z-axis opposite recoil target in rho rest frame. Note that for Primakoff recoil is defined as missing P4
   TVector3 y = (beam.Vect().Unit().Cross(-recoil.Vect().Unit())).Unit();   // redefine y normal to production plane
@@ -68,13 +69,25 @@ TwoZPiPlotGenerator::projectEvent( Kinematics* kin ){
   // choose helicity frame: z-axis opposite recoil proton in rho rest frame
   z = -1. * recoil_res.Vect().Unit();
   TVector3 x = y.Cross(z).Unit();
-  TVector3 angles(   (p1_res.Vect()).Dot(x),
+  TVector3 angles1(   (p1_res.Vect()).Dot(x),
                      (p1_res.Vect()).Dot(y),
                      (p1_res.Vect()).Dot(z) );
+        TVector3 angles2( (p2_res.Vect()).Dot(x),
+                         (p2_res.Vect()).Dot(y),
+                         (p2_res.Vect()).Dot(z) );
 
-  GDouble CosTheta = angles.CosTheta();
+	// Pick pi0 randomly between pi01 and pi02
+        TRandom1 *r1 = new TRandom1();
+        GDouble CosTheta; 
+        if (r1->Rndm() > 0.5) {
+	  CosTheta = angles1.CosTheta();
+	      }
+       else {
+	  CosTheta = angles2.CosTheta();
+	      }
+   
   
-  GDouble phi = angles.Phi();
+  GDouble phi = angles1.Phi();
 
   GDouble Phi = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 
