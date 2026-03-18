@@ -15,24 +15,23 @@
 #ifndef _JFactoryGenerator_ThreadCancelHandler_
 #define _JFactoryGenerator_ThreadCancelHandler_
 
-#include <JANA/jerror.h>
 #include <JANA/JFactoryGenerator.h>
 
 extern void mcsmear_thread_HUP_sighandler(int sig);
 
-class JFactoryGenerator_ThreadCancelHandler: public jana::JFactoryGenerator{
+class JFactoryGenerator_ThreadCancelHandler: public JFactoryGenerator{
 	public:
 		JFactoryGenerator_ThreadCancelHandler(){}
 		virtual ~JFactoryGenerator_ThreadCancelHandler(){}
 		virtual const char* className(void){return static_className();}
 		static const char* static_className(void){return "JFactoryGenerator_ThreadCancelHandler";}
 		
-		jerror_t GenerateFactories(jana::JEventLoop *loop){
+		void GenerateFactories(JFactorySet *factory_set) override {
 		
 			jout<<"Installing special signal handler for mcsmear..."<<endl;
 			signal(SIGHUP, mcsmear_thread_HUP_sighandler);
 		
-			return NOERROR;
+			return; //NOERROR;
 		}
 
 };

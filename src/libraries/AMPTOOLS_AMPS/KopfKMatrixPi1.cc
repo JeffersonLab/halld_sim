@@ -85,10 +85,10 @@ void KopfKMatrixPi1::calcUserVars(GDouble** pKin, GDouble* userVars) const {
     GDouble s = pTot.M2();
     userVars[kS] = s;
     // Calculate K-Matrix
-    SMatrix2 mat_K; // Initialized as a 4x4 0-matrix
+    SMatrix2 mat_K; // Initialized as a 2x2 0-matrix
     SMatrix2 mat_C;
     // Loop over resonances
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         SMatrix2 temp_K;
         SMatrix2 temp_B;
         temp_K = TensorProd(couplings[i], couplings[i]);
@@ -144,7 +144,7 @@ complex<GDouble> KopfKMatrixPi1::calcAmplitude(GDouble** pKin, GDouble* userVars
         complex<GDouble>(bpi11600_re, bpi11600_im),
     };
     // Loop over resonances
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         SVector2 temp_P;
         SMatrix2 temp_B;
         temp_P = couplings[i];

@@ -19,7 +19,7 @@
 #include "clebschGordan.h"
 #include "wignerD.h"
 #include "breakupMomentum.h"
-#include "omegapiAngles.h"
+#include "vecPsAngles.h"
 
 #include <cmath>
 #include <complex>
@@ -115,17 +115,19 @@ omegapi_amplitude::calcUserVars( GDouble** pKin, GDouble* userVars ) const
 	}
 
   //Calculate decay angles in helicity frame
-  vector <double> locthetaphi = getomegapiAngles(0.0, omega, X, beam, Gammap);
+  vector <double> xDecayAngles = getXDecayAngles( polAngle, beam, Gammap, X, omega);
 
-  vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
+  vector <double> vectorDecayAngles = getVectorDecayAngles( Gammap, X, omega,
+                                                            rhos_pip, rhos_pim);
 
-  userVars[uv_cosTheta] = TMath::Cos(locthetaphi[0]);
-  userVars[uv_Phi] = locthetaphi[1];
 
-  userVars[uv_cosThetaH] = TMath::Cos(locthetaphih[0]);
-  userVars[uv_PhiH] = locthetaphih[1];
+  userVars[uv_cosTheta] = TMath::Cos(xDecayAngles[0]);
+  userVars[uv_Phi] = xDecayAngles[1];
 
-  userVars[uv_prod_angle] = locthetaphi[2];
+  userVars[uv_prod_angle] = xDecayAngles[2];
+
+  userVars[uv_cosThetaH] = TMath::Cos(vectorDecayAngles[0]);
+  userVars[uv_PhiH] = vectorDecayAngles[1];
 
   userVars[uv_Pgamma] = Pgamma;
   

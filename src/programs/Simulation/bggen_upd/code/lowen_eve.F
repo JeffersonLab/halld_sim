@@ -40,6 +40,7 @@ C
       REAL ami(2),pcmi(4,2),plabi(4,2)
      +     ,am(MXOUT),pcm(4,MXOUT),plab(4,MXOUT)
      +     ,wgt4mx(MXPROC)   ! max weight for the 4-body process (potentially, for each process)  
+     +     ,pzfr(4)   ! frame definition vector (helicity or GJ)
       INTEGER ity(MXOUT),ndec(MXOUT),kdec(3,MXOUT),kdectyp(MXOUT)
      +       ,it1dec(MXOUT),itorig(MXOUT)
 C
@@ -228,7 +229,16 @@ C
                ENDDO
                IF(ndec(i).EQ.2) THEN  ! 2-body decay
                   ihel=kdectyp(i)  ! decay angle flag =0 - unoform, =1 - rho-like, =2 - j/psi-like
-                  CALL OMDECA2(plab(1,i),amd(1),ihel,plab(1,np+1))
+                  DO j=1,4
+                     IF(ihel.EQ.0) THEN
+                        pzfr(j)=0.             ! no Z axis - isotropic decay
+                     ELSE IF(ihel.GT.0) THEN
+                        pzfr(j)=plabi(j,1)     ! Z = beam - Gottfried-Jackson frame
+                     ELSE
+                        pzfr(j)=plab(j,2)      ! Z = -recoil - Helicity frame
+                     ENDIF
+                  ENDDO
+                  CALL OMDECA2(plab(1,i),amd(1),ihel,pzfr(1),plab(1,np+1))
                ELSE IF(ndec(i).EQ.3) THEN
                   CALL OMDECA3(plab(1,i),amd(1),0.,plab(1,np+1))
                ENDIF

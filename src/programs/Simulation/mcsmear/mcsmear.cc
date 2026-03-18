@@ -67,20 +67,18 @@ int main(int narg,char* argv[])
 
    // Create DApplication object
    DApplication dapp(narg, argv);
-   dapp.AddFactoryGenerator(new JFactoryGenerator_ThreadCancelHandler());
+   JApplication* app = dapp.GetJApp();
+   app->Add(new JFactoryGenerator_ThreadCancelHandler());
 
    TFile *hfile = new TFile("smear.root","RECREATE","smearing histograms");  // note: not used for anything right now
 
-   MyProcessor myproc(config);   
-   jerror_t error_code = dapp.Run(&myproc);
+   app->Add(new MyProcessor(config));  
+   app->Run();
 
    hfile->Write();
    hfile->Close();
-
-   if(error_code != NOERROR) 
-       return static_cast<int>(error_code);
-   else
-       return dapp.GetExitCode();
+   
+   return app->GetExitCode();
 }
 
 //-----------

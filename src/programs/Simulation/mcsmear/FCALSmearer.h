@@ -11,7 +11,7 @@
 class fcal_config_t 
 {
   public:
-	fcal_config_t(JEventLoop *loop, const DFCALGeometry *fcalGeom, mcsmear_config_t *in_config);
+	fcal_config_t(const std::shared_ptr<const JEvent>& event, const DFCALGeometry *fcalGeom, mcsmear_config_t *in_config);
 
 	double FCAL_PHOT_STAT_COEF;
 	double FCAL_BLOCK_THRESHOLD;
@@ -49,11 +49,11 @@ class fcal_config_t
 class FCALSmearer : public Smearer
 {
  public:
- FCALSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
+ FCALSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
     // Get the FCAL geometry
-    loop->GetSingle(fcalGeom);
+    event->GetSingle(fcalGeom);
 
-    fcal_config = new fcal_config_t(loop, fcalGeom, in_config);
+    fcal_config = new fcal_config_t(event, fcalGeom, in_config);
     fcal_config->FCAL_NEW_TIME_SMEAR = in_config->FCAL_NEW_TIME_SMEAR;
     
   }

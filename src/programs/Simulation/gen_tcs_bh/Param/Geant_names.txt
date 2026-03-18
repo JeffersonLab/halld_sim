@@ -1,0 +1,5 @@
+"0" "gamma" "positron" "electron" "neutrino" "mu+" "mu-" "pi0" "pi+" "pi-"
+"K0long" "K+" "K-" "neutron" "proton" "antiproton" "K0short" "eta" "lambda" "sigma+"
+"sigma0" "sigma-" "xi0" "xi-" "omega" "antineutron" "antilambda" "antisigma-" "antisigma0" "antisigma+"
+"antixi0" "antixi+" "antiOmega+" "tau+" "tau-" "D+" "D-" "D0" "antiD0" "f+"
+"f-" "lambdac+" "W+" "W-" "Z0" "deuteron" "tritium" "alpha" "genatino"

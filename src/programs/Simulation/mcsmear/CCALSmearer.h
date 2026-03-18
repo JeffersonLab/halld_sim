@@ -11,7 +11,7 @@
 class ccal_config_t 
 {
   public:
-	ccal_config_t(JEventLoop *loop);
+	ccal_config_t(const std::shared_ptr<const JEvent>& event);
 
 	double CCAL_EN_SCALE;
 	
@@ -37,8 +37,8 @@ class ccal_config_t
 class CCALSmearer : public Smearer
 {
   public:
-	CCALSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		ccal_config = new ccal_config_t(loop);
+	CCALSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		ccal_config = new ccal_config_t(event);
 		ccalGeom = new DCCALGeometry();
 	}
 	~CCALSmearer() {

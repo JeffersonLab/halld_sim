@@ -10,7 +10,7 @@
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 
 //#include <cmath>
 //#include <complex>
@@ -101,16 +101,16 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
   TLorentzVector Gammap = beam + target;
  
   //Calculate decay angles in helicity frame
-  vector <double> locthetaphi = getomegapiAngles(polAngle, omega, X, beam, Gammap);
+  vector <double> xDecayAngles = getXDecayAngles(polAngle, beam, Gammap, X, omega);
 
-  vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
+  vector <double> vectorDecayAngles = getVectorDecayAngles(Gammap, X, omega, rhos_pip, rhos_pim);
 
-   GDouble cosTheta = TMath::Cos(locthetaphi[0]);
-   GDouble Phi = locthetaphi[1];
-   GDouble cosThetaH = TMath::Cos(locthetaphih[0]);
-   GDouble PhiH = locthetaphih[1];
-   GDouble prod_angle = locthetaphi[2];
-   GDouble lambda = locthetaphih[2];
+   GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
+   GDouble Phi = xDecayAngles[1];
+   GDouble prod_angle = xDecayAngles[2];
+   GDouble cosThetaH = TMath::Cos(vectorDecayAngles[0]);
+   GDouble PhiH = vectorDecayAngles[1];
+   GDouble lambda = vectorDecayAngles[2];
 
    // cout << "calls to fillHistogram go here" << endl;
    fillHistogram( kOmegaPiMass, b1_mass );

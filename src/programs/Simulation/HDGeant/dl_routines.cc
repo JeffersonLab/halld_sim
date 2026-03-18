@@ -9,7 +9,8 @@
 #include <map>
 using namespace std;
 
-#include <JANA/JCalibrationFile.h>
+#include <JANA/Calibrations/JCalibrationFile.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
 #include <HDGEOMETRY/DMagneticFieldMapCalibDB.h>
 #include <HDGEOMETRY/DMagneticFieldMapConst.h>
 #include "HDGEOMETRY/DMagneticFieldMapSpoiled.h"
@@ -161,7 +162,7 @@ void init_runtime_xml_(void)
         string tempdir(mkdtemp(xmldir));
         string url = HDDS_XML.substr(0,HDDS_XML.find(",run="));
         int runno = stoi(HDDS_XML.substr(34));
-        JCalibration *jcalib = japp->GetJCalibration(runno);
+        JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
         vector<string> xmlfiles;
         jcalib->GetListOfNamepaths(xmlfiles);
         vector<string>::iterator xiter;

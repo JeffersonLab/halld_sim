@@ -15,6 +15,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderWithTCut.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReaderBootstrap.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -52,6 +53,7 @@
 #include "AMPTOOLS_AMPS/KopfKMatrixA2.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
+#include "AMPTOOLS_AMPS/Vec_ps_moment.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -66,7 +68,7 @@ using namespace std;
 int rank_mpi;
 int size;
 
-double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
+double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int eMatrixRequirement) {
    AmpToolsInterfaceMPI ati( cfgInfo );
    bool fitFailed = true;
    double lh = 1e7;
@@ -85,10 +87,12 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
       if(hesse)
          fitManager->hesseEvaluation();
 
-      fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() != 3 );
+      fitFailed = ( fitManager->status() != 0 || fitManager->eMatrixStatus() < eMatrixRequirement );
 
-      if( fitFailed )
+      if( fitFailed ){
          cout << "ERROR: fit failed use results with caution..." << endl;
+         cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
+      }
       else 
          lh = ati.likelihood();
 
@@ -106,7 +110,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
    return lh;
 }
 
-void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numRnd, double maxFraction) {
+void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numRnd, double maxFraction, int eMatrixRequirement) {
    AmpToolsInterfaceMPI ati( cfgInfo );
 
    MinuitMinimizationManager* fitManager = NULL; 
@@ -156,10 +160,12 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
          if(hesse)
             fitManager->hesseEvaluation();
 
-         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
+         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() < eMatrixRequirement);
 
-         if( fitFailed )
+         if( fitFailed ){
             cout << "ERROR: fit failed use results with caution..." << endl;
+            cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
+         }
 
          curLH = ati.likelihood();
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
@@ -167,7 +173,10 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 	 ati.finalizeFit(to_string(i));
 
          if( seedfile.size() != 0 && !fitFailed ){
-            string seedfile_rand = seedfile + Form("_%d.txt", i);
+            string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
+            string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
+
+            string seedfile_rand = seedfileBaseName + Form("_%d%s", i, seedfileExtension.data());
             ati.fitResults()->writeSeed( seedfile_rand );
          }
 
@@ -186,8 +195,11 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
       else {
          cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRnd << " RANDOM PRODUCTION PARS = " << minLH << endl;
          gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
-         if( seedfile.size() != 0 )
-            gSystem->Exec(Form("cp %s_%d.txt %s.txt", seedfile.data(), minFitTag, seedfile.data()));
+         if( seedfile.size() != 0 ) {
+            string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
+            string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
+            gSystem->Exec(Form("cp %s_%d%s %s", seedfileBaseName.data(), minFitTag, seedfileExtension.data(), seedfile.data()));
+         }
       }
    }
 
@@ -196,7 +208,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 }
 
 
-void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan) {
+void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan, int eMatrixRequirement) {
    double minVal=0, maxVal=0, stepSize=0;
    int steps=0;
 
@@ -270,17 +282,22 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
          if(hesse)
             fitManager->hesseEvaluation();
 
-         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() != 3);
+         fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() < eMatrixRequirement);
          curLH = ati.likelihood();
 
-         if( fitFailed )
+         if( fitFailed ){
             cout << "ERROR: fit failed use results with caution..." << endl;
+            cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
+         }
 
          cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
 
          ati.finalizeFit(to_string(i));
          if( seedfile.size() != 0 && !fitFailed ){
-            string seedfile_scan = seedfile + Form("_scan_%d.dat", i);
+            string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
+            string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
+
+            string seedfile_scan = seedfileBaseName + Form("_scan_%d%s", i, seedfileExtension.data());
             ati.fitResults()->writeSeed( seedfile_scan );
          }
       }
@@ -297,6 +314,12 @@ void getLikelihood( ConfigurationInfo* cfgInfo ){
     MPI_Finalize();
 }
 
+void saveDummyFit( ConfigurationInfo* cfgInfo ){
+   AmpToolsInterface ati( cfgInfo );
+   ati.finalizeFit();
+   return;
+}
+
 int main( int argc, char* argv[] ){
 
    MPI_Init( &argc, &argv );
@@ -309,6 +332,7 @@ int main( int argc, char* argv[] ){
    bool useMinos = false;
    bool hesse = false;
    bool noFit = false;
+   bool createDummyFit = false;
 
    string configfile;
    string seedfile;
@@ -316,6 +340,7 @@ int main( int argc, char* argv[] ){
    int numRnd = 0;
    unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
    int maxIter = 10000;
+   int eMatrixRequirement = 3;
 
    // parse command line
 
@@ -338,9 +363,13 @@ int main( int argc, char* argv[] ){
       if (arg == "-m"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
+      if (arg == "-e"){
+         if ((i+1 ==argc)  || (argv[i+1][0] == '-')) arg = "-h";
+         else  eMatrixRequirement = atoi(argv[++i]); }
       if (arg == "-n") useMinos = true;
       if (arg == "-H") hesse = true;
       if (arg == "-l") noFit = true;
+      if (arg == "-d") createDummyFit = true;
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
@@ -355,7 +384,13 @@ int main( int argc, char* argv[] ){
             cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
             cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
             cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
+            cout << "   -e <int>\t\t\t Minimum required level of error matrix status for a successful fit." << endl;
+            cout << "   \t\t\t\t\t 0 = not calculated at all" << endl;
+            cout << "   \t\t\t\t\t 1 = approximation only, not accurate" << endl;
+            cout << "   \t\t\t\t\t 2 = full matrix, but forced positive-definite" << endl;
+            cout << "   \t\t\t\t\t 3 = full accurate covariance matrix (default, recommended for most fits)" << endl;
             cout << "   -l \t\t\t\t Calculate likelihood and exit without running a fit" << endl; 
+            cout << "   -d \t\t\t\t Create dummy .fit file and exit without running a fit." << endl;
          }
          MPI_Finalize();
          exit(1);
@@ -406,24 +441,38 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( KopfKMatrixA2() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
+   AmpToolsInterface::registerAmplitude( Vec_ps_moment() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderWithTCut>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderTEM>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<FSRootDataReader>() );
+   AmpToolsInterface::registerDataReader( DataReaderMPI<FSRootDataReaderBootstrap>() );
+
+   // normalize seedFile file extension if not already set by user
+   if (seedfile.size() != 0){
+      if (seedfile.find(".") == string::npos) seedfile += ".txt"; 
+      else{
+         // this ensures the file has an extension for cases like "./my_seed_file" 
+         string fileExtension = seedfile.substr(seedfile.find_last_of("."));
+         if (fileExtension.find("/") != string::npos) seedfile += ".txt";
+      }
+   }
 
    if(noFit)
       getLikelihood(cfgInfo);
+   else if(createDummyFit)
+      saveDummyFit(cfgInfo);
    else if(numRnd==0){
       if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile);
+         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile, eMatrixRequirement);
       else
-         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar);
+         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar, eMatrixRequirement);
    } else {
       cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
       AmpToolsInterface::setRandomSeed(randomSeed);
-      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
+      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5, eMatrixRequirement);
    }
 
    return 0;

@@ -1,6 +1,7 @@
 
 #include "mcsmear_config.h"
 
+
 #include <iostream>
 #include <fstream>
 
@@ -76,7 +77,7 @@ void mcsmear_config_t::SetSeeds(const char *vals)
    	/// set the initial seeds based on user input from
    	/// the command line.
    	//
-   	stringstream ss(vals);
+   	std::stringstream ss(vals);
    	Int_t seed1, seed2, seed3;
    	ss >> seed1 >> seed2 >> seed3;
    	UInt_t *useed1 = reinterpret_cast<UInt_t*>(&seed1);
@@ -107,8 +108,7 @@ void  mcsmear_config_t::LoadRCDBConnection()
     // if we're already connected, then stop now
     if(rcdb_connection != NULL)
         return;
-
-    gPARMS->SetDefaultParameter("RCDB_CONNECTION", RCDB_CONNECTION, "URL used to access RCDB.");
+    japp->SetDefaultParameter("RCDB_CONNECTION", RCDB_CONNECTION, "URL used to access RCDB.");
     
     // load connection to RCDB
     rcdb_connection = new rcdb::Connection(RCDB_CONNECTION);
@@ -158,7 +158,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
     if(DUMP_RCDB_CONFIG) {
         //// DEBUG ////
         //cout << "CODA config file contents:" << endl;
-        ofstream coda_ofile("rcdb_coda.config");
+        std::ofstream coda_ofile("rcdb_coda.config");
         coda_ofile << "Full file: " << endl;
         coda_ofile << fileContent << endl;
 

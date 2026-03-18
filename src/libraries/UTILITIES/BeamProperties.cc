@@ -40,6 +40,8 @@ void BeamProperties::createHistograms( TString configFile ) {
 	// Fill flux histogram based on config file
 	if(mIsCCDBFlux)
 		fillFluxFromCCDB();
+	else if(mIsCCDBTaggedFlux)
+	  	fillTaggedFluxFromCCDB();
 	else if(mIsROOTFlux)
 		fillFluxFromROOT();
 	else {  // default to CobremsGeneration for flux and polarization
@@ -64,6 +66,7 @@ bool BeamProperties::parseConfig(){
 	cout<<endl<<"BeamProperties: Parsing config file "<<mConfigFile.Data()<<endl;
 
 	// start assuming parameters for CobremsGeneration
+	mIsCCDBTaggedFlux = false;
 	mIsCCDBFlux = false;
 	mIsCCDBPol = false;
 	mIsROOTFlux = false;
@@ -112,9 +115,12 @@ bool BeamProperties::parseConfig(){
 			mBeamParametersMap.insert( std::pair<std::string,double>( words[0].data(), atof(words[1].data()) ));
 		}
 		else if(words[0].find("ROOTFlux") != std::string::npos) {
-			if(words[1].find("ccdb") != std::string::npos)
+			if(words[1] == "ccdb")
 				mIsCCDBFlux = true;
-			else {
+			else if (words[1] == "tagged-ccdb") {
+			        mIsCCDBTaggedFlux = true;
+				cout << "tagged-ccdb" << endl;
+			} else {
 				mIsROOTFlux = true;
 				mBeamHistNameMap.insert( std::pair<std::string,std::string>( words[0].data(), words[1].data() ) );
 			}
@@ -311,7 +317,7 @@ double BeamProperties::PSAcceptance(double Egamma, double norm, double min, doub
 // create histograms for flux from CCDB for specified run number  and polarization fraction
 void BeamProperties::fillFluxFromCCDB() {
 
-	cout<<endl<<"BeamProperties: Using flux from CCDB run "<<mRunNumber<<endl;
+	cout<<endl<<"BeamProperties: Using untagged flux from CCDB run "<<mRunNumber<<endl;
 
 	// Parse environment variables for CCDB setup
 	const char *calib_url = getenv("JANA_CALIB_URL");
@@ -353,7 +359,7 @@ void BeamProperties::fillFluxFromCCDB() {
 	int highest_tagh = 0;
 	vector<double> Elows_tagh;
 	for(int i=tagh_scaled_energy.size()-1; i>=0; i--) {
-		double energy = tagh_scaled_energy[i][1] * photon_endpoint[0];
+	        double energy = tagh_scaled_energy[i][1] * photon_endpoint[0];
 		if(energy > Elow && energy < Ehigh) { // keep only untagged flux for requested range
 			Elows_tagh.push_back(energy);
 			highest_tagh = i;
@@ -390,6 +396,154 @@ void BeamProperties::fillFluxFromCCDB() {
 
 	return;
 }
+
+
+
+// create histograms for flux from CCDB for specified run number  and polarization fraction
+void BeamProperties::fillTaggedFluxFromCCDB() {
+
+	cout<<endl<<"BeamProperties: Using tagged flux from CCDB run "<<mRunNumber<<endl;
+	/*
+	TRandom3* fRandom = new TRandom3();  
+	TTimeStamp * time_st = new TTimeStamp();
+	double_t timeseed = time_st->GetNanoSec();
+	// random number initialization (set to 0 by default)
+	fRandom->SetSeed(timeseed);
+	*/
+	// Parse environment variables for CCDB setup
+	const char *calib_url = getenv("JANA_CALIB_URL");
+	if(!calib_url) {
+		cout<<"Can't compute flux with undefined JANA_CALIB_URL environment variable"<<endl;
+		exit(101);
+	}
+
+	string variation = "default";
+	const char *variation_env = getenv("JANA_CALIB_CONTEXT");
+	if(variation_env) { // use non-default context if provided
+		variation = string(variation_env);
+		variation = variation.substr(variation.find('=')+1,variation.find(' ')-variation.find('=')-1); //keep only the actual variation
+		cout<<"Using CCDB variation = "<<variation.data()<<endl;
+	}
+
+	// Generate calibration class
+	unique_ptr<ccdb::Calibration> calib(ccdb::CalibrationGenerator::CreateCalibration(string(calib_url), mRunNumber, variation));
+
+	// Get PS acceptance from CCDB
+	vector< vector<double> > psAccept;
+        calib->GetCalib(psAccept, "/PHOTON_BEAM/pair_spectrometer/lumi/PS_accept");
+
+	// find acceptance function parameters
+	double PSnorm = psAccept[0][0];
+	double PSmin = psAccept[0][1];
+	double PSmax = psAccept[0][2];
+
+	// Get tagger energy parameters from CCDB
+	vector< double > photon_endpoint, endpoint_calib;
+	vector< vector<double> > tagh_scaled_energy, tagm_scaled_energy;
+	calib->GetCalib(endpoint_calib, "PHOTON_BEAM/hodoscope/endpoint_calib");
+	calib->GetCalib(photon_endpoint, "PHOTON_BEAM/endpoint_energy");
+	calib->GetCalib(tagh_scaled_energy, "PHOTON_BEAM/hodoscope/scaled_energy_range");
+	calib->GetCalib(tagm_scaled_energy, "PHOTON_BEAM/microscope/scaled_energy_range");
+
+	double e_low_tagh = 0;
+	double e_high_tagh = 0;
+	double e_low_tagm = 0;
+	double e_high_tagm = 0;
+	double delta_e = 0;
+	if (endpoint_calib.size() > 0 && photon_endpoint.size() > 0)
+	  delta_e = photon_endpoint[0] - endpoint_calib[0];
+	
+	if (tagh_scaled_energy.size() > 0) {
+	  e_low_tagh = tagh_scaled_energy[tagh_scaled_energy.size() - 1][1] * endpoint_calib[0] + delta_e;
+	  e_high_tagh = tagh_scaled_energy[0][2] * endpoint_calib[0] + delta_e;
+	}
+	if (tagm_scaled_energy.size() > 0) {
+	  e_low_tagm = tagm_scaled_energy[tagm_scaled_energy.size() - 1][1] * endpoint_calib[0] + delta_e;
+	  e_high_tagm = tagm_scaled_energy[0][2] * endpoint_calib[0] + delta_e;
+	}
+	
+	// Setup custom histogram for filling flux from CCDB
+	double Elow  = mBeamParametersMap.at("PhotonBeamLowEnergy"); // histogram min energy
+	double Ehigh = mBeamParametersMap.at("PhotonBeamHighEnergy"); // histogram max energy
+	/*
+	int highest_tagh = 0;
+	vector<double> Elows_tagh;
+	for(int i=tagh_scaled_energy.size()-1; i>=0; i--) {
+		double energy = tagh_scaled_energy[i][1] * endpoint_calib[0] + delta_e;
+		if(energy > Elow && energy < Ehigh) { // keep only tagged flux for requested range
+			Elows_tagh.push_back(energy);
+			highest_tagh = i;
+		}
+	}
+	Elows_tagh.push_back(tagh_scaled_energy[highest_tagh][2] * photon_endpoint[0]);	// add high energy edge for last counter
+	sort(Elows_tagh.begin(), Elows_tagh.end());
+	int highest_tagm = 0;
+	vector<double> Elows_tagm;
+	for(int i=tagm_scaled_energy.size()-1; i>=0; i--) {
+		double energy = tagm_scaled_energy[i][1] * endpoint_calib[0] + delta_e;
+		if(energy > Elow && energy < Ehigh) { // keep only tagged flux for requested range
+			Elows_tagm.push_back(energy);
+			highest_tagm = i;
+		}
+	}
+	Elows_tagm.push_back(tagm_scaled_energy[highest_tagm][2] * photon_endpoint[0]);	// add high energy edge for last counter
+	sort(Elows_tagm.begin(), Elows_tagm.end());
+	*/
+	fluxVsEgamma = new TH1D("BeamProperties_FluxVsEgamma", "Flux vs. E_{#gamma}", (int) ((Ehigh - Elow) * 1e6), Elow, Ehigh);
+
+	// Get tagged flux from CCDB and fill histogram (if they exist)
+	try{
+		if(!calib->GetCalib(taghflux, "PHOTON_BEAM/pair_spectrometer/lumi/tagh/tagged")) {
+			cout << "ERROR: Flux not available in CCDB for run " << mRunNumber << endl;
+			exit(101);
+		}
+		if(!calib->GetCalib(tagmflux, "PHOTON_BEAM/pair_spectrometer/lumi/tagm/tagged")) {
+			cout << "ERROR: Flux not available in CCDB for run " << mRunNumber << endl;
+			exit(101);
+		}
+	}
+	
+	catch (std::exception &) {
+		cout << "ERROR: Failed to find flux table in CCDB for run " << mRunNumber << endl;
+		exit(101);
+	}
+	double e_low = 0, e_high = 0;
+	for(uint i=0; i<taghflux.size(); i++) {
+	  e_low = tagh_scaled_energy[i][1] * endpoint_calib[0] + delta_e;
+	  e_high = tagh_scaled_energy[i][2] * endpoint_calib[0] + delta_e;
+	  int nbin = (int) ((e_high - e_low) * 1e6);
+	  //double energy = 0.5*(tagh_scaled_energy[i][1]+tagh_scaled_energy[i][2]) * photon_endpoint[0];
+	  for (int e = ((int) (e_low * 1e6)); e <= ((int) (e_high * 1e6)); e ++) {
+	    double energy = e * 1e-6;
+	    double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
+	    double flux = taghflux[i][1]/accept/((double) nbin);
+	    if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
+	    if(e_low_tagm <= energy && energy <= e_high_tagm) flux = 0; // remove very low acceptance regions to avoid fluctuations
+	    fluxVsEgamma->Fill(energy, flux);
+	  }
+	}
+
+	for(uint i=0; i<tagmflux.size(); i++) {
+	  e_low = tagm_scaled_energy[i][1] * endpoint_calib[0] + delta_e;
+	  e_high = tagm_scaled_energy[i][2] * endpoint_calib[0] + delta_e;
+	  int nbin = (int) ((e_high - e_low) * 1e6);
+	  //double energy = 0.5*(tagm_scaled_energy[i][1]+tagm_scaled_energy[i][2]) * photon_endpoint[0];
+	  for (int e = ((int) (e_low * 1e6)); e <= ((int) (e_high * 1e6)); e ++) {
+	    double energy = e * 1e-6;
+	    double accept = PSAcceptance(energy, PSnorm, PSmin, PSmax);
+	    double flux = tagmflux[i][1]/accept/((double) nbin);
+	    if(accept < 0.01) flux = 0; // remove very low acceptance regions to avoid fluctuations
+	    fluxVsEgamma->Fill(energy, flux);
+	  }
+	}
+	if (fluxVsEgamma->Integral() == 0){
+	  cout << "ERROR: Flux in CCDB not available for this energy range!" << endl;
+	  exit(101);
+	}
+
+	return;
+}
+
 
 // PLACEHOLDER: create histograms for polarization fraction from CCDB for specified run number
 void BeamProperties::fillPolFromCCDB() {

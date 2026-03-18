@@ -293,7 +293,7 @@ void Usage(void)
 int Str2GeantParticleID(char *str)
 {
    if (strcmp(str, "unknown") == 0 || strcmp(str, "Unknown") == 0)
-      return Unknown;
+      return UnknownParticle;
    if (strcmp(str, "gamma") == 0 || strcmp(str, "Gamma") == 0)
       return Gamma;
    if (strcmp(str, "positron") == 0 || strcmp(str, "Positron") == 0)

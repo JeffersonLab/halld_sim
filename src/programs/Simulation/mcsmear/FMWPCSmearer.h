@@ -8,7 +8,7 @@
 class fmwpc_config_t 
 {
   public:
-  fmwpc_config_t(JEventLoop *loop);
+  fmwpc_config_t(const std::shared_ptr<const JEvent>& event);
   
   // FMWPC resolutions and threshold
   double FMWPC_TSIGMA;
@@ -20,8 +20,8 @@ class fmwpc_config_t
 class FMWPCSmearer : public Smearer
 {
   public:
-	FMWPCSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		fmwpc_config = new fmwpc_config_t(loop);
+	FMWPCSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		fmwpc_config = new fmwpc_config_t(event);
 	}
 	~FMWPCSmearer() {
 		delete fmwpc_config;

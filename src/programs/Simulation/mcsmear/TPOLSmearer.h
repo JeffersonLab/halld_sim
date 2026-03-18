@@ -9,7 +9,7 @@
 class tpol_config_t 
 {
   public:
-	tpol_config_t(JEventLoop *loop);
+	tpol_config_t(const std::shared_ptr<const JEvent>& event);
 
 	double TPOL_SIGMA_NS;
 	double TPOL_SIGMA1_MEV;
@@ -22,8 +22,8 @@ class tpol_config_t
 class TPOLSmearer : public Smearer
 {
   public:
-	TPOLSmearer(JEventLoop *loop, mcsmear_config_t *in_config) : Smearer(loop, in_config) {
-		tpol_config = new tpol_config_t(loop);
+	TPOLSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
+		tpol_config = new tpol_config_t(event);
 	}
 	~TPOLSmearer() {
 		delete tpol_config;

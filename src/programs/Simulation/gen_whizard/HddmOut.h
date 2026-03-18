@@ -123,7 +123,7 @@ class HddmOut {
     } else if (evt.rxn != "a_to_e") {
 
       for (int i = 0; i < (evt.nGen -1); i ++) {
-	Particle_t TYPE = Unknown;
+	Particle_t TYPE = UnknownParticle;
 	if (evt.pdg[i] == 11) TYPE = Electron; 
 	if (evt.pdg[i] == -11) TYPE = Positron;
 	if (evt.pdg[i] == 22) TYPE = Gamma; 
