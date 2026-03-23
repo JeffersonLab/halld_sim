@@ -113,9 +113,10 @@ int main( int argc, char* argv[] ){
   
   int runNum = 9001;
   int seed = 0;
+  int seedProvided = 0;
   
   int nEvents = 10000;
-
+  
   TF1 * fBW = NULL;
   
   //int bin_egam = 9400;
@@ -170,7 +171,9 @@ int main( int argc, char* argv[] ){
     }
     if (arg == "-s") {
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  seed = atoi( argv[++i] ); 
+      else  {
+        seed = atoi( argv[++i] ); 
+        seedProvided = 1;
     }
     if (arg == "-h") {
       cout << endl << " Usage for: " << argv[0] << endl << endl;
@@ -182,7 +185,7 @@ int main( int argc, char* argv[] ){
       cout << "\t -a  <value>\t Minimum photon energy to simulate events [optional]" << endl;
       cout << "\t -b  <value>\t Maximum photon energy to simulate events [optional]" << endl;
       cout << "\t -r  <value>\t Run number assigned to generated events [optional]" << endl;
-      cout << "\t -s  <value>\t Random number seed initialization [optional]" << endl;
+      //cout << "\t -s  <value>\t Random number seed initialization [optional]" << endl;
       exit(1);
     }
   }
@@ -197,14 +200,17 @@ int main( int argc, char* argv[] ){
     exit(1);
   }
   TRandom3* fRandom = new TRandom3();
-  TTimeStamp * time_st = new TTimeStamp();
-  double_t timeseed = time_st->GetNanoSec();
-  // random number initialization (set to 0 by default)
-  fRandom->SetSeed(timeseed);
+  if(seedProvided) {
+    fRandom->SetSeed(seed);
+  } else {
+    TTimeStamp * time_st = new TTimeStamp();
+    double_t timeseed = time_st->GetNanoSec();
+    fRandom->SetSeed(timeseed);
+  }
   nucleus * myNucleus = new nucleus(fRandom);
   
   // Needed for cobrem_vs_E->GetRandom() calls later on:
-  gRandom->SetSeed(seed);
+  gRandom = fRandom;
   
   // initialize HDDM output
   HddmOut *hddmWriter = nullptr;
@@ -319,7 +325,6 @@ int main( int argc, char* argv[] ){
   cout << "meson " << m_meson << endl;
   cout << "target " << m_target << endl;
   cout << "Fermi_file " << m_Fermi_file << endl;
-
   
   
   TH1F * m_h_PFermi = new TH1F("PFermi", "", 12000, 0.0, 12.0);
@@ -329,7 +334,7 @@ int main( int argc, char* argv[] ){
   Particle_t t_sc2 = Gamma;
   Particle_t t_spectator = Gamma;
   Particle_t t_participant = Gamma;
-
+  
   if (m_meson == "Rho0" || m_meson == "Omega") {
     if (m_sc[0] != "" && m_sc[1] != "") {
       cout << m_meson << " decay into " << m_sc[0] << " and " << m_sc[1] << endl;
@@ -383,7 +388,7 @@ int main( int argc, char* argv[] ){
     cout << "Target mass " << ParticleMass(t_target) << " pdg " << PDGtype(t_target) << endl;
     cout << "Meson mass " << ParticleMass(t_meson) << " pdg " << PDGtype(t_meson) << endl;
   }
-
+  
   if (m_meson == "Omega") {
     double Gamma = 0.00849;
     double mass = ParticleMass(t_meson);
@@ -397,7 +402,7 @@ int main( int argc, char* argv[] ){
     fBW = new TF1("fBW", RelBW, 0.4, 1.1, 3);
     fBW->SetParameters(mass, Gamma, 1.0);
   }
-
+  
   //double M_target = ParticleMass(t_target);
   
   TLorentzVector ATargetP4(0, 0, 0, ParticleMass(t_target));
@@ -426,7 +431,7 @@ int main( int argc, char* argv[] ){
     if (do_flat_coh) cout <<"Flat coherent bin_theta " << bin_theta << " theta_min " << theta_min << " theta_max " << theta_max << endl;
     if (do_flat_qf) cout <<"Flat qf bin_theta " << bin_theta << " theta_min " << theta_min << " theta_max " << theta_max << endl;
   }
-
+  
   //double M_meson = ParticleMass(t_meson);
   
   TFile* diagOut = new TFile( "gen_primex_eta_he4_diagnostic.root", "recreate" );
@@ -441,14 +446,14 @@ int main( int argc, char* argv[] ){
   TH1F *thrown_FermiP3 = new TH1F("thrown_FermiP3",";p_{F} [GeV/c];",250,0.,1.);;
   
   TH1F * h_cop = new TH1F("cop", ";|#phi_{#eta}-#phi_{recoil}| [^{o}];Events #", 360, 0., 360.);
-
+  
   TH1F * h_mass_diff = new TH1F("mass_diff", ";#DeltaM [GeV];Events #", 2000, -1., 1.);
-
+  
   TH1F * h_meson_mass = new TH1F("meson_mass","; Mass [GeV];Events #", 2000, 0., 2.);
   TH1F * h_meson_theta = new TH1F("meson_theta","; cos;Events #", 2000, -1., 1.);
   TLorentzVector sc1P4_lab(0, 0, 0, 0);
   TLorentzVector sc2P4_lab(0, 0, 0, 0);
-
+  
   for (int i = 0; i < nEvents; ++i) {
     if (i%1000 == 1)
       cout << "event " << i <<endl;
@@ -506,7 +511,7 @@ int main( int argc, char* argv[] ){
     Recoil_COM_P4.Boost(-ISP4.BoostVector());
     double theta_com = eta_COM_P4.Theta();
     double phi_com = eta_COM_P4.Phi();
-
+    
     if (std::isnan(eta_LAB_P4.E())) {
       cout <<"Initial -nan / what is the eta polar lab. angle " <<  ThetaLAB * TMath::RadToDeg() << endl;
     }
@@ -621,7 +626,7 @@ int main( int argc, char* argv[] ){
         //double E_spe = sqrt(p3_spe.Mag() * p3_spe.Mag() + ParticleMass(t_spectator) * ParticleMass(t_spectator));
         //SpectatorP4 = TLorentzVector(p3_spe, E_spe);
         h_cop->Fill(fabs(eta_LAB_P4.Phi() - Recoil_LAB_P4.Phi()) * TMath::RadToDeg(), weight);
-
+        
         TLorentzVector meson_LAB_P4 = meson_lab((BeamP4 + NTargetP4), ParticleMass(t_meson),  ParticleMass(t_participant), eta_LAB_P4.Theta(), eta_LAB_P4.Phi());
         h_mass_diff->Fill(eta_LAB_P4.E() - meson_LAB_P4.E(), weight);
         
@@ -710,7 +715,7 @@ int main( int argc, char* argv[] ){
       He4_LAB_P4 = TLorentzVector(He4_LAB_P4.Px(), He4_LAB_P4.Py(), He4_LAB_P4.Pz(), sqrt(pow(M_n, 2) + pow(He4_LAB_P4.P(), 2)));
     if (m_target == "Proton")
       He4_LAB_P4 = TLorentzVector(He4_LAB_P4.Px(), He4_LAB_P4.Py(), He4_LAB_P4.Pz(), sqrt(pow(M_p, 2) + pow(He4_LAB_P4.P(), 2)));
-
+    
     h_Tkin_recoilA_vs_egam->Fill(ebeam, He4_LAB_P4.E() - He4_LAB_P4.M(), weight);
     h_theta_recoilA_vs_egam->Fill(ebeam, He4_LAB_P4.Theta() * TMath::RadToDeg(), weight);
     h_Tkin_eta_vs_egam->Fill(ebeam, eta_LAB_P4.E() - eta_LAB_P4.M(), weight);
@@ -797,7 +802,6 @@ int main( int argc, char* argv[] ){
       if (m_target == "Neutron") (*asciiWriter)<<"2 "<<Neutron_TYPE<<" "<<M_n<<endl;
       (*asciiWriter)<<"   "<<1<<" "<<He4_LAB_P4.Px()<<" "<<He4_LAB_P4.Py()<<" "<<He4_LAB_P4.Pz()<<" "<<He4_LAB_P4.E()<<endl;
     }
-    
   }
   h_Tkin_eta_vs_egam->Write();
   h_Tkin_photon_vs_egam->Write();
