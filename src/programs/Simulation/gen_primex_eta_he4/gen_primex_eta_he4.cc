@@ -173,6 +173,7 @@ int main( int argc, char* argv[] ){
       else  {
         customSeed = 1;
         seed = atoi( argv[++i] );
+      }
     }
     if (arg == "-h") {
       cout << endl << " Usage for: " << argv[0] << endl << endl;
