@@ -13,54 +13,101 @@
 
 using namespace std;
 
+// Constructor expects one of the following argument patterns:
+//
+// 3 args: inFileName inTreeName numParticles
+//         - Basic usage with default branch names and weight branch
+//
+// 4 args: inFileName inTreeName numParticles fourMomentumPrefix
+//         - Adds custom prefix for four-momentum branch names
+//
+// 5 args: inFileName inTreeName numParticles fourMomentumPrefix weightBranchName
+//         - Adds custom weight branch name (no friend tree)
+//
+// 6 args: inFileName inTreeName numParticles friendFileName friendTreeName weightBranchName
+//         - Adds friend tree with custom weight branch name
+//
+// 7 args: inFileName inTreeName numParticles friendFileName friendTreeName weightBranchName fourMomentumPrefix
+//         - Full specification with friend tree and custom prefix
+//
 FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
    UserDataReader< FSRootDataReader >(args),
    m_eventCounter( 0 ){
 
-      assert((args.size() >= 3 && args.size() <= 4) || (args.size()>=6 && args.size()<=7));
+      // Validate argument count
+      assert((args.size() >= 3 && args.size() <= 7));
+      
+      // Parse required arguments
       string inFileName(args[0]);
       string inTreeName(args[1]);
       m_numParticles = atoi(args[2].c_str());
       assert (m_numParticles < 50);
-      TString fourMomentumPrefix = "";
-      if (args.size() == 4) fourMomentumPrefix = args[3];
       
+      // Parse optional arguments based on count
+      TString fourMomentumPrefix = "";
       TString friendFileName = "";
-      TString friendBranchName = "weight";
       TString friendTreeName = "";
-      if (args.size() >= 6) {
+      TString weightBranchName = "weight"; // default weight branch name
+      
+      if (args.size() == 4) {        
+        fourMomentumPrefix = args[3];
+      }
+      else if (args.size() == 5) {        
+        fourMomentumPrefix = args[3];
+        weightBranchName = args[4];
+      }
+      else if (args.size() == 6) {
         friendFileName = args[3];
         friendTreeName = args[4];
-        friendBranchName = args[5];
+        weightBranchName = args[5];
       }
-      if (args.size() == 7) fourMomentumPrefix = args[6];
+      else if (args.size() == 7) {
+        friendFileName = args[3];
+        friendTreeName = args[4];
+        weightBranchName = args[5];
+        fourMomentumPrefix = args[6];
+      }
 
       TH1::AddDirectory( kFALSE );
       gSystem->Load( "libTree" );
 
+      // Open input file and tree
       ifstream fileexists( inFileName.c_str() );
       if (fileexists){
+         fileexists.close();
          m_inFile = new TFile( inFileName.c_str() );
+         if (!m_inFile || m_inFile->IsZombie()) {
+            cout << "FSRootDataReader WARNING:  Cannot open file... " << inFileName << endl;
+            m_inFile = NULL;
+            m_inTree = NULL;
+            return;
+         }
          m_inTree = static_cast<TTree*>( m_inFile->Get( inTreeName.c_str() ) );
-         if(args.size()>=5)
+         
+         if (!m_inTree) {
+            cout << "FSRootDataReader WARNING:  Cannot open tree... " << inTreeName << endl;
+            m_inFile->Close();
+            delete m_inFile;
+            m_inFile = NULL;
+            m_inTree = NULL;
+            return;
+         }
+                  
+         if(friendFileName != "" && friendTreeName != "")
             m_inTree->AddFriend(friendTreeName, friendFileName);
       }
       else{
          cout << "FSRootDataReader WARNING:  Cannot find file... " << inFileName << endl;
          m_inFile = NULL;
          m_inTree = NULL;
+         return;
       }
-
-      if(args.size()==3)
-        cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << endl;
-      if(args.size()==4)
-        cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << endl;
-      if(args.size()==5)
-        cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << endl;
-      if(args.size()==6)
-        cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << " " << args[5] << endl;
-      if(args.size()==7)
-        cout << "Opening Tree " << args[0] << " " << args[1] << " " << args[2] << " " << args[3] << " " << args[4] << " " << args[5] << " " << args[6] << endl;
+      
+      cout << "Opening Tree: " << inFileName << " " << inTreeName << " (numParticles=" << m_numParticles << ")";
+      if (fourMomentumPrefix != "") cout << " fourMomentumPrefix=" << fourMomentumPrefix;
+      if (friendFileName != "") cout << " friendFile=" << friendFileName << " friendTree=" << friendTreeName;
+      if (weightBranchName != "weight") cout << " weightBranch=" << weightBranchName;
+      cout << endl;
       if (m_inTree){
          TString sEnPB = fourMomentumPrefix+"EnPB";
          TString sPxPB = fourMomentumPrefix+"PxPB";
@@ -80,11 +127,15 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
             m_inTree->SetBranchAddress( sPxPi, &m_PxP[i] );
             m_inTree->SetBranchAddress( sPyPi, &m_PyP[i] );
             m_inTree->SetBranchAddress( sPzPi, &m_PzP[i] );
-            if(args.size()>=6)
-              m_inTree->SetBranchAddress( friendBranchName, &m_weight );
-            else
-              m_weight = 1.0;
          }
+         
+         // Set up weight branch if it exists, otherwise default to 1.0
+         if (friendFileName != "")
+            m_inTree->SetBranchAddress( weightBranchName, &m_weight );
+         else if (m_inTree->GetBranch(weightBranchName) != NULL)
+            m_inTree->SetBranchAddress( weightBranchName, &m_weight );
+         else
+            m_weight = 1.0;
       }
 
    }
@@ -103,7 +154,6 @@ Kinematics* FSRootDataReader::getEvent(){
       for (unsigned int i = 0; i < m_numParticles; i++){
          particleList.push_back( TLorentzVector( m_PxP[i], m_PyP[i], m_PzP[i], m_EnP[i] ) );
       }
-//      m_weight = 1.0;
       return new Kinematics( particleList, m_weight );
    }
    else{
