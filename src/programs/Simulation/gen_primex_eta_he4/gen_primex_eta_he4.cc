@@ -113,6 +113,7 @@ int main( int argc, char* argv[] ){
 
   int runNum = 9001;
   int seed = 0;
+  int customSeed = 0;
 
   int nEvents = 10000;
 
@@ -169,7 +170,9 @@ int main( int argc, char* argv[] ){
     }
     if (arg == "-s") {
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  seed = atoi( argv[++i] ); 
+      else  {
+        customSeed = 1;
+        seed = atoi( argv[++i] );
     }
     if (arg == "-h") {
       cout << endl << " Usage for: " << argv[0] << endl << endl;
@@ -196,10 +199,14 @@ int main( int argc, char* argv[] ){
     exit(1);
   }
   TRandom3* fRandom = new TRandom3();
-  TTimeStamp * time_st = new TTimeStamp();
-  double_t timeseed = time_st->GetNanoSec();
-  // random number initialization (set to 0 by default)
-  fRandom->SetSeed(timeseed);
+  if(customSeed) {
+    fRandom->SetSeed(seed);
+  } else {
+    TTimeStamp * time_st = new TTimeStamp();
+    double_t timeseed = time_st->GetNanoSec();
+    fRandom->SetSeed(timeseed);
+  }
+  gRandom = fRandom;
   nucleus * myNucleus = new nucleus(fRandom);
 
   // initialize HDDM output
