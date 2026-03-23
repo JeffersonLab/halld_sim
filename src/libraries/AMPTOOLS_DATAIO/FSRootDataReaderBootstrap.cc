@@ -53,7 +53,11 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
           friendBranchName = args[5];
 
           if (args.size() == 7) {
-              fourMomentumPrefix = args[6];
+              if (isInteger(args[6])) {
+                randSeed = atoi(args[6].c_str());
+              } else {
+                fourMomentumPrefix = args[6];
+              }
           }
           else if (args.size() == 8) {
               fourMomentumPrefix = args[6];
