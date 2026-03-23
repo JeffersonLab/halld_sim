@@ -421,6 +421,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderWithTCut>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderTEM>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<FSRootDataReader>() );
+   AmpToolsInterface::registerDataReader( DataReaderMPI<FSRootDataReaderBootstrap>() );
 
    if(noFit)
       getLikelihood(cfgInfo);
