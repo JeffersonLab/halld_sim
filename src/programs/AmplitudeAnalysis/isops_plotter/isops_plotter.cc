@@ -68,27 +68,29 @@ int main( int argc, char* argv[] ){
 
   if (argc < 2){
     cout << "Usage:" << endl << endl;
-    cout << "\tisops_plotter <results file name> -o <output file name>" << endl << endl;
+    cout << "\tisops_plotter <results file name> -o <output root file name> -t <output text file name>" << endl << endl;
     return 0;
   }
 
   bool showGui = false;
-  string outName = "isops_histos.root";
   string resultsName(argv[1]);
+  string outName = "isops_histos.root";
+  string outparsName = "isops__fitpars.txt";
+  
   for (int i = 2; i < argc; i++){
 
     string arg(argv[i]);
 
-    if (arg == "-g"){
-      showGui = true;
-    }
-    if (arg == "-o"){
-      outName = argv[++i];
-    }
+    if (arg == "-o")  outName = argv[++i];
+    if (arg == "-t")  outparsName = argv[++i];
+    if (arg == "-g")  showGui = true;
+
+    
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
-      cout << "\t -o <file>\t output file path" << endl;
-      cout << "\t -g <file>\t show GUI" << endl;
+      cout << "\t -o <file>\t output root file path" << endl;
+      cout << "\t -t <file>\t output text file path" << endl;
+      cout << "\t -g <file>\t show GUI" << endl;  
       exit(1);
     }
   }
@@ -99,7 +101,8 @@ int main( int argc, char* argv[] ){
     // ************************
 
   cout << "Fit results file name    = " << resultsName << endl;
-  cout << "Output file name    = " << outName << endl << endl;
+  cout << "Output root file name    = " << outName << endl << endl;
+  cout << "Output text file name    = " << outparsName << endl << endl;
 
     // ************************
     // load the results and display the configuration info
@@ -127,11 +130,16 @@ int main( int argc, char* argv[] ){
     // *************************
     // Define Amplitude and Sum names
     // *****************************
-   /*
-     vector<string> amphistname = {"Flat","0-P", "1+S-", "1+S0", "1+S+", "1+D-", "1+D0", "1+D+", "2+D--", "2+D-", "2+D0", "2+D+", "2+D++"}; 
-     vector<string> reflname = {"Uniform","PosRefl", "NegRefl"}; 
 
-     
+    vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
+    vector<string> amphistname = {"Flat"};
+    vector<string> rhoIsobar_comps = {"rhoIso_0-P", "rhoIso_1+S-", "rhoIso_1+S0", "rhoIso_1+S+", "rhoIso_1+D-", "rhoIso_1+D0", "rhoIso_1+D+", "rhoIso_2+D--", "rhoIso_2+D-", "rhoIso_2+D0", "rhoIso_2+D+", "rhoIso_2+D++"}; 
+    vector<string> f2Isobar_comps = {"f2Iso_1+P-","f2Iso_1+P0","f2Iso_1+P+","f2Iso_2+P--","f2Iso_2+P-","f2Iso_2+P0","f2Iso_2+P+","f2Iso_2+P++","f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++"};
+
+    amphistname.insert(amphistname.end(), rhoIsobar_comps.begin(), rhoIsobar_comps.end());
+    amphistname.insert(amphistname.end(), f2Isobar_comps.begin(), f2Isobar_comps.end());
+
+    
     // ************************
     // set up an output ROOT file to store histograms
     // ************************
@@ -255,7 +263,7 @@ int main( int argc, char* argv[] ){
 
 	  if (iplot == PlotGenerator::kData) histname += "_data";
 	  if (iplot == PlotGenerator::kBkgnd) histname += "_bkgnd";
-	  if (iplot == PlotGenerator::kAccMC) histname += "_acc";
+	  if (iplot == PlotGenerator::kAccMC) histname += "_fit";
 	  if (iplot == PlotGenerator::kGenMC) histname += "_gen";
 	  
 	  if (irefl < reflname.size()){
@@ -302,7 +310,7 @@ int main( int argc, char* argv[] ){
 
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
-  outfile.open( "vecps3pi__fitpars.txt" );
+  outfile.open( outparsName );
 
   for(unsigned int i = 0; i<pars.size(); i++) {
     double parValue = results.parValue( pars[i] );
@@ -380,7 +388,7 @@ int main( int argc, char* argv[] ){
   // covariance matrix
   vector< vector< double > > covMatrix;
   covMatrix = results.errorMatrix();
-  */
+
 
 
     // ************************
