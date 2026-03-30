@@ -647,35 +647,19 @@ void generatePlots(ProgramOptions& options, std::unique_ptr<vecps_PlotGen>& plot
         }
 
         // Loop over all histograms defined in VecPsPlotGenerator
-        for (unsigned int ivar = 0; ivar < VecPsPlotGenerator::kNumHists; ++ivar){
+        // The loop variable should be defined using the first entry in the 
+        // enum, in this case kVecPsMass (change if needed). The last one is 
+        // kNumHists and this one should not change
+        for (VecPsPlotGenerator::Hist_index ivar = VecPsPlotGenerator::kVecPsMass; 
+            ivar < VecPsPlotGenerator::kNumHists; 
+            ivar = static_cast<VecPsPlotGenerator::Hist_index>(ivar + 1)){
             Histogram* hist = plotResults->projection(ivar, reactionName, iType);
             if (!hist) continue; // safety skip
             TH1* histRoot = hist->toRoot();
 
-            std::string histName = "";
-            // Assign proper names to each histogram. Note that the names are
-            // defined in VecPsPlotGenerator
-            // TODO: add a parser for the variables similar to reflToString to
-            // VecPsPlotGenerator to make this more automatic and
-            // avoid the need to edit this file when adding new variables
-            switch (ivar) {
-                case VecPsPlotGenerator::kVecPsMass: histName = "MVecPs"; break;
-                case VecPsPlotGenerator::kCosTheta: histName = "CosTheta"; break;
-                case VecPsPlotGenerator::kPhi: histName = "Phi"; break;
-                case VecPsPlotGenerator::kCosThetaH: histName = "CosTheta_H"; break;
-                case VecPsPlotGenerator::kPhiH: histName = "Phi_H"; break;
-                case VecPsPlotGenerator::kProd_Ang: histName = "Prod_Ang"; break;
-                case VecPsPlotGenerator::kt: histName = "t"; break;
-                case VecPsPlotGenerator::kRecoilMass: histName = "MRecoil"; break;
-                case VecPsPlotGenerator::kProtonPsMass: histName = "MProtonPs"; break;
-                case VecPsPlotGenerator::kRecoilPsMass: histName = "MRecoilPs"; break;
-                case VecPsPlotGenerator::kLambda: histName = "Lambda"; break;
-                case VecPsPlotGenerator::kDalitz: histName = "Dalitz"; break;
-                case VecPsPlotGenerator::kPhi_ProdVsPhi: histName = "Phi_ProdVsPhi"; break;
-                case VecPsPlotGenerator::kPhiOffsetVsPhi: histName = "PhiOffsetVsPhi"; break;               
-                // Add more variables here if needed
-                default: continue;
-            }
+            // Assign proper names to each histogram. Note that the names 
+            // and the translation table are defined in VecPsPlotGenerator 
+            std::string histName = VecPsPlotGenerator::numToString(ivar);
 
             if(!(iType==PlotGenerator::kData))
                 histName += "_" + dataType + cfgLabel.histName;
@@ -690,20 +674,19 @@ void generatePlots(ProgramOptions& options, std::unique_ptr<vecps_PlotGen>& plot
 // and phase differences between amplitudes. It has some patterns to help 
 // parsing, but csv file might be preferred for that purpose.
 // Note: the default behavior is the acceptance corrected intensities
-// TODO: include things like d/s ratios and other parameters
 void writeAmpInfo(const AmplitudeRegistry& reg,
-                  std::unique_ptr<FitResults>& results,
-                  std::ofstream& out){
-    out.open("test.txt");
+                  std::unique_ptr<FitResults>& results){
+
+    std::ofstream parsOutputFile("params.txt");
     // This is the total number of events for the acceptance correction
     auto total = results->intensity();
     double totalVal = total.first;
     double totalErr = total.second;
 
-    out << "################################################\n";
-    out << "#       All Values are acceptance corrected    #\n";
-    out << "################################################\n";
-    out << "Total Events = " << totalVal << " +- " << totalErr << "\n";
+    parsOutputFile << "################################################\n";
+    parsOutputFile << "#       All Values are acceptance corrected    #\n";
+    parsOutputFile << "################################################\n";
+    parsOutputFile << "Total Events = " << totalVal << " +- " << totalErr << "\n";
     
     // Coherent sums
     for(size_t iAmp = 0; iAmp < reg.nUnqAmps; ++iAmp){
@@ -724,11 +707,11 @@ void writeAmpInfo(const AmplitudeRegistry& reg,
 
             auto val = results->intensity(fullNames);
 
-            out << "FIT FRACTION (coherent sum) "
-                << reflToString(refl) << " "
-                << wave.ampName << " = "
-                << val.first / totalVal << " +- "
-                << val.second / totalVal << "\n";
+            parsOutputFile << "FIT FRACTION (coherent sum) "
+                           << reflToString(refl) << " "
+                           << wave.ampName << " = "
+                           << val.first / totalVal << " +- "
+                           << val.second / totalVal << "\n";
         }
     }
 
@@ -743,11 +726,11 @@ void writeAmpInfo(const AmplitudeRegistry& reg,
 
         auto val = results->intensity(fullNames);
 
-        out << "FIT FRACTION (coherent sum) "
-            << reflToString(refl) << " "
-            << jlFamily << " = "
-            << val.first / totalVal << " +- "
-            << val.second / totalVal << "\n";
+        parsOutputFile << "FIT FRACTION (coherent sum) "
+                       << reflToString(refl) << " "
+                       << jlFamily << " = "
+                       << val.first / totalVal << " +- "
+                       << val.second / totalVal << "\n";
     }
 
     // Individual amplitudes
@@ -757,16 +740,16 @@ void writeAmpInfo(const AmplitudeRegistry& reg,
 
         auto val = results->intensity(singleAmp);
 
-        out << "FIT FRACTION " << ampKey.fullName << " = "
-            << val.first / totalVal << " +- "
-            << val.second / totalVal << "\n";
+        parsOutputFile << "FIT FRACTION " << ampKey.fullName << " = "
+                       << val.first / totalVal << " +- "
+                       << val.second / totalVal << "\n";
     }
     
-    out << "################################################\n";
-    out << "################################################\n";
-    out << "#              Phase Differences               #\n";
-    out << "################################################\n";
-    out << "################################################\n";
+    parsOutputFile << "################################################\n";
+    parsOutputFile << "################################################\n";
+    parsOutputFile << "#              Phase Differences               #\n";
+    parsOutputFile << "################################################\n";
+    parsOutputFile << "################################################\n";
 
     // In general, the phase differences are the same for all 
     // reactions. This is because the current use case is that 
@@ -793,27 +776,43 @@ void writeAmpInfo(const AmplitudeRegistry& reg,
 
             auto phaseDiff = results->phaseDiff(amp1.fullName, amp2.fullName);
 
-            out << "PHASE DIFF " 
-                << amp1.fullName << " " 
-                << amp2.fullName << " = " 
-                << phaseDiff.first << " +- " 
-                << phaseDiff.second << "\n";
+            parsOutputFile << "PHASE DIFF " 
+                           << amp1.fullName << " vs " 
+                           << amp2.fullName << " = " 
+                           << phaseDiff.first << " +- " 
+                           << phaseDiff.second << "\n";
         }
     }
+    
+    parsOutputFile << "################################################\n";
+    parsOutputFile << "################################################\n";
+    parsOutputFile << "#                Amp Parameters                #\n";
+    parsOutputFile << "################################################\n";
+    parsOutputFile << "################################################\n";
+
+    // currently plots all parameters, including production amplitudes
+    // a helper function could be added to filter the parameters of interest
+    std::vector<std::string> parNameList = results->parNameList();
+    for(const auto& parName : parNameList){     
+        double parVal = results->parValue(parName);
+        double parErr = results->parError(parName);
+        parsOutputFile << parName << ": " 
+                       << parVal <<  " +- "
+                       << parErr << "\n";
+    }
+    parsOutputFile.close();
 } 
 
 void writeAmpInfoCSV(const AmplitudeRegistry& reg,
-                     std::unique_ptr<FitResults>& results,
-                     std::ofstream& out){
-    out.open("fit_results.csv");
-
+                     std::unique_ptr<FitResults>& results){
+    std::ofstream csvOutputFile("params.csv");
     // This is the total number of events for the acceptance correction
     auto total = results->intensity();
     double totalVal = total.first;
     double totalErr = total.second;
 
-    out << "Type,Name,Value,Error\n";
-    out << "Total,Acceptance Corrected Events," << totalVal << "," 
+    csvOutputFile << "Type,Name,Value,Error\n";
+    csvOutputFile << "Total,Acceptance Corrected Events," << totalVal << "," 
         << totalErr << "\n";
 
     // Coherent sums
@@ -833,7 +832,7 @@ void writeAmpInfoCSV(const AmplitudeRegistry& reg,
 
             auto val = results->intensity(fullNames);
 
-            out << "CoherentSum," 
+            csvOutputFile << "CoherentSum," 
                 << reflToString(refl) << " " << wave.ampName << ","
                 << val.first / totalVal << ","
                 << val.second / totalVal << "\n";
@@ -851,7 +850,7 @@ void writeAmpInfoCSV(const AmplitudeRegistry& reg,
 
         auto val = results->intensity(fullNames);
 
-        out << "CoherentSum," 
+        csvOutputFile << "CoherentSum," 
             << reflToString(refl) << " " << jlFamily << ","
             << val.first / totalVal << ","
             << val.second / totalVal << "\n";
@@ -862,7 +861,7 @@ void writeAmpInfoCSV(const AmplitudeRegistry& reg,
         std::vector<std::string> singleAmp = { ampKey.fullName };
         auto val = results->intensity(singleAmp);
 
-        out << "IndividualAmp," 
+        csvOutputFile << "IndividualAmp," 
             << ampKey.fullName << ","
             << val.first / totalVal << ","
             << val.second / totalVal << "\n";
@@ -884,12 +883,25 @@ void writeAmpInfoCSV(const AmplitudeRegistry& reg,
 
             auto phaseDiff = results->phaseDiff(amp1.fullName, amp2.fullName);
 
-            out << "PhaseDiff,"
+            csvOutputFile << "PhaseDiff,"
                 << amp1.fullName << " vs " << amp2.fullName << ","
                 << phaseDiff.first << ","
                 << phaseDiff.second << "\n";
         }
     }
+
+    // currently plots all parameters, including production amplitudes
+    // a helper function could be added to filter the parameters of interest
+    std::vector<std::string> parNameList = results->parNameList();
+    for(const auto& parName : parNameList){     
+        double parVal = results->parValue(parName);
+        double parErr = results->parError(parName);
+        csvOutputFile << "Parameter,"
+                       << parName << "," 
+                       << parVal <<  ","
+                       << parErr << "\n";
+    }
+    csvOutputFile.close();
 }
 
 // ...oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.....
@@ -1063,14 +1075,12 @@ void analyzeFitFile(ProgramOptions& options,
 }
 
 void startGUI(ProgramOptions& options,
-              std::unique_ptr<FitResults>& results,
               std::unique_ptr<vecps_PlotGen>& plotResults){
     if(options.skipPlots){
         std::cout << "No plots = No GUI\n";
         return;
     }
-    string reactionName = results->reactionList()[0];
-    plotResults->enableReaction(reactionName);
+    auto plotResults_local = std::move(plotResults);
     // start the GUI
     if (options.showGui){
         std::cout << ">> Plot generator ready, starting GUI..." << std::endl;
@@ -1078,6 +1088,7 @@ void startGUI(ProgramOptions& options,
         int dummy_argc = 0;
         char* dummy_argv[] = {};
         TApplication app("app", &dummy_argc, dummy_argv);
+        app.SetReturnFromRun(true);
 
         gStyle->SetFillColor(10);
         gStyle->SetCanvasColor(10);
@@ -1088,13 +1099,14 @@ void startGUI(ProgramOptions& options,
         gStyle->SetFrameFillStyle(1001);
 
         std::cout << " Initialized App " << std::endl;
-        PlotFactory factory(*plotResults);
+        auto factory = new PlotFactory(*plotResults_local);
         std::cout << " Created Plot Factory " << std::endl;
-        PlotterMainWindow mainFrame(gClient->GetRoot(), factory);
+        auto mainFrame = new PlotterMainWindow(gClient->GetRoot(), *factory);
         std::cout << " Main frame created " << std::endl;
-
-        app.Run();
+        mainFrame->Connect("CloseWindow()", "TApplication", gApplication, "Terminate()");
         std::cout << " App running" << std::endl;
+        app.Run();
+	    std::cout << "GUI closed cleanly\n";
     }
 
 }
@@ -1115,16 +1127,14 @@ int main(int argc, char* argv[]){
         return 1;   // Parsing failed
     }
     
-    analyzeFitFile(options, results, plotResults,registry);
-    ofstream parsOutputFile;
-    writeAmpInfo(registry,results,parsOutputFile);
-    parsOutputFile.close();
-
-    ofstream csvOutputFile;
-    writeAmpInfoCSV(registry,results,csvOutputFile);
-    csvOutputFile.close();
+    analyzeFitFile(options, results, plotResults, registry);
     
-    startGUI(options, results, plotResults);
+    writeAmpInfo(registry,results);
+    
+    writeAmpInfoCSV(registry,results);
+    
+    // GUI needs to be started last
+    startGUI(options, plotResults);
 
     return 0;
 }
