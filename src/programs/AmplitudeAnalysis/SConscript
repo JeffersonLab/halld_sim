@@ -8,5 +8,5 @@ subdirs = ['fit', 'twopi_plotter', 'twopi_plotter_amp', 'twopi_plotter_mom', 'tw
 SConscript(dirs=subdirs, exports='env osname', duplicate=0)
 
 # Optional targets
-optdirs = ['fitMPI']
+optdirs = ['fitMPI', 'twok_plotter']
 sbms.OptionallyBuild(env, optdirs)
