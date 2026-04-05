@@ -35,6 +35,8 @@
 #include "AMPTOOLS_AMPS/TwoLeptonAngles.h"
 #include "AMPTOOLS_AMPS/TwoLeptonAnglesGJ.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
+#include "AMPTOOLS_AMPS/Ylm.h"
+#include "AMPTOOLS_AMPS/Ylm_reim.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
@@ -449,6 +451,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoLeptonAngles() );
    AmpToolsInterface::registerAmplitude( TwoLeptonAnglesGJ() );
    AmpToolsInterface::registerAmplitude( Zlm() );
+   AmpToolsInterface::registerAmplitude( Ylm() );
+   AmpToolsInterface::registerAmplitude( Ylm_reim() );
    AmpToolsInterface::registerAmplitude( b1piAngAmp() );
    AmpToolsInterface::registerAmplitude( polCoef() );
    AmpToolsInterface::registerAmplitude( Uniform() );
