@@ -14,8 +14,8 @@ PlotGenerator( results )
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerAmplitude( Ylm());
 
-  bookHistogram( khm12, new Histogram1D( 100, 1.0, 5.0, "hm12", "Mass(p#eta') [GeV/c^{2}]" ) );
-  bookHistogram( khm13, new Histogram1D( 100, 1.0, 5.0, "hm13", "Mass(p#eta) [GeV/c^{2}]" ) );
+  bookHistogram( khm12, new Histogram1D( 50, 1.0, 4.2, "hm12", "Mass(p#eta') [GeV/c^{2}]" ) );
+  bookHistogram( khm13, new Histogram1D( 50, 1.0, 4.0, "hm13", "Mass(p#eta) [GeV/c^{2}]" ) );
   bookHistogram( khm23, new Histogram1D( 20, 1.4, 3.4, "hm23", "M(#eta#eta') [GeV/c^{2}]" ) );
   bookHistogram( khm1, new Histogram1D( 100, 0.5, 1.5, "hm1", "Mass( p )" ) );
   bookHistogram( khm2, new Histogram1D( 100, 0.7, 1.5, "hm2", "Mass( #eta' )" ) );
