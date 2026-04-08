@@ -101,7 +101,7 @@ int main( int argc, char* argv[] ){
     // ************************
 
   cout << "Fit results file name    = " << resultsName << endl;
-  cout << "Output root file name    = " << outName << endl << endl;
+  cout << "Output root file name    = " << outName << endl;
   cout << "Output text file name    = " << outparsName << endl << endl;
 
     // ************************
@@ -134,7 +134,7 @@ int main( int argc, char* argv[] ){
     vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
     vector<string> amphistname = {"Flat"};
     vector<string> rhoIsobar_comps = {"rhoIso_0-P", "rhoIso_1+S-", "rhoIso_1+S0", "rhoIso_1+S+", "rhoIso_1+D-", "rhoIso_1+D0", "rhoIso_1+D+", "rhoIso_2+D--", "rhoIso_2+D-", "rhoIso_2+D0", "rhoIso_2+D+", "rhoIso_2+D++"}; 
-    vector<string> f2Isobar_comps = {"f2Iso_1+P-","f2Iso_1+P0","f2Iso_1+P+","f2Iso_2+P--","f2Iso_2+P-","f2Iso_2+P0","f2Iso_2+P+","f2Iso_2+P++","f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++"};
+    vector<string> f2Isobar_comps = {"f2Iso_1+P-","f2Iso_1+P0","f2Iso_1+P+","f2Iso_2+P--","f2Iso_2+P-","f2Iso_2+P0","f2Iso_2+P+","f2Iso_2+P++","f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++","f2Iso_2-D--","f2Iso_2-D-","f2Iso_2-D0","f2Iso_2-D+","f2Iso_2-D++"};
 
     amphistname.insert(amphistname.end(), rhoIsobar_comps.begin(), rhoIsobar_comps.end());
     amphistname.insert(amphistname.end(), f2Isobar_comps.begin(), f2Isobar_comps.end());
@@ -301,13 +301,12 @@ int main( int argc, char* argv[] ){
   // The next calculations only need to happen one time
   
   // model parameters
-  cout << "Checking Parameters" << endl;
+  // cout << "Checking Parameters" << endl;
   
   // parameters to check
-  vector< string > pars;
-  
+  vector< string > pars;  
   //  pars.push_back("dsratio");
-
+  
   // file for writing parameters (later switch to putting in ROOT file)
   ofstream outfile;
   outfile.open( outparsName );
@@ -356,10 +355,14 @@ int main( int argc, char* argv[] ){
     // second loop over amplitudes to get phase difference names
     for(unsigned int j = i+1; j < fullamps.size(); j++){
 
-      // only keep amplitudes from the same coherent sum (and ignore constrained Real)
-      if(fullamps[i].find("Real") != std::string::npos) continue;
-      if(fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos) continue;
-      if(fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
+      // leave only the Spring2017_PARA_00::ImagPosSign and Spring2017_PARA_00::ImagNegSign coherent sums
+      if (fullamps[i].find("Spring2017_PARA_00") == std::string::npos || fullamps[j].find("Spring2017_PARA_00") == std::string::npos) continue;      
+      if (fullamps[i].find("UniBG") != std::string::npos || fullamps[j].find("UniBG") != std::string::npos) continue;      
+      if (fullamps[i].find("Real") != std::string::npos || fullamps[j].find("Real") != std::string::npos) continue;      
+      
+      // only pair amplitudes in the same coherent sums
+      if (fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos) continue;
+      if (fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
 	    
       phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
 

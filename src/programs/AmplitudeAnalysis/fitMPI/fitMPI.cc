@@ -69,7 +69,7 @@ using std::complex;
 using namespace std;
 
 int rank_mpi;
-int size;
+int mpi_size;
 
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
    AmpToolsInterfaceMPI ati( cfgInfo );
@@ -316,7 +316,7 @@ int main( int argc, char* argv[] ){
    MPI_Init( &argc, &argv );
 
    MPI_Comm_rank( MPI_COMM_WORLD, &rank_mpi );
-   MPI_Comm_size( MPI_COMM_WORLD, &size );
+   MPI_Comm_size( MPI_COMM_WORLD, &mpi_size );
 
    // set default parameters
 
