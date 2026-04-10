@@ -59,6 +59,8 @@ void VecPsPlotGenerator::createHistograms( ) {
   bookHistogram(kPhiH, new Histogram1D(50, -PI, PI, "Phi_H", ";#phi_H [rad.]"));
   bookHistogram(kProd_Ang, new Histogram1D(50, -PI, PI, "Prod_Ang",
                  ";Prod_Ang (#Phi) [rad.]"));
+   bookHistogram(kProdOffset, new Histogram1D(50, -PI, PI, "ProdOffset", 
+                 ";Prod_Ang (#Phi) Uncorrected [rad.]" ) );
   bookHistogram(kt, new Histogram1D(100, 0, 2.0, "t", ";-t"));
   bookHistogram(kRecoilMass, new Histogram1D(100, 0.9, 1.9, "MRecoil",
                  ";Invariant Mass of Recoil [GeV]"));
