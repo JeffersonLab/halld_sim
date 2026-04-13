@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "TClass.h"
 #include "TApplication.h"
@@ -146,14 +147,16 @@ int main( int argc, char* argv[] ){
 
      TFile* plotfile = new TFile( outName.c_str(), "recreate");
      TH1::AddDirectory(kFALSE);
+     TDirectory* plotfiledir = plotfile->mkdir("Contributions");  
 
      
      // *************************
      // Loop over different polarization types 
     // *************************
      size_t nReactions = results.reactionList().size();
+     std::map<std::string, TH1*> summedHists;
 
-          
+     
   for (unsigned int polType = 0; polType < nReactions; polType++) {
 
     
@@ -164,8 +167,8 @@ int main( int argc, char* argv[] ){
     //TFile* plotfile = new TFile( outName.c_str(), "recreate");
     //TH1::AddDirectory(kFALSE);
 
-    string dirname = "Contributions_"+reactionName;
-    TDirectory* plotfiledir = plotfile->mkdir(dirname.c_str());  
+    //    string dirname = "Contributions_"+reactionName;
+    //    TDirectory* plotfiledir = plotfile->mkdir(dirname.c_str());  
 
   
     plotGen.enableReaction( reactionName );
@@ -245,20 +248,23 @@ int main( int argc, char* argv[] ){
 	// loop over different variables
 	for (unsigned int ivar  = 0; ivar  < IsoPsPlotGenerator::kNumHists; ivar++){
 	  
-	  // set unique histogram name for each plot (could put in directories...)
-	  string histname = reactionName;
-
-	  if (ivar == IsoPsPlotGenerator::kProd_Ang)  histname += "_Prod_Ang";
-	  else if (ivar == IsoPsPlotGenerator::kCosTheta)  histname += "_CosTheta_GJ";
-	  else if (ivar == IsoPsPlotGenerator::kPhi)  histname += "_Phi_GJ";
-	  else if (ivar == IsoPsPlotGenerator::kCosThetaH)  histname += "_CosTheta_HF";
-	  else if (ivar == IsoPsPlotGenerator::kPhiH)  histname += "_Phi_HF";
-	  else if (ivar == IsoPsPlotGenerator::kIsoMass)  histname += "_MIso";
-	  else if (ivar == IsoPsPlotGenerator::kIsoPsMass)  histname += "_MIsoPs";
-	  else if (ivar == IsoPsPlotGenerator::kt)  histname += "_minust";
-	  else if (ivar == IsoPsPlotGenerator::kRecoilMass)  histname += "_ProtonPiplusL_M";
-	  else if (ivar == IsoPsPlotGenerator::kProtonPsMass)  histname += "_ProtonPiminus_M";
-	  else if (ivar == IsoPsPlotGenerator::kRecoilPsMass)  histname += "_ProtonPiplusLPiminus_M";
+	  // set reaction name as a prefix to the histogram name if all reactions are saved separately
+	  // set a common name or no name as a prefix to the histogram name if all reactions are summed up 
+	  //string histname = reactionName;
+	  string histname = "";
+	  
+	  
+	  if (ivar == IsoPsPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
+	  else if (ivar == IsoPsPlotGenerator::kCosTheta)  histname += "CosTheta_GJ";
+	  else if (ivar == IsoPsPlotGenerator::kPhi)  histname += "Phi_GJ";
+	  else if (ivar == IsoPsPlotGenerator::kCosThetaH)  histname += "CosTheta_HF";
+	  else if (ivar == IsoPsPlotGenerator::kPhiH)  histname += "Phi_HF";
+	  else if (ivar == IsoPsPlotGenerator::kIsoMass)  histname += "MIso";
+	  else if (ivar == IsoPsPlotGenerator::kIsoPsMass)  histname += "MIsoPs";
+	  else if (ivar == IsoPsPlotGenerator::kt)  histname += "minust";
+	  else if (ivar == IsoPsPlotGenerator::kRecoilMass)  histname += "ProtonPiplusL_M";
+	  else if (ivar == IsoPsPlotGenerator::kProtonPsMass)  histname += "ProtonPiminus_M";
+	  else if (ivar == IsoPsPlotGenerator::kRecoilPsMass)  histname += "ProtonPiplusLPiminus_M";
 	  else continue;	  
 
 	  if (iplot == PlotGenerator::kData) histname += "_data";
@@ -282,16 +288,40 @@ int main( int argc, char* argv[] ){
 	  Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
 	  TH1* thist = hist->toRoot();
 	  thist->SetName(histname.c_str());
-	  if (iamp > 0 && iamp < amphistname.size())  plotfiledir->cd();
-	  else  plotfile->cd();
-	  thist->Write();
+
+	  // sum histograms across reactions
+	  if (summedHists.find(histname) == summedHists.end())
+	    summedHists[histname] = (TH1*) thist->Clone();
+	  else 
+	    summedHists[histname]->Add(thist);
+
+	  //write separate histogram for each reaction
+	  //if (iamp > 0 && iamp < amphistname.size())  plotfiledir->cd();
+	  //else  plotfile->cd();
+	  //thist->Write();
 	  
+	  delete thist;
 	}
       }
     } // end of loop over amplitudes
    } // end of loop over sum configurations
   }// end of loop over 'reactions'
 
+  
+
+  //Now, write summed up histograms to the root file
+  for (auto it = summedHists.begin(); it != summedHists.end(); it++) {
+
+    std::string hsummed_name = it->first;
+    TH1* hsummed = it->second;    
+    hsummed->SetName(hsummed_name.c_str());
+
+    if (hsummed_name.find("+") != std::string::npos || hsummed_name.find("-") != std::string::npos)  plotfiledir->cd();              
+    else  plotfile->cd();
+    hsummed->Write();
+  }
+
+  
   plotfile->Close(); 
 
 

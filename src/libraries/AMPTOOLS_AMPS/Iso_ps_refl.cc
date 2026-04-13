@@ -61,7 +61,7 @@ UserAmplitude< Iso_ps_refl >( args ){
   m_s = static_cast<int>(parseValidatedNumber("S",args[0]));  
   // Resonance spin J
   m_j = static_cast<int>(parseValidatedNumber("J", args[1])); 
-  // Spin projection (Lambda)
+  // Resonance spin projection 
   m_m = static_cast<int>(parseValidatedNumber("M", args[2])); 
   // Partial wave L
   m_l = static_cast<int>(parseValidatedNumber("L", args[3])); 
