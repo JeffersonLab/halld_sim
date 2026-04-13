@@ -35,7 +35,7 @@ class PiPiSWaveAMP : public UserAmplitude<PiPiSWaveAMP>{
       ~PiPiSWaveAMP(){}
 
       string name() const { return "PiPiSWaveAMP"; }
-      void setParametrizationAMP(); 
+      void setParametrizationAMPK(); 
       complex <GDouble> calcAmplitude( GDouble** pKin ) const;
 
 #ifdef GPU_ACCELERATION
@@ -52,8 +52,12 @@ class PiPiSWaveAMP : public UserAmplitude<PiPiSWaveAMP>{
       int _vesSheet;
       std::vector <GDouble> _sP; 
       std::vector <GDouble> _a11; 
+      std::vector <GDouble> _a12; 
+      std::vector <GDouble> _a21; 
       std::vector <GDouble> _a22; 
       std::vector <GDouble> _c11; 
+      std::vector <GDouble> _c12; 
+      std::vector <GDouble> _c21; 
       std::vector <GDouble> _c22; 
 
   
