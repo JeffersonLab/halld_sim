@@ -111,8 +111,7 @@ UserAmplitude< Iso_ps_refl >( args ){
   }  
 }
 
-void
-Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
+void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 
   TLorentzVector beam;
   TVector3 eps;

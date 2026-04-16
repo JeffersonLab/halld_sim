@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -33,6 +32,7 @@
 #include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/PiPiSWaveAMPK.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
@@ -423,7 +423,9 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
    AmpToolsInterface::registerAmplitude( Vec_ps_moment() );
+   AmpToolsInterface::registerAmplitude( PiPiSWaveAMPK() );
 
+   
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderWithTCut>() );

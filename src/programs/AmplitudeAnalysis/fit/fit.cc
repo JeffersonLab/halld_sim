@@ -37,6 +37,7 @@
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
+#include "AMPTOOLS_AMPS/PiPiSWaveAMPK.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
@@ -450,7 +451,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
    AmpToolsInterface::registerAmplitude( Vec_ps_moment() );
-
+   AmpToolsInterface::registerAmplitude( PiPiSWaveAMPK() );
+   
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderBootstrap() );
    AmpToolsInterface::registerDataReader( ROOTDataReaderWithTCut() );

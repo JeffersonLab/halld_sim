@@ -1,5 +1,5 @@
-#if !defined(PIPISWAVEAMP)
-#define PIPISWAVEAMP
+#if !defined(PIPISWAVEAMPK)
+#define PIPISWAVEAMPK
 
 #include "particleType.h"
 #include "IUAmpTools/UserAmplitude.h"
@@ -16,7 +16,7 @@
 
 
 #ifdef GPU_ACCELERATION
-void PiPiSWaveAMP_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble m_mass, GDouble m_g1, GDouble m_g2, int m_daughter1, int m_daughter2 );
+void PiPiSWaveAMPK_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble m_mass, GDouble m_g1, GDouble m_g2, int m_daughter1, int m_daughter2 );
 #endif // GPU_ACCELERATION
 
 
@@ -26,16 +26,16 @@ using namespace std;
 
 class Kinematics;
 
-class PiPiSWaveAMP : public UserAmplitude<PiPiSWaveAMP>{
+class PiPiSWaveAMPK : public UserAmplitude<PiPiSWaveAMPK>{
 
    public:
 
-      PiPiSWaveAMP() : UserAmplitude <PiPiSWaveAMP>() { }
-      PiPiSWaveAMP( const vector<string> &args );
-      ~PiPiSWaveAMP(){}
+      PiPiSWaveAMPK() : UserAmplitude <PiPiSWaveAMPK>() { }
+      PiPiSWaveAMPK( const vector<string> &args );
+      ~PiPiSWaveAMPK(){}
 
-      string name() const { return "PiPiSWaveAMP"; }
-      void setParametrizationAMPK(); 
+      string name() const { return "PiPiSWaveAMPK"; }
+      void setParametrization(); 
       complex <GDouble> calcAmplitude( GDouble** pKin ) const;
 
 #ifdef GPU_ACCELERATION
@@ -49,16 +49,9 @@ class PiPiSWaveAMP : public UserAmplitude<PiPiSWaveAMP>{
 
       pair< string, string > m_daughters;    
 
-      int _vesSheet;
-      std::vector <GDouble> _sP; 
-      std::vector <GDouble> _a11; 
-      std::vector <GDouble> _a12; 
-      std::vector <GDouble> _a21; 
-      std::vector <GDouble> _a22; 
-      std::vector <GDouble> _c11; 
-      std::vector <GDouble> _c12; 
-      std::vector <GDouble> _c21; 
-      std::vector <GDouble> _c22; 
+      GDouble s0; 
+      GDouble a11; 
+      std::vector <GDouble> c11; 
 
   
       const GDouble _piChargedMass = ParticleMass(PiPlus); //0.13957039;
