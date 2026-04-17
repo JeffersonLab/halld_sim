@@ -23,6 +23,7 @@ PlotGenerator( results )
   bookHistogram( kdltz, new Histogram2D( 80, 0.0, 25.0, 80, 0.0, 9.0, "dltz", "Dalitz Plot" ) );
   bookHistogram( cosT, new Histogram1D( 22, -1.1, 1.1, "cosT", "CosTheta") );
   bookHistogram( phiAng, new Histogram1D(25, -3.2, 3.2, "phiAng", "#phi") );
+  bookHistogram( phiAng_m23, new Histogram2D(25, 1.5, 3.2, 25, -3.2, 3.2, "PhiAng_m23", "#phi vs. Mass(#eta #eta')" ) );
   bookHistogram( cosT_lab, new Histogram1D( 55, -1.1, 1.1, "cosT_lab", "CosThetaLab") );
   bookHistogram( phiAng_lab, new Histogram1D(50, -3.2, 3.2, "phiAng_lab", "#phi_{lab}") );
   bookHistogram( cosT_m23_lab, new Histogram2D(50, 0.6, 2.6, 50, -1.0, 1.0, "cosTLab_m23", "cos(#theta_{lab}) vs. Mass(#eta #eta')" ) );
@@ -123,6 +124,7 @@ void etaetapPlotGenerator::projectEvent( Kinematics* kin, const string& reaction
   fillHistogram( phiAng, phi);
   fillHistogram( Omega, omega);
   fillHistogram( cosT_m23, (P2+P3).M(), cosTheta);
+  fillHistogram( phiAng_m23, (P2+P3).M(), phi);
   fillHistogram( cosT_phi, phi, cosTheta);
   fillHistogram( cosT_Phi, Phi, cosTheta);
 }

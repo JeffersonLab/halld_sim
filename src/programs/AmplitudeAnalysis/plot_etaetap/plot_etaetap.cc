@@ -6,6 +6,7 @@
 #include "TGClient.h"
 #include "TROOT.h"
 #include "TH1.h"
+#include "THStack.h"
 #include "TStyle.h"
 #include "TClass.h"
 
@@ -124,60 +125,48 @@ int main( int argc, char* argv[] ){
     }
 
     // loop over different variables
-    TCanvas *c = new TCanvas("c","c",1500,500);
-    c->Divide(3);
+    TCanvas *c = new TCanvas("c","c",1000,1000);
+    c->Divide(2,2);
     gStyle->SetOptStat(0);
-    TH1* dataHist;
+ 
+
     TString outputRootName = (TString)outputName.Copy();
     TFile *outRoot = new TFile(outputRootName.ReplaceAll(".pdf",".root"),"RECREATE");
+
     for (unsigned int ivar  = 0; ivar  < PlotGen::kNumHists; ivar++){
 
-      bool drawIt = true;
-      if(ivar==2||ivar==7||ivar==8){
+
+      if(ivar==1||ivar==2||ivar==7||ivar==8){
 	cout << "making plot for ivar="<<ivar<<endl;
-	if(ivar==2) c->cd(1);
-	if(ivar==7) c->cd(2);
-	if(ivar==8) c->cd(3);
+	if(ivar==1) c->cd(1);
+	if(ivar==2) c->cd(2);
+	if(ivar==7) c->cd(3);
+	if(ivar==8) c->cd(4);
       }else{
-	drawIt = false;
-	//continue;
+	continue;
       }
-      // loop over data, accMC, and genMC
 
+      TH1 *hist_data = plotGen.projection(ivar,reactionName, PlotGen::kData)->toRoot();
+      TH1 *hist_bkg = plotGen.projection(ivar,reactionName, PlotGen::kBkgnd)->toRoot();
+      TH1 *hist_accmc = plotGen.projection(ivar,reactionName, PlotGen::kAccMC)->toRoot();
+      TH1 *hist_genmc = plotGen.projection(ivar,reactionName, PlotGen::kGenMC)->toRoot();
+
+
+      hist_data->Draw();
+      hist_bkg->SetFillColor(kRed);
+      hist_accmc->SetFillColor(kGreen-8);
+      THStack *stack = new THStack;
+      stack->Add(hist_bkg);
+      stack->Add(hist_accmc);
       
+      stack->Draw("sameHIST");
+      hist_data->Draw("same");
+      gPad->RedrawAxis();
       
-      for (unsigned int iplot = 0; iplot < PlotGen::kNumTypes; iplot++){
-	//if (iplot == PlotGen::kBkgnd) continue;
-	//if (iplot == PlotGen::kAccMC) continue;
-	bool drawFirst = false;
-	if(iplot==PlotGen::kData){
-	  drawFirst = true;
-	}else if(iplot!=PlotGen::kAccMC){
-	  continue;
-	}
-
-	// grabs the hist for either data or accepted mc 
-	TH1 *hist = plotGen.projection(ivar,reactionName, iplot)->toRoot();
-
-	if(!drawIt){
-	  // do nothing
-	}else if(drawFirst){
-	  hist->Draw();
-	  dataHist = hist;
-	}else{
-	  // set color to roughly match GlueX standard
-	  hist->SetFillColor(kGreen-8);
-	  hist->Draw("sameHIST");
-	  dataHist->Draw("same");
-	  gPad->RedrawAxis();
-	}
-
-	// write out all hists
-	if(drawFirst) hist->Write();
+      hist_data->Write();
 
 
-      }
-      cout << "drew all comps for ivar=" << ivar << endl;
+
     }
     
     
