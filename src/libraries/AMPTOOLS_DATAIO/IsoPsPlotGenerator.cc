@@ -70,8 +70,8 @@ void IsoPsPlotGenerator::createHistograms( ) {
 
    bookHistogram( kIsoMass, new Histogram1D( 200, 0., 3., "MIso", "m(2#pi)  [GeV]") );
    bookHistogram( kIsoPsMass, new Histogram1D( 200, 0.2, 3.2, "MIsoPs", "m(3#pi)  [GeV]") );
-   bookHistogram( kt, new Histogram1D( 100, 0, 1.0 , "t", "-t  [GeV^{2}]" ) );
-   bookHistogram( kRecoilMass, new Histogram1D( 100, 0.9, 1.9 , "ProtonPiplusL_M", "m(p#pi^{+}_{L}) [GeV]" ) );
+   bookHistogram( kt, new Histogram1D( 200, 0, 1.0 , "t", "-t  [GeV^{2}]" ) );
+   bookHistogram( kRecoilMass, new Histogram1D( 200, 0.9, 1.9 , "ProtonPiplusL_M", "m(p#pi^{+}_{L}) [GeV]" ) );
    
    bookHistogram( kProtonPsMass, new Histogram1D( 200, 0.8, 3.8, "ProtonPiminus_M", "m(p#pi^{-}) [GeV]" ) );
    bookHistogram( kRecoilPsMass, new Histogram1D( 200, 1.0, 4.0, "ProtonPiplusLPiminus_M", "m(p#pi^{+}_{L}#pi^{-}) [GeV]" ) );
@@ -101,24 +101,24 @@ IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    TLorentzVector beam   = kin->particle( 0 );
    TLorentzVector proton = kin->particle( 1 );
    TLorentzVector bach = kin->particle( 2 );
-   TLorentzVector vec_daught1 = kin->particle( 3 );
-   TLorentzVector vec_daught2 = kin->particle( 4 );
+   TLorentzVector iso_daught1 = kin->particle( 3 );
+   TLorentzVector iso_daught2 = kin->particle( 4 );
    TLorentzVector piplusL = kin->particle( 5 );
    
 
    // Final state P4 momenta
-   TLorentzVector X = vec_daught1 + vec_daught2 + bach;
+   TLorentzVector X = iso_daught1 + iso_daught2 + bach;
    TLorentzVector recoil = proton + piplusL;
 
    //Momenta for the 1st permutation   
-   TLorentzVector vec_a = vec_daught1 + vec_daught2;
+   TLorentzVector iso_a = iso_daught1 + iso_daught2;
    TLorentzVector proton_ps_a = proton + bach;
    TLorentzVector recoil_ps_a = recoil + bach;
    
-   //Momenta for the 2nd permutation (bach <=> vec_daught1)  
-   TLorentzVector vec_b = bach + vec_daught2;
-   TLorentzVector proton_ps_b = proton + vec_daught1;
-   TLorentzVector recoil_ps_b = recoil + vec_daught1;
+   //Momenta for the 2nd permutation (bach <=> iso_daught1)  
+   TLorentzVector iso_b = bach + iso_daught2;
+   TLorentzVector proton_ps_b = proton + iso_daught1;
+   TLorentzVector recoil_ps_b = recoil + iso_daught1;
 
    
 
@@ -141,10 +141,10 @@ IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
    // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
    // Angles for the 1st permutation
-   vector <double> thetaPhiAnglesTwoStep_a = getTwoStepAngles(X, vec_a, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
+   vector <double> thetaPhiAnglesTwoStep_a = getTwoStepAngles(X, iso_a, iso_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
 
-   // Angles for the 2nd permutation (bach <=> vec_daught1)
-   vector <double> thetaPhiAnglesTwoStep_b = getTwoStepAngles(X, vec_b, bach, TLorentzVector(0,0,0,0), beam, target, 2, true);
+   // Angles for the 2nd permutation (bach <=> iso_daught1)
+   vector <double> thetaPhiAnglesTwoStep_b = getTwoStepAngles(X, iso_b, bach, TLorentzVector(0,0,0,0), beam, target, 2, true);
 
    
    //Symmetrized angles and masses will be passed as vectors of unit length   
@@ -160,8 +160,8 @@ IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    vector <double> phiH_a = {TMath::RadToDeg()*thetaPhiAnglesTwoStep_a[3]};
    vector <double> phiH_b = {TMath::RadToDeg()*thetaPhiAnglesTwoStep_b[3]};
    
-   vector <double> vec_mass_a = {vec_a.M()};
-   vector <double> vec_mass_b = {vec_b.M()};
+   vector <double> iso_mass_a = {iso_a.M()};
+   vector <double> iso_mass_b = {iso_b.M()};
    
    vector <double> protonps_mass_a = {proton_ps_a.M()};
    vector <double> protonps_mass_b = {proton_ps_b.M()};
@@ -192,8 +192,8 @@ IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    fillHistogram( kPhiH, phiH_b, 0.5 );
 
    
-   fillHistogram( kIsoMass, vec_mass_a, 0.5 );
-   fillHistogram( kIsoMass, vec_mass_b, 0.5 );
+   fillHistogram( kIsoMass, iso_mass_a, 0.5 );
+   fillHistogram( kIsoMass, iso_mass_b, 0.5 );
   
    fillHistogram( kProtonPsMass, protonps_mass_a, 0.5 );
    fillHistogram( kProtonPsMass, protonps_mass_b, 0.5 );

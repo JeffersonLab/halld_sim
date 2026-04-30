@@ -128,8 +128,9 @@ int main( int argc, char* argv[] ){
   atiSetup();
         cout << "Plotgen results"<< endl;
 
-	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // optional can be omitted
-  cout << " Initialized ati and PlotGen" << endl;
+	//	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // optional can be omitted
+	IsoPsPlotGenerator plotGen( results ); 
+	cout << " Initialized ati and PlotGen" << endl;
 
  
     // *************************
@@ -244,11 +245,11 @@ int main( int argc, char* argv[] ){
 		bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
 		bool singleFlatWave = (irefl == 0 && iamp > 0) || (irefl > 0 && iamp == 0);
 		
-		if (iplot == PlotGenerator::kGenMC) continue; 
+		// if (iplot == PlotGenerator::kGenMC) continue; // no acceptance correction
 		if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
 		if ( iplot == PlotGenerator::kBkgnd && !singleData ) continue; // only plot background once
 		if ( iplot == PlotGenerator::kAccMC && singleFlatWave ) continue; // only plot Flat wave once
-
+		if ( iplot == PlotGenerator::kGenMC && singleFlatWave ) continue; // only plot Flat wave once
 		
 		
 	// loop over different variables
@@ -315,15 +316,17 @@ int main( int argc, char* argv[] ){
 
   
 
-  //Now, write summed up histograms to the root file
+  //Now, write (nonzero) summed up histograms to the root file
   for (auto it = summedHists.begin(); it != summedHists.end(); it++) {
 
     std::string hsummed_name = it->first;
     TH1* hsummed = it->second;    
-    hsummed->SetName(hsummed_name.c_str());
 
+    if (hsummed->Integral() == 0.) continue;
+    else hsummed->SetName(hsummed_name.c_str());
+    
     if (hsummed_name.find("+") != std::string::npos || hsummed_name.find("-") != std::string::npos)  plotfiledir->cd();              
-    else  plotfile->cd();
+    else  plotfile->cd();    
     hsummed->Write();
   }
 
@@ -391,8 +394,8 @@ int main( int argc, char* argv[] ){
     // second loop over amplitudes to get phase difference names
     for(unsigned int j = i+1; j < fullamps.size(); j++){
 
-      // leave only the Spring2017_PARA_00::ImagPosSign and Spring2017_PARA_00::ImagNegSign coherent sums
-      if (fullamps[i].find("Spring2017_PARA_00") == std::string::npos || fullamps[j].find("Spring2017_PARA_00") == std::string::npos) continue;      
+      // leave only the Spring2017_PARA_0::ImagPosSign and Spring2017_PARA_0::ImagNegSign coherent sums
+      if (fullamps[i].find("Spring2017_PARA_0") == std::string::npos || fullamps[j].find("Spring2017_PARA_0") == std::string::npos) continue;      
       if (fullamps[i].find("UniBG") != std::string::npos || fullamps[j].find("UniBG") != std::string::npos) continue;      
       if (fullamps[i].find("Real") != std::string::npos || fullamps[j].find("Real") != std::string::npos) continue;      
       
@@ -401,7 +404,8 @@ int main( int argc, char* argv[] ){
       if (fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
 	    
       phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
-
+      std::cout << "PAIRED:\t" << fullamps[i] << "\t" << fullamps[j] << endl;
+      
     }
   }
 
