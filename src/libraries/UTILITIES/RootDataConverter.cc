@@ -233,7 +233,7 @@ std::string RootDataConverter::weightBranchName(
     // argument, so check explicitly for that first
     const std::vector<std::string> reaction_list = m_fit_results.reactionList();
     std::string reaction = reaction_list[0]; // assume all reactions use the same weight branch
-    const std::pair<std::string, std::vector<std::string>> file_pair;
+    const std::pair<std::string, std::vector<std::string>> file_pair; // data reader name and args
     std::string root_file;
     if (file_type == "data")
     {
@@ -256,6 +256,7 @@ std::string RootDataConverter::weightBranchName(
     std::string data_reader_name = file_pair.first;
     std::vector<std::string> data_reader_args = file_pair.second;
 
+    // the FSRootDataReader can have special friend trees that hold the event weights
     if (data_reader_name.find("FSRootDataReader") != std::string::npos && data_reader_args.size() >= 6)
     {
         std::string friend_file_name = data_reader_args[3];
@@ -278,12 +279,9 @@ std::string RootDataConverter::weightBranchName(
         tree->AddFriend(friend_tree_name.c_str(), friend_file_name.c_str());
         return friend_tree_name + "." + weight_branch_name;
     }
-    else // not FSDataReader, so no friend tree weights
-    {
-        // proceed to check for weight branches in the main tree
-    }
 
-    // simply check if "weight" or "Weight" branch exists in the tree
+    // not FSROOTDataReader, so no friend tree weights. Proceed to check for weight
+    // branches in the main tree
     TFile *f = TFile::Open(root_file.c_str());
     if (!f || f->IsZombie())
     {
@@ -359,6 +357,7 @@ void RootDataConverter::validateFiles(const std::vector<std::string> &files,
         report(ERROR, kModule) << "No " 
                                << file_type << " files found in fit results for file: "
                                << m_fit_file << "\n";
+        assert(false);
     }
     else if (files.empty() && file_type == "background" && !m_mute_warnings)
     {

@@ -291,6 +291,17 @@ private:
      */
     std::vector<std::string> findFiles(const std::string &file_type) const;
 
+
+    /**
+     * @brief Confirm that files vector is non-empty, unless its background
+     * 
+     * Generally will throw an error if no files are present for a given type. If 
+     * file_type is "background", this can happen, but it warns the user that it assumes
+     * any event weights are thus stored directly in the data trees.
+     * 
+     * @param files absolute paths of files associated with the fit results for a given type
+     * @param file_type data, background, genMC, or accMC
+     */
     void validateFiles(const std::vector<std::string> &files,
                        const std::string &file_type) const;
 
