@@ -145,11 +145,11 @@ void FitConverter::extract()
                                                << "\n";
 
                         found_phase_diff = true;
-                        break; // break inner loop
+                        break; // break inner amp2 loop
                     }
                 }
                 if (found_phase_diff)
-                    break; // break outer loop
+                    break; // break outer amp1 loop
             }
         }
     }

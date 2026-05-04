@@ -150,7 +150,7 @@ public:
     bool isValid() const { return m_fit_results.valid(); }
 
     /**
-     * @brief Map of AmpTool standard fit outputs and their values
+     * @brief Map of AmpTools standard fit outputs and their values
      *
      * Standard outputs include values such as:
      * - eMatrixStatus
@@ -178,7 +178,7 @@ public:
      *      "reaction1::sum2::myAmpName",
      *      "reaction2::sum1::myAmpName",
      * ...}
-     * Note that the self-constraint is included in the list, so even amplitudes with
+     * @note that the self-constraint is included in the list, so even amplitudes with
      * no constraints will have a vector of size one (itself).
      */
     const std::map<std::string, std::vector<std::string>> &
@@ -208,8 +208,8 @@ public:
      * Only includes pairs of unique amplitude names that share a reaction and sum. For
      * 2 amplitudes "amp1" and "amp2", we search through every combination in
      * m_constrained_amps[amp1] and m_constrained_amps[amp2] to find pairs that share
-     * the same "reaction::sum". The key is a vector of the two full amplitude strings,
-     * and the value is a pair of the phase difference and its error.
+     * the same "reaction::sum". The key is a size 2 vector of the full amplitude
+     * strings, and the value is a pair of the phase difference and its error.
      */
     const std::map<std::pair<std::string, std::string>, std::pair<double, double>> &
     phaseDifferences() const { return m_phase_differences; }

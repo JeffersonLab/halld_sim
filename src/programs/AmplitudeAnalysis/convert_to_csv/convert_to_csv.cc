@@ -36,12 +36,12 @@ int main(int argc, char *argv[])
     std::string output_file = "";
 
     // optional arguments
-    bool sorted = false;
+    bool is_sorted = false;
     int sort_index = -1;
-    bool acceptance_corrected = false;
+    bool is_acceptance_corrected = false;
     bool create_data_file = false;
-    bool covariance = false;
-    bool correlation = false;
+    bool create_covariance = false;
+    bool create_correlation = false;
     bool verbose = false;
     bool preview = false;
     std::string mass_branch = "M4Pi"; // TODO: change by building up from AmpTools 4-vectors. Instead option for lower vertex indices, and possibly isobar indices
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     {
         std::cout << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH]"
                   << " [-s] [--sort-index INDEX] [-a] [-d] [-m MASS_BRANCH] [-p] [-v]"
-                  << " [--corelation] [--covariance] [-d]\n"
+                  << " [--correlation] [--covariance] [-d]\n"
                   << "  -i INPUT_FILES:\t\tFull path to the .fit file(s)\n"
                   << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n"
                   << "  -s, --sort:\t\t\tSort files by last number in the file name or path (default:true)\n"
@@ -75,12 +75,13 @@ int main(int argc, char *argv[])
         }
     }
 
-    // helper to distinguish flags from negative numbers
+    // helper to distinguish flags from negative numbers, since both use "-" character
     auto is_flag = [](std::string_view s)
     {
         return s.starts_with("-") && s.size() > 1 && !std::isdigit(static_cast<unsigned char>(s[1]));
     };
 
+    // parse arguments
     for (size_t i = 1; i < args.size(); ++i)
     {
         auto arg = args[i];
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
         }
         else if (arg == "-s" || arg == "--sort")
         {
-            sorted = true;
+            is_sorted = true;
         }
         else if (arg == "--sort-index")
         {
@@ -132,7 +133,7 @@ int main(int argc, char *argv[])
         }
         else if (arg == "-a" || arg == "--acceptance-correct")
         {
-            acceptance_corrected = true;
+            is_acceptance_corrected = true;
         }
         else if (arg == "-d" || arg == "--data-file")
         {
@@ -140,11 +141,11 @@ int main(int argc, char *argv[])
         }
         else if (arg == "--covariance")
         {
-            covariance = true;
+            create_covariance = true;
         }
         else if (arg == "--correlation")
         {
-            correlation = true;
+            create_correlation = true;
         }
         else if (arg == "-v" || arg == "--verbose")
         {
@@ -175,6 +176,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Error checks for required arguments
     if (input_files.empty())
     {
         std::cerr << "Input files must be provided. See help message." << "\n";
@@ -204,7 +206,7 @@ int main(int argc, char *argv[])
     }
 
     // sort files if requested
-    if (sorted)
+    if (is_sorted)
         input_files = sort_files(input_files, sort_index);
 
     if (preview)
@@ -227,7 +229,7 @@ int main(int argc, char *argv[])
     {
         if (verbose)
             report(INFO, kModule) << "Processing file: " << file << "\n";
-        FitConverter converter(file, acceptance_corrected, !verbose);
+        FitConverter converter(file, is_acceptance_corrected, !verbose);
 
         if (!header_written)
         {
@@ -236,14 +238,14 @@ int main(int argc, char *argv[])
             header_written = true;
             first_file_result_header = header;
 
-            if (covariance)
+            if (create_covariance)
             {
                 std::string cov_header = converter.getCSVCovarianceMatrixHeader();
                 csv_cov_data << cov_header << "\n";
                 first_file_cov_header = cov_header;
             }
 
-            if (correlation)
+            if (create_correlation)
             {
                 std::string corr_header = converter.getCSVCorrelationMatrixHeader();
                 csv_corr_data << corr_header << "\n";
@@ -251,7 +253,10 @@ int main(int argc, char *argv[])
             }
         }
         else
-        {
+        { 
+            // this block ensures all files have the same csv header format. If this is
+            // not the case, then the csv files will be malformed and difficult to work 
+            // with, so we enforce that here before processing any files
             std::string header = converter.getCSVHeader();
             if (header != first_file_result_header)
             {
@@ -261,7 +266,7 @@ int main(int argc, char *argv[])
                 return 1;
             }
 
-            if (covariance)
+            if (create_covariance)
             {
                 std::string cov_header = converter.getCSVCovarianceMatrixHeader();
                 if (cov_header != first_file_cov_header)
@@ -272,7 +277,7 @@ int main(int argc, char *argv[])
                     return 1;
                 }
             }
-            if (correlation)
+            if (create_correlation)
             {
                 std::string corr_header = converter.getCSVCorrelationMatrixHeader();
                 if (corr_header != first_file_corr_header)
@@ -286,16 +291,21 @@ int main(int argc, char *argv[])
         }
         csv_result_data << converter.getCSVRow() << "\n";
 
-        if (covariance)
+        if (create_covariance)
             csv_cov_data << converter.getCSVCovarianceMatrix() << "\n";
-        if (correlation)
+        if (create_correlation)
             csv_corr_data << converter.getCSVCorrelationMatrix() << "\n";
     }
+
+    // write the csv data to the output file
     std::ofstream result_file(output_file);
     result_file << csv_result_data.str();
     result_file.close();
 
-    if (covariance)
+    // covariance and correlation matrix files are written to separate files in the same
+    // directory as the main output file, with suffixes _covariance.csv and 
+    // _correlation.csv
+    if (create_covariance)
     {        
         std::filesystem::path output_path(output_file);
         std::string covariance_file = (output_path.parent_path() / (output_path.stem().string() + "_covariance.csv")).string();
@@ -304,7 +314,7 @@ int main(int argc, char *argv[])
         cov_file << csv_cov_data.str();
         cov_file.close();
     }
-    if (correlation)
+    if (create_correlation)
     {
         std::filesystem::path output_path(output_file);
         std::string correlation_file = (output_path.parent_path() / (output_path.stem().string() + "_correlation.csv")).string();
@@ -384,7 +394,7 @@ std::vector<std::string> sort_files(const std::vector<std::string> &files, int s
  * @brief Check if all provided files are .fit files
  *
  * @param[in] files Vector of file paths to check
- * @return true
+ * @return true if all files have a .fit extension and exist, false otherwise
  * @return false if any file is not a .fit file or does not exist
  */
 bool are_valid_fit_files(const std::vector<std::string> &files)
