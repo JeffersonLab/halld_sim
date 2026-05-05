@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "UTILITIES/FitConverter.h"
+#include "UTILITIES/RootDataConverter.h"
 #include "IUAmpTools/report.h"
 
 const char *kModule = "convert_to_csv";
@@ -55,10 +56,10 @@ int main(int argc, char *argv[])
                   << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n"
                   << "  -s, --sort:\t\t\tSort files by last number in the file name or path (default:true)\n"
                   << "  --sort-index INDEX:\t\tWhat number in file path to sort by (default:-1, so last number in path is used)\n"
-                  << "  -a --acceptance-correct:\tWhether to acceptance correct intensities (default:true)\n"
-                  << "  -d --data-file:\t\tCreate separate data file (default:false)\n"
+                  << "  -a --acceptance-correct:\tAcceptance correct the intensities\n"
+                  << "  -d --data-file:\t\tCreate separate data file\n"
                   << "  -m --mass-branch:\t\tBranch name for final mass spectrum of interest (default:M4Pi)\n"
-                  << "  -p --preview:\t\t\tPrint files to be processed, but don't run (default:false)\n"
+                  << "  -p --preview:\t\t\tPrint files to be processed, but don't run\n"
                   << "  -v --verbose:\t\t\tPrint information from converter scripts as they run\n"
                   << "  --correlation:\t\tSave correlation matrix to separate csv file\n"
                   << "  --covariance:\t\t\tSave covariance matrix to separate csv file\n"
@@ -220,9 +221,9 @@ int main(int argc, char *argv[])
     }
 
     // ==== PROCESS FILES AND WRITE TO CSV ====
-    std::stringstream csv_result_data, csv_cov_data, csv_corr_data;
+    std::stringstream csv_result_data, csv_cov_data, csv_corr_data, csv_root_data;
     bool header_written = false;
-    std::string first_file_result_header, first_file_cov_header, first_file_corr_header;
+    std::string first_file_result_header, first_file_cov_header, first_file_corr_header, first_file_data_header;
 
     // extract fit results, and optionally the cov/corr matrices
     for (const auto &file : input_files)
@@ -230,6 +231,10 @@ int main(int argc, char *argv[])
         if (verbose)
             report(INFO, kModule) << "Processing file: " << file << "\n";
         FitConverter converter(file, is_acceptance_corrected, !verbose);
+        if (create_data_file)
+        {            
+            RootDataConverter data_converter(file, !verbose);            
+        }
 
         if (!header_written)
         {
@@ -250,6 +255,11 @@ int main(int argc, char *argv[])
                 std::string corr_header = converter.getCSVCorrelationMatrixHeader();
                 csv_corr_data << corr_header << "\n";
                 first_file_corr_header = corr_header;
+            }
+
+            if (create_data_file)
+            {
+                // TODO: implement data header check
             }
         }
         else
@@ -288,6 +298,10 @@ int main(int argc, char *argv[])
                     return 1;
                 }
             }
+            if (create_data_file)
+            {
+                // TODO: implement data header check
+            }
         }
         csv_result_data << converter.getCSVRow() << "\n";
 
@@ -295,6 +309,8 @@ int main(int argc, char *argv[])
             csv_cov_data << converter.getCSVCovarianceMatrix() << "\n";
         if (create_correlation)
             csv_corr_data << converter.getCSVCorrelationMatrix() << "\n";
+        if (create_data_file)
+            ;//csv_root_data << data_converter.getCSVRow() << "\n"; // TODO: implement getCSVData in RootDataConverter to extract relevant data for csv output
     }
 
     // write the csv data to the output file
@@ -310,7 +326,6 @@ int main(int argc, char *argv[])
         std::filesystem::path output_path(output_file);
         std::string covariance_file = (output_path.parent_path() / (output_path.stem().string() + "_covariance.csv")).string();
         std::ofstream cov_file(covariance_file);
-        std::cout << covariance_file << "\n";
         cov_file << csv_cov_data.str();
         cov_file.close();
     }
@@ -322,9 +337,6 @@ int main(int argc, char *argv[])
         corr_file << csv_corr_data.str();
         corr_file.close();
     }
-
-    if (create_data_file)
-        ; // TODO: execute extract_data to create data file. Use output_file_data.csv as output name
 
     return 0;
 }
