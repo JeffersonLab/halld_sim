@@ -12,7 +12,6 @@
 #include <cassert>
 
 #include "FitConverter.h"
-#include "AmplitudeParser.h"
 #include "IUAmpTools/ConfigurationInfo.h"
 #include "IUAmpTools/FitResults.h"
 #include "IUAmpTools/report.h"
