@@ -8,6 +8,8 @@
 
 #include <cassert>
 #include <filesystem>
+#include <limits>
+#include <tuple>
 
 #include "RootDataConverter.h"
 #include "IUAmpTools/report.h"
@@ -15,6 +17,8 @@
 #include "TFile.h"
 #include "TKey.h"
 #include "TClass.h"
+#include "TCollection.h"
+#include "TROOT.h"
 #include "TTree.h"
 #include "TLorentzVector.h"
 
@@ -23,20 +27,25 @@ const char *RootDataConverter::kModule = "RootDataConverter";
 RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warnings) : m_fit_file(filename),
                                                                                         m_fit_results(filename, mute_warnings),
                                                                                         m_cfg_info(m_fit_results.configInfo()),
-                                                                                        m_mute_warnings(mute_warnings)
+                                                                                        m_mute_warnings(mute_warnings),
+                                                                                        m_data_files(dataFiles()),
+                                                                                        m_background_files(backgroundFiles()),
+                                                                                        m_genMC_files(genMCFiles()),
+                                                                                        m_accMC_files(accMCFiles()),
+                                                                                        m_data_tree_name(findTreeName("data")),
+                                                                                        m_background_tree_name(findTreeName("background")),
+                                                                                        m_genMC_tree_name(findTreeName("genMC")),
+                                                                                        m_accMC_tree_name(findTreeName("accMC"))
 {
+
+    report(DEBUG, kModule) << "Constructing RootDataConverter for file: " << m_fit_file << "\n";
+
     if (!m_fit_results.valid())
     {
         report(ERROR, kModule) << "RootDataConverter ERROR: Unable to read fit results from file " + m_fit_file << "\n";
         assert(false);
     }
     setLowerVertexIndices({1}); // default to index 1 being the lower vertex particle
-
-    // set data, background, genMC, and accMC files
-    m_data_files = dataFiles();
-    m_background_files = backgroundFiles();
-    m_genMC_files = genMCFiles();
-    m_accMC_files = accMCFiles();
 
     m_background_files_exist = !m_background_files.empty();
 
@@ -45,28 +54,35 @@ RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warn
     validateGenMCFiles();
     validateAccMCFiles();
 
-    m_data_tree_name = dataTreeName();
-    m_background_tree_name = backgroundTreeName();
-    m_genMC_tree_name = genMCTreeName();
-    m_accMC_tree_name = accMCTreeName();
-
     extract();
 }
 
 void RootDataConverter::extract()
 {
     // get weight branch name. If weight branch is not found, will return empty string
-    // and we'll assume weights of 1.0 later
+    // and we'll assume weights of 1.0 throughout our stats functions
     std::string weight_branch_name;
     if (m_background_files_exist)
         weight_branch_name = weightBranchName("background", m_background_tree_name);        
     else
         weight_branch_name = weightBranchName("data", m_data_tree_name);
 
-    // TODO: next step is to calculate t from the beam and lower vertex particle
+    if (weight_branch_name.empty())
+    {
+        report(DEBUG, kModule) << "No weight branch found. Assuming weights of 1.0 for all events.\n";
+    }
+    else
+    {
+        report(DEBUG, kModule) << "Weight branch found: " << weight_branch_name << "\n";
+    }
+
+    // // Extract beam energy statistics
+    extractBeamEnergyStats(weight_branch_name);
+
+    // TODO: next step is to calculate t from the at-rest proton and lower vertex particle
     // 4-vectors. Look at other plotters for reference. Then calculate the upper
-    // vertex mass from the remaining particles. Finally, fill histograms and
-    // calculate bin info with a better mapping between the header and value storage.
+    // vertex mass from the remaining particles. Finally, get number of events, and
+    // calculate efficiency from MC. Then use efficiency to get ac_events.
 }
 
 std::vector<std::string> RootDataConverter::findFiles(const std::string &file_type) const
@@ -84,7 +100,7 @@ std::vector<std::string> RootDataConverter::findFiles(const std::string &file_ty
         if (file_type == "data")
             file_pair = m_cfg_info->reaction(reaction)->data();
         else if (file_type == "background")
-            file_pair = m_cfg_info->reaction(reaction)->background();
+            file_pair = m_cfg_info->reaction(reaction)->bkgnd();
         else if (file_type == "genMC")
             file_pair = m_cfg_info->reaction(reaction)->genMC();
         else if (file_type == "accMC")
@@ -140,7 +156,7 @@ std::string RootDataConverter::findTreeName(const std::string &file_type) const
     }
     else if (file_type == "background")
     {
-        file_pair = m_cfg_info->reaction(reaction)->background();
+        file_pair = m_cfg_info->reaction(reaction)->bkgnd();
         file_path = m_background_files[0];
     }
     else if (file_type == "genMC")
@@ -233,7 +249,7 @@ std::string RootDataConverter::weightBranchName(
     // argument, so check explicitly for that first
     const std::vector<std::string> reaction_list = m_fit_results.reactionList();
     std::string reaction = reaction_list[0]; // assume all reactions use the same weight branch
-    const std::pair<std::string, std::vector<std::string>> file_pair; // data reader name and args
+    std::pair<std::string, std::vector<std::string>> file_pair; // data reader name and args
     std::string root_file;
     if (file_type == "data")
     {
@@ -242,7 +258,7 @@ std::string RootDataConverter::weightBranchName(
     }
     else if (file_type == "background")
     {
-        file_pair = m_cfg_info->reaction(reaction)->background();
+        file_pair = m_cfg_info->reaction(reaction)->bkgnd();
         root_file = m_background_files[0];
     }
     else
@@ -320,33 +336,161 @@ std::string RootDataConverter::weightBranchName(
 }
 
 
-double RootDataConverter::calculateMandelstamT() const
+// double RootDataConverter::calculateMandelstamT() const
+// {
+//     // TODO: this is the basic start, and then you can get the lower vertex particle
+//     // 4-vector. Its simple for a proton since its just the PxP1, etc 4 vectors, but
+//     // for baryon decays I'll need to look at other plotters to see if boosts need to 
+//     // occur first. 
+
+//     TLorentzVector target(0, 0, 0, 0.938); // target proton at rest
+// }
+
+
+void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_name)
 {
-    // TODO: this is the basic start, and then you can get the lower vertex particle
-    // 4-vector. Its simple for a proton since its just the PxP1, etc 4 vectors, but
-    // for baryon decays I'll need to look at other plotters to see if boosts need to 
-    // occur first. The other hangup is that if I'm doing all this, I might as well 
-    // make the -t histogram as well, so need to think about how to structure this.
-    // probably make some generic tHist, massHist, and beamHist functions that can 
-    // do all these calculations and histogram filling. Then from there the edges,
-    // centers, errors, etc can be calculated. I suppose if 4-vectors are used I don't 
-    // need to calculate bin edges from the hist, because I can just get the max/min
-    // values directly from the 4-vectors.
-    TLorentzVector beam = beamLorentzVector(tree);
-    TLorentzVector target(0, 0, 0, 0.938); // target proton at rest
-}
+    // we will add all the data (and possible) weighted background energy histograms
+    // together to get overall beam energy stats
+    TH1D *h_energy_total = nullptr;
 
+    double min, max;
+    std::tie(min, max) = findMinMaxOfBranch(m_data_files, m_data_tree_name, "EnPB");
 
-TLorentzVector RootDataConverter::beamLorentzVector(TTree* tree) const
-{
-    double EnPB, PxPB, PyPB, PzPB;
+    if(m_background_files_exist)
+    {
+        double bg_min, bg_max;
+        std::tie(bg_min, bg_max) = findMinMaxOfBranch(m_background_files, m_background_tree_name, "EnPB");
 
-    tree->SetBranchAddress("EnPB", &EnPB);
-    tree->SetBranchAddress("PxPB", &PxPB);
-    tree->SetBranchAddress("PyPB", &PyPB);
-    tree->SetBranchAddress("PzPB", &PzPB);
+        // set the min and max for the total histogram to encompass both data and background
+        min = std::min(min, bg_min);
+        max = std::max(max, bg_max);
+    }
 
-    return TLorentzVector(PxPB, PyPB, PzPB, EnPB);
+    for (const std::string &data_file : m_data_files)
+    {
+        TFile *f = TFile::Open(data_file.c_str());
+        if (!f || f->IsZombie())
+        {
+            report(ERROR, kModule) << "Error opening data ROOT file: " << data_file << "\n";
+            assert(false);
+        }
+        TTree *tree = f->Get<TTree>(m_data_tree_name.c_str());
+        if (!tree)
+        {
+            report(ERROR, kModule) << "Error retrieving tree " << m_data_tree_name << " from file " << data_file << "\n";
+            f->Close();
+            assert(false);
+        }
+
+        // Set up branch addresses
+        double energy;
+        tree->SetBranchAddress("EnPB", &energy);
+
+        // draw into temporary histogram
+        const int n_bins = 200;        
+        TH1D *h_energy = new TH1D("h_energy", "", n_bins, min, max);        
+
+        // If no background files exist, we assume weights are stored in the data tree
+        if (!m_background_files_exist && !weight_branch_name.empty() && tree->GetBranch(weight_branch_name.c_str()))
+        {
+            double weight;
+            tree->SetBranchAddress(weight_branch_name.c_str(), &weight);
+            tree->Draw("EnPB>>h_energy", weight_branch_name.c_str(), "goff");
+        }
+        else if (m_background_files_exist)
+        {
+            tree->Draw("EnPB>>h_energy", "1.0", "goff"); // if bkgnd files exist, we will subtract them later, so just use weight of 1.0 here
+        }
+        else
+        {
+            tree->Draw("EnPB>>h_energy", "1.0", "goff");
+            if (!m_mute_warnings)
+                report(WARNING, kModule) << "No weight branch found in tree '"
+                                         << m_data_tree_name
+                                         << "' in file: "
+                                         << data_file
+                                         << "\n"
+                                         << "Assuming weights of 1.0 for all events.\n";
+        }        
+
+        // if this is first hist, clone it to the total hist. Otherwise, add to the total hist
+        if (!h_energy_total)
+        {
+            h_energy_total = (TH1D *)h_energy->Clone("h_energy_total");
+            h_energy_total->SetDirectory(0); // detach from file
+        }
+        else
+        {
+            h_energy_total->Add(h_energy);
+        }
+
+        delete h_energy; // clean up temporary histogram
+        f->Close();
+    }
+
+    // if background files exist, we'll subtract the background energy histograms from 
+    // the total energy histogram to get the data-only energy distribution, which we 
+    // will use for our stats. 
+    for (const std::string &bg_file : m_background_files)
+    {
+        TFile *f = TFile::Open(bg_file.c_str());
+        if (!f || f->IsZombie())
+        {
+            report(ERROR, kModule) << "Error opening background ROOT file: " << bg_file << "\n";
+            assert(false);
+        }
+        TTree *tree = f->Get<TTree>(m_background_tree_name.c_str());
+        if (!tree)
+        {
+            report(ERROR, kModule) << "Error retrieving tree " << m_background_tree_name << " from file " << bg_file << "\n";
+            f->Close();
+            assert(false);
+        }
+
+        // Set up branch addresses
+        double energy;
+        double weight = 1.0; // default weight is 1.0 if no weight branch exists
+
+        tree->SetBranchAddress("EnPB", &energy);
+
+        // If weight branch exists, set its address
+        if (!weight_branch_name.empty() && tree->GetBranch(weight_branch_name.c_str()))
+        {
+            tree->SetBranchAddress(weight_branch_name.c_str(), &weight);
+        }
+
+        // draw into temporary histogram
+        const int n_bins = 200;
+        TH1D *h_energy = new TH1D("h_energy", "", n_bins, min, max);
+        tree->Draw("EnPB>>h_energy", weight_branch_name.c_str(), "goff");        
+
+        // subtract background histogram from total histogram
+        if (h_energy_total)
+            h_energy_total->Add(h_energy, -1.0);
+
+        delete h_energy; // clean up temporary histogram
+        f->Close();        
+    }
+
+    const double center_energy = 0.5 * (min + max);
+    const double mean_energy = h_energy_total->GetMean();
+    const double rms_energy = h_energy_total->GetRMS();
+
+    // Store values in the map
+    m_values["e_low"] = min;
+    m_values["e_high"] = max;
+    m_values["e_mid"] = center_energy;
+    m_values["e_avg"] = mean_energy;
+    m_values["e_rms"] = rms_energy;
+
+    delete h_energy_total; // Clean up total histogram
+
+    report(DEBUG, kModule) << "Beam energy statistics:\n"
+                          << "  Min: " << min << "\n"
+                          << "  Max: " << max << "\n"
+                          << "  Center: " << center_energy << "\n"
+                          << "  Mean: " << mean_energy << "\n"
+                          << "  RMS: " << rms_energy << "\n";
 }
 
 void RootDataConverter::validateFiles(const std::vector<std::string> &files,
@@ -370,4 +514,41 @@ void RootDataConverter::validateFiles(const std::vector<std::string> &files,
     {
         return; // files are valid
     }
+}
+
+std::pair<double, double> RootDataConverter::findMinMaxOfBranch(const std::vector<std::string> &files,
+                                               const std::string &tree_name,
+                                               const std::string &branch_name) const
+{
+    double global_min = std::numeric_limits<double>::max();
+    double global_max = std::numeric_limits<double>::lowest();
+
+    for (const std::string &file : files)
+    {
+        TFile *f = TFile::Open(file.c_str());
+        if (!f || f->IsZombie())
+        {
+            report(ERROR, kModule) << "Error opening ROOT file: " << file << "\n";
+            assert(false);
+        }
+        TTree *tree = f->Get<TTree>(tree_name.c_str());
+        if (!tree)
+        {
+            report(ERROR, kModule) << "Error retrieving tree " << tree_name << " from file " << file << "\n";
+            f->Close();
+            assert(false);
+        }
+
+        double local_min = tree->GetMinimum(branch_name.c_str());
+        double local_max = tree->GetMaximum(branch_name.c_str());
+
+        if (local_min < global_min)
+            global_min = local_min;
+        if (local_max > global_max)
+            global_max = local_max;
+
+        f->Close();
+    }
+
+    return {global_min, global_max};
 }

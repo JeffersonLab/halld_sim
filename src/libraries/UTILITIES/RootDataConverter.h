@@ -216,16 +216,6 @@ public:
     void setLowerVertexIndices(const std::vector<int> &indices) { m_lower_vertex_indices = indices; }
 
     /**
-     * @brief Get the headers for the CSV output
-     */
-    std::vector<std::string> getHeaders() const { return headers; }
-
-    /**
-     * @brief Set the headers for the CSV output
-     */
-    void setHeaders(const std::vector<std::string> &new_headers) { headers = new_headers; }
-
-    /**
      * @brief Map of header names to their values
      */
     std::map<std::string, double> getValues() const { return m_values; }
@@ -254,33 +244,31 @@ private:
     const std::string m_genMC_tree_name;
     const std::string m_accMC_tree_name;
 
-    // these are the standard headers for the CSV output
-    std::vector<std::string> m_headers = {
-        // TODO: ugly, should be better way like was done in FitConverter
-        "file",
-        "t_low",
-        "t_high",
-        "t_center",
-        "t_avg",
-        "t_rms",
-        "e_low",
-        "e_high",
-        "e_center",
-        "e_avg",
-        "e_rms",
-        "m_low",
-        "m_high",
-        "m_center",
-        "m_avg",
-        "m_rms",
-        "events",
-        "events_err",
-        "ac_events",
-        "ac_events_err",
-        "efficiency",
-    };
+    // TODO: variables we'll want to implement 
+    // "file",
+    // "t_low",
+    // "t_high",
+    // "t_center",
+    // "t_avg",
+    // "t_rms",
+    // "e_low", DONE
+    // "e_high", DONE
+    // "e_center", DONE
+    // "e_avg", DONE
+    // "e_rms", DONE
+    // "m_low",
+    // "m_high",
+    // "m_center",
+    // "m_avg",
+    // "m_rms",
+    // "events",
+    // "events_err",
+    // "ac_events",
+    // "ac_events_err",
+    // "efficiency",
+    
 
-    std::map<std::string, double> m_values;
+    std::map<std::string, double> m_values; //< Map of headers to their values for the CSV output (except for the "file" header)
 
     /**
      * @brief Find files of a given type associated with the fit results
@@ -326,6 +314,29 @@ private:
      * @return std::vector<std::string> List of tree names in the file
      */
     std::vector<std::string> treesInFile(const std::string &filename) const;
+
+    /**
+     * @brief Extract beam energy statistics from the data tree
+     *
+     * Calculates min, max, mean, and RMS values for the "EnPB" branch from the data
+     * file. Stores results in m_values with keys: "e_low", "e_high", "e_center",
+     * "e_avg", "e_rms"
+     *
+     * @param[in] weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
+     */
+    void extractBeamEnergyStats(const std::string &weight_branch_name);
+
+    /**
+     * @brief Get the max/min values of a branch for a set of files
+     * 
+     * @param files set of ROOT files containing a common tree and branch name
+     * @param tree_name ROOT tree containing the branch of interest
+     * @param branch_name branch name we want to find the max/min values of
+     * @return std::pair<double, double> minimum and maximum values of the branch across all files
+     */
+    std::pair<double, double> findMinMaxOfBranch(const std::vector<std::string> &files,
+                                               const std::string &tree_name,
+                                               const std::string &branch_name) const;
 
     static const char *kModule;
 };
