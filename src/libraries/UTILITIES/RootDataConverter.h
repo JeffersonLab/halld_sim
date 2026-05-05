@@ -61,6 +61,8 @@ public:
      * - index 0 (B): beam photon
      * - indices 1 to M: lower vertex particles, e.g. proton, pi+ that decay from Delta++
      * - indices M+1 to N: final state particles from upper vertex
+     * 
+     * TODO: implement
      *
      * @param[in] filename path to the .fit file
      * @param[in] lower_vertex_indices 4-momenta indices for lower vertex particles
@@ -135,7 +137,7 @@ public:
      */
     std::vector<std::string> accMCFiles() const { return findFiles("accMC"); };
 
-    
+    // TODO: write these docstrings
     void validateDataFiles() const { validateFiles(m_data_files, "data"); }
     void validateBackgroundFiles() const { validateFiles(m_background_files, "background"); }
     void validateGenMCFiles() const { validateFiles(m_genMC_files, "genMC"); }
@@ -198,22 +200,28 @@ public:
         const std::string &tree_name) const;
 
     /**
-     * @brief Get 4-momenta indices for lower vertex particles
-     *
-     * An AmpTools ROOT tree contains 4-vectors for all particles in the event. The
-     * first index is always the beam photon, but there can be multiple particles
-     * associated with the lower vertex like a proton, Delta+, etc. The rest of the
-     * particles are assumed to be final state particles from the upper vertex. This
-     * function returns the indices of the lower vertex particles in the data 4-vectors.
-     */
-    std::vector<int> getLowerVertexIndices() const { return m_lower_vertex_indices; }
-
-    /**
      * @brief Set 4-momenta indices for lower vertex particles
      *
-     * See getLowerVertexIndices for more details.
+     * An AmpTools ROOT tree contains 4-vectors for all particles in the event, labelled
+     * "EnX", "PxX", "PyX", "PzX" where X is the particle index. The "B" index is always
+     * the beam photon, but the other indices are not guaranteed to be in any particular
+     * order. The simplest case is a recoil proton at the lower vertex, which would just
+     *  be index 1. However, there can be multiple particles associated with the lower
+     * vertex like a Delta++ -> p + pi+ decay. 
+     * 
+     * This function allows the user to specify which indices correspond to the lower 
+     * vertex system. The remaining indices are assumed to be final state particles from
+     * the upper vertex. This is important for correctly calculating the 4-momentum
+     * transfer t and the upper vertex mass.
      */
     void setLowerVertexIndices(const std::vector<int> &indices) { m_lower_vertex_indices = indices; }
+
+    /**
+     * @brief Get 4-momenta indices for lower vertex particles
+     *
+     *  See setLowerVertexIndices for more details.
+     */
+    std::vector<int> getLowerVertexIndices() const { return m_lower_vertex_indices; }
 
     /**
      * @brief Map of header names to their values
