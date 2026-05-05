@@ -4,6 +4,8 @@
  * @brief
  * @date 2026-01-30
  *
+ * @todo: complete docstring. Also make a function in the fit converter to write out 
+ * the normalized integral matrix to a csv file, and use that like the corr/cov ones.
  */
 
 #include <algorithm>
