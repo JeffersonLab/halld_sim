@@ -324,7 +324,7 @@ private:
     std::vector<std::string> treesInFile(const std::string &filename) const;
 
     /**
-     * @brief Extract beam energy statistics from the data tree
+     * @brief Extract beam energy statistics from the trees
      *
      * Calculates min, max, mean, and RMS values for the "EnPB" branch from the data
      * file. Stores results in m_values with keys: "e_low", "e_high", "e_center",
@@ -333,6 +333,23 @@ private:
      * @param[in] weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
      */
     void extractBeamEnergyStats(const std::string &weight_branch_name);
+
+    /**
+     * @brief Extract -t 4-momentum transfer statistics from the trees
+     * 
+     * Calculates min, max, mean, and RMS values from the momentum transfer between 
+     * the at-rest proton and the lower-vertex recoil system. This is calculated as 
+     * t = (P_proton - P_recoil)^2, where P_recoil is the sum of the 4-vectors of the 
+     * lower vertex particles (see setLowerVertexIndices)
+     * Stores results in m_values with keys: "t_low", "t_high", "t_center", "t_avg", and
+     * "t_rms"
+     * 
+     * @param weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
+     * 
+     * @todo The function currently has not been tested for the FSRootFriendTree scenario,
+     * and so warns the user and assigns a weight of 1.0 for this case.
+     */
+    void extractFourMomentumTransferStats(const std::string &weight_branch_name);
 
     /**
      * @brief Get the max/min values of a branch for a set of files
