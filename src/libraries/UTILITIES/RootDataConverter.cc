@@ -48,6 +48,7 @@ RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warn
     }
 
     setLowerVertexIndices({1}); // default to index 1 being the lower vertex particle
+    setUpperVertexIndices();
 
     // print debug info detailing which particles are labeled as upper or lower vertex 
     // note that index 0 is always the beam photon
@@ -55,9 +56,9 @@ RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warn
     report(DEBUG, kModule) << "The following particles have been labeled as lower vertex particles by default (index 1):\n";
     report(DEBUG, kModule) << "i = 1 : " << particle_list[1] << "\n";
     report(DEBUG, kModule) << "The following particles are thus labeled as upper vertex particles by default (indices 2 to N):\n";
-    for (size_t i = 2; i < particle_list.size(); i++)
+    for (const auto &idx : m_upper_vertex_indices)
     {
-        report(DEBUG, kModule) << "i = " << i << " : " << particle_list[i] << "\n";
+        report(DEBUG, kModule) << "i = " << idx << " : " << particle_list[idx] << "\n";
     }
 
     m_background_files_exist = !m_background_files.empty();
@@ -78,7 +79,7 @@ RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warn
 // TODO: this block should be used for the constructor that specifies custom lv indices
 // for (size_t i = 0; i < particle_list.size(); i++)
 //     {
-//         if (std::find(getLowerVertexIndices().begin(), getLowerVertexIndices().end(), i) != getLowerVertexIndices().end())
+//         if (std::find(m_lower_vertex_indices.begin(), m_lower_vertex_indices.end(), i) != m_lower_vertex_indices.end())
 //             report(DEBUG, kModule) << "i = " << i << " : " << particle_list[i] << "\n";
 //     }
 
@@ -105,11 +106,11 @@ void RootDataConverter::extract()
     // vertex system. Background subtraction and proper weighting are all included.
     extractBeamEnergyStats(weight_branch_name);
     extractFourMomentumTransferStats(weight_branch_name);
+    // extractUpperVertexMassStats(weight_branch_name);
 
-    // TODO: next step is to calculate t from the at-rest proton and lower vertex particle
-    // 4-vectors. Look at other plotters for reference. Then calculate the upper
-    // vertex mass from the remaining particles. Finally, get number of events, and
-    // calculate efficiency from MC. Then use efficiency to get ac_events.
+    // TODO: next step is to calculate the upper vertex mass from the remaining
+    // particles. Finally, get number of events, and calculate efficiency from MC. Then
+    // use efficiency to get ac_events.
 }
 
 std::vector<std::string> RootDataConverter::findFiles(const std::string &file_type) const
@@ -732,4 +733,19 @@ std::pair<double, double> RootDataConverter::findMinMaxOfBranch(const std::vecto
     }
 
     return {global_min, global_max};
+}
+
+void RootDataConverter::setUpperVertexIndices()
+{
+    m_upper_vertex_indices.clear();
+    const std::vector<std::string> particle_list = m_cfg_info->reaction(m_fit_results.reactionList()[0])->particleList();
+
+    // Note that we always skip particle i=0, as this will be the beam photon
+    for (size_t i = 1; i < particle_list.size(); i++)
+    {
+        if (std::find(m_lower_vertex_indices.begin(), m_lower_vertex_indices.end(), i) == m_lower_vertex_indices.end())
+        {
+            m_upper_vertex_indices.push_back(i);
+        }
+    }
 }

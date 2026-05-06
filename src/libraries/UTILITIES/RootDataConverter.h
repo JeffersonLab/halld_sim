@@ -200,7 +200,7 @@ public:
         const std::string &tree_name) const;
 
     /**
-     * @brief Set 4-momenta indices for lower vertex particles
+     * @brief Set indices that belong to the lower vertex final state particles
      *
      * An AmpTools ROOT tree contains 4-vectors for all particles in the event, labelled
      * "EnX", "PxX", "PyX", "PzX" where X is the particle index. The "B" index is always
@@ -217,11 +217,31 @@ public:
     void setLowerVertexIndices(const std::vector<int> &indices) { m_lower_vertex_indices = indices; }
 
     /**
-     * @brief Get 4-momenta indices for lower vertex particles
+     * @brief Get indices for the lower vertex particles
      *
      *  See setLowerVertexIndices for more details.
      */
     std::vector<int> getLowerVertexIndices() const { return m_lower_vertex_indices; }
+
+    /**
+     * @brief Set indices that belong to the upper vertex final state particles
+     * 
+     * Any particle indices not in m_lower_vertex_indices that are also not 0 are thus
+     * assumed to belong to the upper vertex. This saves all leftover indices to
+     * m_upper_vertex_indices. This is important for correctly calculating the upper
+     * vertex mass.
+     *
+     * @note This function must be called AFTER setLowerVertexIndices
+     */
+    void setUpperVertexIndices();
+
+    /**
+     * @brief Get indices for the upper vertex particles
+     * 
+     * See setUpperVertexIndices for more details.
+     */
+    std::vector<int> getUpperVertexIndices() const { return m_upper_vertex_indices; }
+
 
     /**
      * @brief Map of header names to their values
@@ -237,6 +257,7 @@ private:
     const FitResults m_fit_results;          ///< AmpTools FitResults object
     const ConfigurationInfo *m_cfg_info;     ///< ConfigurationInfo from the fit
     std::vector<int> m_lower_vertex_indices; ///< Indices of lower vertex particles in the data 4-vectors
+    std::vector<int> m_upper_vertex_indices; ///< Indices of upper vertex particles in the data 4-vectors
     std::vector<int> m_isobar_indices;       ///< Indices of isobar particles in the data 4-vectors
     bool m_mute_warnings;                    ///< Whether to mute warnings about missing background files
 
