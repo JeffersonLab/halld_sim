@@ -910,6 +910,12 @@ std::pair<double, double> RootDataConverter::findMinMaxOfBranch(const std::vecto
 
 void RootDataConverter::setUpperVertexIndices()
 {
+    if (m_lower_vertex_indices.empty())
+    {
+        report(ERROR, kModule) << "Lower vertex indices must be set before setting upper vertex indices\n";
+        assert(false);
+    }
+
     m_upper_vertex_indices.clear();
     const std::vector<std::string> particle_list = m_cfg_info->reaction(m_fit_results.reactionList()[0])->particleList();
 

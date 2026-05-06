@@ -4,6 +4,9 @@
  * @brief Class for converting ROOT tree data associated with an AmpTools fit to any format
  * @date 2026-02-02
  *
+ * @note that this currently is built to convert to CSV, but the class can be extended
+ * to convert to any other format by accessing the various containers that store
+ * the fit results.
  */
 
 #ifndef DATA_CONVERTER_H
@@ -25,12 +28,14 @@
  * @class RootDataConverter
  * @brief Converts AmpTools fit result data to any format
  *
- * This class extracts data information from a single AmpTools .fit file. It can then
- * output the data in various formats, such as CSV. The extracted data includes:
- * - Bin edges, centers, averages, and RMS values for t, beam energy, and mass
- *   histograms
+ * This class is designed to take a single AmpTools .fit file, extract the associated
+ * data files and trees used in the fit, and then extract the relevant data from those
+ * trees to be converted into any desired output format (e.g. CSV). The extracted data
+ * includes:
+ * - Bin edges, centers, averages, and RMS values for t, beam energy, and upper vertex
+ *   mass histograms
  * - Total number of events and errors for data and acceptance-corrected data
- * - Efficiency calculation based on genMC and accMC event counts
+ * - Efficiency calculation based on generated and accepted MC event counts
  *
  * Example usage in convert_to_csv.cc:
  * @code
@@ -101,6 +106,9 @@ public:
 
     /**
      * @brief Extract fit data from the .fit file
+     * 
+     * Fills the m_values map with all the relevant information from the fit results and
+     * associated files that we want to save to csv later.
      */
     void extract();
 
