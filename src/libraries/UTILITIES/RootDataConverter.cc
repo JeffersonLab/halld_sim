@@ -106,11 +106,7 @@ void RootDataConverter::extract()
     // vertex system. Background subtraction and proper weighting are all included.
     extractBeamEnergyStats(weight_branch_name);
     extractFourMomentumTransferStats(weight_branch_name);
-    // extractUpperVertexMassStats(weight_branch_name);
-
-    // TODO: next step is to calculate the upper vertex mass from the remaining
-    // particles. Finally, get number of events, and calculate efficiency from MC. Then
-    // use efficiency to get ac_events.
+    extractUpperVertexMassStats(weight_branch_name);
 }
 
 std::vector<std::string> RootDataConverter::findFiles(const std::string &file_type) const
@@ -616,12 +612,12 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
 
             // background histogram should use weight branch (weight_branch_name was chosen from background earlier)
             if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos) {
-                h_bkg = dfb.Histo1D({"h_t_total", "t (bg)", n_bins, global_min, global_max}, "t_value", weight_branch_name);
+                h_bkg = dfb.Histo1D({"h_t_bkg", "t (bg)", n_bins, global_min, global_max}, "t_value", weight_branch_name);
             }
             else {
                 if (weight_branch_name.find('.') != std::string::npos)
                     report(WARNING, kModule) << "Background weight branch references friend tree; skipping weights for bg RDataFrame histogram\n";
-                h_bkg = dfb.Histo1D({"h_t_total", "t (bg)", n_bins, global_min, global_max}, "t_value");
+                h_bkg = dfb.Histo1D({"h_t_bkg", "t (bg)", n_bins, global_min, global_max}, "t_value");
             }
 
             // Subtract background from a standalone clone so RResultPtr ownership stays intact.
@@ -670,6 +666,154 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
     }
     catch (const std::exception &e) {
         report(ERROR, kModule) << "RDataFrame error computing -t: " << e.what() << "\n";
+        assert(false);
+    }
+}
+
+void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_branch_name)
+{
+    if (m_upper_vertex_indices.empty()) {
+        report(ERROR, kModule) << "No upper vertex indices set; cannot compute mass\n";
+        assert(false);
+    }
+
+    // Prepare branch expression strings like "PxP2 + PxP3 + ..."
+    std::string upper_px_expr;
+    std::string upper_py_expr;
+    std::string upper_pz_expr;
+    std::string upper_e_expr;
+    for (size_t i = 0; i < m_upper_vertex_indices.size(); ++i) {
+        int idx = m_upper_vertex_indices[i];
+        std::string sep = (i == 0) ? "" : " + ";
+        upper_px_expr += sep + "PxP" + std::to_string(idx);
+        upper_py_expr += sep + "PyP" + std::to_string(idx);
+        upper_pz_expr += sep + "PzP" + std::to_string(idx);
+        upper_e_expr  += sep + "EnP" + std::to_string(idx);
+    }
+
+    try {
+        // ---- DATA histogram via RDataFrame ----
+        ROOT::RDataFrame df_data(m_data_tree_name, m_data_files);
+
+        auto df = df_data.Define("upper_px", upper_px_expr)
+                         .Define("upper_py", upper_py_expr)
+                         .Define("upper_pz", upper_pz_expr)
+                         .Define("upper_E", upper_e_expr)
+                         .Define("m_value",
+                                 [](double E, double px, double py, double pz) {
+                                     double p2 = px * px + py * py + pz * pz;
+                                     double m2 = E * E - p2;
+                                     if (m2 < 0 && m2 > -1e-12) m2 = 0.0;
+                                     return std::sqrt(std::max(0.0, m2));
+                                 },
+                                 {"upper_E", "upper_px", "upper_py", "upper_pz"});
+
+        // Determine min and max from data (unweighted)
+        auto data_min_r = df.Min("m_value");
+        auto data_max_r = df.Max("m_value");
+        double data_min = *data_min_r;
+        double data_max = *data_max_r;
+
+        double global_min = data_min;
+        double global_max = data_max;
+
+        // Build data histogram (if background exists, don't apply weights to data here)
+        const int n_bins = 200;
+        ROOT::RDF::RResultPtr<TH1D> h_data;
+        if (m_background_files_exist) {
+            h_data = df.Histo1D({"h_m_data", "M (data)", n_bins, global_min, global_max}, "m_value");
+        }
+        else {
+            // if no background files, use weight branch from data (if provided)
+            if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos) {
+                h_data = df.Histo1D({"h_m_data", "M (data)", n_bins, global_min, global_max}, "m_value", weight_branch_name);
+            }
+            else {
+                h_data = df.Histo1D({"h_m_data", "M (data)", n_bins, global_min, global_max}, "m_value");
+            }
+        }
+
+        // ---- BACKGROUND histogram via RDataFrame (if present) ----
+        if (m_background_files_exist && !m_background_files.empty()) {
+            ROOT::RDF::RResultPtr<TH1D> h_bkg;
+            ROOT::RDataFrame df_bg(m_background_tree_name, m_background_files);
+            auto dfb = df_bg.Define("upper_px", upper_px_expr)
+                          .Define("upper_py", upper_py_expr)
+                          .Define("upper_pz", upper_pz_expr)
+                          .Define("upper_E", upper_e_expr)
+                          .Define("m_value",
+                                 [](double E, double px, double py, double pz) {
+                                     double p2 = px * px + py * py + pz * pz;
+                                     double m2 = E * E - p2;
+                                     if (m2 < 0 && m2 > -1e-12) m2 = 0.0;
+                                     return std::sqrt(std::max(0.0, m2));
+                                 },
+                                 {"upper_E", "upper_px", "upper_py", "upper_pz"});
+
+            // Expand global range to include background extremes
+            auto bg_min_r = dfb.Min("m_value");
+            auto bg_max_r = dfb.Max("m_value");
+            double bg_min = *bg_min_r;
+            double bg_max = *bg_max_r;
+            global_min = std::min(global_min, bg_min);
+            global_max = std::max(global_max, bg_max);
+
+            // Recreate histograms with unified ranges
+            h_data = df.Histo1D({"h_m_data", "M (data)", n_bins, global_min, global_max}, "m_value");
+
+            if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos) {
+                h_bkg = dfb.Histo1D({"h_m_bkg", "M (bg)", n_bins, global_min, global_max}, "m_value", weight_branch_name);
+            }
+            else {
+                h_bkg = dfb.Histo1D({"h_m_bkg", "M (bg)", n_bins, global_min, global_max}, "m_value");
+            }
+
+            // Subtract background from a standalone clone so RResultPtr ownership stays intact.
+            TH1D *h_result = (TH1D *)h_data->Clone("h_m_result");
+            h_result->SetDirectory(nullptr);
+            h_result->Add(h_bkg.GetPtr(), -1.0);
+
+            double mean_m = h_result->GetMean();
+            double rms_m = h_result->GetRMS();
+            double center_m = 0.5 * (global_min + global_max);
+
+            m_values["m_low"] = global_min;
+            m_values["m_high"] = global_max;
+            m_values["m_mid"] = center_m;
+            m_values["m_avg"] = mean_m;
+            m_values["m_rms"] = rms_m;
+
+            report(DEBUG, kModule) << "M statistics (data - background):" << "\n";
+            report(DEBUG, kModule) << "  Min: " << global_min << "\n";
+            report(DEBUG, kModule) << "  Max: " << global_max << "\n";
+            report(DEBUG, kModule) << "  Center: " << center_m << "\n";
+            report(DEBUG, kModule) << "  Mean: " << mean_m << "\n";
+            report(DEBUG, kModule) << "  RMS: " << rms_m << "\n";
+
+            delete h_result;
+        }
+        else {
+            // No background files: final histogram is h_data
+            double mean_m = h_data->GetMean();
+            double rms_m = h_data->GetRMS();
+            double center_m = 0.5 * (global_min + global_max);
+
+            m_values["m_low"] = global_min;
+            m_values["m_high"] = global_max;
+            m_values["m_mid"] = center_m;
+            m_values["m_avg"] = mean_m;
+            m_values["m_rms"] = rms_m;
+
+            report(DEBUG, kModule) << "M statistics (data):\n";
+            report(DEBUG, kModule) << "  Min: " << global_min << "\n";
+            report(DEBUG, kModule) << "  Max: " << global_max << "\n";
+            report(DEBUG, kModule) << "  Center: " << center_m << "\n";
+            report(DEBUG, kModule) << "  Mean: " << mean_m << "\n";
+            report(DEBUG, kModule) << "  RMS: " << rms_m << "\n";
+        }
+    }
+    catch (const std::exception &e) {
+        report(ERROR, kModule) << "RDataFrame error computing mass: " << e.what() << "\n";
         assert(false);
     }
 }

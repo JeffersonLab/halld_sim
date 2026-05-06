@@ -373,6 +373,21 @@ private:
     void extractFourMomentumTransferStats(const std::string &weight_branch_name);
 
     /**
+     * @brief Extract mass statistics for the upper vertex system from the trees
+     * 
+     * Calculates min, max, mean, and RMS values from the total upper-vertex mass
+     * system, which is calculated as the invariant mass of the sum of the 4-vectors of
+     * the upper vertex particles (see setUpperVertexIndices). Stores the results in 
+     * m_values with keys: "m_low", "m_high", "m_center", "m_avg", and "m_rms"
+     * 
+     * @param weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
+     * 
+     * @todo The function currently has not been tested for the FSRootFriendTree scenario,
+     * and so warns the user and assigns a weight of 1.0 for this case.
+     */     
+    void extractUpperVertexMassStats(const std::string &weight_branch_name);
+
+    /**
      * @brief Get the max/min values of a branch for a set of files
      * 
      * @param files set of ROOT files containing a common tree and branch name
