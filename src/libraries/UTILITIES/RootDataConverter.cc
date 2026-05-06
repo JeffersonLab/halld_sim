@@ -25,20 +25,23 @@
 
 const char *RootDataConverter::kModule = "RootDataConverter";
 
-RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warnings) : m_fit_file(filename),
-                                                                                        m_fit_results(filename, mute_warnings),
-                                                                                        m_cfg_info(m_fit_results.configInfo()),
-                                                                                        m_mute_warnings(mute_warnings),
-                                                                                        m_data_files(dataFiles()),
-                                                                                        m_background_files(backgroundFiles()),
-                                                                                        m_genMC_files(genMCFiles()),
-                                                                                        m_accMC_files(accMCFiles()),
-                                                                                        m_data_tree_name(findTreeName("data")),
-                                                                                        m_background_tree_name(findTreeName("background")),
-                                                                                        m_genMC_tree_name(findTreeName("genMC")),
-                                                                                        m_accMC_tree_name(findTreeName("accMC"))
-{
+RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warnings) : RootDataConverter(filename, {1}, mute_warnings) {}
 
+RootDataConverter::RootDataConverter(const std::string &filename,
+                                     const std::vector<int> &lower_vertex_indices,
+                                     bool mute_warnings) : m_fit_file(filename),
+                                                           m_fit_results(filename, mute_warnings),
+                                                           m_cfg_info(m_fit_results.configInfo()),
+                                                           m_mute_warnings(mute_warnings),
+                                                           m_data_files(dataFiles()),
+                                                           m_background_files(backgroundFiles()),
+                                                           m_genMC_files(genMCFiles()),
+                                                           m_accMC_files(accMCFiles()),
+                                                           m_data_tree_name(findTreeName("data")),
+                                                           m_background_tree_name(findTreeName("background")),
+                                                           m_genMC_tree_name(findTreeName("genMC")),
+                                                           m_accMC_tree_name(findTreeName("accMC"))
+{
     report(DEBUG, kModule) << "Constructing RootDataConverter for file: " << m_fit_file << "\n";
 
     if (!m_fit_results.valid())
@@ -47,15 +50,18 @@ RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warn
         assert(false);
     }
 
-    setLowerVertexIndices({1}); // default to index 1 being the lower vertex particle
+    setLowerVertexIndices(lower_vertex_indices);
     setUpperVertexIndices();
 
-    // print debug info detailing which particles are labeled as upper or lower vertex 
+    // print debug info detailing which particles are labeled as upper or lower vertex
     // note that index 0 is always the beam photon
     const std::vector<std::string> particle_list = m_cfg_info->reaction(m_fit_results.reactionList()[0])->particleList();
-    report(DEBUG, kModule) << "The following particles have been labeled as lower vertex particles by default (index 1):\n";
-    report(DEBUG, kModule) << "i = 1 : " << particle_list[1] << "\n";
-    report(DEBUG, kModule) << "The following particles are thus labeled as upper vertex particles by default (indices 2 to N):\n";
+    report(DEBUG, kModule) << "The following particles have been labeled as lower vertex particles:\n";
+    for (const auto &idx : m_lower_vertex_indices)
+    {
+        report(DEBUG, kModule) << "i = " << idx << " : " << particle_list[idx] << "\n";
+    }
+    report(DEBUG, kModule) << "The following particles are thus labeled as upper vertex particles:\n";
     for (const auto &idx : m_upper_vertex_indices)
     {
         report(DEBUG, kModule) << "i = " << idx << " : " << particle_list[idx] << "\n";
@@ -76,20 +82,13 @@ RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warn
     extract();
 }
 
-// TODO: this block should be used for the constructor that specifies custom lv indices
-// for (size_t i = 0; i < particle_list.size(); i++)
-//     {
-//         if (std::find(m_lower_vertex_indices.begin(), m_lower_vertex_indices.end(), i) != m_lower_vertex_indices.end())
-//             report(DEBUG, kModule) << "i = " << i << " : " << particle_list[i] << "\n";
-//     }
-
 void RootDataConverter::extract()
 {
     // get weight branch name. If weight branch is not found, will return empty string
     // and we'll assume weights of 1.0 throughout our stats functions
     std::string weight_branch_name;
     if (m_background_files_exist)
-        weight_branch_name = weightBranchName("background", m_background_tree_name);        
+        weight_branch_name = weightBranchName("background", m_background_tree_name);
     else
         weight_branch_name = weightBranchName("data", m_data_tree_name);
 
@@ -102,7 +101,7 @@ void RootDataConverter::extract()
         report(DEBUG, kModule) << "Weight branch found: " << weight_branch_name << "\n";
     }
 
-    // Extract min, max, mean, and RMS of the beam energy, -t, and mass of the upper 
+    // Extract min, max, mean, and RMS of the beam energy, -t, and mass of the upper
     // vertex system. Background subtraction and proper weighting are all included.
     extractBeamEnergyStats(weight_branch_name);
     extractFourMomentumTransferStats(weight_branch_name);
@@ -272,7 +271,7 @@ std::string RootDataConverter::weightBranchName(
     // FSRoot-based data readers can optionally pass a friend weight branch name as an
     // argument, so check explicitly for that first
     const std::vector<std::string> reaction_list = m_fit_results.reactionList();
-    std::string reaction = reaction_list[0]; // assume all reactions use the same weight branch
+    std::string reaction = reaction_list[0];                    // assume all reactions use the same weight branch
     std::pair<std::string, std::vector<std::string>> file_pair; // data reader name and args
     std::string root_file;
     if (file_type == "data")
@@ -359,7 +358,6 @@ std::string RootDataConverter::weightBranchName(
     }
 }
 
-
 void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_name)
 {
     // we will add all the data (and possible) weighted background energy histograms
@@ -369,7 +367,7 @@ void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_
     double min, max;
     std::tie(min, max) = findMinMaxOfBranch(m_data_files, m_data_tree_name, "EnPB");
 
-    if(m_background_files_exist)
+    if (m_background_files_exist)
     {
         double bg_min, bg_max;
         std::tie(bg_min, bg_max) = findMinMaxOfBranch(m_background_files, m_background_tree_name, "EnPB");
@@ -401,8 +399,8 @@ void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_
         tree->SetBranchAddress("EnPB", &energy);
 
         // draw into temporary histogram
-        const int n_bins = 200;        
-        TH1D *h_energy = new TH1D("h_energy", "", n_bins, min, max);        
+        const int n_bins = 200;
+        TH1D *h_energy = new TH1D("h_energy", "", n_bins, min, max);
 
         // If no background files exist, we assume weights are stored in the data tree
         if (!m_background_files_exist && !weight_branch_name.empty() && tree->GetBranch(weight_branch_name.c_str()))
@@ -425,7 +423,7 @@ void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_
                                          << data_file
                                          << "\n"
                                          << "Assuming weights of 1.0 for all events.\n";
-        }        
+        }
 
         // if this is first hist, clone it to the total hist. Otherwise, add to the total hist
         if (!h_energy_total)
@@ -444,7 +442,7 @@ void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_
 
     // ==== BACKGROUND ENERGY HISTOGRAMS ====
     // if background files exist, we'll subtract the weighted background energy
-    // histograms from the total energy histogram, which we will use for our stats. 
+    // histograms from the total energy histogram, which we will use for our stats.
     for (const std::string &bg_file : m_background_files)
     {
         TFile *f = TFile::Open(bg_file.c_str());
@@ -476,14 +474,14 @@ void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_
         // draw into temporary histogram
         const int n_bins = 200;
         TH1D *h_energy = new TH1D("h_energy", "", n_bins, min, max);
-        tree->Draw("EnPB>>h_energy", weight_branch_name.c_str(), "goff");        
+        tree->Draw("EnPB>>h_energy", weight_branch_name.c_str(), "goff");
 
         // subtract background histogram from total histogram
         if (h_energy_total)
             h_energy_total->Add(h_energy, -1.0);
 
         delete h_energy;
-        f->Close();        
+        f->Close();
     }
 
     const double center_energy = 0.5 * (min + max);
@@ -512,7 +510,8 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
     // target proton mass (GeV)
     const double m_proton = 0.938;
 
-    if (m_lower_vertex_indices.empty()) {
+    if (m_lower_vertex_indices.empty())
+    {
         report(ERROR, kModule) << "No lower vertex indices set; cannot compute -t\n";
         assert(false);
     }
@@ -522,32 +521,35 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
     std::string recoil_py_expr;
     std::string recoil_pz_expr;
     std::string recoil_e_expr;
-    for (size_t i = 0; i < m_lower_vertex_indices.size(); ++i) {
+    for (size_t i = 0; i < m_lower_vertex_indices.size(); ++i)
+    {
         int idx = m_lower_vertex_indices[i];
         std::string sep = (i == 0) ? "" : " + ";
         recoil_px_expr += sep + "PxP" + std::to_string(idx);
         recoil_py_expr += sep + "PyP" + std::to_string(idx);
         recoil_pz_expr += sep + "PzP" + std::to_string(idx);
-        recoil_e_expr  += sep + "EnP" + std::to_string(idx);
+        recoil_e_expr += sep + "EnP" + std::to_string(idx);
     }
 
     // ---- DATA histogram via RDataFrame ----
-    try {
+    try
+    {
         ROOT::RDataFrame df_data(m_data_tree_name, m_data_files);
 
         // Define recoil components and t (Mandelstam t = (target - recoil)^2)
         auto df = df_data.Define("recoil_px", recoil_px_expr)
-                         .Define("recoil_py", recoil_py_expr)
-                         .Define("recoil_pz", recoil_pz_expr)
-                         .Define("recoil_E", recoil_e_expr)
-                         .Define("t_value",
-                                 [m_proton](double rE, double rpx, double rpy, double rpz) {
-                                     double dE = m_proton - rE;
-                                     double p2 = rpx * rpx + rpy * rpy + rpz * rpz;
-                                     double t = dE * dE - p2;
-                                     return std::fabs(t);
-                                 },
-                                 {"recoil_E", "recoil_px", "recoil_py", "recoil_pz"});
+                      .Define("recoil_py", recoil_py_expr)
+                      .Define("recoil_pz", recoil_pz_expr)
+                      .Define("recoil_E", recoil_e_expr)
+                      .Define("t_value",
+                              [m_proton](double rE, double rpx, double rpy, double rpz)
+                              {
+                                  double dE = m_proton - rE;
+                                  double p2 = rpx * rpx + rpy * rpy + rpz * rpz;
+                                  double t = dE * dE - p2;
+                                  return std::fabs(t);
+                              },
+                              {"recoil_E", "recoil_px", "recoil_py", "recoil_pz"});
 
         // Determine min and max from data (unweighted)
         auto data_min_r = df.Min("t_value");
@@ -561,43 +563,51 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
         // Build data histogram (if background exists, don't apply weights to data here)
         const int n_bins = 200;
         ROOT::RDF::RResultPtr<TH1D> h_data;
-        if (m_background_files_exist) {
+        if (m_background_files_exist)
+        {
             h_data = df.Histo1D({"h_t_data", "t (data)", n_bins, global_min, global_max}, "t_value");
         }
-        else {
+        else
+        {
             // if no background files, use weight branch from data (if provided)
-            if (!weight_branch_name.empty()) {
+            if (!weight_branch_name.empty())
+            {
                 // if weight branch references a friend (contains a '.'), unclear if RDataFrame can handle that, so skip weights in that case with a warning
                 // TODO: test the friend tree case
-                if (weight_branch_name.find('.') != std::string::npos) {
+                if (weight_branch_name.find('.') != std::string::npos)
+                {
                     report(WARNING, kModule) << "Weight branch appears to reference a friend tree (" << weight_branch_name << ") - skipping weights for RDataFrame histogram\n";
                     h_data = df.Histo1D({"h_t_data", "t (data)", n_bins, global_min, global_max}, "t_value");
                 }
-                else {
+                else
+                {
                     h_data = df.Histo1D({"h_t_data", "t (data)", n_bins, global_min, global_max}, "t_value", weight_branch_name);
                 }
             }
-            else {
+            else
+            {
                 h_data = df.Histo1D({"h_t_data", "t (data)", n_bins, global_min, global_max}, "t_value");
             }
         }
 
-        // ---- BACKGROUND histogram via RDataFrame (if present) ----        
-        if (m_background_files_exist && !m_background_files.empty()) {
+        // ---- BACKGROUND histogram via RDataFrame (if present) ----
+        if (m_background_files_exist && !m_background_files.empty())
+        {
             ROOT::RDF::RResultPtr<TH1D> h_bkg;
             ROOT::RDataFrame df_bg(m_background_tree_name, m_background_files);
             auto dfb = df_bg.Define("recoil_px", recoil_px_expr)
-                          .Define("recoil_py", recoil_py_expr)
-                          .Define("recoil_pz", recoil_pz_expr)
-                          .Define("recoil_E", recoil_e_expr)
-                          .Define("t_value",
-                                 [m_proton](double rE, double rpx, double rpy, double rpz) {
-                                     double dE = m_proton - rE;
-                                     double p2 = rpx * rpx + rpy * rpy + rpz * rpz;
-                                     double t = dE * dE - p2;
-                                     return std::fabs(t);
-                                 },
-                                 {"recoil_E", "recoil_px", "recoil_py", "recoil_pz"});
+                           .Define("recoil_py", recoil_py_expr)
+                           .Define("recoil_pz", recoil_pz_expr)
+                           .Define("recoil_E", recoil_e_expr)
+                           .Define("t_value",
+                                   [m_proton](double rE, double rpx, double rpy, double rpz)
+                                   {
+                                       double dE = m_proton - rE;
+                                       double p2 = rpx * rpx + rpy * rpy + rpz * rpz;
+                                       double t = dE * dE - p2;
+                                       return std::fabs(t);
+                                   },
+                                   {"recoil_E", "recoil_px", "recoil_py", "recoil_pz"});
 
             // Expand global range to include background extremes
             auto bg_min_r = dfb.Min("t_value");
@@ -611,10 +621,12 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
             h_data = df.Histo1D({"h_t_data", "t (data)", n_bins, global_min, global_max}, "t_value");
 
             // background histogram should use weight branch (weight_branch_name was chosen from background earlier)
-            if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos) {
+            if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos)
+            {
                 h_bkg = dfb.Histo1D({"h_t_bkg", "t (bg)", n_bins, global_min, global_max}, "t_value", weight_branch_name);
             }
-            else {
+            else
+            {
                 if (weight_branch_name.find('.') != std::string::npos)
                     report(WARNING, kModule) << "Background weight branch references friend tree; skipping weights for bg RDataFrame histogram\n";
                 h_bkg = dfb.Histo1D({"h_t_bkg", "t (bg)", n_bins, global_min, global_max}, "t_value");
@@ -644,7 +656,8 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
 
             delete h_result;
         }
-        else {
+        else
+        {
             // No background files: final histogram is h_data
             double mean_t = h_data->GetMean();
             double rms_t = h_data->GetRMS();
@@ -664,7 +677,8 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
             report(DEBUG, kModule) << "  RMS: " << rms_t << "\n";
         }
     }
-    catch (const std::exception &e) {
+    catch (const std::exception &e)
+    {
         report(ERROR, kModule) << "RDataFrame error computing -t: " << e.what() << "\n";
         assert(false);
     }
@@ -672,7 +686,8 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
 
 void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_branch_name)
 {
-    if (m_upper_vertex_indices.empty()) {
+    if (m_upper_vertex_indices.empty())
+    {
         report(ERROR, kModule) << "No upper vertex indices set; cannot compute mass\n";
         assert(false);
     }
@@ -682,31 +697,35 @@ void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_br
     std::string upper_py_expr;
     std::string upper_pz_expr;
     std::string upper_e_expr;
-    for (size_t i = 0; i < m_upper_vertex_indices.size(); ++i) {
+    for (size_t i = 0; i < m_upper_vertex_indices.size(); ++i)
+    {
         int idx = m_upper_vertex_indices[i];
         std::string sep = (i == 0) ? "" : " + ";
         upper_px_expr += sep + "PxP" + std::to_string(idx);
         upper_py_expr += sep + "PyP" + std::to_string(idx);
         upper_pz_expr += sep + "PzP" + std::to_string(idx);
-        upper_e_expr  += sep + "EnP" + std::to_string(idx);
+        upper_e_expr += sep + "EnP" + std::to_string(idx);
     }
 
-    try {
+    try
+    {
         // ---- DATA histogram via RDataFrame ----
         ROOT::RDataFrame df_data(m_data_tree_name, m_data_files);
 
         auto df = df_data.Define("upper_px", upper_px_expr)
-                         .Define("upper_py", upper_py_expr)
-                         .Define("upper_pz", upper_pz_expr)
-                         .Define("upper_E", upper_e_expr)
-                         .Define("m_value",
-                                 [](double E, double px, double py, double pz) {
-                                     double p2 = px * px + py * py + pz * pz;
-                                     double m2 = E * E - p2;
-                                     if (m2 < 0 && m2 > -1e-12) m2 = 0.0;
-                                     return std::sqrt(std::max(0.0, m2));
-                                 },
-                                 {"upper_E", "upper_px", "upper_py", "upper_pz"});
+                      .Define("upper_py", upper_py_expr)
+                      .Define("upper_pz", upper_pz_expr)
+                      .Define("upper_E", upper_e_expr)
+                      .Define("m_value",
+                              [](double E, double px, double py, double pz)
+                              {
+                                  double p2 = px * px + py * py + pz * pz;
+                                  double m2 = E * E - p2;
+                                  if (m2 < 0 && m2 > -1e-12)
+                                      m2 = 0.0;
+                                  return std::sqrt(std::max(0.0, m2));
+                              },
+                              {"upper_E", "upper_px", "upper_py", "upper_pz"});
 
         // Determine min and max from data (unweighted)
         auto data_min_r = df.Min("m_value");
@@ -720,35 +739,42 @@ void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_br
         // Build data histogram (if background exists, don't apply weights to data here)
         const int n_bins = 200;
         ROOT::RDF::RResultPtr<TH1D> h_data;
-        if (m_background_files_exist) {
+        if (m_background_files_exist)
+        {
             h_data = df.Histo1D({"h_m_data", "M (data)", n_bins, global_min, global_max}, "m_value");
         }
-        else {
+        else
+        {
             // if no background files, use weight branch from data (if provided)
-            if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos) {
+            if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos)
+            {
                 h_data = df.Histo1D({"h_m_data", "M (data)", n_bins, global_min, global_max}, "m_value", weight_branch_name);
             }
-            else {
+            else
+            {
                 h_data = df.Histo1D({"h_m_data", "M (data)", n_bins, global_min, global_max}, "m_value");
             }
         }
 
         // ---- BACKGROUND histogram via RDataFrame (if present) ----
-        if (m_background_files_exist && !m_background_files.empty()) {
+        if (m_background_files_exist && !m_background_files.empty())
+        {
             ROOT::RDF::RResultPtr<TH1D> h_bkg;
             ROOT::RDataFrame df_bg(m_background_tree_name, m_background_files);
             auto dfb = df_bg.Define("upper_px", upper_px_expr)
-                          .Define("upper_py", upper_py_expr)
-                          .Define("upper_pz", upper_pz_expr)
-                          .Define("upper_E", upper_e_expr)
-                          .Define("m_value",
-                                 [](double E, double px, double py, double pz) {
-                                     double p2 = px * px + py * py + pz * pz;
-                                     double m2 = E * E - p2;
-                                     if (m2 < 0 && m2 > -1e-12) m2 = 0.0;
-                                     return std::sqrt(std::max(0.0, m2));
-                                 },
-                                 {"upper_E", "upper_px", "upper_py", "upper_pz"});
+                           .Define("upper_py", upper_py_expr)
+                           .Define("upper_pz", upper_pz_expr)
+                           .Define("upper_E", upper_e_expr)
+                           .Define("m_value",
+                                   [](double E, double px, double py, double pz)
+                                   {
+                                       double p2 = px * px + py * py + pz * pz;
+                                       double m2 = E * E - p2;
+                                       if (m2 < 0 && m2 > -1e-12)
+                                           m2 = 0.0;
+                                       return std::sqrt(std::max(0.0, m2));
+                                   },
+                                   {"upper_E", "upper_px", "upper_py", "upper_pz"});
 
             // Expand global range to include background extremes
             auto bg_min_r = dfb.Min("m_value");
@@ -761,10 +787,12 @@ void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_br
             // Recreate histograms with unified ranges
             h_data = df.Histo1D({"h_m_data", "M (data)", n_bins, global_min, global_max}, "m_value");
 
-            if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos) {
+            if (!weight_branch_name.empty() && weight_branch_name.find('.') == std::string::npos)
+            {
                 h_bkg = dfb.Histo1D({"h_m_bkg", "M (bg)", n_bins, global_min, global_max}, "m_value", weight_branch_name);
             }
-            else {
+            else
+            {
                 h_bkg = dfb.Histo1D({"h_m_bkg", "M (bg)", n_bins, global_min, global_max}, "m_value");
             }
 
@@ -792,7 +820,8 @@ void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_br
 
             delete h_result;
         }
-        else {
+        else
+        {
             // No background files: final histogram is h_data
             double mean_m = h_data->GetMean();
             double rms_m = h_data->GetRMS();
@@ -812,19 +841,19 @@ void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_br
             report(DEBUG, kModule) << "  RMS: " << rms_m << "\n";
         }
     }
-    catch (const std::exception &e) {
+    catch (const std::exception &e)
+    {
         report(ERROR, kModule) << "RDataFrame error computing mass: " << e.what() << "\n";
         assert(false);
     }
 }
 
-
 void RootDataConverter::validateFiles(const std::vector<std::string> &files,
-                                       const std::string &file_type) const
+                                      const std::string &file_type) const
 {
     if (files.empty() && file_type != "background")
     {
-        report(ERROR, kModule) << "No " 
+        report(ERROR, kModule) << "No "
                                << file_type << " files found in fit results for file: "
                                << m_fit_file << "\n";
         assert(false);
@@ -843,8 +872,8 @@ void RootDataConverter::validateFiles(const std::vector<std::string> &files,
 }
 
 std::pair<double, double> RootDataConverter::findMinMaxOfBranch(const std::vector<std::string> &files,
-                                               const std::string &tree_name,
-                                               const std::string &branch_name) const
+                                                                const std::string &tree_name,
+                                                                const std::string &branch_name) const
 {
     double global_min = std::numeric_limits<double>::max();
     double global_max = std::numeric_limits<double>::lowest();

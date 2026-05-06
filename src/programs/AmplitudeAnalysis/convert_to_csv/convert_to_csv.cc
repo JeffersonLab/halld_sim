@@ -42,25 +42,25 @@ int main(int argc, char *argv[])
     bool is_sorted = false;
     int sort_index = -1;
     bool is_acceptance_corrected = false;
+    std::vector<int> lower_vertex_indices;
     bool create_data_file = false;
     bool create_covariance = false;
     bool create_correlation = false;
     bool verbose = false;
     bool preview = false;
-    std::string mass_branch = "M4Pi"; // TODO: change by building up from AmpTools 4-vectors. Instead option for lower vertex indices, and possibly isobar indices
 
     auto print_help = []()
     {
         std::cout << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH]"
-                  << " [-s] [--sort-index INDEX] [-a] [-d] [-m MASS_BRANCH] [-p] [-v]"
-                  << " [--correlation] [--covariance] [-d]\n"
+                  << " [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-p] [-v]"
+                  << " [--correlation] [--covariance] \n"
                   << "  -i INPUT_FILES:\t\tFull path to the .fit file(s)\n"
                   << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n"
                   << "  -s, --sort:\t\t\tSort files by last number in the file name or path (default:true)\n"
                   << "  --sort-index INDEX:\t\tWhat number in file path to sort by (default:-1, so last number in path is used)\n"
                   << "  -a --acceptance-correct:\tAcceptance correct the intensities\n"
                   << "  -d --data-file:\t\tCreate separate data file\n"
-                  << "  -m --mass-branch:\t\tBranch name for final mass spectrum of interest (default:M4Pi)\n"
+                  << "  -l --lower-vertex-indices:\tSpecify indices of lower vertex particles in the data 4-vectors\n"
                   << "  -p --preview:\t\t\tPrint files to be processed, but don't run\n"
                   << "  -v --verbose:\t\t\tPrint information from converter scripts as they run\n"
                   << "  --correlation:\t\tSave correlation matrix to separate csv file\n"
@@ -158,17 +158,21 @@ int main(int argc, char *argv[])
         {
             preview = true;
         }
-        else if (arg == "-m" || arg == "--mass-branch")
+        else if (arg == "-l" || arg == "--lower-vertex-indices")
         {
-            if (i + 1 < args.size() && !is_flag(args[i + 1]))
+            // collect all following arguments until next flag
+            while (i + 1 < args.size() && !is_flag(args[i + 1]))
             {
-                mass_branch = std::string(args[++i]);
-            }
-            else
-            {
-                std::cerr << "Error: -m/--mass-branch requires a value. See help message.\n";
-                print_help();
-                return 1;
+                auto val = args[++i];
+                int index;
+                auto [ptr, ec] = std::from_chars(val.data(), val.data() + val.size(), index);
+                if (ec != std::errc())
+                {
+                    std::cerr << "Error: -l/--lower-vertex-indices requires valid integers. See help message.\n";
+                    print_help();
+                    return 1;
+                }
+                lower_vertex_indices.push_back(index);
             }
         }
         else if (is_flag(arg))
@@ -234,8 +238,15 @@ int main(int argc, char *argv[])
             report(INFO, kModule) << "Processing file: " << file << "\n";
         FitConverter converter(file, is_acceptance_corrected, !verbose);
         if (create_data_file)
-        {            
-            RootDataConverter data_converter(file, !verbose);            
+        {    
+            if (!lower_vertex_indices.empty())
+            {
+                RootDataConverter data_converter(file, lower_vertex_indices, !verbose);
+            }
+            else
+            {
+                RootDataConverter data_converter(file, !verbose);
+            }
         }
 
         if (!header_written)
