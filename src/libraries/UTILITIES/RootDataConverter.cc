@@ -102,10 +102,58 @@ void RootDataConverter::extract()
     }
 
     // Extract min, max, mean, and RMS of the beam energy, -t, and mass of the upper
-    // vertex system. Background subtraction and proper weighting are all included.
-    extractBeamEnergyStats(weight_branch_name);
-    extractFourMomentumTransferStats(weight_branch_name);
-    extractUpperVertexMassStats(weight_branch_name);
+    // vertex system. Background subtraction and proper weighting are all included.    
+    TH1D* h_beam_energy = beamEnergyHist(weight_branch_name);
+    m_values["e_low"] = h_beam_energy->GetXaxis()->GetXmin();
+    m_values["e_high"] = h_beam_energy->GetXaxis()->GetXmax();
+    m_values["e_center"] = 0.5 * (m_values["e_low"] + m_values["e_high"]);
+    m_values["e_avg"] = h_beam_energy->GetMean();
+    m_values["e_rms"] = h_beam_energy->GetRMS();
+
+    report(DEBUG, kModule) << "Beam energy statistics:\n";
+    report(DEBUG, kModule) << "  Min: " << m_values["e_low"] << "\n";
+    report(DEBUG, kModule) << "  Max: " << m_values["e_high"] << "\n";
+    report(DEBUG, kModule) << "  Center: " << m_values["e_center"] << "\n";
+    report(DEBUG, kModule) << "  Mean: " << m_values["e_avg"] << "\n";
+    report(DEBUG, kModule) << "  RMS: " << m_values["e_rms"] << "\n";
+
+    TH1D* h_four_momentum_transfer = tHist(weight_branch_name);
+    m_values["t_low"] = h_four_momentum_transfer->GetXaxis()->GetXmin();
+    m_values["t_high"] = h_four_momentum_transfer->GetXaxis()->GetXmax();
+    m_values["t_center"] = 0.5 * (m_values["t_low"] + m_values["t_high"]);
+    m_values["t_avg"] = h_four_momentum_transfer->GetMean();
+    m_values["t_rms"] = h_four_momentum_transfer->GetRMS();
+
+    report(DEBUG, kModule) << "-t statistics:" << "\n";
+    report(DEBUG, kModule) << "  Min: " << m_values["t_low"] << "\n";
+    report(DEBUG, kModule) << "  Max: " << m_values["t_high"] << "\n";
+    report(DEBUG, kModule) << "  Center: " << m_values["t_center"] << "\n";
+    report(DEBUG, kModule) << "  Mean: " << m_values["t_avg"] << "\n";
+    report(DEBUG, kModule) << "  RMS: " << m_values["t_rms"] << "\n";
+
+    TH1D* h_upper_vertex_mass = massHist(weight_branch_name);
+    m_values["m_low"] = h_upper_vertex_mass->GetXaxis()->GetXmin();
+    m_values["m_high"] = h_upper_vertex_mass->GetXaxis()->GetXmax();
+    m_values["m_center"] = 0.5 * (m_values["m_low"] + m_values["m_high"]);
+    m_values["m_avg"] = h_upper_vertex_mass->GetMean();
+    m_values["m_rms"] = h_upper_vertex_mass->GetRMS();
+
+    report(DEBUG, kModule) << "Mass statistics:" << "\n";
+    report(DEBUG, kModule) << "  Min: " << m_values["m_low"] << "\n";
+    report(DEBUG, kModule) << "  Max: " << m_values["m_high"] << "\n";
+    report(DEBUG, kModule) << "  Center: " << m_values["m_center"] << "\n";
+    report(DEBUG, kModule) << "  Mean: " << m_values["m_avg"] << "\n";
+    report(DEBUG, kModule) << "  RMS: " << m_values["m_rms"] << "\n";
+    
+    // Its not particularly important which histogram is used to calculate the number
+    // of events, as they all use the same weights.
+    double events, events_err;
+    std::tie(events, events_err) = numberOfEvents(h_beam_energy);
+    m_values["events"] = events;
+    m_values["events_err"] = events_err;
+
+    report(DEBUG, kModule) << "Total number of events: " << m_values["events"] 
+    << " +/- " << m_values["events_err"] << "\n";
 }
 
 std::vector<std::string> RootDataConverter::findFiles(const std::string &file_type) const
@@ -358,7 +406,7 @@ std::string RootDataConverter::weightBranchName(
     }
 }
 
-void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_name)
+TH1D* RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
 {
     // we will add all the data (and possible) weighted background energy histograms
     // together to get overall beam energy stats
@@ -484,28 +532,10 @@ void RootDataConverter::extractBeamEnergyStats(const std::string &weight_branch_
         f->Close();
     }
 
-    const double center_energy = 0.5 * (min + max);
-    const double mean_energy = h_energy_total->GetMean();
-    const double rms_energy = h_energy_total->GetRMS();
-
-    // Store values in the map
-    m_values["e_low"] = min;
-    m_values["e_high"] = max;
-    m_values["e_mid"] = center_energy;
-    m_values["e_avg"] = mean_energy;
-    m_values["e_rms"] = rms_energy;
-
-    delete h_energy_total;
-
-    report(DEBUG, kModule) << "Beam energy statistics:\n";
-    report(DEBUG, kModule) << "  Min: " << min << "\n";
-    report(DEBUG, kModule) << "  Max: " << max << "\n";
-    report(DEBUG, kModule) << "  Center: " << center_energy << "\n";
-    report(DEBUG, kModule) << "  Mean: " << mean_energy << "\n";
-    report(DEBUG, kModule) << "  RMS: " << rms_energy << "\n";
+    return h_energy_total;
 }
 
-void RootDataConverter::extractFourMomentumTransferStats(const std::string &weight_branch_name)
+TH1D* RootDataConverter::tHist(const std::string &weight_branch_name)
 {
     // target proton mass (GeV)
     const double m_proton = 0.938;
@@ -532,6 +562,7 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
     }
 
     // ---- DATA histogram via RDataFrame ----
+    TH1D *h_result = nullptr;
     try
     {
         ROOT::RDataFrame df_data(m_data_tree_name, m_data_files);
@@ -633,48 +664,15 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
             }
 
             // Subtract background from a standalone clone so RResultPtr ownership stays intact.
-            TH1D *h_result = (TH1D *)h_data->Clone("h_t_result");
+            h_result = (TH1D *)h_data->Clone("h_t_result");
             h_result->SetDirectory(nullptr);
             h_result->Add(h_bkg.GetPtr(), -1.0);
-
-            double mean_t = h_result->GetMean();
-            double rms_t = h_result->GetRMS();
-            double center_t = 0.5 * (global_min + global_max);
-
-            m_values["t_low"] = global_min;
-            m_values["t_high"] = global_max;
-            m_values["t_mid"] = center_t;
-            m_values["t_avg"] = mean_t;
-            m_values["t_rms"] = rms_t;
-
-            report(DEBUG, kModule) << "-t statistics (data - background):" << "\n";
-            report(DEBUG, kModule) << "  Min: " << global_min << "\n";
-            report(DEBUG, kModule) << "  Max: " << global_max << "\n";
-            report(DEBUG, kModule) << "  Center: " << center_t << "\n";
-            report(DEBUG, kModule) << "  Mean: " << mean_t << "\n";
-            report(DEBUG, kModule) << "  RMS: " << rms_t << "\n";
-
-            delete h_result;
         }
         else
         {
-            // No background files: final histogram is h_data
-            double mean_t = h_data->GetMean();
-            double rms_t = h_data->GetRMS();
-            double center_t = 0.5 * (global_min + global_max);
-
-            m_values["t_low"] = global_min;
-            m_values["t_high"] = global_max;
-            m_values["t_mid"] = center_t;
-            m_values["t_avg"] = mean_t;
-            m_values["t_rms"] = rms_t;
-
-            report(DEBUG, kModule) << "-t statistics (data):\n";
-            report(DEBUG, kModule) << "  Min: " << global_min << "\n";
-            report(DEBUG, kModule) << "  Max: " << global_max << "\n";
-            report(DEBUG, kModule) << "  Center: " << center_t << "\n";
-            report(DEBUG, kModule) << "  Mean: " << mean_t << "\n";
-            report(DEBUG, kModule) << "  RMS: " << rms_t << "\n";
+            // set h_result for consistent return variable
+            h_result = (TH1D *)h_data->Clone("h_t_result");
+            h_result->SetDirectory(nullptr);
         }
     }
     catch (const std::exception &e)
@@ -682,9 +680,11 @@ void RootDataConverter::extractFourMomentumTransferStats(const std::string &weig
         report(ERROR, kModule) << "RDataFrame error computing -t: " << e.what() << "\n";
         assert(false);
     }
+
+    return h_result;
 }
 
-void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_branch_name)
+TH1D* RootDataConverter::massHist(const std::string &weight_branch_name)
 {
     if (m_upper_vertex_indices.empty())
     {
@@ -707,6 +707,7 @@ void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_br
         upper_e_expr += sep + "EnP" + std::to_string(idx);
     }
 
+    TH1D *h_result = nullptr;
     try
     {
         // ---- DATA histogram via RDataFrame ----
@@ -797,48 +798,15 @@ void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_br
             }
 
             // Subtract background from a standalone clone so RResultPtr ownership stays intact.
-            TH1D *h_result = (TH1D *)h_data->Clone("h_m_result");
+            h_result = (TH1D *)h_data->Clone("h_m_result");
             h_result->SetDirectory(nullptr);
             h_result->Add(h_bkg.GetPtr(), -1.0);
-
-            double mean_m = h_result->GetMean();
-            double rms_m = h_result->GetRMS();
-            double center_m = 0.5 * (global_min + global_max);
-
-            m_values["m_low"] = global_min;
-            m_values["m_high"] = global_max;
-            m_values["m_mid"] = center_m;
-            m_values["m_avg"] = mean_m;
-            m_values["m_rms"] = rms_m;
-
-            report(DEBUG, kModule) << "M statistics (data - background):" << "\n";
-            report(DEBUG, kModule) << "  Min: " << global_min << "\n";
-            report(DEBUG, kModule) << "  Max: " << global_max << "\n";
-            report(DEBUG, kModule) << "  Center: " << center_m << "\n";
-            report(DEBUG, kModule) << "  Mean: " << mean_m << "\n";
-            report(DEBUG, kModule) << "  RMS: " << rms_m << "\n";
-
-            delete h_result;
         }
         else
         {
-            // No background files: final histogram is h_data
-            double mean_m = h_data->GetMean();
-            double rms_m = h_data->GetRMS();
-            double center_m = 0.5 * (global_min + global_max);
-
-            m_values["m_low"] = global_min;
-            m_values["m_high"] = global_max;
-            m_values["m_mid"] = center_m;
-            m_values["m_avg"] = mean_m;
-            m_values["m_rms"] = rms_m;
-
-            report(DEBUG, kModule) << "M statistics (data):\n";
-            report(DEBUG, kModule) << "  Min: " << global_min << "\n";
-            report(DEBUG, kModule) << "  Max: " << global_max << "\n";
-            report(DEBUG, kModule) << "  Center: " << center_m << "\n";
-            report(DEBUG, kModule) << "  Mean: " << mean_m << "\n";
-            report(DEBUG, kModule) << "  RMS: " << rms_m << "\n";
+            // set h_result for consistent return variable
+            h_result = (TH1D *)h_data->Clone("h_m_result");
+            h_result->SetDirectory(nullptr);
         }
     }
     catch (const std::exception &e)
@@ -846,6 +814,22 @@ void RootDataConverter::extractUpperVertexMassStats(const std::string &weight_br
         report(ERROR, kModule) << "RDataFrame error computing mass: " << e.what() << "\n";
         assert(false);
     }
+
+    return h_result;
+}
+
+std::pair<double, double> RootDataConverter::numberOfEvents(TH1D* hist)
+{
+    if (!hist)
+    {
+        report(ERROR, kModule) << "Null histogram pointer passed to extractNumberOfEvents\n";
+        assert(false);
+    }
+
+    double n_events_err;
+    double n_events = hist->IntegralAndError(0, hist->GetNbinsX() + 1, n_events_err);
+
+    return {n_events, n_events_err};
 }
 
 void RootDataConverter::validateFiles(const std::vector<std::string> &files,

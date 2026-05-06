@@ -280,23 +280,23 @@ private:
 
     // TODO: variables we'll want to implement
     // "file",
-    // "t_low",
-    // "t_high",
-    // "t_center",
-    // "t_avg",
-    // "t_rms",
+    // "t_low", DONE
+    // "t_high", DONE
+    // "t_center", DONE
+    // "t_avg", DONE
+    // "t_rms", DONE
     // "e_low", DONE
     // "e_high", DONE
     // "e_center", DONE
     // "e_avg", DONE
     // "e_rms", DONE
-    // "m_low",
-    // "m_high",
-    // "m_center",
-    // "m_avg",
-    // "m_rms",
-    // "events",
-    // "events_err",
+    // "m_low", DONE
+    // "m_high", DONE
+    // "m_center", DONE
+    // "m_avg", DONE
+    // "m_rms", DONE
+    // "events", DONE
+    // "events_err", DONE
     // "ac_events",
     // "ac_events_err",
     // "efficiency",
@@ -348,47 +348,57 @@ private:
     std::vector<std::string> treesInFile(const std::string &filename) const;
 
     /**
-     * @brief Extract beam energy statistics from the trees
-     *
-     * Calculates min, max, mean, and RMS values for the "EnPB" branch from the data
-     * file. Stores results in m_values with keys: "e_low", "e_high", "e_center",
-     * "e_avg", "e_rms"
+     * @brief Get the histogram of the beam energy distribution
      *
      * @param[in] weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
+     * 
+     * @return TH1D* pointer to the beam energy histogram (background subtracted if background files exist)
      */
-    void extractBeamEnergyStats(const std::string &weight_branch_name);
+    TH1D* beamEnergyHist(const std::string &weight_branch_name);
 
     /**
-     * @brief Extract -t 4-momentum transfer statistics from the trees
+     * @brief Get the -t 4-momentum transfer histogram
      *
-     * Calculates min, max, mean, and RMS values from the momentum transfer between
-     * the at-rest proton and the lower-vertex recoil system. This is calculated as
-     * t = (P_proton - P_recoil)^2, where P_recoil is the sum of the 4-vectors of the
-     * lower vertex particles (see setLowerVertexIndices)
-     * Stores results in m_values with keys: "t_low", "t_high", "t_center", "t_avg", and
-     * "t_rms"
+     * This is calculated as t = (P_proton - P_recoil)^2, where P_recoil is the sum of
+     * the 4-vectors of the lower vertex particles (see setLowerVertexIndices)
      *
      * @param weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
+     * 
+     * @return TH1D* pointer to the -t histogram (background subtracted if background files exist)
      *
      * @todo The function currently has not been tested for the FSRootFriendTree scenario,
      * and so warns the user and assigns a weight of 1.0 for this case.
      */
-    void extractFourMomentumTransferStats(const std::string &weight_branch_name);
+    TH1D* tHist(const std::string &weight_branch_name);
 
     /**
-     * @brief Extract mass statistics for the upper vertex system from the trees
+     * @brief Get the mass histogram for the upper vertex system
      *
-     * Calculates min, max, mean, and RMS values from the total upper-vertex mass
-     * system, which is calculated as the invariant mass of the sum of the 4-vectors of
-     * the upper vertex particles (see setUpperVertexIndices). Stores the results in
-     * m_values with keys: "m_low", "m_high", "m_center", "m_avg", and "m_rms"
+     * Calculated as the invariant mass of the sum of the 4-vectors of the upper vertex
+     * particles (see setUpperVertexIndices).
      *
      * @param weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
+     * 
+     * @return TH1D* pointer to the upper vertex mass histogram (background subtracted if background files exist)
      *
      * @todo The function currently has not been tested for the FSRootFriendTree scenario,
      * and so warns the user and assigns a weight of 1.0 for this case.
      */
-    void extractUpperVertexMassStats(const std::string &weight_branch_name);
+    TH1D* massHist(const std::string &weight_branch_name);
+
+    /**
+     * @brief Extract the total number of events and associated error from a given histogram
+     * 
+     * Use one of the weighted histograms from the beam energy, -t, or mass calculations
+     * to extract the total number of events and associated error using the 
+     * IntegralAndError method.
+     * 
+     * @param hist a pointer to a TH1D histogram from which to extract the total number of events and error
+     * 
+     * @return std::pair<double, double> where the first element is the total number of 
+     * events and the second element is the associated error
+     */
+    std::pair<double, double> numberOfEvents(TH1D *hist);
 
     /**
      * @brief Get the max/min values of a branch for a set of files
