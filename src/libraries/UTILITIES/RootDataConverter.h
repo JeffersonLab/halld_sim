@@ -39,7 +39,22 @@
  *
  * Example usage in convert_to_csv.cc:
  * @code
- * TODO: complete example
+ * std::ofstream csv_file(output_file);
+ * std::stringstream csv_data;
+ * bool header_written = false;
+ * 
+ * for (const auto& file : input_files) {
+ *    RootDataConverter converter(file);
+ * 
+ *    if (!header_written) {
+ *        csv_data << converter.getCSVHeader() << "\n";
+ *        header_written = true;
+ *    }
+ *    csv_data << converter.getCSVRow() << "\n";
+ * }
+ * 
+ * csv_file << csv_data.str();
+ * csv_file.close();
  * @endcode
  */
 class RootDataConverter
