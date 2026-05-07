@@ -102,8 +102,8 @@ void RootDataConverter::extract()
     }
 
     // Extract min, max, mean, and RMS of the beam energy, -t, and mass of the upper
-    // vertex system. Background subtraction and proper weighting are all included.    
-    TH1D* h_beam_energy = beamEnergyHist(weight_branch_name);
+    // vertex system. Background subtraction and proper weighting are all included.
+    TH1D *h_beam_energy = beamEnergyHist(weight_branch_name);
     m_values["e_low"] = h_beam_energy->GetXaxis()->GetXmin();
     m_values["e_high"] = h_beam_energy->GetXaxis()->GetXmax();
     m_values["e_center"] = 0.5 * (m_values["e_low"] + m_values["e_high"]);
@@ -117,7 +117,7 @@ void RootDataConverter::extract()
     report(DEBUG, kModule) << "  Mean: " << m_values["e_avg"] << "\n";
     report(DEBUG, kModule) << "  RMS: " << m_values["e_rms"] << "\n";
 
-    TH1D* h_four_momentum_transfer = tHist(weight_branch_name);
+    TH1D *h_four_momentum_transfer = tHist(weight_branch_name);
     m_values["t_low"] = h_four_momentum_transfer->GetXaxis()->GetXmin();
     m_values["t_high"] = h_four_momentum_transfer->GetXaxis()->GetXmax();
     m_values["t_center"] = 0.5 * (m_values["t_low"] + m_values["t_high"]);
@@ -131,7 +131,7 @@ void RootDataConverter::extract()
     report(DEBUG, kModule) << "  Mean: " << m_values["t_avg"] << "\n";
     report(DEBUG, kModule) << "  RMS: " << m_values["t_rms"] << "\n";
 
-    TH1D* h_upper_vertex_mass = massHist(weight_branch_name);
+    TH1D *h_upper_vertex_mass = massHist(weight_branch_name);
     m_values["m_low"] = h_upper_vertex_mass->GetXaxis()->GetXmin();
     m_values["m_high"] = h_upper_vertex_mass->GetXaxis()->GetXmax();
     m_values["m_center"] = 0.5 * (m_values["m_low"] + m_values["m_high"]);
@@ -144,7 +144,7 @@ void RootDataConverter::extract()
     report(DEBUG, kModule) << "  Center: " << m_values["m_center"] << "\n";
     report(DEBUG, kModule) << "  Mean: " << m_values["m_avg"] << "\n";
     report(DEBUG, kModule) << "  RMS: " << m_values["m_rms"] << "\n";
-    
+
     // Its not particularly important which histogram is used to calculate the number
     // of events, as they all use the same weights.
     double events, events_err;
@@ -152,8 +152,19 @@ void RootDataConverter::extract()
     m_values["events"] = events;
     m_values["events_err"] = events_err;
 
-    report(DEBUG, kModule) << "Total number of events: " << m_values["events"] 
-    << " +/- " << m_values["events_err"] << "\n";
+    report(DEBUG, kModule) << "Total number of events: " << m_values["events"]
+                           << " +/- " << m_values["events_err"] << "\n";
+
+    // Calculate efficiency and acceptance-corrected number of events
+    double eff = efficiency();
+    m_values["efficiency"] = eff;
+    report(DEBUG, kModule) << "  Efficiency: " << eff << "\n";
+
+    double ac_events, ac_events_err;
+    std::tie(ac_events, ac_events_err) = acceptanceCorrectedEvents(events, events_err, eff);
+    m_values["ac_events"] = ac_events;
+    m_values["ac_events_err"] = ac_events_err;
+    report(DEBUG, kModule) << "Acceptance corrected events: " << ac_events << " +/- " << ac_events_err << "\n";
 }
 
 std::vector<std::string> RootDataConverter::findFiles(const std::string &file_type) const
@@ -406,7 +417,7 @@ std::string RootDataConverter::weightBranchName(
     }
 }
 
-TH1D* RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
+TH1D *RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
 {
     // we will add all the data (and possible) weighted background energy histograms
     // together to get overall beam energy stats
@@ -535,7 +546,7 @@ TH1D* RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
     return h_energy_total;
 }
 
-TH1D* RootDataConverter::tHist(const std::string &weight_branch_name)
+TH1D *RootDataConverter::tHist(const std::string &weight_branch_name)
 {
     // target proton mass (GeV)
     const double m_proton = 0.938;
@@ -684,7 +695,7 @@ TH1D* RootDataConverter::tHist(const std::string &weight_branch_name)
     return h_result;
 }
 
-TH1D* RootDataConverter::massHist(const std::string &weight_branch_name)
+TH1D *RootDataConverter::massHist(const std::string &weight_branch_name)
 {
     if (m_upper_vertex_indices.empty())
     {
@@ -818,7 +829,7 @@ TH1D* RootDataConverter::massHist(const std::string &weight_branch_name)
     return h_result;
 }
 
-std::pair<double, double> RootDataConverter::numberOfEvents(TH1D* hist)
+std::pair<double, double> RootDataConverter::numberOfEvents(TH1D *hist)
 {
     if (!hist)
     {
@@ -830,6 +841,65 @@ std::pair<double, double> RootDataConverter::numberOfEvents(TH1D* hist)
     double n_events = hist->IntegralAndError(0, hist->GetNbinsX() + 1, n_events_err);
 
     return {n_events, n_events_err};
+}
+
+double RootDataConverter::efficiency()
+{
+    // Count events in genMC and accMC files
+    // Since MC events are not weighted, we just count them directly
+
+    if (m_genMC_files.empty() || m_accMC_files.empty())
+    {
+        report(WARNING, kModule) << "GenMC or AccMC files not found; cannot compute efficiency\n";
+        return 0.0;
+    }
+
+    try
+    {
+        // Count generated events
+        ROOT::RDataFrame df_gen(m_genMC_tree_name, m_genMC_files);
+        auto gen_count_r = df_gen.Count();
+        double gen_events = *gen_count_r;
+
+        // Count accepted events
+        ROOT::RDataFrame df_acc(m_accMC_tree_name, m_accMC_files);
+        auto acc_count_r = df_acc.Count();
+        double acc_events = *acc_count_r;
+
+        if (gen_events == 0)
+        {
+            report(WARNING, kModule) << "No generated events found\n";
+            return 0.0;
+        }
+
+        report(DEBUG, kModule) << "Efficiency calculation:\n";
+        report(DEBUG, kModule) << "  Generated events: " << gen_events << "\n";
+        report(DEBUG, kModule) << "  Accepted events: " << acc_events << "\n";
+
+        return acc_events / gen_events;
+    }
+    catch (const std::exception &e)
+    {
+        report(ERROR, kModule) << "RDataFrame error computing efficiency: " << e.what() << "\n";
+        return 0.0;
+    }
+}
+
+std::pair<double, double> RootDataConverter::acceptanceCorrectedEvents(
+    double events,
+    double events_err,
+    double efficiency) const
+{
+    if (efficiency <= 0.0 || efficiency > 1.0)
+    {
+        report(WARNING, kModule) << "Efficiency value out of bounds (0 < eff <= 1): " << efficiency << "\n";
+        return {0.0, 0.0};
+    }
+
+    double corrected_events = events / efficiency;
+    double corrected_events_err = events_err / efficiency;
+
+    return {corrected_events, corrected_events_err};
 }
 
 void RootDataConverter::validateFiles(const std::vector<std::string> &files,

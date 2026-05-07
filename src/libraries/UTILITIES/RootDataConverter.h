@@ -106,7 +106,7 @@ public:
 
     /**
      * @brief Extract fit data from the .fit file
-     * 
+     *
      * Fills the m_values map with all the relevant information from the fit results and
      * associated files that we want to save to csv later.
      */
@@ -351,10 +351,10 @@ private:
      * @brief Get the histogram of the beam energy distribution
      *
      * @param[in] weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
-     * 
+     *
      * @return TH1D* pointer to the beam energy histogram (background subtracted if background files exist)
      */
-    TH1D* beamEnergyHist(const std::string &weight_branch_name);
+    TH1D *beamEnergyHist(const std::string &weight_branch_name);
 
     /**
      * @brief Get the -t 4-momentum transfer histogram
@@ -363,13 +363,13 @@ private:
      * the 4-vectors of the lower vertex particles (see setLowerVertexIndices)
      *
      * @param weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
-     * 
+     *
      * @return TH1D* pointer to the -t histogram (background subtracted if background files exist)
      *
      * @todo The function currently has not been tested for the FSRootFriendTree scenario,
      * and so warns the user and assigns a weight of 1.0 for this case.
      */
-    TH1D* tHist(const std::string &weight_branch_name);
+    TH1D *tHist(const std::string &weight_branch_name);
 
     /**
      * @brief Get the mass histogram for the upper vertex system
@@ -378,27 +378,48 @@ private:
      * particles (see setUpperVertexIndices).
      *
      * @param weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
-     * 
+     *
      * @return TH1D* pointer to the upper vertex mass histogram (background subtracted if background files exist)
      *
      * @todo The function currently has not been tested for the FSRootFriendTree scenario,
      * and so warns the user and assigns a weight of 1.0 for this case.
      */
-    TH1D* massHist(const std::string &weight_branch_name);
+    TH1D *massHist(const std::string &weight_branch_name);
 
     /**
      * @brief Extract the total number of events and associated error from a given histogram
-     * 
+     *
      * Use one of the weighted histograms from the beam energy, -t, or mass calculations
-     * to extract the total number of events and associated error using the 
+     * to extract the total number of events and associated error using the
      * IntegralAndError method.
-     * 
+     *
      * @param hist a pointer to a TH1D histogram from which to extract the total number of events and error
-     * 
-     * @return std::pair<double, double> where the first element is the total number of 
+     *
+     * @return std::pair<double, double> where the first element is the total number of
      * events and the second element is the associated error
      */
     std::pair<double, double> numberOfEvents(TH1D *hist);
+
+    /**
+     * @brief Calculate the efficiency based on the number of generated and accepted MC events
+     *
+     * It's assumed this is a binned fit, so we are not interested in the shape of the
+     * acceptance within the bin, just the efficiency value.
+     *
+     * @return double accepted / generated number of events
+     */
+    double efficiency();
+
+    /**
+     * @brief Calculate the acceptance-corrected number of events and associated error
+     * 
+     * @param events total number of events. See numberOfEvents.
+     * @param events_err error on total number of events. See numberOfEvents.
+     * @param efficiency acceptance efficiency. See efficiency().
+     * @return std::pair<double, double> acceptance-corrected number of events and 
+     * associated error
+     */
+    std::pair<double, double> acceptanceCorrectedEvents(double events, double events_err, double efficiency) const;
 
     /**
      * @brief Get the max/min values of a branch for a set of files
