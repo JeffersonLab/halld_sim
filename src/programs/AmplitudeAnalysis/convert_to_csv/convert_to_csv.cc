@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <limits>
 #include <regex>
@@ -237,15 +238,16 @@ int main(int argc, char *argv[])
         if (verbose)
             report(INFO, kModule) << "Processing file: " << file << "\n";
         FitConverter converter(file, is_acceptance_corrected, !verbose);
+        std::unique_ptr<RootDataConverter> data_converter;
         if (create_data_file)
-        {    
+        {
             if (!lower_vertex_indices.empty())
             {
-                RootDataConverter data_converter(file, lower_vertex_indices, !verbose);
+                data_converter = std::make_unique<RootDataConverter>(file, lower_vertex_indices, !verbose);
             }
             else
             {
-                RootDataConverter data_converter(file, !verbose);
+                data_converter = std::make_unique<RootDataConverter>(file, !verbose);
             }
         }
 
@@ -272,7 +274,9 @@ int main(int argc, char *argv[])
 
             if (create_data_file)
             {
-                // TODO: implement data header check
+                std::string data_header = data_converter->getCSVHeader();
+                csv_root_data << data_header << "\n";
+                first_file_data_header = data_header;
             }
         }
         else
@@ -313,7 +317,14 @@ int main(int argc, char *argv[])
             }
             if (create_data_file)
             {
-                // TODO: implement data header check
+                std::string data_header = data_converter->getCSVHeader();
+                if (data_header != first_file_data_header)
+                {
+                    report(ERROR, kModule) << "File "
+                                           << file
+                                           << " has a different data CSV header than the first file. Aborting\n";
+                    return 1;
+                }
             }
         }
         csv_result_data << converter.getCSVRow() << "\n";
@@ -323,7 +334,7 @@ int main(int argc, char *argv[])
         if (create_correlation)
             csv_corr_data << converter.getCSVCorrelationMatrix() << "\n";
         if (create_data_file)
-            ;//csv_root_data << data_converter.getCSVRow() << "\n"; // TODO: implement getCSVData in RootDataConverter to extract relevant data for csv output
+            csv_root_data << data_converter->getCSVRow() << "\n";
     }
 
     // write the csv data to the output file
@@ -349,6 +360,14 @@ int main(int argc, char *argv[])
         std::ofstream corr_file(correlation_file);
         corr_file << csv_corr_data.str();
         corr_file.close();
+    }
+    if (create_data_file)
+    {
+        std::filesystem::path output_path(output_file);
+        std::string data_file = (output_path.parent_path() / (output_path.stem().string() + "_data.csv")).string();
+        std::ofstream data_out_file(data_file);
+        data_out_file << csv_root_data.str();
+        data_out_file.close();
     }
 
     return 0;

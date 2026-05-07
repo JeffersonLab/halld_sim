@@ -113,6 +113,30 @@ public:
     void extract();
 
     /**
+     * @brief Get the CSV header row
+     * 
+     * Constructs a comma-separated header string based on the keys of the m_values map.
+     * 
+     * @note It is crucial that the order of entries in the header matches the order of
+     * values in getCSVRow().
+     * 
+     * @return std::string Comma-separated header string
+     */
+    std::string getCSVHeader() const;
+
+    /**
+     * @brief Get the CSV row
+     * 
+     * Constructs a comma-separated row string based on the values of the m_values map.
+     * 
+     * @note It is crucial that the order of values in this row matches the order of
+     * entries in getCSVHeader().
+     * 
+     * @return std::string Comma-separated row string
+     */
+    std::string getCSVRow() const;
+
+    /**
      * @brief Data files associated with the fit results
      * @note It assumes one data file per reaction, and that it is the first argument
      * passed to the data reader.
@@ -144,10 +168,27 @@ public:
      */
     std::vector<std::string> accMCFiles() const { return findFiles("accMC"); };
 
-    // TODO: write these docstrings
+    /**
+     * @brief Validate that data files were found
+     */
+
     void validateDataFiles() const { validateFiles(m_data_files, "data"); }
+    /**
+     * @brief Validate that background files were found
+     * 
+     * If no background files are found, it will warn the user and assume that weights
+     * are stored directly in the data tree.
+     */
     void validateBackgroundFiles() const { validateFiles(m_background_files, "background"); }
+
+    /**
+     * @brief Validate that generated Monte Carlo files were found
+     */
     void validateGenMCFiles() const { validateFiles(m_genMC_files, "genMC"); }
+
+    /**
+     * @brief Validate that accepted Monte Carlo files were found
+     */
     void validateAccMCFiles() const { validateFiles(m_accMC_files, "accMC"); }
 
     /**
@@ -277,29 +318,6 @@ private:
     const std::string m_background_tree_name;
     const std::string m_genMC_tree_name;
     const std::string m_accMC_tree_name;
-
-    // TODO: variables we'll want to implement
-    // "file",
-    // "t_low", DONE
-    // "t_high", DONE
-    // "t_center", DONE
-    // "t_avg", DONE
-    // "t_rms", DONE
-    // "e_low", DONE
-    // "e_high", DONE
-    // "e_center", DONE
-    // "e_avg", DONE
-    // "e_rms", DONE
-    // "m_low", DONE
-    // "m_high", DONE
-    // "m_center", DONE
-    // "m_avg", DONE
-    // "m_rms", DONE
-    // "events", DONE
-    // "events_err", DONE
-    // "ac_events",
-    // "ac_events_err",
-    // "efficiency",
 
     std::map<std::string, double> m_values; //< Map of headers to their values for the CSV output (except for the "file" header)
 

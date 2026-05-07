@@ -167,6 +167,27 @@ void RootDataConverter::extract()
     report(DEBUG, kModule) << "Acceptance corrected events: " << ac_events << " +/- " << ac_events_err << "\n";
 }
 
+std::string RootDataConverter::getCSVHeader() const
+{
+    std::string header = "file";
+    for (const auto &pair : m_values)
+    {
+        header += "," + pair.first;
+    }
+    return header;
+}
+
+std::string RootDataConverter::getCSVRow() const
+{
+    std::string row = m_fit_file;
+    for (const auto &pair : m_values)
+    {
+        row += "," + std::to_string(pair.second);
+    }
+    return row;
+}
+
+
 std::vector<std::string> RootDataConverter::findFiles(const std::string &file_type) const
 {
     std::vector<std::string> files;
