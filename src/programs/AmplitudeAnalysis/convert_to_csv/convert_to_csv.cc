@@ -57,22 +57,20 @@ int main(int argc, char *argv[])
 
     auto print_help = []()
     {
-        std::cout << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH]"
-                  << " [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-n NAMING_SCHEME] [-p] [-v]"
-                  << " [--correlation] [--covariance] \n"
-                  << "  -i INPUT_FILES:\t\tFull path to the .fit file(s)\n"
-                  << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n"
-                  << "  -s, --sort:\t\t\tSort files by last number in the file name or path (default:true)\n"
-                  << "  --sort-index INDEX:\t\tWhat number in file path to sort by (default:-1, so last number in path is used)\n"
-                  << "  -a --acceptance-correct:\tAcceptance correct the intensities\n"
-                  << "  -d --data-file:\t\tCreate separate data file\n"
-                  << "  -l --lower-vertex-indices:\tSpecify indices of lower vertex particles in the data 4-vectors\n"
-                  << "  -n --naming-scheme:\t\tSpecify amplitude naming scheme (auto, JLme, eJPmL, or Lme) to use for grouping amplitudes into coherent sums. Default is auto, which will attempt to infer the naming scheme from the amplitude names in the fit file.\n"
-                  << "  -p --preview:\t\t\tPrint files to be processed, but don't run\n"
-                  << "  -v --verbose:\t\t\tPrint information from converter scripts as they run\n"
-                  << "  --correlation:\t\tSave correlation matrix to separate csv file\n"
-                  << "  --covariance:\t\t\tSave covariance matrix to separate csv file\n"
-                  << "  -h, --help:\t\t\tShow this help message\n";
+        report(INFO, kModule) << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH] [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-n NAMING_SCHEME] [-p] [-v] [--correlation] [--covariance] \n";                
+        report(INFO, kModule) << "  -i INPUT_FILES:\t\tFull path to the .fit file(s)\n";
+        report(INFO, kModule) << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n";
+        report(INFO, kModule) << "  -s, --sort:\t\t\tSort files by last number in the file name or path (default:true)\n";
+        report(INFO, kModule) << "  --sort-index INDEX:\t\tWhat number in file path to sort by (default:-1, so last number in path is used)\n";
+        report(INFO, kModule) << "  -a --acceptance-correct:\tAcceptance correct the intensities\n";
+        report(INFO, kModule) << "  -d --data-file:\t\tCreate separate data file\n";
+        report(INFO, kModule) << "  -l --lower-vertex-indices:\tSpecify indices of lower vertex particles in the data 4-vectors\n";
+        report(INFO, kModule) << "  -n --naming-scheme:\t\tAmp naming scheme for coherent sum groupings. Default is auto (infers scheme from the amp names)\n";
+        report(INFO, kModule) << "  -p --preview:\t\t\tPrint files to be processed, but don't run\n";
+        report(INFO, kModule) << "  -v --verbose:\t\t\tPrint information from converter scripts as they run\n";
+        report(INFO, kModule) << "  --correlation:\t\tSave correlation matrix to separate csv file\n";
+        report(INFO, kModule) << "  --covariance:\t\t\tSave covariance matrix to separate csv file\n";
+        report(INFO, kModule) << "  -h, --help:\t\t\tShow this help message\n";
     };
 
     // first check if help message is requested
@@ -112,7 +110,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                std::cerr << "Error: -o/--output requires a value. See help message.\n";
+                report(ERROR, kModule) << "Error: -o/--output requires a value. See help message.\n";
                 print_help();
                 return 1;
             }
@@ -129,14 +127,14 @@ int main(int argc, char *argv[])
                 auto [ptr, ec] = std::from_chars(val.data(), val.data() + val.size(), sort_index);
                 if (ec != std::errc())
                 {
-                    std::cerr << "Error: --sort-index requires a valid integer. See help message.\n";
+                    report(ERROR, kModule) << "Error: --sort-index requires a valid integer. See help message.\n";
                     print_help();
                     return 1;
                 }
             }
             else
             {
-                std::cerr << "Error: --sort-index requires a value. See help message.\n";
+                report(ERROR, kModule) << "Error: --sort-index requires a value. See help message.\n";
                 print_help();
                 return 1;
             }
@@ -175,7 +173,7 @@ int main(int argc, char *argv[])
                 auto [ptr, ec] = std::from_chars(val.data(), val.data() + val.size(), index);
                 if (ec != std::errc())
                 {
-                    std::cerr << "Error: -l/--lower-vertex-indices requires valid integers. See help message.\n";
+                    report(ERROR, kModule) << "Error: -l/--lower-vertex-indices requires valid integers. See help message.\n";
                     print_help();
                     return 1;
                 }
@@ -190,14 +188,14 @@ int main(int argc, char *argv[])
             }
             else
             {
-                std::cerr << "Error: -n/--naming-scheme requires a value. See help message.\n";
+                report(ERROR, kModule) << "Error: -n/--naming-scheme requires a value. See help message.\n";
                 print_help();
                 return 1;
             }
         }
         else if (is_flag(arg))
         {
-            std::cerr << "Unknown argument: " << arg << "\n";
+            report(ERROR, kModule) << "Unknown argument: " << arg << "\n";
             print_help();
             return 1;
         }
@@ -208,13 +206,13 @@ int main(int argc, char *argv[])
     // Error checks for required arguments
     if (input_files.empty())
     {
-        std::cerr << "Input files must be provided. See help message." << "\n";
+        report(ERROR, kModule) << "Input files must be provided. See help message." << "\n";
         print_help();
         return 1;
     }
     if (output_file.empty())
     {
-        std::cerr << "Output file must be provided. See help message." << "\n";
+        report(ERROR, kModule) << "Output file must be provided. See help message." << "\n";
         print_help();
         return 1;
     }
@@ -222,7 +220,7 @@ int main(int argc, char *argv[])
     // ensure only .fit files are provided
     if (!are_valid_fit_files(input_files))
     {
-        std::cerr << "One or more input files are not valid .fit files.\n";
+        report(ERROR, kModule) << "One or more input files are not valid .fit files.\n";
         return 1;
     }
 
@@ -238,10 +236,10 @@ int main(int argc, char *argv[])
 
     if (preview)
     {
-        std::cout << "Preview mode enabled. Printing files and exiting\n";
+        report(INFO, kModule) << "Preview mode enabled. Printing files and exiting\n";
         for (const auto &file : input_files)
         {
-            std::cout << "\t" << file << "\n";
+            report(INFO, kModule) << "\t" << file << "\n";
         }
         return 0;
     }
