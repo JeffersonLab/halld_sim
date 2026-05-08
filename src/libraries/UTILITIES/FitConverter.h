@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "AmplitudeParser.h"
 #include "IUAmpTools/FitResults.h"
 
 /**
@@ -30,6 +31,8 @@
  * - Standard fit outputs (likelihood, event counts, status codes)
  * - AmpTools parameters
  * - Real/Imaginary parts of production coefficients
+ * - Intensities of unique amplitudes. See constrainedAmps() for how unique amplitudes 
+ *   groups are defined.
  * - Coherent sums of amplitudes by quantum numbers
  * - Phase differences
  *
@@ -61,12 +64,14 @@ public:
      * @param[in] filename Path to the .fit file
      * @param[in] acceptance_correct Whether to use acceptance-corrected intensities
      * @param[in] mute_warning Suppress warning about free parameters if true
+     * @param[in] naming_scheme Amplitude naming scheme: auto, JLme, eJPmL, or Lme
      * @throw ERROR If the fit file cannot be read or is invalid
      */
     FitConverter(
         const std::string &filename,
         const bool &acceptance_correct = false,
-        bool mute_warning = false);
+        bool mute_warning = false,
+        const std::string &naming_scheme = "auto");
 
     /**
      * @brief Extract fit data from the .fit file
@@ -171,13 +176,25 @@ public:
      * @brief Map of unique amplitude names and their related constrained amplitudes
      *
      * A "full" amplitude is a "reaction::sum::ampName" string, and often amplitudes
-     * are constrained across reactions and sums. This map groups all such constrained
-     * amplitudes by their common "ampName".
-     * "myAmpName" -> {
-     *      "reaction1::sum1::myAmpName",
-     *      "reaction1::sum2::myAmpName",
-     *      "reaction2::sum1::myAmpName",
-     * ...}
+     * are constrained across reactions and sums. The goal is to identify the shortest
+     * identifying string that can be used to group amplitudes that are constrained to
+     * each other. It will first attempt to group by "ampName", then by "sum::ampName",
+     * and if neither of those assumptions hold, it will just group by the full 
+     * amplitude string. 
+     * 
+     * For example, if we have the following full amplitude strings:
+     * - "reaction1::sum1::myAmpName"
+     * - "reaction1::sum2::myAmpName"
+     * - "reaction2::sum1::myAmpName"
+     * 
+     * We first check if all amplitudes with the same "ampName" (myAmpName) are 
+     * constrained to each other, and if so, we group them under the unique amplitude 
+     * name "myAmpName" and save the intensity + error for that group. If that 
+     * assumption does not hold, we check if all amplitudes with the same "sum::ampName"
+     * are constrained to each other (i.e. across reactions) and if so, we group them 
+     * under the unique amplitude name "sum::ampName". If neither assumption holds, we 
+     * just group by the full amplitude name.
+     * 
      * @note that the self-constraint is included in the list, so even amplitudes with
      * no constraints will have a vector of size one (itself).
      */
@@ -192,6 +209,15 @@ public:
      */
     const std::map<std::string, std::pair<double, double>> &
     uniqueAmpIntensities() const { return m_unique_amp_intensities; }
+
+    /**
+     * @brief Map of coherent-sum labels to their values and errors
+     *
+     * The labels are built from the selected amplitude naming scheme and the
+     * configured coherent-sum groupings
+     */
+    const std::map<std::string, std::pair<double, double>> &
+    coherentSumIntensities() const { return m_coherent_sum_intensities; }
 
     /**
      * @brief Map of unique amplitude names to their production coefficients
@@ -233,12 +259,14 @@ private:
     const FitResults m_fit_results;       ///< AmpTools FitResults object
     const ConfigurationInfo *m_cfg_info;  ///< ConfigurationInfo from the fit
     const bool m_is_acceptance_corrected; ///< Whether to use acceptance-corrected intensities
+    const AmplitudeParser m_amplitude_parser; ///< Parser for amplitude labels and sums
 
     // see accessor methods for descriptions
     std::map<std::string, double> m_standard_results;
     std::map<std::string, std::pair<double, double>> m_parameters;
     std::map<std::string, std::vector<std::string>> m_constrained_amps;
     std::map<std::string, std::pair<double, double>> m_unique_amp_intensities;
+    std::map<std::string, std::pair<double, double>> m_coherent_sum_intensities;
     std::map<std::string, std::complex<double>> m_production_coefficients;
     std::map<std::pair<std::string, std::string>, std::pair<double, double>> m_phase_differences;
     std::vector<std::vector<double>> m_error_matrix;

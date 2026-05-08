@@ -4,9 +4,6 @@
  * @brief Implementation of FitConverter class for converting AmpTools fit results to CSV
  * @date 2026-02-01
  *
- * TODO:
- * - Add coherent sum extraction. This is amplitude name dependent, so may need custom
- *   AmplitudeParsers for different naming schemes.
  */
 
 #include <cassert>
@@ -18,11 +15,12 @@
 
 const char *FitConverter::kModule = "FitConverter";
 
-FitConverter::FitConverter(const std::string &filename, const bool &acceptance_correct, bool mute_warning) : m_fit_file(filename),
-                                                                                                             m_fit_results(filename, mute_warning),
-                                                                                                             m_cfg_info(m_fit_results.configInfo()),
-                                                                                                             m_is_acceptance_corrected(acceptance_correct),
-                                                                                                             m_error_matrix(m_fit_results.errorMatrix())
+FitConverter::FitConverter(const std::string &filename, const bool &acceptance_correct, bool mute_warning, const std::string &naming_scheme) : m_fit_file(filename),
+                                                                                                                                            m_fit_results(filename, mute_warning),
+                                                                                                                                            m_cfg_info(m_fit_results.configInfo()),
+                                                                                                                                            m_is_acceptance_corrected(acceptance_correct),
+                                                                                                                                            m_amplitude_parser(naming_scheme),
+                                                                                                                                            m_error_matrix(m_fit_results.errorMatrix())
 {
     if (!m_fit_results.valid())
     {
@@ -87,12 +85,37 @@ void FitConverter::extract()
                                << "\n";
     }
 
+    // Build coherent-sum groups based on the selected amplitude naming scheme.
+    const std::map<std::string, std::vector<std::string>> coherent_sum_groups =
+        m_amplitude_parser.buildSumGroups(m_fit_results.ampList());
+
+    for (const auto &pair : coherent_sum_groups)
+    {
+        m_coherent_sum_intensities[pair.first] = m_fit_results.intensity(pair.second, m_is_acceptance_corrected);
+
+        report(DEBUG, kModule) << "Coherent sum group: " << pair.first << " includes amplitudes:\n";
+        for (const auto &amp : pair.second)
+            report(DEBUG, kModule) << "\t" << amp << "\n";
+        
+        report(DEBUG, kModule) << "Coherent sum intensity for "
+                               << pair.first
+                               << " = "
+                               << m_coherent_sum_intensities[pair.first].first
+                               << " +/- "
+                               << m_coherent_sum_intensities[pair.first].second
+                               << "\n";
+    }
+
     // Extract production coefficients for each unique amplitude name
-    for (const auto &unique_amp : uniqueAmpNames())
+    for (const auto &pair : m_constrained_amps)
     {
         // any full amplitude name will do, they are all constrained so their
         // production coefficients are identical
-        std::string full_amp_name = m_constrained_amps[unique_amp][0];
+        const std::string &unique_amp = pair.first;
+        if (pair.second.empty())
+            continue;
+
+        const std::string &full_amp_name = pair.second[0];
         m_production_coefficients[unique_amp] = m_fit_results.scaledProductionParameter(full_amp_name);
     }
 
@@ -208,6 +231,11 @@ std::string FitConverter::getCSVHeader() const
     {
         header += pair.first + "," + pair.first + "_err,";
     }
+    // coherent sum intensities
+    for (const auto &pair : m_coherent_sum_intensities)
+    {
+        header += pair.first + "," + pair.first + "_err,";
+    }
     // phase differences
     for (const auto &pair : m_phase_differences)
     {
@@ -250,6 +278,11 @@ std::string FitConverter::getCSVRow() const
     }
     // unique amplitude intensities
     for (const auto &pair : m_unique_amp_intensities)
+    {
+        row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
+    }
+    // coherent sum intensities
+    for (const auto &pair : m_coherent_sum_intensities)
     {
         row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
     }
