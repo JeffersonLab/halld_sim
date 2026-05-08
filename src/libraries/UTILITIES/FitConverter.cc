@@ -7,20 +7,23 @@
  */
 
 #include <cassert>
+#include <iomanip>
+#include <sstream>
 
 #include "FitConverter.h"
 #include "IUAmpTools/ConfigurationInfo.h"
 #include "IUAmpTools/FitResults.h"
+#include "IUAmpTools/NormIntInterface.h"
 #include "IUAmpTools/report.h"
 
 const char *FitConverter::kModule = "FitConverter";
 
 FitConverter::FitConverter(const std::string &filename, const bool &acceptance_correct, bool mute_warning, const std::string &naming_scheme) : m_fit_file(filename),
-                                                                                                                                            m_fit_results(filename, mute_warning),
-                                                                                                                                            m_cfg_info(m_fit_results.configInfo()),
-                                                                                                                                            m_is_acceptance_corrected(acceptance_correct),
-                                                                                                                                            m_amplitude_parser(naming_scheme),
-                                                                                                                                            m_error_matrix(m_fit_results.errorMatrix())
+                                                                                                                                               m_fit_results(filename, mute_warning),
+                                                                                                                                               m_cfg_info(m_fit_results.configInfo()),
+                                                                                                                                               m_is_acceptance_corrected(acceptance_correct),
+                                                                                                                                               m_amplitude_parser(naming_scheme),
+                                                                                                                                               m_error_matrix(m_fit_results.errorMatrix())
 {
     if (!m_fit_results.valid())
     {
@@ -96,7 +99,7 @@ void FitConverter::extract()
         report(DEBUG, kModule) << "Coherent sum group: " << pair.first << " includes amplitudes:\n";
         for (const auto &amp : pair.second)
             report(DEBUG, kModule) << "\t" << amp << "\n";
-        
+
         report(DEBUG, kModule) << "Coherent sum intensity for "
                                << pair.first
                                << " = "
@@ -386,6 +389,87 @@ std::string FitConverter::getCSVCorrelationMatrix() const
     return csv;
 }
 
+std::string FitConverter::getCSVNormIntMatrixHeader() const
+{
+    std::string header = "file,amplitude";
+    for (const auto &amp : m_fit_results.ampList())
+    {
+        header += "," + amp;
+    }
+    return header;
+}
+
+std::string FitConverter::getCSVNormIntMatrix() const
+{
+    std::string csv;
+
+    // build the norm_int_map of reactions -> normIntInterfaces
+    std::map<std::string, const NormIntInterface *> norm_int_map;
+    for (const std::string &reaction : m_fit_results.reactionList())
+    {
+        const NormIntInterface *normInt = m_fit_results.normInt(reaction);
+        if (normInt)
+        {
+            norm_int_map[reaction] = normInt;
+        }
+        else
+        {
+            report(ERROR, kModule) << "Could not retrieve normalization integral interface for reaction " << reaction << "\n";
+            assert(false);
+        }
+    }
+
+    std::vector<std::string> amp_list = m_fit_results.ampList();
+    for (size_t row_idx = 0; row_idx < m_fit_results.ampList().size(); row_idx++)
+    {
+        const std::string &row_amp = amp_list.at(row_idx);
+        std::string row_reaction = getReactionString(row_amp);
+
+        csv += m_fit_file + "," + row_amp; // write file name and this amplitude name as first two columns of this row
+
+        for (size_t col_idx = 0; col_idx < m_fit_results.ampList().size(); col_idx++)
+        {
+            const std::string &col_amp = amp_list.at(col_idx);
+            std::string col_reaction = getReactionString(col_amp);
+
+            if (row_reaction != col_reaction)
+            {
+                csv += ",0+0j"; // normInt is zero for amplitudes from different reactions
+                continue;       // skip to next column
+            }
+
+            const NormIntInterface *normInt = norm_int_map[row_reaction];
+            if (!normInt)
+            {
+                report(ERROR, kModule) << "Null normalization integral interface for reaction " << row_reaction << "\n";
+                assert(false);
+            }
+
+            std::complex<double> value = normInt->normInt(row_amp, col_amp);
+
+            std::cout << "NormInt for " << row_amp << " and " << col_amp << " = " << value.real() << "+" << value.imag() << "j\n";
+
+            // Format as pandas-readable complex number e.g. 1+2j or 1-2j
+            std::ostringstream oss;
+            oss << std::scientific << std::setprecision(std::numeric_limits<double>::max_digits10 - 1);
+            oss << value.real();
+            if (value.imag() >= 0)
+            {
+                oss << "+";
+            }
+            oss << value.imag() << "j";
+            csv += "," + oss.str();
+        } // end column loop
+
+        // don't add newline to last row, to avoid extra blank line at end of file
+        if (row_idx != m_fit_results.ampList().size() - 1)
+            csv += "\n";
+
+    } // end row loop
+
+    return csv;
+}
+
 std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmps() const
 {
     std::map<std::string, std::vector<std::string>> constrained_amp_map;
@@ -422,7 +506,7 @@ std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmp
         return constrained_amp_map;
     }
 
-    // if we reach here, neither assumption held, so just map full amplitude names to 
+    // if we reach here, neither assumption held, so just map full amplitude names to
     // themselves
     for (const auto &amplitude : m_fit_results.ampList())
     {
@@ -430,7 +514,6 @@ std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmp
     }
     return constrained_amp_map;
 }
-
 
 bool FitConverter::ampNamesAreConstrained() const
 {
@@ -451,7 +534,7 @@ bool FitConverter::ampNamesAreConstrained() const
                 ++it;
         }
 
-        // The constrained terms does not include the self term, so add it back in for 
+        // The constrained terms does not include the self term, so add it back in for
         // comparison
         constrained_terms.push_back(shared_terms[0]);
 
@@ -488,7 +571,7 @@ bool FitConverter::sumAmpNamesAreConstrained() const
                 ++it;
         }
 
-        // The constrained terms does not include the self term, so add it back in for 
+        // The constrained terms does not include the self term, so add it back in for
         // comparison
         constrained_terms.push_back(shared_terms[0]);
 
@@ -501,4 +584,17 @@ bool FitConverter::sumAmpNamesAreConstrained() const
         }
     }
     return true;
+}
+
+std::string FitConverter::getReactionString(const std::string &full_amplitude)
+{
+    size_t first_colon = full_amplitude.find("::");
+    size_t second_colon = full_amplitude.find("::", first_colon + 2);
+    if (first_colon == std::string::npos || second_colon == std::string::npos)
+    {
+        report(ERROR, kModule) << "Amplitude name " << full_amplitude << " does not match expected format 'reaction::sum::amp'.\n";
+        assert(false);
+    }
+    std::string reaction = full_amplitude.substr(0, first_colon);
+    return reaction;
 }

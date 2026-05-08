@@ -52,12 +52,13 @@ int main(int argc, char *argv[])
     bool create_data_file = false;
     bool create_covariance = false;
     bool create_correlation = false;
+    bool create_norm_int = false;
     bool verbose = false;
     bool preview = false;
 
     auto print_help = []()
     {
-        report(INFO, kModule) << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH] [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-n NAMING_SCHEME] [-p] [-v] [--correlation] [--covariance] \n";                
+        report(INFO, kModule) << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH] [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-n NAMING_SCHEME] [-p] [-v] [--correlation] [--covariance] [--norm-int] \n";                
         report(INFO, kModule) << "  -i INPUT_FILES:\t\tFull path to the .fit file(s)\n";
         report(INFO, kModule) << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n";
         report(INFO, kModule) << "  -s, --sort:\t\t\tSort files by last number in the file name or path (default:true)\n";
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
         report(INFO, kModule) << "  -v --verbose:\t\t\tPrint information from converter scripts as they run\n";
         report(INFO, kModule) << "  --correlation:\t\tSave correlation matrix to separate csv file\n";
         report(INFO, kModule) << "  --covariance:\t\t\tSave covariance matrix to separate csv file\n";
+        report(INFO, kModule) << "  --norm-int:\t\t\tSave normalization integral matrix to separate csv file\n";
         report(INFO, kModule) << "  -h, --help:\t\t\tShow this help message\n";
     };
 
@@ -154,6 +156,10 @@ int main(int argc, char *argv[])
         else if (arg == "--correlation")
         {
             create_correlation = true;
+        }
+        else if (arg == "--norm-int")
+        {
+            create_norm_int = true;
         }
         else if (arg == "-v" || arg == "--verbose")
         {
@@ -245,9 +251,9 @@ int main(int argc, char *argv[])
     }
 
     // ==== PROCESS FILES AND WRITE TO CSV ====
-    std::stringstream csv_result_data, csv_cov_data, csv_corr_data, csv_root_data;
+    std::stringstream csv_result_data, csv_cov_data, csv_corr_data, csv_norm_int_data, csv_root_data;
     bool header_written = false;
-    std::string first_file_result_header, first_file_cov_header, first_file_corr_header, first_file_data_header;
+    std::string first_file_result_header, first_file_cov_header, first_file_corr_header, first_file_norm_int_header, first_file_data_header;
     
     for (const auto &file : input_files)
     {
@@ -286,6 +292,13 @@ int main(int argc, char *argv[])
                 std::string corr_header = converter.getCSVCorrelationMatrixHeader();
                 csv_corr_data << corr_header << "\n";
                 first_file_corr_header = corr_header;
+            }
+
+            if (create_norm_int)
+            {
+                std::string norm_int_header = converter.getCSVNormIntMatrixHeader();
+                csv_norm_int_data << norm_int_header << "\n";
+                first_file_norm_int_header = norm_int_header;
             }
 
             if (create_data_file)
@@ -331,6 +344,17 @@ int main(int argc, char *argv[])
                     return 1;
                 }
             }
+            if (create_norm_int)
+            {
+                std::string norm_int_header = converter.getCSVNormIntMatrixHeader();
+                if (norm_int_header != first_file_norm_int_header)
+                {
+                    report(ERROR, kModule) << "File "
+                                           << file
+                                           << " has a different normalization integral CSV header than the first file. Aborting\n";
+                    return 1;
+                }
+            }
             if (create_data_file)
             {
                 std::string data_header = data_converter->getCSVHeader();
@@ -349,6 +373,8 @@ int main(int argc, char *argv[])
             csv_cov_data << converter.getCSVCovarianceMatrix() << "\n";
         if (create_correlation)
             csv_corr_data << converter.getCSVCorrelationMatrix() << "\n";
+        if (create_norm_int)
+            csv_norm_int_data << converter.getCSVNormIntMatrix() << "\n";
         if (create_data_file)
             csv_root_data << data_converter->getCSVRow() << "\n";
 
@@ -378,6 +404,14 @@ int main(int argc, char *argv[])
         std::ofstream corr_file(correlation_file);
         corr_file << csv_corr_data.str();
         corr_file.close();
+    }
+    if (create_norm_int)
+    {
+        std::filesystem::path output_path(output_file);
+        std::string norm_int_file = (output_path.parent_path() / (output_path.stem().string() + "_norm_int.csv")).string();
+        std::ofstream norm_int_out_file(norm_int_file);
+        norm_int_out_file << csv_norm_int_data.str();
+        norm_int_out_file.close();
     }
     if (create_data_file)
     {

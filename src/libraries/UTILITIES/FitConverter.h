@@ -31,7 +31,7 @@
  * - Standard fit outputs (likelihood, event counts, status codes)
  * - AmpTools parameters
  * - Real/Imaginary parts of production coefficients
- * - Intensities of unique amplitudes. See constrainedAmps() for how unique amplitudes 
+ * - Intensities of unique amplitudes. See constrainedAmps() for how unique amplitudes
  *   groups are defined.
  * - Coherent sums of amplitudes by quantum numbers
  * - Phase differences
@@ -135,6 +135,23 @@ public:
     std::string getCSVCorrelationMatrix() const;
 
     /**
+     * @brief Get the CSV header string for the normalization integral matrix
+     *
+     * @return std::string "file, amplitude, amp1, amp2, ..., ampN"
+     */
+    std::string getCSVNormIntMatrixHeader() const;
+
+    /**
+     * @brief Get the CSV representation of the normalization integral matrix
+     *
+     * Every row corresponds to an amplitude, with the first two columns being the file
+     * and amplitude names, followed by complex normalization integral values with all
+     * other amplitudes. Complex values are formatted as pandas-readable strings (e.g.,
+     * "1+2j").
+     */
+    std::string getCSVNormIntMatrix() const;
+
+    /**
      * @brief return set of all unique amplitude names in a fit result
      *
      * A "full" amplitude is a "reaction::sum::ampName" string, so this extracts all
@@ -144,11 +161,11 @@ public:
 
     /**
      * @brief return set of all unique coherent sum + amp names in a fit result
-     * 
+     *
      * A "full" amplitude is a "reaction::sum::ampName" string, so this extracts all
      * unique "sum::ampName" strings
-     * 
-     * @return std::set<std::string> 
+     *
+     * @return std::set<std::string>
      */
     std::set<std::string> uniqueSumAmpNames() const;
 
@@ -179,22 +196,22 @@ public:
      * are constrained across reactions and sums. The goal is to identify the shortest
      * identifying string that can be used to group amplitudes that are constrained to
      * each other. It will first attempt to group by "ampName", then by "sum::ampName",
-     * and if neither of those assumptions hold, it will just group by the full 
-     * amplitude string. 
-     * 
+     * and if neither of those assumptions hold, it will just group by the full
+     * amplitude string.
+     *
      * For example, if we have the following full amplitude strings:
      * - "reaction1::sum1::myAmpName"
      * - "reaction1::sum2::myAmpName"
      * - "reaction2::sum1::myAmpName"
-     * 
-     * We first check if all amplitudes with the same "ampName" (myAmpName) are 
-     * constrained to each other, and if so, we group them under the unique amplitude 
-     * name "myAmpName" and save the intensity + error for that group. If that 
+     *
+     * We first check if all amplitudes with the same "ampName" (myAmpName) are
+     * constrained to each other, and if so, we group them under the unique amplitude
+     * name "myAmpName" and save the intensity + error for that group. If that
      * assumption does not hold, we check if all amplitudes with the same "sum::ampName"
-     * are constrained to each other (i.e. across reactions) and if so, we group them 
-     * under the unique amplitude name "sum::ampName". If neither assumption holds, we 
+     * are constrained to each other (i.e. across reactions) and if so, we group them
+     * under the unique amplitude name "sum::ampName". If neither assumption holds, we
      * just group by the full amplitude name.
-     * 
+     *
      * @note that the self-constraint is included in the list, so even amplitudes with
      * no constraints will have a vector of size one (itself).
      */
@@ -255,10 +272,10 @@ public:
     ~FitConverter() = default;
 
 private:
-    const std::string m_fit_file;         ///< Path to the .fit file
-    const FitResults m_fit_results;       ///< AmpTools FitResults object
-    const ConfigurationInfo *m_cfg_info;  ///< ConfigurationInfo from the fit
-    const bool m_is_acceptance_corrected; ///< Whether to use acceptance-corrected intensities
+    const std::string m_fit_file;             ///< Path to the .fit file
+    const FitResults m_fit_results;           ///< AmpTools FitResults object
+    const ConfigurationInfo *m_cfg_info;      ///< ConfigurationInfo from the fit
+    const bool m_is_acceptance_corrected;     ///< Whether to use acceptance-corrected intensities
     const AmplitudeParser m_amplitude_parser; ///< Parser for amplitude labels and sums
 
     // see accessor methods for descriptions
@@ -284,15 +301,14 @@ private:
      * amplitude names (ampName, sum::ampName, or full amplitude), and the values are
      * vectors of the full amplitude strings that are constrained to each other.
      *
-     * @note the keys are whats written to the CSV, and is why it first attempts to 
+     * @note the keys are whats written to the CSV, and is why it first attempts to
      * extract just the ampName for simplicity.
      */
     std::map<std::string, std::vector<std::string>> findConstrainedAmps() const;
 
-
     /**
      * @brief Checks if amplitude names are constrained to each other
-     * 
+     *
      * A "full" amplitude is a "reaction::sum::ampName" string, so this checks if all
      * amplitudes with the same "ampName" are constrained to each other across reactions
      * and sums.
@@ -301,12 +317,22 @@ private:
 
     /**
      * @brief Checks if coherent sum + amplitude names are constrained to each other
-     * 
+     *
      * A "full" amplitude is a "reaction::sum::ampName" string, so this checks if all
      * amplitudes with the same "sum::ampName" are constrained to each other across
-     * reactions.     
+     * reactions.
      */
     bool sumAmpNamesAreConstrained() const;
+
+    /**
+     * @brief Get the reaction string from a full amplitude name
+     *
+     * This extracts the reaction part from a "reaction::sum::ampName" string.
+     *
+     * @param full_amp_name The full amplitude name
+     * @return The reaction string
+     */
+    static std::string getReactionString(const std::string &full_amp_name);
 
     static const char *kModule;
 };
