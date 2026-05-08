@@ -5,11 +5,18 @@
  * @date 2026-01-30
  *
  * This program converts AmpTools fit results in .fit files to CSV format. It can also
- * optionally create separate CSV files for the covariance and correlation matrices, as
- * well as a CSV file containing the data used in the fit. The program is designed to be
- * flexible and can handle various amplitude naming schemes, which it uses to group
- * amplitudes into coherent sums based on shared quantum numbers. The output CSV files
- * can then be easily imported into just about any data analysis or plotting software.
+ * optionally create separate CSV files for the covariance, correlation, and
+ * normalization integral matrices, as well as a CSV file containing the data used in
+ * the fit. The program is designed to be flexible and can handle various amplitude
+ * naming schemes, which it uses to group amplitudes into coherent sums based on shared
+ * quantum numbers. The output CSV files can then be easily imported into just about any
+ * data analysis or plotting software.
+ * 
+ * Print the help message with
+ * @verbatim
+ * user@host:~$ convert_to_csv -h
+ * @endverbatim
+ * for more details.
  */
 
 #include <algorithm>
