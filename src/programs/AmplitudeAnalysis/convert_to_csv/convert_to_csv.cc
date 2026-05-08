@@ -1,7 +1,7 @@
 /**
  * @file convert_to_csv.cc
  * @author Kevin Scheuer
- * @brief
+ * @brief A utility for converting AmpTools .fit files to CSV format
  * @date 2026-01-30
  *
  * This program converts AmpTools fit results in .fit files to CSV format. It can also
