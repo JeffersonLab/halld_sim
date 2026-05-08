@@ -134,19 +134,22 @@ int main( int argc, char* argv[] ){
 
  
     // *************************
-    // Define Amplitude and Sum names
+    // Define Amplitudes and Coherent sums
     // *****************************
-
+	
     vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
-    vector<string> amphistname = {"Flat"};
-    vector<string> pipiIsobar_comps = {"pipiIso_0-S","pipiIso_1+P-","pipiIso_1+P0","pipiIso_1+P+"};
-    vector<string> rhoIsobar_comps = {"rhoIso_0-P", "rhoIso_1+S-", "rhoIso_1+S0", "rhoIso_1+S+", "rhoIso_1+D-", "rhoIso_1+D0", "rhoIso_1+D+", "rhoIso_2+D--", "rhoIso_2+D-", "rhoIso_2+D0", "rhoIso_2+D+", "rhoIso_2+D++"}; 
-    vector<string> f2Isobar_comps = {"f2Iso_1+P-","f2Iso_1+P0","f2Iso_1+P+","f2Iso_2+P--","f2Iso_2+P-","f2Iso_2+P0","f2Iso_2+P+","f2Iso_2+P++","f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++","f2Iso_2-D--","f2Iso_2-D-","f2Iso_2-D0","f2Iso_2-D+","f2Iso_2-D++"};
+    vector<string> amphistname = {"Flat"};    
+    vector<string> pipiIsobar_amps = {"pipiIso_0-S","pipiIso_1+P-","pipiIso_1+P0","pipiIso_1+P+"};
+    vector<string> rhoIsobar_amps = {"rhoIso_0-P", "rhoIso_1+S-", "rhoIso_1+S0", "rhoIso_1+S+", "rhoIso_1+D-", "rhoIso_1+D0", "rhoIso_1+D+", "rhoIso_2+D--", "rhoIso_2+D-", "rhoIso_2+D0", "rhoIso_2+D+", "rhoIso_2+D++"}; 
+    vector<string> f2Isobar_amps = {"f2Iso_1+P-","f2Iso_1+P0","f2Iso_1+P+","f2Iso_2+P--","f2Iso_2+P-","f2Iso_2+P0","f2Iso_2+P+","f2Iso_2+P++","f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++","f2Iso_2-D--","f2Iso_2-D-","f2Iso_2-D0","f2Iso_2-D+","f2Iso_2-D++"};
 
-    amphistname.insert(amphistname.end(), pipiIsobar_comps.begin(), pipiIsobar_comps.end());
-    amphistname.insert(amphistname.end(), rhoIsobar_comps.begin(), rhoIsobar_comps.end());
-    amphistname.insert(amphistname.end(), f2Isobar_comps.begin(), f2Isobar_comps.end());
+    amphistname.insert(amphistname.end(), pipiIsobar_amps.begin(), pipiIsobar_amps.end());
+    amphistname.insert(amphistname.end(), rhoIsobar_amps.begin(), rhoIsobar_amps.end());
+    amphistname.insert(amphistname.end(), f2Isobar_amps.begin(), f2Isobar_amps.end());
 
+    vector<string> ampsumname = {"pipiIso_0-S","pipiIso_1+P","rhoIso_0-P","rhoIso_1+S","rhoIso_1+D","rhoIso_2+D","f2Iso_1+P","f2Iso_2+P","f2Iso_2-S","f2Iso_2-D"};
+
+    
     
     // ************************
     // set up an output ROOT file to store histograms
@@ -346,7 +349,7 @@ int main( int argc, char* argv[] ){
   vector< string > pars;  
   //  pars.push_back("dsratio");
   
-  // file for writing parameters (later switch to putting in ROOT file)
+  //Text file for writing the parameters
   ofstream outfile;
   outfile.open( outparsName );
 
@@ -356,41 +359,52 @@ int main( int argc, char* argv[] ){
     outfile << parValue << "\t" << parError << "\t" << endl;
   }
 
-  outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
-  vector<string> fullamps = plotGen.fullAmplitudes();
-  for (unsigned int i = 0; i < fullamps.size(); i++){
-    vector<string> useamp;
-    useamp.push_back(fullamps[i]);
-    outfile << "FIT FRACTION " << fullamps[i] << " = "
-         << results.intensity(useamp).first /
-            results.intensity().first <<  " +- "
-         << results.intensity(useamp).second /
-            results.intensity().first <<  endl;
-  }
 
-  const int nAmps = amphistname.size();
-  vector<string> ampsumPosRefl[nAmps];
-  vector<string> ampsumNegRefl[nAmps];
-  vector< pair<string,string> > phaseDiffNames;
   
-  for(unsigned int i = 0; i < fullamps.size(); i++){
+  //Define vector with full amplitudes
+  vector<string> fullamps = plotGen.fullAmplitudes();
 
-    // combine amplitudes with names defined above
+  //Define vectors for combining amplitudes with unique JPLMeps 
+  const int nAmps = amphistname.size();
+  vector<string> ampPosRefl[nAmps];
+  vector<string> ampNegRefl[nAmps];
+  vector< pair<string,string> > phaseDiffNames;
+
+  //Define vectors for combining amplitudes with unique JPLeps 
+  const int nSums = ampsumname.size();
+  vector<string> ampsumPosRefl[nSums];
+  vector<string> ampsumNegRefl[nSums];
+
+
+  for(unsigned int i = 0; i < fullamps.size(); i++){    
+
+    // Split by reflectivities and grab contributions for every JPLM amplitude 
     for(int iamp=0; iamp<nAmps; iamp++) {
 	    string locampname = amphistname[iamp];
 	    
 	    if (fullamps[i].find("::" + locampname) == std::string::npos) continue;
-	    //cout<<locampname.data()<<" "<<fullamps[i].data()<<endl;
 
-	    // select reflectivity
-	    if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos) {
-	      ampsumNegRefl[iamp].push_back(fullamps[i]);
-	    }
-	    if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos) {
-	      ampsumPosRefl[iamp].push_back(fullamps[i]);
-	    }
+	    if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos)
+	      ampNegRefl[iamp].push_back(fullamps[i]);
+
+	    if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos)
+	      ampPosRefl[iamp].push_back(fullamps[i]);
     }
 
+    // Split by reflectivities and grab contributions for every JPL sum 
+    for(int isum=0; isum<nSums; isum++) {
+	    string locsumname = ampsumname[isum];
+	    
+	    if (fullamps[i].find("::" + locsumname) == std::string::npos) continue;
+
+	    if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos)
+	      ampsumNegRefl[isum].push_back(fullamps[i]);
+	      
+	    if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos)
+	      ampsumPosRefl[isum].push_back(fullamps[i]);
+     }
+    
+    
     // second loop over amplitudes to get phase difference names
     for(unsigned int j = i+1; j < fullamps.size(); j++){
 
@@ -404,29 +418,46 @@ int main( int argc, char* argv[] ){
       if (fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
 	    
       phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
-      std::cout << "PAIRED:\t" << fullamps[i] << "\t" << fullamps[j] << endl;
-      
+      //      std::cout << "PAIRED:\t" << fullamps[i] << "\t" << fullamps[j] << endl; 
     }
   }
 
-  for(int i = 0; i < nAmps; i++){
-    if(ampsumPosRefl[i].empty()) continue;
-    outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = "
-          << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
-          << results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
-     outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = "
-          << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
-          << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
-  }
 
+  outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
+  
+  cout<<"Computing intensities of amplitudes"<<endl;
+  for (unsigned int i = 0; i < fullamps.size(); i++){
+    vector<string> useamp;
+    useamp.push_back(fullamps[i]);
+    outfile << "FIT FRACTION " << fullamps[i] << " = " << results.intensity(useamp).first / results.intensity().first << " +- " << results.intensity(useamp).second / results.intensity().first <<  endl;
+  }
+  
   cout<<"Computing phase differences"<<endl;
   for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
 	  pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
 	  outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
   }
 
+  cout<<"Computing intensities of coherent sums"<<endl;
+  for(int i = 0; i < nAmps; i++){
+    if(ampPosRefl[i].empty()) continue;
+    outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = " << results.intensity(ampPosRefl[i]).first / results.intensity().first << " +- "
+	    << results.intensity(ampPosRefl[i]).second / results.intensity().first << endl;
+     outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = " << results.intensity(ampNegRefl[i]).first / results.intensity().first << " +- "
+	     << results.intensity(ampNegRefl[i]).second / results.intensity().first << endl;
+  }
+
+  for(int i = 0; i < nSums; i++){
+    if(ampsumPosRefl[i].empty()) continue;
+    outfile << "FIT FRACTION (coherent sum) PosRefl " << ampsumname[i] << " = " << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
+	    << results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
+     outfile << "FIT FRACTION (coherent sum) NegRefl " << ampsumname[i] << " = " << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
+	     << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
+  }
 
 
+
+  
   
   // covariance matrix
   vector< vector< double > > covMatrix;
