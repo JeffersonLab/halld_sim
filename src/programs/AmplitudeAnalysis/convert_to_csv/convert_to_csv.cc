@@ -4,8 +4,12 @@
  * @brief
  * @date 2026-01-30
  *
- * @todo: complete docstring. Also make a function in the fit converter to write out 
- * the normalized integral matrix to a csv file, and use that like the corr/cov ones.
+ * This program converts AmpTools fit results in .fit files to CSV format. It can also
+ * optionally create separate CSV files for the covariance and correlation matrices, as
+ * well as a CSV file containing the data used in the fit. The program is designed to be
+ * flexible and can handle various amplitude naming schemes, which it uses to group
+ * amplitudes into coherent sums based on shared quantum numbers. The output CSV files
+ * can then be easily imported into just about any data analysis or plotting software.
  */
 
 #include <algorithm>
@@ -44,6 +48,7 @@ int main(int argc, char *argv[])
     int sort_index = -1;
     bool is_acceptance_corrected = false;
     std::vector<int> lower_vertex_indices;
+    std::string naming_scheme = "auto";
     bool create_data_file = false;
     bool create_covariance = false;
     bool create_correlation = false;
@@ -53,7 +58,7 @@ int main(int argc, char *argv[])
     auto print_help = []()
     {
         std::cout << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH]"
-                  << " [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-p] [-v]"
+                  << " [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-n NAMING_SCHEME] [-p] [-v]"
                   << " [--correlation] [--covariance] \n"
                   << "  -i INPUT_FILES:\t\tFull path to the .fit file(s)\n"
                   << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n"
@@ -62,6 +67,7 @@ int main(int argc, char *argv[])
                   << "  -a --acceptance-correct:\tAcceptance correct the intensities\n"
                   << "  -d --data-file:\t\tCreate separate data file\n"
                   << "  -l --lower-vertex-indices:\tSpecify indices of lower vertex particles in the data 4-vectors\n"
+                  << "  -n --naming-scheme:\t\tSpecify amplitude naming scheme (auto, JLme, eJPmL, or Lme) to use for grouping amplitudes into coherent sums. Default is auto, which will attempt to infer the naming scheme from the amplitude names in the fit file.\n"
                   << "  -p --preview:\t\t\tPrint files to be processed, but don't run\n"
                   << "  -v --verbose:\t\t\tPrint information from converter scripts as they run\n"
                   << "  --correlation:\t\tSave correlation matrix to separate csv file\n"
@@ -176,6 +182,19 @@ int main(int argc, char *argv[])
                 lower_vertex_indices.push_back(index);
             }
         }
+        else if (arg == "-n" || arg == "--naming-scheme")
+        {
+            if (i + 1 < args.size() && !is_flag(args[i + 1]))
+            {
+                naming_scheme = std::string(args[++i]);
+            }
+            else
+            {
+                std::cerr << "Error: -n/--naming-scheme requires a value. See help message.\n";
+                print_help();
+                return 1;
+            }
+        }
         else if (is_flag(arg))
         {
             std::cerr << "Unknown argument: " << arg << "\n";
@@ -183,6 +202,8 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
+
+    // ==== VALIDATE INPUTS ====
 
     // Error checks for required arguments
     if (input_files.empty())
@@ -197,8 +218,6 @@ int main(int argc, char *argv[])
         print_help();
         return 1;
     }
-
-    // ==== VALIDATE INPUTS ====
 
     // ensure only .fit files are provided
     if (!are_valid_fit_files(input_files))
@@ -231,13 +250,12 @@ int main(int argc, char *argv[])
     std::stringstream csv_result_data, csv_cov_data, csv_corr_data, csv_root_data;
     bool header_written = false;
     std::string first_file_result_header, first_file_cov_header, first_file_corr_header, first_file_data_header;
-
-    // extract fit results, and optionally the cov/corr matrices
+    
     for (const auto &file : input_files)
     {
         if (verbose)
             report(INFO, kModule) << "Processing file: " << file << "\n";
-        FitConverter converter(file, is_acceptance_corrected, !verbose);
+        FitConverter converter(file, is_acceptance_corrected, !verbose, naming_scheme);
         std::unique_ptr<RootDataConverter> data_converter;
         if (create_data_file)
         {
@@ -335,6 +353,8 @@ int main(int argc, char *argv[])
             csv_corr_data << converter.getCSVCorrelationMatrix() << "\n";
         if (create_data_file)
             csv_root_data << data_converter->getCSVRow() << "\n";
+
+        // loop to next input file to make a new row
     }
 
     // write the csv data to the output file
