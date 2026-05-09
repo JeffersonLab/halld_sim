@@ -5,6 +5,7 @@ using namespace std;
 #include <stdio.h>
 #include <cstdlib>
 #include <ctype.h>
+#include <math.h>
 
 #include <typeinfo>
 #include "UTILITIES/CobremsGeneration.hh"
@@ -256,7 +257,7 @@ int main(const int argc, char* argv[])
 
 	if (write == true)
         {
-		char charBuff[50];
+		char charBuff[100];
 	        sprintf(charBuff, "\\mbox{photon beam spectrum vs }E_\\gamma \\mbox{ (/GeV/s)} runNo: %i", runNo);
 		dRtdkH1->SetTitle(charBuff);
 	        sprintf(charBuff, "BGRate_%i.root", runNo);

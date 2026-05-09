@@ -8,6 +8,7 @@ int FillTables::FillTable(int reaction, TableProvider& table_provider){
 
 	genSettings_t genSettings0;
 	TString Tablepath0 = genSettings0.xsecTablepath;
+        int Qp2_LimitType0 = genSettings0.Qp2_LimitType;
         printf("Start to fill all the tables ...");
 
         ifstream infile1x,infile1z;
@@ -28,16 +29,25 @@ int FillTables::FillTable(int reaction, TableProvider& table_provider){
                 if (protonorneutron==1){
                         if (targetpoldir==1 || targetpoldir==2){
                                 cout<<"Read table for circularly polarized photon and transversely polarized target"<<endl;
-                                ff1x=Form(Tablepath0+"/grid_table_tcs_circperp.dat");
+                                //ff1x=Form(Tablepath0+"/grid_table_tcs_circperp.dat");
+                                if (Qp2_LimitType0==1){ff1x=Form(Tablepath0+"/grid_table_tcs_circperp_LQ2.dat");}
+                                if (Qp2_LimitType0==2){ff1x=Form(Tablepath0+"/grid_table_tcs_circperp_HQ2.dat");}
+                                if (Qp2_LimitType0==3){ff1x=Form(Tablepath0+"/grid_table_tcs_circperp_FQ2.dat");}
                                 //ff1x=Form("Data/grid_table_tcs_circperp.dat");
                         } else {
                                 if (beampolartype==1){
                                         cout<<"Read table for linearly polarized photon and longitudinally polarized target"<<endl;
-                                        ff1x=Form(Tablepath0+"/grid_table_tcs_linlong.dat");
+                                        //ff1x=Form(Tablepath0+"/grid_table_tcs_linlong.dat");
+                                        if (Qp2_LimitType0==1){ff1x=Form(Tablepath0+"/grid_table_tcs_linlong_LQ2.dat");}
+                                        if (Qp2_LimitType0==2){ff1x=Form(Tablepath0+"/grid_table_tcs_linlong_HQ2.dat");}
+                                        if (Qp2_LimitType0==3){ff1x=Form(Tablepath0+"/grid_table_tcs_linlong_FQ2.dat");}
                                         //ff1x=Form("Data/grid_table_tcs_linlong.dat");
                                 } else {
                                         cout<<"Read table for circularly polarized photon and longitudinally polarized target"<<endl;
-                                        ff1x=Form(Tablepath0+"/grid_table_tcs_circlong.dat");
+                                        //ff1x=Form(Tablepath0+"/grid_table_tcs_circlong.dat");
+                                        if (Qp2_LimitType0==1){ff1x=Form(Tablepath0+"/grid_table_tcs_circlong_LQ2.dat");}
+                                        if (Qp2_LimitType0==2){ff1x=Form(Tablepath0+"/grid_table_tcs_circlong_HQ2.dat");}
+                                        if (Qp2_LimitType0==3){ff1x=Form(Tablepath0+"/grid_table_tcs_circlong_FQ2.dat");}
                                         //ff1x=Form("Data/grid_table_tcs_circlong.dat");
                                 }
                         }
@@ -45,16 +55,25 @@ int FillTables::FillTable(int reaction, TableProvider& table_provider){
                         cout<<"Read cross section off neutron"<<endl;
                         if (targetpoldir==1 || targetpoldir==2){
                                 cout<<"Read table for circularly polarized photon and transversely polarized target"<<endl;
-                                ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circperp.dat");
+                                //ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circperp.dat");
+                                if (Qp2_LimitType0==1){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circperp_LQ2.dat");}
+                                if (Qp2_LimitType0==2){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circperp_HQ2.dat");}
+                                if (Qp2_LimitType0==3){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circperp_FQ2.dat");}
                                 //ff1x=Form("Data/grid_table_tcs_neutron_circperp.dat");
                         } else {
                                 if (beampolartype==1){
                                         cout<<"Read table for linearly polarized photon and longitudinally polarized target"<<endl;
-                                        ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_linlong.dat");
+                                        //ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_linlong.dat");
+                                        if (Qp2_LimitType0==1){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_linlong_LQ2.dat");}
+                                        if (Qp2_LimitType0==2){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_linlong_HQ2.dat");}
+                                        if (Qp2_LimitType0==3){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_linlong_FQ2.dat");}
                                         //ff1x=Form("Data/grid_table_tcs_neutron_linlong.dat");
                                 } else {
                                         cout<<"Read table for circularly polarized photon and longitudinally polarized target"<<endl;
-                                        ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circlong.dat");
+                                        //ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circlong.dat");
+                                        if (Qp2_LimitType0==1){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circlong_LQ2.dat");}
+                                        if (Qp2_LimitType0==2){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circlong_HQ2.dat");}
+                                        if (Qp2_LimitType0==3){ff1x=Form(Tablepath0+"/grid_table_tcs_neutron_circlong_FQ2.dat");}
                                         //ff1x=Form("Data/grid_table_tcs_neutron_circlong.dat");
                                 }
                         }

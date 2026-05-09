@@ -90,12 +90,12 @@ inline void BuildCMBasis(const TLorentzVector& k_cm, const TLorentzVector& p_cm,
 }
 */
 int main( int argc, char* argv[] ){
-  
+
   string  beamconfigfile("");
   TString genconfigfile("");// = "gen_config.dat";
   string  outname("");
   string  hddmname("");
-  
+
   ifstream in_coherent;
   ifstream in_incoherent;
 
@@ -110,14 +110,15 @@ int main( int argc, char* argv[] ){
   //const double M_etapr = 0.95778;
   //const double M_pi0 = 0.13497685;
   //const double M_gamma = 0.0;
-  
+
   int runNum = 9001;
   int seed = 0;
-  
+  int customSeed = 0;
+
   int nEvents = 10000;
 
   TF1 * fBW = NULL;
-  
+
   //int bin_egam = 9400;
   //double egam_min = 2.5995;
   //double egam_max = 12.0005;
@@ -127,15 +128,14 @@ int main( int argc, char* argv[] ){
   int bin_theta = 650;
   double theta_min = 0.0;
   double theta_max = 6.5;
-  
+
   //double dummy;
-  
+
   //parse command line:
   for (int i = 1; i < argc; i++) {
-    
+
     string arg(argv[i]);
-    
-    
+
     if (arg == "-c") {  
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
       else  beamconfigfile = argv[++i]; 
@@ -170,7 +170,10 @@ int main( int argc, char* argv[] ){
     }
     if (arg == "-s") {
       if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-      else  seed = atoi( argv[++i] ); 
+      else  {
+        customSeed = 1;
+        seed = atoi( argv[++i] );
+      }
     }
     if (arg == "-h") {
       cout << endl << " Usage for: " << argv[0] << endl << endl;
@@ -186,40 +189,44 @@ int main( int argc, char* argv[] ){
       exit(1);
     }
   }
-  
+
   if (outname.size() == 0 && hddmname == "") {
     cout << "No output specificed:  run gen_compton_simple -h for help" << endl;
     exit(1);
   }
-  
+
   if (genconfigfile == "") {
     cout << "No generator configuration file: run gen_primex_eta_he4 -h for help " << endl;
     exit(1);
   }
-  TRandom3* fRandom = new TRandom3();  
-  TTimeStamp * time_st = new TTimeStamp();
-  double_t timeseed = time_st->GetNanoSec();
-  // random number initialization (set to 0 by default)
-  fRandom->SetSeed(timeseed);
-  nucleus * myNucleus = new nucleus(fRandom); 
-      
+  TRandom3* fRandom = new TRandom3();
+  if(customSeed) {
+    fRandom->SetSeed(seed);
+  } else {
+    TTimeStamp * time_st = new TTimeStamp();
+    double_t timeseed = time_st->GetNanoSec();
+    fRandom->SetSeed(timeseed);
+  }
+  gRandom = fRandom;
+  nucleus * myNucleus = new nucleus(fRandom);
+
   // initialize HDDM output
   HddmOut *hddmWriter = nullptr;
   if (hddmname != "")
     hddmWriter = new HddmOut(hddmname.c_str());
-  
+
   // initialize ASCII output
   ofstream *asciiWriter = nullptr;
   if (outname != "")
     asciiWriter = new ofstream(outname.c_str());
-  
+
   // Get beam properties from configuration file
   TH1D * cobrem_vs_E = 0;
   if (beamconfigfile != "") {
     BeamProperties beamProp( beamconfigfile );
     cobrem_vs_E = (TH1D*)beamProp.GetFlux();
   }
-  
+
   // Get generator config file
   MyReadConfig * ReadFile = new MyReadConfig();
   ReadFile->ReadConfigFile(genconfigfile);
@@ -236,7 +243,7 @@ int main( int argc, char* argv[] ){
   if (ReadFile->GetConfigName("flat_coh") != "") {
     do_flat_coh = true;
     m_flat_coh_angle_min_max_cut = ReadFile->GetConfig2Par("flat_coh");
-    cout << "Swicth to flat coherent" << endl;
+    cout << "Switch to flat coherent" << endl;
   }
   //else if (m_target == "") {
   //cout <<"Add something to produce flat coherent" << endl;
@@ -245,7 +252,7 @@ int main( int argc, char* argv[] ){
   if (ReadFile->GetConfigName("flat_qf") != "") {
     do_flat_qf = true;
     m_flat_coh_angle_min_max_cut = ReadFile->GetConfig2Par("flat_qf");
-    cout << "Swicth to flat quasi-free" << endl;
+    cout << "Switch to flat quasi-free" << endl;
   }
   //else if (m_target == "") {
   //cout <<"Add something to produce flat qfn" << endl;
@@ -275,22 +282,22 @@ int main( int argc, char* argv[] ){
       m_meson = "Omega";
       cout << " Omega special " << endl;
       if (ReadFile->GetConfigName("sc1") != "" && ReadFile->GetConfigName("sc2") != "") {
-	cout << " that decays " << endl;
-	m_sc[0] = ReadFile->GetConfigName("sc1");
-	m_sc[1] = ReadFile->GetConfigName("sc2");
-	if (m_sc[0] == "Gamma") m_sc[0] = "Photon";
-	if (m_sc[1] == "Gamma") m_sc[1] = "Photon";
+        cout << " that decays " << endl;
+        m_sc[0] = ReadFile->GetConfigName("sc1");
+        m_sc[1] = ReadFile->GetConfigName("sc2");
+        if (m_sc[0] == "Gamma") m_sc[0] = "Photon";
+        if (m_sc[1] == "Gamma") m_sc[1] = "Photon";
       }
     }
     if (m_meson == "rho0" || m_meson == "Rho0") {
       m_meson = "Rho0";
       cout << " Rho0 special " << endl;
       if (ReadFile->GetConfigName("sc1") != "" && ReadFile->GetConfigName("sc2") != "") {
-	cout << " that decays " << endl;
-	m_sc[0] = ReadFile->GetConfigName("sc1");
-	m_sc[1] = ReadFile->GetConfigName("sc2");
-	if (m_sc[0] == "Gamma") m_sc[0] = "Photon";
-	if (m_sc[1] == "Gamma") m_sc[1] = "Photon";
+        cout << " that decays " << endl;
+        m_sc[0] = ReadFile->GetConfigName("sc1");
+        m_sc[1] = ReadFile->GetConfigName("sc2");
+        if (m_sc[0] == "Gamma") m_sc[0] = "Photon";
+        if (m_sc[1] == "Gamma") m_sc[1] = "Photon";
       }
     }
     if (m_meson != "Eta" && m_meson != "EtaPrime" && m_meson != "Pi0" && m_meson != "Omega" && m_meson != "Rho0") {
@@ -308,7 +315,7 @@ int main( int argc, char* argv[] ){
     cout <<"Add target" << endl;
     exit(1);
   }
-    
+
   // Assume a beam energy spectrum of 1/E(gamma)
   TF1 ebeam_spectrum("beam_spectrum","1/x",beamLowE,beamHighE);
   cout << "rfile " << m_rfile << endl;
@@ -317,8 +324,6 @@ int main( int argc, char* argv[] ){
   cout << "target " << m_target << endl;
   cout << "Fermi_file " << m_Fermi_file << endl;
 
-  
-  
   TH1F * m_h_PFermi = new TH1F("PFermi", "", 12000, 0.0, 12.0);
   Particle_t t_target = Gamma;
   Particle_t t_meson = Gamma;
@@ -336,7 +341,7 @@ int main( int argc, char* argv[] ){
       cout << "decaying particle 2 " <<  ParticleMass(t_sc2) << " pdg " << PDGtype(t_sc2) << endl;
     }
   }
-    
+
   TH2F * h_sf = NULL;
   if (ReadFile->GetConfigName("fermi_file") != "" && ReadFile->GetConfigName("participant") != "" && ReadFile->GetConfigName("spectator") != "") {
     m_Fermi_file = ReadFile->GetConfigName("fermi_file");
@@ -350,12 +355,12 @@ int main( int argc, char* argv[] ){
       in.open(m_Fermi_file);
       int i = 0;
       while (in.good()) {
-	double pf = 0, val = 0;
-	in >> pf >> val;
-	if (val > 0) {
-	  m_h_PFermi->SetBinContent(i + 1, val);
-	  i ++;
-	}
+        double pf = 0, val = 0;
+        in >> pf >> val;
+        if (val > 0) {
+          m_h_PFermi->SetBinContent(i + 1, val);
+          i ++;
+        }
       }
       in.close();
     }
@@ -381,7 +386,6 @@ int main( int argc, char* argv[] ){
     cout << "Meson mass " << ParticleMass(t_meson) << " pdg " << PDGtype(t_meson) << endl;
   }
 
-  
   if (m_meson == "Omega") {
     double Gamma = 0.00849;
     double mass = ParticleMass(t_meson);
@@ -396,24 +400,23 @@ int main( int argc, char* argv[] ){
     fBW->SetParameters(mass, Gamma, 1.0);
   }
 
-  
   //double M_target = ParticleMass(t_target);
-  
+
   TLorentzVector ATargetP4(0, 0, 0, ParticleMass(t_target));
   TLorentzVector NTargetP4(0, 0, 0, ParticleMass(t_participant));
-  
+
   // Load eta-meson differential cross-section based on Ilya Larin's calculation, see the *.F program in this directory 
   TFile * ifile;
   TH2F * h_dxs = new TH2F();
-  if (!do_flat_coh && !do_flat_qf) { 
+  if (!do_flat_coh && !do_flat_qf) {
     ifile = new TFile(m_rfile);
     h_dxs = (TH2F *) ifile->Get(m_histo);
     bin_egam = h_dxs->GetNbinsX();
     egam_min = h_dxs->GetXaxis()->GetXmin();
-    egam_max = h_dxs->GetXaxis()->GetXmax();                                                                                                                                                   
-    bin_theta = h_dxs->GetNbinsY();                                                                                                                                                                      
+    egam_max = h_dxs->GetXaxis()->GetXmax();
+    bin_theta = h_dxs->GetNbinsY();
     theta_min = h_dxs->GetYaxis()->GetXmin();
-    theta_max = h_dxs->GetYaxis()->GetXmax();   
+    theta_max = h_dxs->GetYaxis()->GetXmax();
   } else {
     bin_egam = 700;
     egam_min = 5.0;
@@ -427,7 +430,7 @@ int main( int argc, char* argv[] ){
   }
 
   //double M_meson = ParticleMass(t_meson);
-  
+
   TFile* diagOut = new TFile( "gen_primex_eta_he4_diagnostic.root", "recreate" );
   TH2F* h_Tkin_eta_vs_egam = new TH2F("Tkin_eta_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{#eta} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 12.0);
   TH2F* h_Tkin_photon_vs_egam = new TH2F("Tkin_photon_vs_egam", ";E_{#gamma} [GeV];T^{kin}_{#gamma} [GeV];Count [a.u.]", 1000, 0.0, 12.0, 1000, 0.0, 12.0);
@@ -438,7 +441,7 @@ int main( int argc, char* argv[] ){
   TH1F *thrown_FermiP1 = new TH1F("thrown_FermiP1",";p_{F} [GeV/c];",250,0.,1.);;
   TH1F *thrown_FermiP2 = new TH1F("thrown_FermiP2",";p_{F} [GeV/c];",250,0.,1.);;
   TH1F *thrown_FermiP3 = new TH1F("thrown_FermiP3",";p_{F} [GeV/c];",250,0.,1.);;
-  
+
   TH1F * h_cop = new TH1F("cop", ";|#phi_{#eta}-#phi_{recoil}| [^{o}];Events #", 360, 0., 360.);
 
   TH1F * h_mass_diff = new TH1F("mass_diff", ";#DeltaM [GeV];Events #", 2000, -1., 1.);
@@ -447,27 +450,27 @@ int main( int argc, char* argv[] ){
   TH1F * h_meson_theta = new TH1F("meson_theta","; cos;Events #", 2000, -1., 1.);
   TLorentzVector sc1P4_lab(0, 0, 0, 0);
   TLorentzVector sc2P4_lab(0, 0, 0, 0);
-    
+
   for (int i = 0; i < nEvents; ++i) {
     if (i%1000 == 1)
       cout << "event " << i <<endl;
-    
+
     // get beam energy
     double ebeam = 0;
     if (beamconfigfile == "" || cobrem_vs_E == 0) 
       ebeam = ebeam_spectrum.GetRandom();
     else if (beamconfigfile != "")
       ebeam = cobrem_vs_E->GetRandom();
-    
+
     // Incident photon-beam 4Vec
     TLorentzVector BeamP4(0, 0, ebeam, ebeam);
-    
+
     ATargetP4 = TLorentzVector(0, 0, 0, ParticleMass(t_target));
     NTargetP4 = TLorentzVector(0, 0, 0, ParticleMass(t_participant));
     TLorentzVector ISP4 = BeamP4 + ATargetP4;
     if (do_flat_qf || m_rfile.Contains("free"))
       ISP4 = BeamP4 + NTargetP4;
-    
+
     // Mass in the centre-of-mass frame
     //bool good_evt = true;
     double ThetaLAB = 0;
@@ -493,7 +496,7 @@ int main( int argc, char* argv[] ){
     h_meson_mass->Fill(mass);
     sc1P4_lab = TLorentzVector(0, 0, 0, 0);
     sc2P4_lab = TLorentzVector(0, 0, 0, 0);
-    
+
     double PhiLAB = fRandom->Uniform(-TMath::Pi(), TMath::Pi());
     TLorentzVector eta_LAB_P4 = meson_lab(ISP4, mass,  ParticleMass(t_target), ThetaLAB, PhiLAB);
     if (do_flat_qf || m_rfile.Contains("free"))
@@ -509,7 +512,7 @@ int main( int argc, char* argv[] ){
     if (std::isnan(eta_LAB_P4.E())) {
       cout <<"Initial -nan / what is the eta polar lab. angle " <<  ThetaLAB * TMath::RadToDeg() << endl;
     }
-    
+
     // IA variables
     double p_Fermi = 0, p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
     TLorentzVector SpectatorP4(0, 0, 0, 0);
@@ -521,59 +524,60 @@ int main( int argc, char* argv[] ){
       //double s_mass = ParticleMass(t_spectator);
       //double p_mass = ParticleMass(t_participant);
       if (!m_Fermi_file.Contains("SRC")) {
-	p_Fermi = m_h_PFermi->GetRandom();
-	thrown_FermiP1->Fill(p_Fermi);
-	p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
-	fRandom->Sphere(p_Fermi_x, p_Fermi_y, p_Fermi_z, p_Fermi);
-	SpectatorE = sqrt(pow(ParticleMass(t_spectator), 2.0) + pow(p_Fermi ,2.0));
-	ParticipantE = ParticleMass(t_target) - SpectatorE;
-	SpectatorP4 = TLorentzVector(-p_Fermi_x, -p_Fermi_y, -p_Fermi_z, SpectatorE);
-	ParticipantP4 = TLorentzVector(p_Fermi_x, p_Fermi_y, p_Fermi_z, ParticipantE);
+        p_Fermi = m_h_PFermi->GetRandom();
+        thrown_FermiP1->Fill(p_Fermi);
+        p_Fermi_x = 0, p_Fermi_y = 0, p_Fermi_z = 0;
+        fRandom->Sphere(p_Fermi_x, p_Fermi_y, p_Fermi_z, p_Fermi);
+        SpectatorE = sqrt(pow(ParticleMass(t_spectator), 2.0) + pow(p_Fermi ,2.0));
+        ParticipantE = ParticleMass(t_target) - SpectatorE;
+        SpectatorP4 = TLorentzVector(-p_Fermi_x, -p_Fermi_y, -p_Fermi_z, SpectatorE);
+        ParticipantP4 = TLorentzVector(p_Fermi_x, p_Fermi_y, p_Fermi_z, ParticipantE);
       } else if (m_Fermi_file.Contains("SRC")) {
-	if (!m_Fermi_file.Contains("SRC-unweighted")) {
-	  if (m_Participant == "Neutron") {
-	    do {
-	      weight = 1.;
-	      if (m_target == "Deuteron") myNucleus->sample_SF_deut_n(weight, p_Fermi, Ebind);
-	      if (m_target == "Helium") myNucleus->sample_SF_He_n(weight, p_Fermi, Ebind);
-	      if (m_target == "Carbon") myNucleus->sample_SF_C12_n(weight, p_Fermi, Ebind);
-	    } while (weight == 0.);
-	  }
-	  if (m_Participant == "Proton") {
-	    do {
-	      weight = 1.;
-	      if (m_target == "Deuteron") myNucleus->sample_SF_deut_p(weight, p_Fermi, Ebind);
-	      if (m_target == "Helium") myNucleus->sample_SF_He_p(weight, p_Fermi, Ebind);
-	      if (m_target == "Carbon") myNucleus->sample_SF_C12_p(weight, p_Fermi, Ebind);
-	    } while (weight == 0.);
-	  }
-	  if (m_Participant == "Deuteron") {
-	    do {
-	      weight = 1.;
-	      if (m_target == "Helium") myNucleus->sample_SF_He_d(weight, p_Fermi, Ebind);
-	      if (m_target == "Carbon") myNucleus->sample_SF_C12_d(weight, p_Fermi, Ebind);
-	    } while (weight == 0.);
-	  }
-	} else if (m_Fermi_file.Contains("SRC-unweighted")) {
-	  h_sf->GetRandom2(p_Fermi, Ebind, fRandom);
-	}
-	double phi_src = 2. * TMath::Pi() * fRandom->Uniform();
-	double cosTheta_src = -1 + 2. * fRandom->Uniform();
-	double theta_src = acos(cosTheta_src);
-	FermiP3.SetMagThetaPhi(p_Fermi , theta_src, phi_src);
-	ParticipantE = ParticleMass(t_participant) - Ebind;
-	if (ParticipantE < 0) cout <<"participant negative mass"<<endl;
-	//SpectatorE = ParticleMass(t_target) - ParticipantE;
-	//SpectatorE = ParticleMass(t_spectator) - Ebind;
-	SpectatorE = sqrt(pow(ParticleMass(t_spectator), 2.0) + pow(p_Fermi ,2.0));
-	if (SpectatorE < 0) cout <<"spectator negative mass"<<endl;
-	ParticipantP4 = TLorentzVector(FermiP3, ParticipantE);
-	SpectatorP4 = TLorentzVector(-FermiP3, SpectatorE);
-	//SpectatorP4 = TLorentzVector(-FermiP3.X(), -FermiP3.Y(), -FermiP3.Z(), SpectatorE);
-	thrown_FermiP1->Fill(p_Fermi, weight);
-	//p_Fermi_x = FermiP3.X();
-	//p_Fermi_y = FermiP3.Y();
-	//p_Fermi_z = FermiP3.Z();
+        if (!m_Fermi_file.Contains("SRC-unweighted")) {
+          if (m_Participant == "Neutron") {
+            do {
+              weight = 1.;
+              if (m_target == "Deuteron") myNucleus->sample_SF_deut_n(weight, p_Fermi, Ebind);
+              if (m_target == "Helium") myNucleus->sample_SF_He_n(weight, p_Fermi, Ebind);
+              if (m_target == "Carbon") myNucleus->sample_SF_C12_n(weight, p_Fermi, Ebind);
+            } while (weight == 0.);
+          }
+          if (m_Participant == "Proton") {
+            do {
+              weight = 1.;
+              if (m_target == "Deuteron") myNucleus->sample_SF_deut_p(weight, p_Fermi, Ebind);
+              if (m_target == "Helium") myNucleus->sample_SF_He_p(weight, p_Fermi, Ebind);
+              if (m_target == "Carbon") myNucleus->sample_SF_C12_p(weight, p_Fermi, Ebind);
+            } while (weight == 0.);
+          }
+          if (m_Participant == "Deuteron") {
+            do {
+              weight = 1.;
+              if (m_target == "Helium") myNucleus->sample_SF_He_d(weight, p_Fermi, Ebind);
+              if (m_target == "Carbon") myNucleus->sample_SF_C12_d(weight, p_Fermi, Ebind);
+            } while (weight == 0.);
+          }
+        } else if (m_Fermi_file.Contains("SRC-unweighted")) {
+          h_sf->GetRandom2(p_Fermi, Ebind, fRandom);
+        }
+
+        double phi_src = 2. * TMath::Pi() * fRandom->Uniform();
+        double cosTheta_src = -1 + 2. * fRandom->Uniform();
+        double theta_src = acos(cosTheta_src);
+        FermiP3.SetMagThetaPhi(p_Fermi , theta_src, phi_src);
+        ParticipantE = ParticleMass(t_participant) - Ebind;
+        if (ParticipantE < 0) cout <<"participant negative mass"<<endl;
+        //SpectatorE = ParticleMass(t_target) - ParticipantE;
+        //SpectatorE = ParticleMass(t_spectator) - Ebind;
+        SpectatorE = sqrt(pow(ParticleMass(t_spectator), 2.0) + pow(p_Fermi ,2.0));
+        if (SpectatorE < 0) cout <<"spectator negative mass"<<endl;
+        ParticipantP4 = TLorentzVector(FermiP3, ParticipantE);
+        SpectatorP4 = TLorentzVector(-FermiP3, SpectatorE);
+        //SpectatorP4 = TLorentzVector(-FermiP3.X(), -FermiP3.Y(), -FermiP3.Z(), SpectatorE);
+        thrown_FermiP1->Fill(p_Fermi, weight);
+        //p_Fermi_x = FermiP3.X();
+        //p_Fermi_y = FermiP3.Y();
+        //p_Fermi_z = FermiP3.Z();
       }
       /*
       double p_cm_x = p_Fermi_x;
@@ -582,127 +586,127 @@ int main( int argc, char* argv[] ){
       double p_cm = sqrt(pow(p_cm_x, 2.) + pow(p_cm_y, 2.) + pow(p_cm_z, 2.));
       double sintheta = p_cm_x / p_cm;
       double costheta = p_cm_z / p_cm;
-      */    
+      */
       if (m_rfile.Contains("free") || do_flat_qf) {
-	ISP4 = BeamP4 + ParticipantP4;
-	TLorentzVector BeamP4_cm = BeamP4;
-	TLorentzVector ParticipantP4_cm = ParticipantP4;
-	BeamP4_cm.Boost(-ISP4.BoostVector());
-	ParticipantP4_cm.Boost(-ISP4.BoostVector());
-	// Rotate to scattering along z-axis
-	double rot_phi = BeamP4_cm.Vect().Phi();
-	double rot_theta = BeamP4_cm.Vect().Theta();
-	double s = ISP4.M();
-	if (s < (mass + ParticleMass(t_participant))) continue;
-	double E_eta_com = (pow(s, 2.) - pow(ParticleMass(t_participant), 2.) + pow(mass,2.)) / (2. * s);
-	double p_eta_com = sqrt(pow(E_eta_com, 2.) - pow(mass, 2.));
-	double E_recoil_com = sqrt(pow(p_eta_com, 2.) + pow(ParticleMass(t_participant), 2.));
-	//eta_COM_P4 = meson_com_pf(theta_com, phi_com, E_eta_com, p_eta_com, sintheta, costheta);
-	//Recoil_COM_P4 = TLorentzVector(- eta_COM_P4.Px(), - eta_COM_P4.Py(), - eta_COM_P4.Pz(), E_recoil_com);
-	TVector3 v_cm(0, 0, 0);
-	v_cm.SetMagThetaPhi(p_eta_com, theta_com, phi_com);
-	v_cm.RotateY(rot_theta);
-	v_cm.RotateZ(rot_phi);
-	eta_COM_P4 = TLorentzVector(v_cm, E_eta_com);
-	Recoil_COM_P4 = TLorentzVector(-v_cm, E_recoil_com);
-	
-	eta_LAB_P4 = eta_COM_P4;
-	Recoil_LAB_P4 = Recoil_COM_P4;
-	eta_LAB_P4.Boost(ISP4.BoostVector());
-	Recoil_LAB_P4.Boost(ISP4.BoostVector());
-	TVector3 p3_recoil = Recoil_LAB_P4.Vect();
-	double E_recoil = sqrt(p3_recoil.Mag() * p3_recoil.Mag() + ParticleMass(t_participant) * ParticleMass(t_participant));
-	Recoil_LAB_P4 = TLorentzVector(p3_recoil, E_recoil);
-	TVector3 p3_eta = eta_LAB_P4.Vect();
-	double E_eta = sqrt(p3_eta.Mag() * p3_eta.Mag() + mass * mass);
-	eta_LAB_P4 = TLorentzVector(p3_eta, E_eta);
-	//TVector3 p3_spe = SpectatorP4.Vect();
-	//double E_spe = sqrt(p3_spe.Mag() * p3_spe.Mag() + ParticleMass(t_spectator) * ParticleMass(t_spectator));
-	//SpectatorP4 = TLorentzVector(p3_spe, E_spe);
-	h_cop->Fill(fabs(eta_LAB_P4.Phi() - Recoil_LAB_P4.Phi()) * TMath::RadToDeg(), weight);
+        ISP4 = BeamP4 + ParticipantP4;
+        TLorentzVector BeamP4_cm = BeamP4;
+        TLorentzVector ParticipantP4_cm = ParticipantP4;
+        BeamP4_cm.Boost(-ISP4.BoostVector());
+        ParticipantP4_cm.Boost(-ISP4.BoostVector());
+        // Rotate to scattering along z-axis
+        double rot_phi = BeamP4_cm.Vect().Phi();
+        double rot_theta = BeamP4_cm.Vect().Theta();
+        double s = ISP4.M();
+        if (s < (mass + ParticleMass(t_participant))) continue;
+        double E_eta_com = (pow(s, 2.) - pow(ParticleMass(t_participant), 2.) + pow(mass,2.)) / (2. * s);
+        double p_eta_com = sqrt(pow(E_eta_com, 2.) - pow(mass, 2.));
+        double E_recoil_com = sqrt(pow(p_eta_com, 2.) + pow(ParticleMass(t_participant), 2.));
+        //eta_COM_P4 = meson_com_pf(theta_com, phi_com, E_eta_com, p_eta_com, sintheta, costheta);
+        //Recoil_COM_P4 = TLorentzVector(- eta_COM_P4.Px(), - eta_COM_P4.Py(), - eta_COM_P4.Pz(), E_recoil_com);
+        TVector3 v_cm(0, 0, 0);
+        v_cm.SetMagThetaPhi(p_eta_com, theta_com, phi_com);
+        v_cm.RotateY(rot_theta);
+        v_cm.RotateZ(rot_phi);
+        eta_COM_P4 = TLorentzVector(v_cm, E_eta_com);
+        Recoil_COM_P4 = TLorentzVector(-v_cm, E_recoil_com);
 
-	TLorentzVector meson_LAB_P4 = meson_lab((BeamP4 + NTargetP4), ParticleMass(t_meson),  ParticleMass(t_participant), eta_LAB_P4.Theta(), eta_LAB_P4.Phi());
-	h_mass_diff->Fill(eta_LAB_P4.E() - meson_LAB_P4.E(), weight);
-	
-	if (fabs(Recoil_LAB_P4.M() - ParticleMass(t_participant)) > 1e-13) {
-	  cout << "evt nb " << i << " Participant Mass difference " << fabs(Recoil_LAB_P4.M() - ParticleMass(t_participant))
-	       << " kinetic energy " << Recoil_LAB_P4.E() - Recoil_LAB_P4.M() 
-	       << " mass evtgen " << Recoil_LAB_P4.M() 
-	       << " mass partic " << ParticleMass(t_participant) << endl;
-	}      
-	if ((eta_LAB_P4.M() - mass) > 1e-13) {
-	  cout << "evt nb " << i << " Meson Mass difference " << fabs(eta_LAB_P4.M() - ParticleMass(t_meson))
-	       << " kinetic energy " << eta_LAB_P4.E() - eta_LAB_P4.M() 
-	       << " mass evtgen " << eta_LAB_P4.M() 
-	       << " mass partic " << mass << endl;
-	} 
-	if (fabs(SpectatorP4.M() - ParticleMass(t_spectator)) > 1e-13) {
-	  cout << "evt nb " << i << " Spectator Mass difference " << fabs(SpectatorP4.M() - ParticleMass(t_spectator))
-	       << " kinetic energy " << SpectatorP4.E() - SpectatorP4.M() 
-	       << " mass evtgen " << SpectatorP4.M() 
-	       << " mass partic " << ParticleMass(t_spectator) << endl;
-	}
-	if (std::isnan(eta_LAB_P4.E())) {
-	  cout << "After the fold -nan / what is the Fermi motion " << p_Fermi << " what is the polar com angle " << theta_com * TMath::RadToDeg() << endl;
-	  //cout << "sintheta " << sintheta << " costheta " << costheta << " s " << s << endl;
-	  continue;
-	}
-	double tkin_spectator = SpectatorP4.E() - SpectatorP4.M();
-	if (tkin_spectator <= 0) cout << "Spectator not moving" << endl;
-	tkin_spectator = SpectatorP4.E() - ParticleMass(t_spectator);
-	if (tkin_spectator <= 0) cout << "Spectator not moving spec" << endl;
+        eta_LAB_P4 = eta_COM_P4;
+        Recoil_LAB_P4 = Recoil_COM_P4;
+        eta_LAB_P4.Boost(ISP4.BoostVector());
+        Recoil_LAB_P4.Boost(ISP4.BoostVector());
+        TVector3 p3_recoil = Recoil_LAB_P4.Vect();
+        double E_recoil = sqrt(p3_recoil.Mag() * p3_recoil.Mag() + ParticleMass(t_participant) * ParticleMass(t_participant));
+        Recoil_LAB_P4 = TLorentzVector(p3_recoil, E_recoil);
+        TVector3 p3_eta = eta_LAB_P4.Vect();
+        double E_eta = sqrt(p3_eta.Mag() * p3_eta.Mag() + mass * mass);
+        eta_LAB_P4 = TLorentzVector(p3_eta, E_eta);
+        //TVector3 p3_spe = SpectatorP4.Vect();
+        //double E_spe = sqrt(p3_spe.Mag() * p3_spe.Mag() + ParticleMass(t_spectator) * ParticleMass(t_spectator));
+        //SpectatorP4 = TLorentzVector(p3_spe, E_spe);
+        h_cop->Fill(fabs(eta_LAB_P4.Phi() - Recoil_LAB_P4.Phi()) * TMath::RadToDeg(), weight);
+
+        TLorentzVector meson_LAB_P4 = meson_lab((BeamP4 + NTargetP4), ParticleMass(t_meson),  ParticleMass(t_participant), eta_LAB_P4.Theta(), eta_LAB_P4.Phi());
+        h_mass_diff->Fill(eta_LAB_P4.E() - meson_LAB_P4.E(), weight);
+
+        if (fabs(Recoil_LAB_P4.M() - ParticleMass(t_participant)) > 1e-13) {
+          cout << "evt nb " << i << " Participant Mass difference " << fabs(Recoil_LAB_P4.M() - ParticleMass(t_participant))
+               << " kinetic energy " << Recoil_LAB_P4.E() - Recoil_LAB_P4.M() 
+               << " mass evtgen " << Recoil_LAB_P4.M() 
+               << " mass partic " << ParticleMass(t_participant) << endl;
+        }      
+        if ((eta_LAB_P4.M() - mass) > 1e-13) {
+          cout << "evt nb " << i << " Meson Mass difference " << fabs(eta_LAB_P4.M() - ParticleMass(t_meson))
+               << " kinetic energy " << eta_LAB_P4.E() - eta_LAB_P4.M() 
+               << " mass evtgen " << eta_LAB_P4.M() 
+               << " mass partic " << mass << endl;
+        } 
+        if (fabs(SpectatorP4.M() - ParticleMass(t_spectator)) > 1e-13) {
+          cout << "evt nb " << i << " Spectator Mass difference " << fabs(SpectatorP4.M() - ParticleMass(t_spectator))
+               << " kinetic energy " << SpectatorP4.E() - SpectatorP4.M() 
+               << " mass evtgen " << SpectatorP4.M() 
+               << " mass partic " << ParticleMass(t_spectator) << endl;
+        }
+        if (std::isnan(eta_LAB_P4.E())) {
+          cout << "After the fold -nan / what is the Fermi motion " << p_Fermi << " what is the polar com angle " << theta_com * TMath::RadToDeg() << endl;
+          //cout << "sintheta " << sintheta << " costheta " << costheta << " s " << s << endl;
+          continue;
+        }
+        double tkin_spectator = SpectatorP4.E() - SpectatorP4.M();
+        if (tkin_spectator <= 0) cout << "Spectator not moving" << endl;
+        tkin_spectator = SpectatorP4.E() - ParticleMass(t_spectator);
+        if (tkin_spectator <= 0) cout << "Spectator not moving spec" << endl;
       }
     }
-        
+
     if (m_meson == "Rho0" || m_meson == "Omega") {
       double m_sc1 = ParticleMass(t_sc1); // GeV
       double m_sc2 = ParticleMass(t_sc2); // GeV
-      
+
       // Momentum magnitude in rho rest frame
       double p = sqrt((pow(mass, 2) - pow(m_sc1 + m_sc2, 2)) * (pow(mass, 2) - pow(m_sc1 - m_sc2, 2))) / (2 * mass);
-      
+
       // Sample cosθ with distribution ~ 1 + cos^2θ
       double costh, phi;
       while (true) {
-	costh = fRandom->Uniform(-1., 1.);
-	double w = 1 + costh * costh;
-	if (fRandom->Uniform(0,2) < w) break;
+        costh = fRandom->Uniform(-1., 1.);
+        double w = 1 + costh * costh;
+        if (fRandom->Uniform(0,2) < w) break;
       }
       phi = fRandom->Uniform(0, 2 * TMath::Pi());
-      
+
       double sinth = sqrt(1 - costh * costh);
       double px = p * sinth * cos(phi);
       double py = p * sinth * sin(phi);
       double pz = p * costh;
-      
+
       h_meson_theta->Fill(costh);
-      
+
       // sc1 4-vector
       TLorentzVector sc1P4_com(px, py, pz, sqrt(pow(p, 2) + pow(m_sc1, 2)));
-      
+
       // sc1 4-vector (back-to-back)
       TLorentzVector sc2P4_com(-px, -py, -pz, sqrt(pow(p, 2) + pow(m_sc2, 2)));
-      
+
       // Combine to check conservation
       sc1P4_lab = sc1P4_com;
       sc2P4_lab = sc2P4_com;
-      
+
       sc1P4_lab.Boost(eta_LAB_P4.BoostVector());
       sc2P4_lab.Boost(eta_LAB_P4.BoostVector());
     }
-    
+
     double tkin_meson = eta_LAB_P4.E() - eta_LAB_P4.M();
     double tkin_recoil = Recoil_LAB_P4.E() - Recoil_LAB_P4.M();
-    
+
     if (tkin_meson <= 0) cout << "Meson not moving" <<endl;
     if (tkin_recoil <= 0) cout << "Recoil not moving" << endl;
     tkin_meson = eta_LAB_P4.E() - mass;
     tkin_recoil = Recoil_LAB_P4.E() - ParticleMass(t_participant);
     if (tkin_meson <= 0) cout << "Meson not moving spec" <<endl;
     if (tkin_recoil <= 0) cout << "Recoil not moving spec" << endl;
-        
+
     int ng_max = 0;
-        
+
     // Deduce by energy and mass conservation the recoil nucleus 4Vec
     TLorentzVector He4_LAB_P4 = ISP4 - eta_LAB_P4;
     if (m_target == "Neutron")
@@ -729,54 +733,54 @@ int main( int argc, char* argv[] ){
       tmpEvt.q1 = eta_LAB_P4;
       //cout <<"I am here 1 "<<endl;
       if (ng_max == 0 && m_Fermi_file == "" && m_sc[0] == "" && m_sc[1] == "") {
-	//cout <<"I am here 2 "<<endl;
-	tmpEvt.q2 = He4_LAB_P4;
-	tmpEvt.nGen = 2;
+        //cout <<"I am here 2 "<<endl;
+        tmpEvt.q2 = He4_LAB_P4;
+        tmpEvt.nGen = 2;
       } else if (ng_max == 0 && m_Fermi_file != "" && m_sc[0] == "") {
-	//cout <<"I am here 3 "<<endl;
-	//cout <<"part x " << ParticipantP4.X() << " y " << ParticipantP4.Y() << " z " << ParticipantP4.Z() << " e " << ParticipantP4.E() << " m " << ParticipantP4.M() << endl;
-	//cout <<"spec x " << SpectatorP4.X() << " y " << SpectatorP4.Y() << " z " << SpectatorP4.Z() << " e " << SpectatorP4.E() << " m " << SpectatorP4.M() << endl;
-	TLorentzVector NeutronP4 = doCalEnergy(ebeam, ParticleMass(t_target), ParticipantP4.M(), SpectatorP4.M(), eta_LAB_P4, Recoil_LAB_P4);
-	//cout <<"cal p " << NeutronP4.P() << " thrown " << Recoil_LAB_P4.P() << endl;
-	//cout <<"cal m " << NeutronP4.M() << " thrown " << Recoil_LAB_P4.M() << " target mass " << ParticleMass(t_target) << endl; 
-	thrown_FermiP2->Fill((eta_LAB_P4 + Recoil_LAB_P4 - BeamP4 - ATargetP4).P(), weight);
-	thrown_FermiP3->Fill((eta_LAB_P4 + NeutronP4 - BeamP4 - ATargetP4).P(), weight);
-	tmpEvt.str_spectator = m_Spectator;
-	tmpEvt.str_participant = m_Participant;
-	tmpEvt.q2 = Recoil_LAB_P4;
-	tmpEvt.q3 = SpectatorP4;
-	tmpEvt.t_part = t_participant;
-	tmpEvt.t_spec = t_spectator;
-	tmpEvt.nGen = 3;
+        //cout <<"I am here 3 "<<endl;
+        //cout <<"part x " << ParticipantP4.X() << " y " << ParticipantP4.Y() << " z " << ParticipantP4.Z() << " e " << ParticipantP4.E() << " m " << ParticipantP4.M() << endl;
+        //cout <<"spec x " << SpectatorP4.X() << " y " << SpectatorP4.Y() << " z " << SpectatorP4.Z() << " e " << SpectatorP4.E() << " m " << SpectatorP4.M() << endl;
+        TLorentzVector NeutronP4 = doCalEnergy(ebeam, ParticleMass(t_target), ParticipantP4.M(), SpectatorP4.M(), eta_LAB_P4, Recoil_LAB_P4);
+        //cout <<"cal p " << NeutronP4.P() << " thrown " << Recoil_LAB_P4.P() << endl;
+        //cout <<"cal m " << NeutronP4.M() << " thrown " << Recoil_LAB_P4.M() << " target mass " << ParticleMass(t_target) << endl; 
+        thrown_FermiP2->Fill((eta_LAB_P4 + Recoil_LAB_P4 - BeamP4 - ATargetP4).P(), weight);
+        thrown_FermiP3->Fill((eta_LAB_P4 + NeutronP4 - BeamP4 - ATargetP4).P(), weight);
+        tmpEvt.str_spectator = m_Spectator;
+        tmpEvt.str_participant = m_Participant;
+        tmpEvt.q2 = Recoil_LAB_P4;
+        tmpEvt.q3 = SpectatorP4;
+        tmpEvt.t_part = t_participant;
+        tmpEvt.t_spec = t_spectator;
+        tmpEvt.nGen = 3;
       } else if (ng_max == 0 && m_Fermi_file != "" && m_sc[0] != "" && m_sc[1] != "") {
-	//cout <<"I am here 3 "<<endl;
-	//cout <<"part x " << ParticipantP4.X() << " y " << ParticipantP4.Y() << " z " << ParticipantP4.Z() << " e " << ParticipantP4.E() << " m " << ParticipantP4.M() << endl;
-	//cout <<"spec x " << SpectatorP4.X() << " y " << SpectatorP4.Y() << " z " << SpectatorP4.Z() << " e " << SpectatorP4.E() << " m " << SpectatorP4.M() << endl;
-	TLorentzVector NeutronP4 = doCalEnergy(ebeam, ParticleMass(t_target), ParticipantP4.M(), SpectatorP4.M(), eta_LAB_P4, Recoil_LAB_P4);
-	//cout <<"cal p " << NeutronP4.P() << " thrown " << Recoil_LAB_P4.P() << endl;
-	//cout <<"cal m " << NeutronP4.M() << " thrown " << Recoil_LAB_P4.M() << " target mass " << ParticleMass(t_target) << endl; 
-	thrown_FermiP2->Fill((eta_LAB_P4 + Recoil_LAB_P4 - BeamP4 - ATargetP4).P(), weight);
-	thrown_FermiP3->Fill((eta_LAB_P4 + NeutronP4 - BeamP4 - ATargetP4).P(), weight);
-	tmpEvt.str_decay = "decaying";
-	tmpEvt.str_spectator = m_Spectator;
-	tmpEvt.str_participant = m_Participant;
-	tmpEvt.q1 = sc1P4_lab;
-	tmpEvt.q2 = sc2P4_lab;
-	tmpEvt.t_sc1 = t_sc1;
-	tmpEvt.t_sc2 = t_sc2;
-	tmpEvt.q3 = Recoil_LAB_P4;
-	tmpEvt.q4 = SpectatorP4;
-	tmpEvt.t_part = t_participant;
-	tmpEvt.t_spec = t_spectator;
-	tmpEvt.nGen = 4;
+        //cout <<"I am here 3 "<<endl;
+        //cout <<"part x " << ParticipantP4.X() << " y " << ParticipantP4.Y() << " z " << ParticipantP4.Z() << " e " << ParticipantP4.E() << " m " << ParticipantP4.M() << endl;
+        //cout <<"spec x " << SpectatorP4.X() << " y " << SpectatorP4.Y() << " z " << SpectatorP4.Z() << " e " << SpectatorP4.E() << " m " << SpectatorP4.M() << endl;
+        TLorentzVector NeutronP4 = doCalEnergy(ebeam, ParticleMass(t_target), ParticipantP4.M(), SpectatorP4.M(), eta_LAB_P4, Recoil_LAB_P4);
+        //cout <<"cal p " << NeutronP4.P() << " thrown " << Recoil_LAB_P4.P() << endl;
+        //cout <<"cal m " << NeutronP4.M() << " thrown " << Recoil_LAB_P4.M() << " target mass " << ParticleMass(t_target) << endl; 
+        thrown_FermiP2->Fill((eta_LAB_P4 + Recoil_LAB_P4 - BeamP4 - ATargetP4).P(), weight);
+        thrown_FermiP3->Fill((eta_LAB_P4 + NeutronP4 - BeamP4 - ATargetP4).P(), weight);
+        tmpEvt.str_decay = "decaying";
+        tmpEvt.str_spectator = m_Spectator;
+        tmpEvt.str_participant = m_Participant;
+        tmpEvt.q1 = sc1P4_lab;
+        tmpEvt.q2 = sc2P4_lab;
+        tmpEvt.t_sc1 = t_sc1;
+        tmpEvt.t_sc2 = t_sc2;
+        tmpEvt.q3 = Recoil_LAB_P4;
+        tmpEvt.q4 = SpectatorP4;
+        tmpEvt.t_part = t_participant;
+        tmpEvt.t_spec = t_spectator;
+        tmpEvt.nGen = 4;
       } else if (ng_max == 0 && m_Fermi_file == "" && m_sc[0] != "" && m_sc[1] != "") {
-	tmpEvt.str_decay = "decaying";
-	tmpEvt.q1 = sc1P4_lab;
-	tmpEvt.q2 = sc2P4_lab;
-	tmpEvt.t_sc1 = t_sc1;
-	tmpEvt.t_sc2 = t_sc2;
-	tmpEvt.q3 = He4_LAB_P4;
-	tmpEvt.nGen = 3;
+        tmpEvt.str_decay = "decaying";
+        tmpEvt.q1 = sc1P4_lab;
+        tmpEvt.q2 = sc2P4_lab;
+        tmpEvt.t_sc1 = t_sc1;
+        tmpEvt.t_sc2 = t_sc2;
+        tmpEvt.q3 = He4_LAB_P4;
+        tmpEvt.nGen = 3;
       }
       tmpEvt.weight = weight;
       hddmWriter->write(tmpEvt,runNum,i);
@@ -786,18 +790,18 @@ int main( int argc, char* argv[] ){
       (*asciiWriter)<<runNum<<" "<<i<<" 3"<<endl;
       // photons from the eta
       //(*asciiWriter)<<"0 "<<gamma_TYPE<<" "<<M_gamma<<endl;
-      //(*asciiWriter)<<"   "<<0<<" "<<photon_P4[0].Px()<<" "<<photon_P4[0].Py()<<" "<<photon_P4[0].Pz()<<" "<<photon_P4[0].E()<<endl;			
+      //(*asciiWriter)<<"   "<<0<<" "<<photon_P4[0].Px()<<" "<<photon_P4[0].Py()<<" "<<photon_P4[0].Pz()<<" "<<photon_P4[0].E()<<endl;
       //(*asciiWriter)<<"1 "<<gamma_TYPE<<" "<<M_gamma<<endl;
-      //(*asciiWriter)<<"   "<<0<<" "<<photon_P4[1].Px()<<" "<<photon_P4[1].Py()<<" "<<photon_P4[1].Pz()<<" "<<photon_P4[1].E()<<endl;			
+      //(*asciiWriter)<<"   "<<0<<" "<<photon_P4[1].Px()<<" "<<photon_P4[1].Py()<<" "<<photon_P4[1].Pz()<<" "<<photon_P4[1].E()<<endl;
       // Nucleus recoil
       if (m_target == "He4" || m_target == "Helium") (*asciiWriter)<<"2 "<<Helium_TYPE<<" "<<M_He4<<endl;
       if (m_target == "Be9" || m_target == "Beryllium-9") (*asciiWriter)<<"2 "<<Be9_TYPE<<" "<<M_Be9<<endl;
       if (m_target == "Proton") (*asciiWriter)<<"2 "<<Proton_TYPE<<" "<<M_p<<endl;
       if (m_target == "Neutron") (*asciiWriter)<<"2 "<<Neutron_TYPE<<" "<<M_n<<endl;
-      (*asciiWriter)<<"   "<<1<<" "<<He4_LAB_P4.Px()<<" "<<He4_LAB_P4.Py()<<" "<<He4_LAB_P4.Pz()<<" "<<He4_LAB_P4.E()<<endl;			
+      (*asciiWriter)<<"   "<<1<<" "<<He4_LAB_P4.Px()<<" "<<He4_LAB_P4.Py()<<" "<<He4_LAB_P4.Pz()<<" "<<He4_LAB_P4.E()<<endl;
     }
-    
   }
+
   h_Tkin_eta_vs_egam->Write();
   h_Tkin_photon_vs_egam->Write();
   h_Tkin_recoilA_vs_egam->Write();
@@ -814,10 +818,10 @@ int main( int argc, char* argv[] ){
   h_meson_theta->Write();
   h_cop->Write();
   diagOut->Close();
-  
+
   if (hddmWriter) delete hddmWriter;
   if (asciiWriter) delete asciiWriter;
-  
+
   return 0;
 }
 
@@ -826,9 +830,9 @@ TLorentzVector meson_com_pf(double th, double ph, double E, double p, double sin
   TLorentzVector oldP4(p * sin(th) * cos(ph), p * sin(th) * sin(ph), p * cos(th), E);
   
   return TLorentzVector(+ oldP4.Px() * costheta + oldP4.Pz() * sintheta,
-			oldP4.Py(),
-			- oldP4.Px() * sintheta + oldP4.Pz() * costheta,
-			E);
+    oldP4.Py(),
+    - oldP4.Px() * sintheta + oldP4.Pz() * costheta,
+    E);
 }
 
 TLorentzVector meson_lab(TLorentzVector ISP4, double m2, double m3, double ThetaLAB, double PhiLAB) {
@@ -852,9 +856,10 @@ TLorentzVector meson_lab(TLorentzVector ISP4, double m2, double m3, double Theta
   double Px_LAB_eta = P_LAB_eta * sin(ThetaLAB) * cos(PhiLAB);
   double Py_LAB_eta = P_LAB_eta * sin(ThetaLAB) * sin(PhiLAB);
   double Pz_LAB_eta = P_LAB_eta * cos(ThetaLAB);
-  
+
   return TLorentzVector(Px_LAB_eta, Py_LAB_eta, Pz_LAB_eta, E_LAB_eta);
 }
+
 TLorentzVector doCalEnergy(double BeamEnergy, double nucleusMass, double ParticipantMass, double SpectatorMass, TLorentzVector MesonP4, TLorentzVector Recoil_LAB_P4) {
   double E_MesonP4 = MesonP4.E();
   double p_MesonP4_x = MesonP4.X(); 
@@ -883,6 +888,7 @@ TLorentzVector doCalEnergy(double BeamEnergy, double nucleusMass, double Partici
   }
   return NewParticle;
 }
+
 Double_t RelBW(Double_t *x, Double_t *par) {
   // par[0] = M0 (resonance mass)
   // par[1] = Gamma (width)
@@ -891,23 +897,22 @@ Double_t RelBW(Double_t *x, Double_t *par) {
   Double_t M0  = par[0];
   Double_t G   = par[1];
   Double_t norm = par[2];
-  
+
   Double_t numerator   = M0 * G;
   Double_t denominator = (M*M - M0*M0)*(M*M - M0*M0) + (M0*G)*(M0*G);
-  
+
   return norm * numerator / denominator;
 }
 
-
 // M, M0, Gamma0 in MeV; mPi in MeV
 double q_pi(double M, double mPi=0.13957018) {
-    if (M <= 2.0*mPi) return 0.0;
-    double val = 0.5*M * sqrt(1.0 - 4.0*mPi*mPi/(M*M));
-    return val;
+  if (M <= 2.0*mPi) return 0.0;
+  double val = 0.5*M * sqrt(1.0 - 4.0*mPi*mPi/(M*M));
+  return val;
 }
 
 Double_t RelBW_massdep(Double_t *x, Double_t *par) {
-  Double_t M   = x[0];         // MeV
+  Double_t M   = x[0];        // MeV
   Double_t M0  = par[0];      // MeV
   Double_t G0  = par[1];      // MeV (width at resonance)
   Double_t norm= par[2];
@@ -918,10 +923,10 @@ Double_t RelBW_massdep(Double_t *x, Double_t *par) {
   double q0   = q_pi(M0, mPi);
   double GammaM = 0.0;
   if (q0 > 0.0 && q > 0.0) {
-      // P-wave (l=1) -> q^3 behavior and  M0/M factor
-      GammaM = G0 * pow(q/q0, 3) * (M0 / M);
+    // P-wave (l=1) -> q^3 behavior and  M0/M factor
+    GammaM = G0 * pow(q/q0, 3) * (M0 / M);
   } else {
-      GammaM = 0.0;
+    GammaM = 0.0;
   }
 
   double numer = M0 * G0; // keep numerator with on-shell width if you want that convention
