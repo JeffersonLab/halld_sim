@@ -2,7 +2,7 @@
  * @file FitConverter.cc
  * @author Kevin Scheuer
  * @brief Implementation of FitConverter class for converting AmpTools fit results to CSV
- * @date 2026-02-01
+ * @date 2026-05-08
  *
  */
 

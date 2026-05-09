@@ -2,7 +2,7 @@
  * @file AmplitudeParser.cc
  * @author Kevin Scheuer
  * @brief Implementation of the amplitude naming parser and sum grouping logic.
- * @date 2026-05-06
+ * @date 2026-05-08
  */
 
 #include <algorithm>

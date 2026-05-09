@@ -2,7 +2,7 @@
  * @file FitConverter.h
  * @author Kevin Scheuer
  * @brief Class for converting AmpTools fit results to any format
- * @date 2026-02-01
+ * @date 2026-05-08
  *
  * @note that this currently is built to convert to CSV, but the class can be extended
  * to convert to any other format by accessing the various containers that store
