@@ -447,8 +447,6 @@ std::string FitConverter::getCSVNormIntMatrix() const
 
             std::complex<double> value = normInt->normInt(row_amp, col_amp);
 
-            std::cout << "NormInt for " << row_amp << " and " << col_amp << " = " << value.real() << "+" << value.imag() << "j\n";
-
             // Format as pandas-readable complex number e.g. 1+2j or 1-2j
             std::ostringstream oss;
             oss << std::scientific << std::setprecision(std::numeric_limits<double>::max_digits10 - 1);
