@@ -3,7 +3,7 @@
 #include "GPUManager/GPUCustomTypes.h"
 #include "GPUManager/CUDA-Complex.cuh"
 
-__global__ void GPUIso_ps_refl_kernel( GPU_AMP_PROTO )
+__global__ void GPUPiPiSWaveAMPK_kernel( GPU_AMP_PROTO )
 {
 	int iEvent = GPU_THIS_EVENT;
 
@@ -11,8 +11,9 @@ __global__ void GPUIso_ps_refl_kernel( GPU_AMP_PROTO )
     	pcDevAmp[iEvent] = ans;	
 }
 
-void GPUIso_ps_refl_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO )
+void GPUPiPiSWaveAMPK_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO )
 {  
-  	GPUIso_ps_refl_kernel<<< dimGrid, dimBlock >>>( GPU_AMP_ARGS );
-}
 
+  	GPUPiPiSWaveAMPK_kernel<<< dimGrid, dimBlock >>>( GPU_AMP_ARGS );
+
+}

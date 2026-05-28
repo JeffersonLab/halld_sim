@@ -7,7 +7,6 @@
 #include "IUAmpTools/Amplitude.h"
 #include "GPUManager/GPUCustomTypes.h"
 
-
 #include <utility>
 #include <string>
 #include <complex>
@@ -15,14 +14,15 @@
 #include <iostream>
 
 
-#ifdef GPU_ACCELERATION
-void PiPiSWaveAMPK_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, GDouble m_mass, GDouble m_g1, GDouble m_g2, int m_daughter1, int m_daughter2 );
-#endif // GPU_ACCELERATION
-
-
-
 using std::complex;
 using namespace std;
+
+
+#ifdef GPU_ACCELERATION
+void   GPUPiPiSWaveAMPK_exec(dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO );
+#endif 
+
+
 
 class Kinematics;
 
@@ -41,9 +41,9 @@ class PiPiSWaveAMPK : public UserAmplitude<PiPiSWaveAMPK>{
 #ifdef GPU_ACCELERATION
 
      void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
-     bool isGPUEnabled() const { return false; }
+     bool isGPUEnabled() const { return true; }
 
-#endif // GPU_ACCELERATION
+#endif 
 
    private:
 

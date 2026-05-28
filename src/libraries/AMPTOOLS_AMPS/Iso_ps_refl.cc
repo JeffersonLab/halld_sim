@@ -58,7 +58,7 @@ UserAmplitude< Iso_ps_refl >( args ){
   // <s>: +1/-1 sign in P_gamma term
 
   // Isobar spin S
-  m_s = static_cast<int>(parseValidatedNumber("S",args[0]));  
+  m_s = static_cast<int>(parseValidatedNumber("S",args[0]));    
   // Resonance spin J
   m_j = static_cast<int>(parseValidatedNumber("J", args[1])); 
   // Resonance spin projection 
@@ -183,6 +183,7 @@ void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
           amplitude += conj(wignerD(m_j, m_m, lambda, cosTheta, phi))*hel_amp*conj(wignerD(m_s, lambda, 0, cosThetaH, phiH));
   }
 
+  
   GDouble factor = sqrt(1 + m_sign * beam_polFraction);
   complex <GDouble> zjm = 0;
   // - -> + in prod_angle

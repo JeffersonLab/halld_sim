@@ -28,7 +28,7 @@ PiPiSWaveAMPK::PiPiSWaveAMPK( const vector <string> &args ) : UserAmplitude<PiPi
    setParametrization();
 
    // need to register a free parameters so the framework knows about it
-   //   registerParameter(m_mass);
+   // registerParameter(m_mass);
 
 }
 
@@ -126,7 +126,7 @@ template<typename mType> complex<GDouble> PiPiSWaveAMPK::breakupMom(mType m, GDo
 #ifdef GPU_ACCELERATION
 void PiPiSWaveAMPK::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
-  PiPiSWaveAMPK_exec( dimGrid,  dimBlock, GPU_AMP_ARGS, m_mass, m_g1, m_g2, m_daughter1, m_daughter2);
-
+  GPUPiPiSWaveAMPK_exec( dimGrid,  dimBlock, GPU_AMP_ARGS);
+  
 }
-#endif //GPU_ACCELERATION
+#endif 

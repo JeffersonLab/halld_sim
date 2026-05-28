@@ -125,7 +125,7 @@ int main( int argc, char* argv[] ){
     // set up the plot generator
     // ************************
 	cout << "before atisetup();"<< endl;
-  atiSetup();
+	atiSetup();
         cout << "Plotgen results"<< endl;
 
 	//	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // optional can be omitted
@@ -136,7 +136,7 @@ int main( int argc, char* argv[] ){
     // *************************
     // Define Amplitudes and Coherent sums
     // *****************************
-	
+
     vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
     vector<string> amphistname = {"Flat"};    
     vector<string> pipiIsobar_amps = {"pipiIso_0-S","pipiIso_1+P-","pipiIso_1+P0","pipiIso_1+P+"};
@@ -490,7 +490,7 @@ int main( int argc, char* argv[] ){
      cout << " Created Plot Factory " << endl;
 	  PlotterMainWindow mainFrame( gClient->GetRoot(), factory );
      cout << " Main frame created " << endl;
-	  
+     
 	  app.Run();
      cout << " App running" << endl;
   }
