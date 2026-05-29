@@ -567,7 +567,7 @@ int main( int argc, char* argv[] ){
 
 					TLorentzVector Gammap = beam + target;
 					if( polAngle == -1 ){
-						fprintf(stderr, "Error: do not use amorphous value (got %d)\n", polAngle);
+						fprintf(stderr, "Error: do not use amorphous value (got %f)\n", polAngle);
         				return -1; 
 					}
                     vector <double> xDecayAngles = getXDecayAngles(polAngle, beam, Gammap, isobar, resonance);
