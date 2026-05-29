@@ -37,6 +37,7 @@
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
+#include "AMPTOOLS_AMPS/BernsteinPoly.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/polCoef.h"
@@ -411,6 +412,7 @@ int main( int argc, char* argv[] ){
 
    AmpToolsInterface::registerAmplitude( BreitWigner() );
    AmpToolsInterface::registerAmplitude( BreitWigner3body() );
+   AmpToolsInterface::registerAmplitude( BernsteinPoly() );
    AmpToolsInterface::registerAmplitude( TwoPSAngles() );
    AmpToolsInterface::registerAmplitude( TwoPSHelicity() );
    AmpToolsInterface::registerAmplitude( TwoPiAngles() );
