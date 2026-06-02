@@ -205,12 +205,11 @@ public:
      * - "reaction2::sum1::myAmpName"
      *
      * We first check if all amplitudes with the same "ampName" (myAmpName) are
-     * constrained to each other, and if so, we group them under the unique amplitude
-     * name "myAmpName" and save the intensity + error for that group. If that
-     * assumption does not hold, we check if all amplitudes with the same "sum::ampName"
-     * are constrained to each other (i.e. across reactions) and if so, we group them
-     * under the unique amplitude name "sum::ampName". If neither assumption holds, we
-     * just group by the full amplitude name.
+     * constrained to each other, and if so, we group them under the unique key
+     * "myAmpName". If that assumption does not hold, we check if all amplitudes with
+     * the same "sum::ampName" are constrained to each other (i.e. across reactions) and
+     * if so, we group them under the unique key "sum::ampName". If neither assumption
+     * holds, we just group by the full amplitude name.
      *
      * @note that the self-constraint is included in the list, so even amplitudes with
      * no constraints will have a vector of size one (itself).
