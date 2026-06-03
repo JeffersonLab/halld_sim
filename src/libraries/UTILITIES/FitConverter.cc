@@ -43,6 +43,7 @@ void FitConverter::extract()
     m_standard_results["intensity_err"] = m_fit_results.intensity(false).second;
     m_standard_results["ac_intensity"] = m_fit_results.intensity(true).first;
     m_standard_results["ac_intensity_err"] = m_fit_results.intensity(true).second;
+    m_standard_results["estDistToMinimum"] = m_fit_results.estDistToMinimum();
     for (const auto &pair : m_standard_results)
     {
         report(DEBUG, kModule) << "Standard result: " << pair.first << " = " << pair.second << "\n";
