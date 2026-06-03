@@ -50,7 +50,7 @@ UserAmplitude< DeltaAngles >( args )
 	if(args.size() == 13){
 		polAngle  = atof(args[11].c_str() ); // azimuthal angle of the photon polarization vector in the lab.
 		polFraction = AmpParameter( args[12] ); // fraction of polarization (0-1)
-		std::cout << "Fixed polarisation of " << polFraction << " and angle of " << polAngle << " degrees." << std::endl;
+//		std::cout << "Fixed polarisation of " << polFraction << " and angle of " << polAngle << " degrees." << std::endl;
 	}
 	else
 		assert(0);
