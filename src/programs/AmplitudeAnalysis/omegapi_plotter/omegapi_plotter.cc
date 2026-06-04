@@ -65,9 +65,9 @@ using namespace std;
 int main( int argc, char* argv[] ){
 
 
-  // ************************
-  // usage
-  // ************************
+    // ************************
+    // usage
+    // ************************
 
     cout << endl << " *** Viewing Results Using AmpPlotter and writing root histograms *** " << endl << endl;
 
