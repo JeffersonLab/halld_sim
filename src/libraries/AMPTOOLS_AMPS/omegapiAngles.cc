@@ -146,9 +146,12 @@ vector <double> getDeltaAngles(TLorentzVector daughter, TLorentzVector parent, T
 
   // boost daughter to parent
   TVector3 parentBoost = parent_rf.BoostVector();
-  TLorentzVector target_parent = target_rf.Boost(-1.0*parentBoost);
-  TLorentzVector upperVertex_parent = upperVertex_rf.Boost(-1.0*parentBoost);
-  TLorentzVector daughter_parent = daughter_rf.Boost(-1.0*parentBoost);
+  TLorentzVector target_parent = target_rf;
+  target_parent.Boost(-1.0*parentBoost);
+  TLorentzVector upperVertex_parent = upperVertex_rf;
+  upperVertex_parent.Boost(-1.0*parentBoost);
+  TLorentzVector daughter_parent = daughter_rf;
+  daughter_parent.Boost(-1.0*parentBoost);
 
   // normal to the production plane
   TVector3 y = (target_parent.Vect().Unit().Cross(upperVertex_parent.Vect().Unit())).Unit();
