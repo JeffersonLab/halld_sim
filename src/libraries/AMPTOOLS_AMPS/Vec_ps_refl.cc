@@ -13,7 +13,8 @@
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+//#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/decayAngles.h"
 #include "AMPTOOLS_AMPS/barrierFactor.h"
 
 #include "UTILITIES/BeamProperties.h"
@@ -143,24 +144,29 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   //////////////////////// Boost Particles and Get Angles//////////////////////////////////
 
   TLorentzVector target(0,0,0,0.938);
-  //Helicity coordinate system
+  
   TLorentzVector Gammap = beam + target;
 
-  // Calculate decay angles in helicity frame (same for all vectors)
+  // Calculate decay angles in helicity or Gottfried-Jackson frame
   // set beam polarization angle to 0 degrees; apply diamond orientation in calcAmplitude
-  vector <double> locthetaphi = getomegapiAngles(0, vec, X, beam, Gammap);
+  double locPhiProd = getPhiProd( 0, X, beam, target, 2, true );
+  //vector <double> locthetaphi = getomegapiAngles(0, vec, X, beam, Gammap);
+  vector< double > locDecayAngles;
+  if(m_3pi) locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, vec_daught2, beam, target, 2, true ); 
+  else locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true ); 
+
 
   // Calculate vector decay angles (unique for each vector)
-  vector <double> locthetaphih;
-  if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
-  else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
+  //vector <double> locthetaphih;
+  //if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
+  //else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
 
 
-  GDouble cosTheta = TMath::Cos(locthetaphi[0]);
-  GDouble Phi = locthetaphi[1];
-  GDouble cosThetaH = TMath::Cos(locthetaphih[0]);
-  GDouble PhiH = locthetaphih[1];
-  GDouble prod_angle = locthetaphi[2];
+  GDouble cosTheta = TMath::Cos(locDecayAngles[0]);
+  GDouble Phi = locDecayAngles[1];
+  GDouble cosThetaH = TMath::Cos(locDecayAngles[2]);
+  GDouble PhiH = locDecayAngles[3];
+  GDouble prod_angle = locPhiProd;
   GDouble MX = X.M();
   GDouble MVec = vec.M();
   GDouble MPs = ps.M();

@@ -17,7 +17,7 @@
 LowerVertexDelta::LowerVertexDelta( const vector< string >& args ) :
 UserAmplitude< LowerVertexDelta >( args )
 {
-	assert( args.size() == 6 );
+	assert( args.size() == 5 );
 
 	m_d = atoi( args[0].c_str() ); // Twice the helicity of decaying Delta baryon: (3,1,-1, or -3)
 	m_p = atoi( args[1].c_str() ); // Twice the helicity of final state proton (+/-1)
@@ -77,7 +77,7 @@ LowerVertexDelta::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	userVars[kCosTheta] 	= TMath::Cos( thetaPhi[0] );
 	userVars[kPhi]		= thetaPhi[1];
 
-	return;
+        return;
 }
 
 #ifdef GPU_ACCELERATION

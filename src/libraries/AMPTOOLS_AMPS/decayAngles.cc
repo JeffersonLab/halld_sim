@@ -142,7 +142,6 @@ vector< double > getOneStepAngles(TLorentzVector parentLab, TLorentzVector daugh
 	double phi = angles.Phi();
 
 	vector< double > thetaPhi{theta, phi};
-
 	return thetaPhi;
 }
 
