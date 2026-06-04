@@ -318,6 +318,7 @@ int main( int argc, char* argv[] ){
       if (arg == "-p"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  scanPar = argv[++i]; }
+      if (arg == "-l") noFit = true;
       if (arg == "-h"){
          cout << endl << " Usage for: " << argv[0] << endl << endl;
          cout << "   -n \t\t\t\t use MINOS instead of MIGRAD" << endl;
