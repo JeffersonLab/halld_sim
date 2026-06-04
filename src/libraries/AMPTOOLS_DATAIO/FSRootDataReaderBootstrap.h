@@ -55,6 +55,7 @@ class FSRootDataReaderBootstrap : public UserDataReader< FSRootDataReaderBootstr
       std::multiset<unsigned int> m_entryOrder;  // Stores bootstrap sampled event indices
       mutable std::multiset<unsigned int>::const_iterator m_nextEntry;  // Iterator for sampling
 
+      static const char* kModule;
 };
 
 #endif

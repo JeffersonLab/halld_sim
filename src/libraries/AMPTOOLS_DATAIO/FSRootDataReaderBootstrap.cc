@@ -2,6 +2,7 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <set>  // Added for multiset
 #include "TH1.h"
 #include "TFile.h"
@@ -12,9 +13,9 @@
 #include "AMPTOOLS_DATAIO/FSRootDataReaderBootstrap.h"
 #include "TSystem.h"
 
-using namespace std;
+#include "IUAmpTools/report.h"
 
-#include <iostream> // Include for printing
+const char* FSRootDataReaderBootstrap::kModule = "FSRootDataReaderBootstrap";
 
 // Constructor expects one of the following argument patterns:
 //
@@ -73,37 +74,47 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
           fourMomentumPrefix = args[3];
           randSeed = atoi(args[4].c_str());
       } 
-      else if (args.size() == 6) {
-          if (isInteger(args[4])) {
-               fourMomentumPrefix = args[3];
-               randSeed = atoi(args[4].c_str());
-               weightBranchName = args[5];
-          } else {
-              friendFileName = args[3];
-              friendTreeName = args[4];
-              weightBranchName = args[5];
-          }
-      }
-      else if (args.size() >= 7) {
+      else if (args.size() >= 6) {
           friendFileName = args[3];
           friendTreeName = args[4];
           weightBranchName = args[5];
+        
+        if (args.size() == 7) {
+          if (isInteger(args[6])) {
+            randSeed = atoi(args[6].c_str());
+          } else {
+            fourMomentumPrefix = args[6];
+          }
+        } else if (args.size() == 8) {
           fourMomentumPrefix = args[6];
-      }
-      else if (args.size() == 8) {
           randSeed = atoi(args[7].c_str());
+        }
       }
 
       // Initialize random number generator with provided seed
       m_randGenerator = new TRandom3(randSeed);
 
-      cout << "******************** WARNING ***********************" << endl;
-      cout << "*  You are using the boostrap data reader, which   *" << endl;
-      cout << "*  should only be used for evaluating errors.      *" << endl;
-      cout << "*  The results with different seeds will be random *" << endl;
-      cout << "*  due to random oversampling of the input file.   *" << endl;
-      cout << "****************************************************" << endl;
-      cout << endl;
+      // Compact printing of parsed arguments
+     report( DEBUG, kModule ) << "FSRootDataReaderBootstrap initialized with:\n"
+          << "  inFileName:        " << inFileName << "\n"
+          << "  inTreeName:        " << inTreeName << "\n"
+          << "  numParticles:      " << m_numParticles << "\n"
+          << "  friendFileName:    " << (friendFileName.Length() == 0 ? "N/A" : friendFileName.Data()) << "\n"
+          << "  friendTreeName:    " << (friendTreeName.Length() == 0 ? "N/A" : friendTreeName.Data()) << "\n"
+          << "  weightBranchName:  " << (weightBranchName.Length() == 0 ? "N/A" : weightBranchName.Data()) << "\n"
+          << "  fourMomentumPrefix:" << (fourMomentumPrefix.Length() == 0 ? "N/A" : fourMomentumPrefix.Data()) << "\n"
+          << "  randSeed:          " << randSeed << "\n"
+          << std::endl;
+
+
+     report( NOTICE, kModule ) << "******************** NOTICE ************************" << endl;
+     report( NOTICE, kModule ) << "*  You are using the boostrap data reader, which   *" << endl;
+     report( NOTICE, kModule ) << "*  should only be used for evaluating errors.      *" << endl;
+     report( NOTICE, kModule ) << "*  The results with different seeds will be random *" << endl;
+     report( NOTICE, kModule ) << "*  due to random oversampling of the input file.   *" << endl;
+     report( NOTICE, kModule ) << "*         Random Seed:  " << std::setw(7) << randSeed << "                    *" << endl;
+     report( NOTICE, kModule ) << "****************************************************" << endl;
+     report( NOTICE, kModule ) << endl;
 
       TH1::AddDirectory( kFALSE );
       gSystem->Load( "libTree" );
@@ -114,7 +125,7 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
          fileexists.close();
          m_inFile = new TFile( inFileName.c_str() );
          if (!m_inFile || m_inFile->IsZombie()) {
-            cout << "FSRootDataReaderBootstrap WARNING:  Cannot open file... " << inFileName << endl;
+            report( ERROR, kModule ) << "FSRootDataReaderBootstrap WARNING:  Cannot open file... " << inFileName << endl;
             m_inFile = NULL;
             m_inTree = NULL;
             return;
@@ -122,7 +133,7 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
          m_inTree = static_cast<TTree*>( m_inFile->Get( inTreeName.c_str() ) );
 
          if (!m_inTree) {
-            cout << "FSRootDataReaderBootstrap WARNING:  Cannot open tree... " << inTreeName << endl;
+            report( ERROR, kModule ) << "FSRootDataReaderBootstrap WARNING:  Cannot open tree... " << inTreeName << endl;
             m_inFile->Close();
             delete m_inFile;
             m_inFile = NULL;
@@ -134,19 +145,13 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
             m_inTree->AddFriend(friendTreeName, friendFileName);
       }
       else{
-         cout << "FSRootDataReaderBootstrap WARNING:  Cannot find file... " << inFileName << endl;
+         report( ERROR, kModule ) << "FSRootDataReaderBootstrap WARNING:  Cannot find file... " << inFileName << endl;
          m_inFile = NULL;
          m_inTree = NULL;
          return;
       }
 
-
-      cout << "Opening Tree: " << inFileName << " " << inTreeName << " (numParticles=" << m_numParticles << ")";
-      if (fourMomentumPrefix != "") cout << " fourMomentumPrefix=" << fourMomentumPrefix;
-      if (friendFileName != "") cout << " friendFile=" << friendFileName << " friendTree=" << friendTreeName;
-      if (weightBranchName != "weight") cout << " weightBranch=" << weightBranchName;
-      cout << " randSeed=" << randSeed << endl << endl;
-      if (m_inTree){
+     if (m_inTree){
          TString sEnPB = fourMomentumPrefix+"EnPB";
          TString sPxPB = fourMomentumPrefix+"PxPB";
          TString sPyPB = fourMomentumPrefix+"PyPB";
