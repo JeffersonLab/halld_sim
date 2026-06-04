@@ -403,7 +403,7 @@ int main( int argc, char* argv[] ){
      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5);
    }
 
-  return 0;
+    return 0;
 }
 
 
