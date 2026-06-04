@@ -13,7 +13,6 @@
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
-//#include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/decayAngles.h"
 #include "AMPTOOLS_AMPS/barrierFactor.h"
 
