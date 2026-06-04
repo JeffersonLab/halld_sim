@@ -52,6 +52,7 @@
 #include "AMPTOOLS_AMPS/KopfKMatrixA2.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -64,7 +65,7 @@ using std::complex;
 using namespace std;
 
 int rank_mpi;
-int size;
+int size1;
 
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile) {
    AmpToolsInterfaceMPI ati( cfgInfo );
@@ -302,7 +303,7 @@ int main( int argc, char* argv[] ){
    MPI_Init( &argc, &argv );
 
    MPI_Comm_rank( MPI_COMM_WORLD, &rank_mpi );
-   MPI_Comm_size( MPI_COMM_WORLD, &size );
+   MPI_Comm_size( MPI_COMM_WORLD, &size1 );
 
    // set default parameters
 
@@ -406,6 +407,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( KopfKMatrixA2() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
+   AmpToolsInterface::registerAmplitude( DeltaAngles() );
 
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
