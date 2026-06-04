@@ -17,7 +17,7 @@
 LowerVertexDelta::LowerVertexDelta( const vector< string >& args ) :
 UserAmplitude< LowerVertexDelta >( args )
 {
-	assert( args.size() == 5 );
+	assert( args.size() == 6 );
 
 	m_d = atoi( args[0].c_str() ); // Twice the helicity of decaying Delta baryon: (3,1,-1, or -3)
 	m_p = atoi( args[1].c_str() ); // Twice the helicity of final state proton (+/-1)

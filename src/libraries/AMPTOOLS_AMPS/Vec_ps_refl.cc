@@ -165,6 +165,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   GDouble MVec = vec.M();
   GDouble MPs = ps.M();
 
+
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
 
