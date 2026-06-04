@@ -1,5 +1,5 @@
-#if !defined(DELTAANGLES_RES)
-#define DELTAANGLES_RES
+#if !defined(DELTAANGLES)
+#define DELTAANGLES
 
 #include "IUAmpTools/Amplitude.h"
 #include "IUAmpTools/UserAmplitude.h"

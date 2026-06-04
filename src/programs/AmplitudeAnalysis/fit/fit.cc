@@ -97,9 +97,9 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
 
   ati.finalizeFit();
 
-//  if( seedfile.size() != 0 && !fitFailed ){
+  if( seedfile.size() != 0 && !fitFailed ){
     ati.fitResults()->writeSeed( seedfile );
-//  }
+  }
 
   return ati.likelihood();
 }
