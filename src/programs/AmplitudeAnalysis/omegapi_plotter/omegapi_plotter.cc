@@ -65,9 +65,9 @@ using namespace std;
 int main( int argc, char* argv[] ){
 
 
-    // ************************
-    // usage
-    // ************************
+  // ************************
+  // usage
+  // ************************
 
     cout << endl << " *** Viewing Results Using AmpPlotter and writing root histograms *** " << endl << endl;
 
@@ -104,16 +104,16 @@ int main( int argc, char* argv[] ){
     }
 
 
-    // ************************
-    // parse the command line parameters
-    // ************************
+  // ************************
+  // parse the command line parameters
+  // ************************
 
     cout << "Fit results file name    = " << resultsName << endl;
     cout << "Output file name    = " << outName << endl << endl;
 
-    // ************************
-    // load the results and display the configuration info
-    // ************************
+  // ************************
+  // load the results and display the configuration info
+  // ************************
 
     cout << "Loading Fit results" << endl;
     FitResults results( resultsName );
@@ -387,6 +387,4 @@ int main( int argc, char* argv[] ){
 
     }  
     return 0;
-
 }
-
