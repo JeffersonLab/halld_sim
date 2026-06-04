@@ -152,11 +152,12 @@ int main( int argc, char* argv[] ){
 		if (arg == "-f"){
 			genFlat = true; }
 		if (arg == "-fsroot"){
-		        fsRootFormat = true; }
+			fsRootFormat = true; }
 		if (arg == "-h"){
 			cout << endl << " Usage for: " << argv[0] << endl << endl;
 			cout << "\t -c    <file>\t Config file" << endl;
 			cout << "\t -o    <name>\t ROOT file output name" << endl;
+			cout << "\t -fsroot \t Enable output in FSRoot format" << endl;
 			cout << "\t -hd   <name>\t HDDM file output name [optional]" << endl;
 			cout << "\t -l    <value>\t Low edge of mass range (GeV) [optional]" << endl;
 			cout << "\t -u    <value>\t Upper edge of mass range (GeV) [optional]" << endl;
@@ -177,7 +178,7 @@ int main( int argc, char* argv[] ){
 	}
 	
 	if( configfile.size() == 0 || outname.size() == 0 ){
-		cout << "No config file or output specificed:  run gen_omegapi -h for help" << endl;
+		cout << "No config file or output specified:  run gen_omegapi -h for help" << endl;
 		exit(1);
 	}
 	
