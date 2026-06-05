@@ -52,6 +52,7 @@
 #include "AMPTOOLS_AMPS/Linear.h"
 #include "AMPTOOLS_AMPS/PhaseShift.h"
 #include "AMPTOOLS_AMPS/LowerVertexDelta.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
 #include "AMPTOOLS_AMPS/SinglePS.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixF0.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixF2.h"
@@ -120,7 +121,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
 
-  // keep track of best fit (mininum log-likelihood)
+  // keep track of best fit (minimum log-likelihood)
   double minLL = numeric_limits<double>::max();
   int minFitTag = -1;
 
@@ -380,6 +381,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( Linear() );
    AmpToolsInterface::registerAmplitude( PhaseShift() );
    AmpToolsInterface::registerAmplitude( LowerVertexDelta() );
+   AmpToolsInterface::registerAmplitude( DeltaAngles() );
    AmpToolsInterface::registerAmplitude( SinglePS() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixF0() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixF2() );

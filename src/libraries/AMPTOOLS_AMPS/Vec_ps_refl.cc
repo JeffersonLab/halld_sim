@@ -160,7 +160,6 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   //if(m_3pi) locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, vec_daught2);
   //else locthetaphih = getomegapiAngles(vec_daught1, vec, X, Gammap, TLorentzVector(0,0,0,0));
 
-
   GDouble cosTheta = TMath::Cos(locDecayAngles[0]);
   GDouble Phi = locDecayAngles[1];
   GDouble cosThetaH = TMath::Cos(locDecayAngles[2]);
