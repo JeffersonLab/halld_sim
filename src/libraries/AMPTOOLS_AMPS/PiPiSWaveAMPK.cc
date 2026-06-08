@@ -6,7 +6,7 @@
 
 #include "TLorentzVector.h"
 #include "IUAmpTools/Kinematics.h"
-#include "breakupMomentumComplex.h"
+#include "breakupMomentum.h"
 #include "AMPTOOLS_AMPS/PiPiSWaveAMPK.h"
 
 
@@ -89,8 +89,8 @@ complex <GDouble> PiPiSWaveAMPK::calcAmplitude( GDouble** pKin ) const
   }
 
   
-  const complex <GDouble> qPiPi   = breakupMomentumComplex(mass, _piChargedMass,   _piChargedMass );
-  const complex <GDouble> qPi0Pi0 = breakupMomentumComplex(mass, _piNeutralMass,   _piNeutralMass );
+  const complex <GDouble> qPiPi   = breakupMomentum(mass, _piChargedMass,   _piChargedMass );
+  const complex <GDouble> qPi0Pi0 = breakupMomentum(mass, _piNeutralMass,   _piNeutralMass );
   const GDouble scale = (s / (4*_kaonMeanMass*_kaonMeanMass)) - 1;
 
 
