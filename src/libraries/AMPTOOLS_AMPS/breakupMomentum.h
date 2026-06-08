@@ -7,4 +7,6 @@
 
 double breakupMomentum( double mass0, double mass1, double mass2 );
 
+complex <GDouble> breakupMomentumComplex( GDouble mass0, GDouble mass1, GDouble mass2 );
+
 #endif
