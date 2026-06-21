@@ -32,6 +32,7 @@
 #include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/PiPiSWaveAMPK.h"
 #include "AMPTOOLS_AMPS/BreitWigner3body.h"
 #include "AMPTOOLS_AMPS/b1piAngAmp.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
@@ -40,6 +41,7 @@
 #include "AMPTOOLS_AMPS/DblRegge_FastPi.h"
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/Iso_ps_refl.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
 #include "AMPTOOLS_AMPS/Flatte.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
@@ -66,7 +68,7 @@ using std::complex;
 using namespace std;
 
 int rank_mpi;
-int size;
+int mpi_size;
 
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int eMatrixRequirement) {
    AmpToolsInterfaceMPI ati( cfgInfo );
@@ -325,7 +327,7 @@ int main( int argc, char* argv[] ){
    MPI_Init( &argc, &argv );
 
    MPI_Comm_rank( MPI_COMM_WORLD, &rank_mpi );
-   MPI_Comm_size( MPI_COMM_WORLD, &size );
+   MPI_Comm_size( MPI_COMM_WORLD, &mpi_size );
 
    // set default parameters
 
@@ -428,6 +430,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( DblRegge_FastPi() );
    AmpToolsInterface::registerAmplitude( omegapi_amplitude() );
    AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+   AmpToolsInterface::registerAmplitude( Iso_ps_refl() );
    AmpToolsInterface::registerAmplitude( Piecewise() );
    AmpToolsInterface::registerAmplitude( Flatte() );
    AmpToolsInterface::registerAmplitude( PhaseOffset() );
@@ -442,7 +445,9 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
    AmpToolsInterface::registerAmplitude( Vec_ps_moment() );
+   AmpToolsInterface::registerAmplitude( PiPiSWaveAMPK() );
 
+   
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReader>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderBootstrap>() );
    AmpToolsInterface::registerDataReader( DataReaderMPI<ROOTDataReaderWithTCut>() );
