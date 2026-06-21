@@ -248,7 +248,7 @@ int main( int argc, char* argv[] ){
 		bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
 		bool singleFlatWave = (irefl == 0 && iamp > 0) || (irefl > 0 && iamp == 0);
 		
-		// if (iplot == PlotGenerator::kGenMC) continue; // no acceptance correction
+		if ( iplot == PlotGenerator::kGenMC) continue; // no acceptance correction
 		if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
 		if ( iplot == PlotGenerator::kBkgnd && !singleData ) continue; // only plot background once
 		if ( iplot == PlotGenerator::kAccMC && singleFlatWave ) continue; // only plot Flat wave once
