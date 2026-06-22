@@ -878,7 +878,7 @@ def AddROOT(env):
 			AddROOT.ROOT_LINKFLAGS += ' -lTMVA'
 
 	# AddCompileFlags(env, AddROOT.ROOT_CFLAGS)
-	# ROOT CFLAGS are actually C++ flags → apply only to CXXFLAGS
+	# ROOT CFLAGS are actually C++ flags: apply only to CXXFLAGS
 	env.AppendUnique(CXXFLAGS = AddROOT.ROOT_CFLAGS.split())
 
 	AddLinkFlags(env, AddROOT.ROOT_LINKFLAGS)

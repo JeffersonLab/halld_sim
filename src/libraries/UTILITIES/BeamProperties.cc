@@ -446,18 +446,18 @@ void BeamProperties::fillTaggedFluxFromCCDB() {
 	calib->GetCalib(tagh_scaled_energy, "PHOTON_BEAM/hodoscope/scaled_energy_range");
 	calib->GetCalib(tagm_scaled_energy, "PHOTON_BEAM/microscope/scaled_energy_range");
 
-	double e_low_tagh = 0;
-	double e_high_tagh = 0;
+	// double e_low_tagh = 0;
+	// double e_high_tagh = 0;
 	double e_low_tagm = 0;
 	double e_high_tagm = 0;
 	double delta_e = 0;
 	if (endpoint_calib.size() > 0 && photon_endpoint.size() > 0)
 	  delta_e = photon_endpoint[0] - endpoint_calib[0];
 	
-	if (tagh_scaled_energy.size() > 0) {
-	  e_low_tagh = tagh_scaled_energy[tagh_scaled_energy.size() - 1][1] * endpoint_calib[0] + delta_e;
-	  e_high_tagh = tagh_scaled_energy[0][2] * endpoint_calib[0] + delta_e;
-	}
+	// if (tagh_scaled_energy.size() > 0) {
+	//   e_low_tagh = tagh_scaled_energy[tagh_scaled_energy.size() - 1][1] * endpoint_calib[0] + delta_e;
+	//   e_high_tagh = tagh_scaled_energy[0][2] * endpoint_calib[0] + delta_e;
+	// }
 	if (tagm_scaled_energy.size() > 0) {
 	  e_low_tagm = tagm_scaled_energy[tagm_scaled_energy.size() - 1][1] * endpoint_calib[0] + delta_e;
 	  e_high_tagm = tagm_scaled_energy[0][2] * endpoint_calib[0] + delta_e;
