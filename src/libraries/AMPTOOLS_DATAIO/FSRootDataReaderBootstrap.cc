@@ -34,7 +34,7 @@ const char* FSRootDataReaderBootstrap::kModule = "FSRootDataReaderBootstrap";
 // 7 args: inFileName inTreeName numParticles friendFileName friendTreeName weightBranchName {randSeed|fourMomentumPrefix}
 //         - If args[6] is an integer, it's interpreted as a random seed
 //         - otherwise it's a four momentum prefix
-/
+//
 // 8 args: inFileName inTreeName numParticles friendFileName friendTreeName weightBranchName fourMomentumPrefix randSeed
 //         - Full specification with friend tree, custom prefix, and random seed
 //
