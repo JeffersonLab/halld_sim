@@ -37,6 +37,7 @@ class PiPiSWaveAMPK : public UserAmplitude<PiPiSWaveAMPK>{
       enum UserVars { uv_ampRe = 0, uv_ampIm = 0, kNumUserVars };
       unsigned int numUserVars() const { return kNumUserVars; }
       void calcUserVars( GDouble **pKin, GDouble *userVars ) const;  
+      bool needsUserVarsOnly() const { return true; }
   
       string name() const { return "PiPiSWaveAMPK"; }   
       void setParametrization(); 
