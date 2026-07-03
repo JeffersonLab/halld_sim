@@ -52,9 +52,9 @@ void PiPiSWaveAMPK::setParametrization()
 
 
 
-/////////////////////// Amplitude Calculation //////////////////////////
+//////////////////Calculate user variables (CPU only)////////////////////
 
-complex <GDouble> PiPiSWaveAMPK::calcAmplitude( GDouble** pKin ) const
+void PiPiSWaveAMPK::calcUserVars( GDouble** pKin, GDouble* userVars ) const
 {
   TLorentzVector pion1_P4, pion2_P4, dipion_P4, temp_P4;
   
@@ -109,17 +109,28 @@ complex <GDouble> PiPiSWaveAMPK::calcAmplitude( GDouble** pKin ) const
   //Now calculate the T_{11} matrix element using the T11 to M11 relation
   T11 = 1./(M11 - imag*rho11); 
 
+  
+  userVars[uv_ampRe] = T11.real();
+  userVars[uv_ampIm] = T11.imag();
 
-  return T11;
+  return;
+
 }
 
 
+/////////////////////// Amplitude Calculation //////////////////////////
+
+complex <GDouble> PiPiSWaveAMPK::calcAmplitude( GDouble** pKin, GDouble* userVars  ) const
+{
+  return complex <GDouble> ( userVars[uv_ampRe], userVars[uv_ampIm] );
+}
 
 
-//This function may be used instead of the separate amplitude ' breakupMomentumComplex' 
-template<typename mType> complex<GDouble> PiPiSWaveAMPK::breakupMom(mType m, GDouble mDec1, GDouble mDec2) const{
-   complex<GDouble> result = PiPiSWaveAMPK::phaseSpaceFac(m, mDec1, mDec2)*m/GDouble(2.);
-   return result;  
+//This function may be used instead of 'breakupMomentumComplex' from breakupMomentum.cc 
+template<typename mType> complex<GDouble> PiPiSWaveAMPK::breakupMom(mType m, GDouble mDec1, GDouble mDec2) const
+{
+  complex<GDouble> sqrtval = std::sqrt((m*m-(mDec1+mDec2)*(mDec1+mDec2))*(m*m-(mDec1-mDec2)*(mDec1-mDec2)));
+  return sqrtval/GDouble(2.)/m;  
 }
 
 
