@@ -82,9 +82,9 @@ private:
 	int m_s;
 	
 	bool m_polInfoInPhotonP4;
-	GDouble polFraction;
-	GDouble polAngle;
-	TH1D *polFrac_vs_E;
+	GDouble m_polFraction;
+	GDouble m_polAngle;
+	TH1D *m_polFracVsE;
 
 	bool m_3pi;
 	bool m_gpi0;

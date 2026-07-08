@@ -343,9 +343,9 @@ UserAmplitude< Vec_ps_refl >( args ){
   m_s                  = inputArgs.s;
   
   m_polInfoInPhotonP4  = inputArgs.polInfoInPhotonP4;
-  polAngle             = inputArgs.polAngle;
-  polFraction          = inputArgs.polFraction;
-  polFrac_vs_E         = nullptr;
+  m_polAngle             = inputArgs.polAngle;
+  m_polFraction          = inputArgs.polFraction;
+  m_polFracVsE         = nullptr;
 
   m_3pi                = inputArgs.omega3pi;
   m_gpi0               = inputArgs.omegagpi0;
@@ -359,13 +359,13 @@ UserAmplitude< Vec_ps_refl >( args ){
     if( !f || f->IsZombie() )
       throw std::runtime_error(
         "[ Vec_ps_refl ]: could not open polarization file '" + inputArgs.polFile + "'" );
-    polFrac_vs_E = (TH1D*)f->Get( inputArgs.polHist.c_str() );
-    if( !polFrac_vs_E )
+    m_polFracVsE = (TH1D*)f->Get( inputArgs.polHist.c_str() );
+    if( !m_polFracVsE )
       throw std::runtime_error(
         "[ Vec_ps_refl ]: histogram '" + inputArgs.polHist +
         "' not found in '" + inputArgs.polFile + "'" );
     // Detach histogram from file so it persists after file is closed
-    polFrac_vs_E->SetDirectory(0);
+    m_polFracVsE->SetDirectory(0);
     f->Close();
     delete f;
   }
@@ -380,8 +380,8 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 
   TLorentzVector beam;
   TVector3 eps;              // beam polarization vector (eps)ilon
-  GDouble beam_polFraction;
-  GDouble beam_polAngle;
+  GDouble beamPolFraction;
+  GDouble beamPolAngle;
 
   if(m_polInfoInPhotonP4){
     // When pol info is stored in the photon 4-vector in the tree
@@ -391,23 +391,23 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     // The values should be stored as px = polFraction*cos(polAngle) 
     // and py = polFraction*sin(polAngle)
     eps.SetXYZ(pKin[0][1], pKin[0][2], 0.0); 
-    beam_polFraction = eps.Mag();
-    beam_polAngle = eps.Phi();
+    beamPolFraction = eps.Mag();
+    beamPolAngle = eps.Phi();
   }
   else{
     beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );
-    beam_polAngle = polAngle;
+    beamPolAngle = m_polAngle;
     // for fixed polarization fraction
-    if(polFrac_vs_E == nullptr) 
-	    beam_polFraction = polFraction;
+    if(m_polFracVsE == nullptr) 
+	    beamPolFraction = m_polFraction;
     else{ // for fitting with polarization vs E_gamma from input histogram 
-	    int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
-	    if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
+	    int bin = m_polFracVsE->GetXaxis()->FindBin(pKin[0][0]);
+	    if (bin == 0 || bin > m_polFracVsE->GetXaxis()->GetNbins()){
 		    throw std::runtime_error(
         "[ Vec_ps_refl ]: energy " + std::to_string(pKin[0][0]) + 
         " outside histogram range" );
 	    } else
-		    beam_polFraction = polFrac_vs_E->GetBinContent(bin);
+		    beamPolFraction = m_polFracVsE->GetBinContent(bin);
     }
   }
   
@@ -418,7 +418,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); 
   // Compute vector meson from its decay products
   // Make sure the order of daughters is correct in the config file!
-  TLorentzVector vec, vec_daught1, vec_daught2; 
+  TLorentzVector vec, vecDaught1, vecDaught2; 
 
   if(m_3pi){
     // Omega ps proton, omega -> 3pi (6 particles):
@@ -429,8 +429,8 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 	  TLorentzVector pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
 	  TLorentzVector pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
 	  vec = pi0 + pip + pim;
-	  vec_daught1 = pip;
-	  vec_daught2 = pim;
+	  vecDaught1 = pip;
+	  vecDaught2 = pim;
   }
   else{
     // Omega ps proton, omega -> gpi0 (5 particles):
@@ -443,13 +443,13 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     // beam proton ps pi pi
 	  // Vec(Kpi) K+ Lambda, (5 particles)
     // beam proton ps K pi
-    vec_daught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
-	  vec_daught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
-	  vec = vec_daught1 + vec_daught2;
+    vecDaught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+	  vecDaught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+	  vec = vecDaught1 + vecDaught2;
   }
 
   // Final meson system P4
-  TLorentzVector X = vec + ps;
+  TLorentzVector xMeson = vec + ps;
 
   ///////////////// Boost Particles and Get Angles/////////////////////
 
@@ -459,42 +459,42 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   // Calculate decay angles for X in helicity frame (same for all vectors)
   // Change getXDecayAngles to get Gottfried-Jackson angles if needed
   // Note: it also calculates the production angle
-  vector <double> xDecayAngles = getXDecayAngles( beam_polAngle, beam, beamTarget, X, vec);
+  vector <double> xDecayAngles = getXDecayAngles( beamPolAngle, beam, beamTarget, xMeson, vec);
 
   // Calculate vector decay angles (unique for each vector)
   vector <double> vectorDecayAngles;
   if(m_3pi){
-    vectorDecayAngles = getVectorDecayAngles( beamTarget, X, vec,
-                                              vec_daught1, vec_daught2);
+    vectorDecayAngles = getVectorDecayAngles( beamTarget, xMeson, vec,
+                                              vecDaught1, vecDaught2);
   }
   else{
-    vectorDecayAngles = getVectorDecayAngles( beamTarget, X, vec,
-                                        vec_daught1, TLorentzVector(0,0,0,0));
+    vectorDecayAngles = getVectorDecayAngles( beamTarget, xMeson, vec,
+                                        vecDaught1, TLorentzVector(0,0,0,0));
   }
 
   GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
   GDouble phi = xDecayAngles[1];
-  GDouble prod_angle = xDecayAngles[2]; // bigPhi
+  GDouble prodAngle = xDecayAngles[2]; // bigPhi
   GDouble cosThetaH = TMath::Cos(vectorDecayAngles[0]);
   GDouble phiH = vectorDecayAngles[1];
-  GDouble m_X = X.M();
-  GDouble m_vec = vec.M();
-  GDouble m_ps = ps.M();
+  GDouble xMesonMass = xMeson.M();
+  GDouble vecMass = vec.M();
+  GDouble psMass = ps.M();
 
   complex <GDouble> amplitude(0,0);
   static const complex <GDouble> i(0,1);
 
   if(m_gpi0){ // radiative omega decay requires a handling of the photon helicity
     for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
-      GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
+      GDouble helAmp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
       if(lambda==0){
 	      amplitude += conj(wignerD(m_j, m_m, lambda, cosTheta, phi)) *
-	                   hel_amp * conj(wignerD(1, lambda, m_ghel, cosThetaH, phiH)) *
+	                   helAmp * conj(wignerD(1, lambda, m_ghel, cosThetaH, phiH)) *
 	                   (m_ghel*1.0); // m_ghel is int
       }
       else{
 	      amplitude += conj(wignerD(m_j, m_m, lambda, cosTheta, phi)) *
-	                    hel_amp * conj(wignerD(1, -1*lambda, m_ghel, cosThetaH, phiH)) *
+	                    helAmp * conj(wignerD(1, -1*lambda, m_ghel, cosThetaH, phiH)) *
                       -1.0;
 	      // the power of lambda is irrelevant for lambda =/= 0: (-1)^lambda = -1
       }
@@ -502,20 +502,20 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   }
   else{ // for any other vector decay
     for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
-      GDouble hel_amp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
+      GDouble helAmp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
             amplitude += conj(wignerD(m_j, m_m, lambda, cosTheta, phi)) *
-                        hel_amp * conj(wignerD(1, lambda, 0, cosThetaH, phiH));
+                        helAmp * conj(wignerD(1, lambda, 0, cosThetaH, phiH));
     }
   }
 
   // The amplitude is multiplied by a factor, either sqrt(1 + -P_gamma) or
   // sqrt(1 + P_gamma) depending on the what sum is being calculated
-  GDouble factor = sqrt(1 + m_s * beam_polFraction);
+  GDouble factor = sqrt(1 + m_s * beamPolFraction);
   // The result of the function that depends on the angles is stored in zjm
   complex <GDouble> zjm = 0;
   // A - sign translates to + in the prod_angle
   // This is because reflectivity conventions introduce exp(-iPhi)
-  complex <GDouble> rotateY = polar((GDouble)1., (GDouble)(-1. * prod_angle ));  
+  complex <GDouble> rotateY = polar((GDouble)1., (GDouble)(-1. * prodAngle ));  
 
   if (m_r == 1)
 	  zjm = real(amplitude * rotateY);
@@ -523,7 +523,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 	  zjm = i*imag(amplitude * rotateY);
 
   if( !m_noBarrier ){
-  GDouble kinFactor = barrierFactor(m_X, m_l, m_vec, m_ps);
+  GDouble kinFactor = barrierFactor(xMesonMass, m_l, vecMass, psMass);
   factor *= kinFactor;
   // Alternatives:
   // E852 Nozar thesis has sqrt(2*s+1)*sqrt(2*l+1)*F_l(p_omega)*sqrt(omega)
