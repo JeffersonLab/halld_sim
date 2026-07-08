@@ -17,6 +17,7 @@ GPUTwoPiAngles_Delta_factorized_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO
   GDouble rho000,
   GDouble rho100,
   GDouble rho1m10,
+  GDouble rho001,
   GDouble rho111,
   GDouble rho101,
   GDouble rho1m11,
@@ -24,8 +25,7 @@ GPUTwoPiAngles_Delta_factorized_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO
   GDouble rho1m12,
   GDouble delta_rho011,
   GDouble delta_rho031,
-  GDouble delta_rho03m1,
-  GDouble rho001
+  GDouble delta_rho03m1
 );
 
 #endif // GPU_ACCELERATION
@@ -43,7 +43,7 @@ public:
   TwoPiAngles_Delta_factorized() : UserAmplitude< TwoPiAngles_Delta_factorized >() { };
 	TwoPiAngles_Delta_factorized( const vector< string >& args );
 
-	enum UserVars { kPgamma = 0, kCosTheta_pim, kSinSqTheta_pim, kSin2Theta_pim, kPhi_pim, kCosTheta_piplus, kSinSqTheta_piplus, kSin2Theta_piplus, kPhi_piplus,
+	enum UserVars { kPgamma = 0, kCosTheta_pim, kSinSqTheta_pim, kSin2Theta_pim, kPhi_pim, kCosTheta_proton, kSinSqTheta_proton, kSin2Theta_proton, kPhi_proton,
 			kBigPhi, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 
@@ -69,6 +69,7 @@ AmpParameter rho000;
 AmpParameter rho100;
 AmpParameter rho1m10;
 
+AmpParameter rho001;
 AmpParameter rho111;
 AmpParameter rho101;
 AmpParameter rho1m11;
@@ -79,14 +80,6 @@ AmpParameter delta_rho011;
 AmpParameter delta_rho031;
 AmpParameter delta_rho03m1;
 
-// AmpParameter delta_rho111;
-// AmpParameter delta_rho133;
-// AmpParameter delta_rho131;
-// AmpParameter delta_rho13m1;
-
-// AmpParameter delta_rho231;
-// AmpParameter delta_rho23m1;
-AmpParameter rho001;
 AmpParameter polAngle;
   
   double polFraction;

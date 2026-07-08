@@ -24,98 +24,95 @@ polAngle = AmpParameter( args[1] );
 
 polFraction = atof(args[2].c_str());
 cout << "Fitting with constant polarization " << polFraction << endl;
+// r(t)m,m'_lambda,lambda'_alpha      (rt corresponds to rtilde, m corresponds to rho helicity, lambda to Delta helicity, alpha to photon polarization) 
+r00_33_0  = AmpParameter( args[3] );
 
-AMO = string (args[3]);
-r00_33_0  = AmpParameter( args[4] );
-// r00_11_0  = AmpParameter( args[4] );
+r11_33_0  = AmpParameter( args[4] );
+r11_11_0  = AmpParameter( args[5] );
 
-r11_33_0  = AmpParameter( args[5] );
-r11_11_0  = AmpParameter( args[6] );
+r1m1_33_0 = AmpParameter( args[6] );
+r1m1_11_0 = AmpParameter( args[7] );
 
-r1m1_33_0 = AmpParameter( args[7] );
-r1m1_11_0 = AmpParameter( args[8] );
+r10_33_0  = AmpParameter( args[8] );
+r10_11_0  = AmpParameter( args[9] );
 
-r10_33_0  = AmpParameter( args[9] );
-r10_11_0  = AmpParameter( args[10] );
+r00_31_0  = AmpParameter( args[10] );
+r00_3m1_0 = AmpParameter( args[11] ); 
 
-r00_31_0  = AmpParameter( args[11] );
-r00_3m1_0 = AmpParameter( args[12] ); // spin-flip 
+r11_31_0  = AmpParameter( args[12] ); 
+r11_3m1_0 = AmpParameter( args[13] ); 
 
-r11_31_0  = AmpParameter( args[13] ); // spin-flip 
-r11_3m1_0 = AmpParameter( args[14] ); // spin-flip 
+r1m1_31_0  = AmpParameter( args[14] ); 
+r1m1_3m1_0 = AmpParameter( args[15] );  
 
-r1m1_31_0  = AmpParameter( args[15] ); // spin-flip 
-r1m1_3m1_0 = AmpParameter( args[16] ); // spin-flip 
+r10_31_0  = AmpParameter( args[16] );
+r10_3m1_0 = AmpParameter( args[17] );  
 
-r10_31_0  = AmpParameter( args[17] ); // spin-flip 
-r10_3m1_0 = AmpParameter( args[18] ); // spin-flip 
+rt1m1_31_0  = AmpParameter( args[18] );  
+rt1m1_3m1_0 = AmpParameter( args[19] ); 
 
-rt1m1_31_0  = AmpParameter( args[19] ); // sin-flip 
-rt1m1_3m1_0 = AmpParameter( args[20] ); // sin-flip 
+rt10_31_0   = AmpParameter( args[20] );  
+rt10_3m1_0  = AmpParameter( args[21] ); 
 
-rt10_31_0   = AmpParameter( args[21] );  
-rt10_3m1_0  = AmpParameter( args[22] ); 
 //alpha = 1 (same structure)
-r00_33_1  = AmpParameter( args[23] );
-r00_11_1  = AmpParameter( args[24] );
+r00_33_1  = AmpParameter( args[22] );
+r00_11_1  = AmpParameter( args[23] );
 
-r11_33_1  = AmpParameter( args[25] );
-r11_11_1  = AmpParameter( args[26] );
+r11_33_1  = AmpParameter( args[24] );
+r11_11_1  = AmpParameter( args[25] );
 
-r1m1_33_1 = AmpParameter( args[27] );
-r1m1_11_1 = AmpParameter( args[28] );
+r1m1_33_1 = AmpParameter( args[26] );
+r1m1_11_1 = AmpParameter( args[27] );
 
-r10_33_1  = AmpParameter( args[29] );
-r10_11_1  = AmpParameter( args[30] );
+r10_33_1  = AmpParameter( args[28] );
+r10_11_1  = AmpParameter( args[29] );
 
-r00_31_1  = AmpParameter( args[31] );
-r00_3m1_1 = AmpParameter( args[32] );
+r00_31_1  = AmpParameter( args[30] );
+r00_3m1_1 = AmpParameter( args[31] );
 
-r11_31_1  = AmpParameter( args[33] );
-r11_3m1_1 = AmpParameter( args[34] );
+r11_31_1  = AmpParameter( args[32] );
+r11_3m1_1 = AmpParameter( args[33] );
 
-r1m1_31_1  = AmpParameter( args[35] );
-r1m1_3m1_1 = AmpParameter( args[36] );
+r1m1_31_1  = AmpParameter( args[34] );
+r1m1_3m1_1 = AmpParameter( args[35] );
 
-r10_31_1  = AmpParameter( args[37] );
-r10_3m1_1 = AmpParameter( args[38] );
+r10_31_1  = AmpParameter( args[36] );
+r10_3m1_1 = AmpParameter( args[37] );
 
-rt1m1_31_1  = AmpParameter( args[39] );
-rt1m1_3m1_1 = AmpParameter( args[40] );
+rt1m1_31_1  = AmpParameter( args[38] );
+rt1m1_3m1_1 = AmpParameter( args[39] );
 
-rt10_31_1   = AmpParameter( args[41] );
-rt10_3m1_1  = AmpParameter( args[42] );
+rt10_31_1   = AmpParameter( args[40] );
+rt10_3m1_1  = AmpParameter( args[41] );
 
 //alpha = 2 (different structure)
-rt00_31_2  = AmpParameter( args[43] );
-rt00_3m1_2 = AmpParameter( args[44] );
+rt00_31_2  = AmpParameter( args[42] );
+rt00_3m1_2 = AmpParameter( args[43] );
 
-rt11_31_2  = AmpParameter( args[45] );
-rt11_3m1_2 = AmpParameter( args[46] );
+rt11_31_2  = AmpParameter( args[44] );
+rt11_3m1_2 = AmpParameter( args[45] );
 
-// 1 <-> -1
-r1m1_33_2 = AmpParameter( args[47] );
-r1m1_11_2 = AmpParameter( args[48] );
+r1m1_33_2 = AmpParameter( args[46] );
+r1m1_11_2 = AmpParameter( args[47] );
 
-r1m1_31_2  = AmpParameter( args[49] );
-r1m1_3m1_2 = AmpParameter( args[50] );
+r1m1_31_2  = AmpParameter( args[48] );
+r1m1_3m1_2 = AmpParameter( args[49] );
 
-rt1m1_31_2  = AmpParameter( args[51] );
-rt1m1_3m1_2 = AmpParameter( args[52] );
+rt1m1_31_2  = AmpParameter( args[50] );
+rt1m1_3m1_2 = AmpParameter( args[51] );
 
-r10_33_2 = AmpParameter( args[53] );
-r10_11_2 = AmpParameter( args[54] );
+r10_33_2 = AmpParameter( args[52] );
+r10_11_2 = AmpParameter( args[53] );
 
-r10_31_2  = AmpParameter( args[55] );
-r10_3m1_2 = AmpParameter( args[56] );
+r10_31_2  = AmpParameter( args[54] );
+r10_3m1_2 = AmpParameter( args[55] );
 
-rt10_31_2  = AmpParameter( args[57] );
-rt10_3m1_2 = AmpParameter( args[58] );
+rt10_31_2  = AmpParameter( args[56] );
+rt10_3m1_2 = AmpParameter( args[57] );
 
-
+// Parameter r00_11_0 was eliminated due to normalization constraint, so we don't register it);
 registerParameter( r00_33_0 );
-// registerParameter( r00_11_0 );  
- 
+  
 registerParameter( r11_33_0 );
 registerParameter( r11_11_0 );
 
@@ -172,6 +169,7 @@ registerParameter( rt1m1_3m1_1 );
 
 registerParameter( rt10_31_1 );
 registerParameter( rt10_3m1_1 );
+
 //alpha = 2 (different structure)
 registerParameter( rt00_31_2 );
 registerParameter( rt00_3m1_2 );
@@ -233,8 +231,6 @@ GDouble sinSqTheta_proton = userVars[kSinSqTheta_proton];
 GDouble sin2Theta_proton = userVars[kSin2Theta_proton];
 GDouble phi_proton = userVars[kPhi_proton];
 
-  
- // vector meson production from K. Schilling et. al. last indize = upper
 
 GDouble sinSqTh = sinSqTheta_proton;
 GDouble sin2Th = sin2Theta_proton;
@@ -300,7 +296,7 @@ GDouble Wt1m1_2 = (2.0 / sqrt(3.0)) * (rt1m1_31_2 * sphi * sin2Th + rt1m1_3m1_2 
 GDouble W10_2  = r10_33_2 * sinSqTh + r10_11_2 * (1.0/3.0 + cosSqTh);
 GDouble Wb10_2 = (2.0 / sqrt(3.0)) * (r10_31_2 * cphi * sin2Th + r10_3m1_2 * c2phi * sinSqTh);
 GDouble Wt10_2 = (2.0 / sqrt(3.0)) * (rt10_31_2 * sphi * sin2Th + rt10_3m1_2 * s2phi * sinSqTh);
-GDouble W2 = cosSqThPi * Wt00_2+ sinSqThPi * Wt11_2+ sinSqThPi * (s2phiPi * (W1m1_2 - Wb1m1_2) - c2phiPi * Wt1m1_2) + sqrt(2.0) * sin2ThPi * (sphiPi * (W10_2 - Wb10_2) + cphiPi * Wt10_2); // 19.05 change sign of cphiPi * Wt10_2
+GDouble W2 = cosSqThPi * Wt00_2+ sinSqThPi * Wt11_2+ sinSqThPi * (s2phiPi * (W1m1_2 - Wb1m1_2) - c2phiPi * Wt1m1_2) + sqrt(2.0) * sin2ThPi * (sphiPi * (W10_2 - Wb10_2) + cphiPi * Wt10_2); 
 
 GDouble Wpol = W0 - Pgamma * cos(2.0 * bigPhi) * W1 - Pgamma * sin(2.0 * bigPhi) * W2;
 return complex< GDouble > ( sqrt(fabs(Wpol)) );
@@ -316,30 +312,21 @@ TwoPiAngles_Delta_DoubleSDMEs::calcUserVars( GDouble** pKin, GDouble* userVars )
   TLorentzVector p3     ( pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0] ); // pi0
   TLorentzVector target ( 0, 0, 0, 0.9382720813);
 	// determine boost vectors
-  TLorentzVector resonance = p2 + p3;
-  TLorentzVector recoil = proton + p1;
   TLorentzVector rho = p2 + p3;
   TLorentzVector Delta = proton + p1;
   TLorentzVector CM_motion_lab = beam + target;
   TLorentzVector piminus = p2;
 
-  TLorentzRotation resonanceBoost( -resonance.BoostVector() );
-
   TLorentzRotation rhoBoost( -rho.BoostVector() );
   TLorentzRotation CMBoost( -CM_motion_lab.BoostVector() );
   TLorentzRotation DeltaBoost( -Delta.BoostVector() );
 
- 
-
-  //TVector3 y = (beam_cm.Vect().Unit().Cross(resonance_cm.Vect().Unit())).Unit();   
-  //TVector3 y = (beam_res.Vect().Unit().Cross(-recoil_res.Vect().Unit())).Unit();
-
-  // choose helicity frame: z-axis opposite recoil Delta in rho rest frame
 //bost in rho restframe
   TLorentzVector beam_resrho = rhoBoost * beam;
   TLorentzVector Delta_resrho = rhoBoost * Delta;
   TLorentzVector piminus_resrho = rhoBoost * piminus;
   TLorentzVector proton_resrho = rhoBoost * proton;
+
 //boost in CM frame
   TLorentzVector beam_cm = CMBoost * beam;
   TLorentzVector Delta_cm = CMBoost * Delta;
@@ -351,23 +338,21 @@ TwoPiAngles_Delta_DoubleSDMEs::calcUserVars( GDouble** pKin, GDouble* userVars )
   TLorentzVector proton_resDelta = DeltaBoost * proton;
   TLorentzVector rho_resDelta = DeltaBoost * rho;
   
-  // Define coordinate systems: 
-  // y equal in all frames
+// Define coordinate systems: 
+// y equal in all frames
   TVector3 y = (beam.Vect().Unit().Cross(-Delta.Vect().Unit())).Unit();
 
-  //rho system
-  
+  //rho restframe
+
   //Helicity frame
   TVector3 z_hel_rho = -1. * Delta_resrho.Vect().Unit();
   TVector3 x_hel_rho = y.Cross(z_hel_rho).Unit();
 
   // GJ frame
-
   TVector3 z_GJ_rho = beam_resrho.Vect().Unit();
   TVector3 x_GJ_rho = y.Cross(z_GJ_rho).Unit();
 
   //Delta system
-
   // Helicity frame
   TVector3 z_hel_Delta = -rho_resDelta.Vect().Unit();
 	TVector3 x_hel_Delta = (y.Cross(z_hel_Delta)).Unit();
@@ -375,15 +360,6 @@ TwoPiAngles_Delta_DoubleSDMEs::calcUserVars( GDouble** pKin, GDouble* userVars )
   // GJ frame
   TVector3 z_GJ_Delta = target_resDelta.Vect().Unit();
   TVector3 x_GJ_Delta = y.Cross(z_GJ_Delta).Unit();
-
-  // normal to the production plane
- 
-  //TVector3 y = (beam_cm.Vect().Unit().Cross(resonance_cm.Vect().Unit())).Unit();   
-  //TVector3 y = (beam_res.Vect().Unit().Cross(-recoil_res.Vect().Unit())).Unit();
-  //rho rest frame
-  // choose helicity frame: z-axis opposite recoil Delta in rho rest frame
-  //helicity frame
-
 
 
   //Angle calculation
@@ -402,21 +378,6 @@ TwoPiAngles_Delta_DoubleSDMEs::calcUserVars( GDouble** pKin, GDouble* userVars )
   TVector3 angles_proton_GJ_Delta( (proton_resDelta.Vect()).Dot(x_GJ_Delta),
 		   (proton_resDelta.Vect()).Dot(y),
 		   (proton_resDelta.Vect()).Dot(z_GJ_Delta) );
-  
-  
-  
-  
-  
- 
-
-  
-
-	
-  // // normal to the production plane
-  // TVector3 y_GFJ = (beam_res.Vect().Unit().Cross(-recoil_res.Vect().Unit())).Unit();
-
-  // choose GFJ frame: z-axis points in direction of beam vector in rho rest frame
-  
 
   
   if(frame=="Hel"){
@@ -466,7 +427,7 @@ void
 TwoPiAngles_Delta_DoubleSDMEs::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
 
   GPUTwoPiAngles_Delta_DoubleSDMEs_exec( dimGrid, dimBlock, GPU_AMP_ARGS,
-    r00_33_0, //r00_11_0,
+    r00_33_0, 
     r11_33_0, r11_11_0,
     r1m1_33_0, r1m1_11_0,
     r10_33_0, r10_11_0,

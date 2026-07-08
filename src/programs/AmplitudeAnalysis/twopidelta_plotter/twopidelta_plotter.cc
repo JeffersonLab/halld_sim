@@ -386,13 +386,7 @@ int main( int argc, char* argv[] ){ //char array for strings
     outfile << pars[i] << "\t" << parValue << "\t" << parError << "\t"  << "\n";
     
   }
-  double rho001_value = 2*(results.parValue("delta_rho111")+results.parValue("delta_rho133")-results.parValue("rho111"));
-  double rho001_error = 2*sqrt(results.parError("delta_rho111")*results.parError("delta_rho111")+results.parError("delta_rho133")*results.parError("delta_rho133")+results.parError("rho111")*results.parError("rho111")+2*(results.covariance("delta_rho111","delta_rho133")-results.covariance("delta_rho111","rho111")-results.covariance("delta_rho133","rho111")));
-  outfile << "rho001" << "\t" <<  rho001_value << "\t" <<  rho001_error << "\t" << "\n";
 
-  double P_sigma_value = 2*results.parValue("rho1m11") - rho001_value; //error calculation uses rho001 expressed by the three other SDMEs
-  double P_sigma_error = 2*sqrt(results.parError("rho1m11")*results.parError("rho1m11")+results.parError("rho111")*results.parError("rho111")+results.parError("delta_rho111")*results.parError("delta_rho111")+results.parError("delta_rho133")*results.parError("delta_rho133")+2*(results.covariance("rho1m11","rho111")-results.covariance("rho1m11","delta_rho111")-results.covariance("rho1m11","delta_rho133")-results.covariance("rho111","delta_rho111")-results.covariance("rho111","delta_rho133")+results.covariance("delta_rho111","delta_rho133")));
-  outfile << "P" << "\t" <<  P_sigma_value << "\t" <<  P_sigma_error << "\t"  << "\n";
 
  // Calculate the single SDMEs with the double SDMEs
 

@@ -10,7 +10,7 @@ __global__ void
 GPUTwoPiAngles_Delta_DoubleSDMEs_kernel( GPU_AMP_PROTO, 
   //order is like the appearing order in the paper
   //Wmm
-  GDouble r00_33_0,  //GDouble r00_11_0,
+  GDouble r00_33_0,
   GDouble r11_33_0,  GDouble r11_11_0,
   GDouble r1m1_33_0, GDouble r1m1_11_0,
   GDouble r10_33_0,  GDouble r10_11_0,
@@ -100,6 +100,7 @@ GPUTwoPiAngles_Delta_DoubleSDMEs_kernel( GPU_AMP_PROTO,
   GDouble Wb10_0 = (2.0 / sqrt(3.0)) * (r10_31_0 * cphi * sin2Th + r10_3m1_0 * c2phi * sinSqTh);
   GDouble Wt10_0 = (2.0 / sqrt(3.0)) * (rt10_31_0 * sphi * sin2Th + rt10_3m1_0 * s2phi * sinSqTh);
   GDouble W0 = cosSqThPi * (W00_0 - Wb00_0) + sinSqThPi * (W11_0 - Wb11_0) - sinSqThPi * (c2phiPi * (W1m1_0 - Wb1m1_0) + s2phiPi * Wt1m1_0) - sqrt(2.0) * sin2ThPi * (cphiPi * (W10_0 - Wb10_0) + sphiPi * Wt10_0);
+
   //alpha = 1 (same structure)
   GDouble W00_1  = r00_33_1  * sinSqTh + r00_11_1  * (1.0/3.0 + cosSqTh);
   GDouble Wb00_1 = (2.0 / sqrt(3.0)) * (r00_31_1  * cphi * sin2Th + r00_3m1_1  * c2phi * sinSqTh);
@@ -128,7 +129,7 @@ GPUTwoPiAngles_Delta_DoubleSDMEs_kernel( GPU_AMP_PROTO,
   GDouble W10_2  = r10_33_2 * sinSqTh + r10_11_2 * (1.0/3.0 + cosSqTh);
   GDouble Wb10_2 = (2.0 / sqrt(3.0)) * (r10_31_2 * cphi * sin2Th + r10_3m1_2 * c2phi * sinSqTh);
   GDouble Wt10_2 = (2.0 / sqrt(3.0)) * (rt10_31_2 * sphi * sin2Th + rt10_3m1_2 * s2phi * sinSqTh);
-  GDouble W2 = cosSqThPi * Wt00_2+ sinSqThPi * Wt11_2+ sinSqThPi * (s2phiPi * (W1m1_2 - Wb1m1_2) - c2phiPi * Wt1m1_2) + sqrt(2.0) * sin2ThPi * (sphiPi * (W10_2 - Wb10_2) + cphiPi * Wt10_2); // 19.05 change sign of cphiPi * Wt10_2
+  GDouble W2 = cosSqThPi * Wt00_2+ sinSqThPi * Wt11_2+ sinSqThPi * (s2phiPi * (W1m1_2 - Wb1m1_2) - c2phiPi * Wt1m1_2) + sqrt(2.0) * sin2ThPi * (sphiPi * (W10_2 - Wb10_2) + cphiPi * Wt10_2); 
 
   GDouble Wpol = W0 - Pgamma * cos(2.0 * bigPhi) * W1 - Pgamma * sin(2.0 * bigPhi) * W2;
   
@@ -140,7 +141,7 @@ GPUTwoPiAngles_Delta_DoubleSDMEs_kernel( GPU_AMP_PROTO,
 
 void
 GPUTwoPiAngles_Delta_DoubleSDMEs_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO, 
-  GDouble r00_33_0,  //GDouble r00_11_0,
+  GDouble r00_33_0, 
   GDouble r11_33_0,  GDouble r11_11_0,
   GDouble r1m1_33_0, GDouble r1m1_11_0,
   GDouble r10_33_0,  GDouble r10_11_0,
@@ -173,7 +174,7 @@ GPUTwoPiAngles_Delta_DoubleSDMEs_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROT
 
   GPUTwoPiAngles_Delta_DoubleSDMEs_kernel<<< dimGrid, dimBlock >>>
     ( GPU_AMP_ARGS, 
-      r00_33_0, //r00_11_0, 
+      r00_33_0, 
       r11_33_0, r11_11_0, 
       r1m1_33_0, r1m1_11_0, 
       r10_33_0, r10_11_0,
