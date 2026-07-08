@@ -365,6 +365,16 @@ std::string RootDataConverter::weightBranchName(
         file_pair = m_cfg_info->reaction(reaction)->bkgnd();
         root_file = m_background_files[0];
     }
+    else if (file_type == "genMC")
+    {
+        file_pair = m_cfg_info->reaction(reaction)->genMC();
+        root_file = m_genMC_files[0];
+    }
+    else if (file_type == "accMC")
+    {
+        file_pair = m_cfg_info->reaction(reaction)->accMC();
+        root_file = m_accMC_files[0];
+    }
     else
     {
         report(ERROR, kModule) << "Unknown file type requested: "
@@ -874,7 +884,6 @@ std::pair<double, double> RootDataConverter::numberOfEvents(TH1D *hist)
 double RootDataConverter::efficiency()
 {
     // Count events in genMC and accMC files
-    // Since MC events are not weighted, we just count them directly
 
     if (m_genMC_files.empty() || m_accMC_files.empty())
     {
@@ -882,17 +891,16 @@ double RootDataConverter::efficiency()
         return 0.0;
     }
 
+    std::string genMC_weight_branch_name = weightBranchName("genMC", m_genMC_tree_name);
+    std::string accMC_weight_branch_name = weightBranchName("accMC", m_accMC_tree_name);
+
     try
     {
-        // Count generated events
         ROOT::RDataFrame df_gen(m_genMC_tree_name, m_genMC_files);
-        auto gen_count_r = df_gen.Count();
-        double gen_events = *gen_count_r;
+        float gen_events = genMC_weight_branch_name.empty() ? *df_gen.Count() : *df_gen.Sum<float>(genMC_weight_branch_name);
 
-        // Count accepted events
         ROOT::RDataFrame df_acc(m_accMC_tree_name, m_accMC_files);
-        auto acc_count_r = df_acc.Count();
-        double acc_events = *acc_count_r;
+        float acc_events = accMC_weight_branch_name.empty() ? *df_acc.Count() : *df_acc.Sum<float>(accMC_weight_branch_name);
 
         if (gen_events == 0)
         {
@@ -903,6 +911,10 @@ double RootDataConverter::efficiency()
         report(DEBUG, kModule) << "Efficiency calculation:\n";
         report(DEBUG, kModule) << "  Generated events: " << gen_events << "\n";
         report(DEBUG, kModule) << "  Accepted events: " << acc_events << "\n";
+        if (!genMC_weight_branch_name.empty())
+            report(DEBUG, kModule) << "  genMC weight branch: " << genMC_weight_branch_name << "\n";
+        if (!accMC_weight_branch_name.empty())
+            report(DEBUG, kModule) << "  accMC weight branch: " << accMC_weight_branch_name << "\n";
 
         return acc_events / gen_events;
     }
@@ -1074,10 +1086,10 @@ std::string RootDataConverter::componentBranch(TreeLayout layout,
     case TreeLayout::FSRoot:
         return component + "P" + std::to_string(particle_index);
     case TreeLayout::FinalState:
-        // Particle indices are labelled with 0 as beam, and final state particles 
-        // beginning index=1. But the FinalState container has the first final state 
+        // Particle indices are labelled with 0 as beam, and final state particles
+        // beginning index=1. But the FinalState container has the first final state
         // particle at index=0, so we need to subtract 1 from the particle_index
-        return component + "_FinalState[" + std::to_string(particle_index-1) + "]";
+        return component + "_FinalState[" + std::to_string(particle_index - 1) + "]";
     }
 
     report(ERROR, kModule) << "Unknown tree layout when resolving component branch\n";
