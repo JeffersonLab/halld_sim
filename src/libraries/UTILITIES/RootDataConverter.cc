@@ -38,9 +38,11 @@ RootDataConverter::RootDataConverter(const std::string &filename,
                                                            m_genMC_files(genMCFiles()),
                                                            m_accMC_files(accMCFiles()),
                                                            m_data_tree_name(findTreeName("data")),
-                                                           m_background_tree_name(findTreeName("background")),
+                                                           m_background_tree_name(m_background_files.empty() ? m_data_tree_name : findTreeName("background")),
                                                            m_genMC_tree_name(findTreeName("genMC")),
-                                                           m_accMC_tree_name(findTreeName("accMC"))
+                                                           m_accMC_tree_name(findTreeName("accMC")),
+                                                           m_data_layout(detectTreeLayout("data", m_data_files[0], m_data_tree_name)),
+                                                           m_background_layout(m_background_files.empty() ? m_data_layout : detectTreeLayout("background", m_background_files[0], m_background_tree_name))
 {
     report(DEBUG, kModule) << "Constructing RootDataConverter for file: " << m_fit_file << "\n";
 
@@ -444,12 +446,12 @@ TH1D *RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
     TH1D *h_energy_total = nullptr;
 
     double min, max;
-    std::tie(min, max) = findMinMaxOfBranch(m_data_files, m_data_tree_name, "EnPB");
+    std::tie(min, max) = findMinMaxOfBranch(m_data_files, m_data_tree_name, beamEnergyBranch(m_data_layout));
 
     if (m_background_files_exist)
     {
         double bg_min, bg_max;
-        std::tie(bg_min, bg_max) = findMinMaxOfBranch(m_background_files, m_background_tree_name, "EnPB");
+        std::tie(bg_min, bg_max) = findMinMaxOfBranch(m_background_files, m_background_tree_name, beamEnergyBranch(m_background_layout));
 
         // set the min and max for the total histogram to encompass both data and background
         min = std::min(min, bg_min);
@@ -474,8 +476,8 @@ TH1D *RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
         }
 
         // Set up branch addresses
-        double energy;
-        tree->SetBranchAddress("EnPB", &energy);
+        float energy;
+        tree->SetBranchAddress(beamEnergyBranch(m_data_layout).c_str(), &energy);
 
         // draw into temporary histogram
         const int n_bins = 200;
@@ -484,17 +486,17 @@ TH1D *RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
         // If no background files exist, we assume weights are stored in the data tree
         if (!m_background_files_exist && !weight_branch_name.empty() && tree->GetBranch(weight_branch_name.c_str()))
         {
-            double weight;
+            float weight;
             tree->SetBranchAddress(weight_branch_name.c_str(), &weight);
-            tree->Draw("EnPB>>h_energy", weight_branch_name.c_str(), "goff");
+            tree->Draw((beamEnergyBranch(m_data_layout) + ">>h_energy").c_str(), weight_branch_name.c_str(), "goff");
         }
         else if (m_background_files_exist)
         {
-            tree->Draw("EnPB>>h_energy", "1.0", "goff"); // if bkgnd files exist, we will subtract them later, so just use weight of 1.0 here
+            tree->Draw((beamEnergyBranch(m_data_layout) + ">>h_energy").c_str(), "1.0", "goff"); // if bkgnd files exist, we will subtract them later, so just use weight of 1.0 here
         }
         else
         {
-            tree->Draw("EnPB>>h_energy", "1.0", "goff");
+            tree->Draw((beamEnergyBranch(m_data_layout) + ">>h_energy").c_str(), "1.0", "goff");
             if (!m_mute_warnings)
                 report(WARNING, kModule) << "No weight branch found in tree '"
                                          << m_data_tree_name
@@ -539,10 +541,10 @@ TH1D *RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
         }
 
         // Set up branch addresses
-        double energy;
-        double weight = 1.0; // default weight is 1.0 if no weight branch exists
+        float energy;
+        float weight = 1.0; // default weight is 1.0 if no weight branch exists
 
-        tree->SetBranchAddress("EnPB", &energy);
+        tree->SetBranchAddress(beamEnergyBranch(m_background_layout).c_str(), &energy);
 
         // If weight branch exists, set its address
         if (!weight_branch_name.empty() && tree->GetBranch(weight_branch_name.c_str()))
@@ -553,7 +555,7 @@ TH1D *RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
         // draw into temporary histogram
         const int n_bins = 200;
         TH1D *h_energy = new TH1D("h_energy", "", n_bins, min, max);
-        tree->Draw("EnPB>>h_energy", weight_branch_name.c_str(), "goff");
+        tree->Draw((beamEnergyBranch(m_background_layout) + ">>h_energy").c_str(), weight_branch_name.c_str(), "goff");
 
         // subtract background histogram from total histogram
         if (h_energy_total)
@@ -569,7 +571,7 @@ TH1D *RootDataConverter::beamEnergyHist(const std::string &weight_branch_name)
 TH1D *RootDataConverter::tHist(const std::string &weight_branch_name)
 {
     // target proton mass (GeV)
-    const double m_proton = 0.938;
+    const float m_proton = 0.938;
 
     if (m_lower_vertex_indices.empty())
     {
@@ -577,20 +579,17 @@ TH1D *RootDataConverter::tHist(const std::string &weight_branch_name)
         assert(false);
     }
 
-    // Prepare branch expression strings like "PxP1 + PxP2 + ..."
     std::string recoil_px_expr;
     std::string recoil_py_expr;
     std::string recoil_pz_expr;
     std::string recoil_e_expr;
-    for (size_t i = 0; i < m_lower_vertex_indices.size(); ++i)
-    {
-        int idx = m_lower_vertex_indices[i];
-        std::string sep = (i == 0) ? "" : " + ";
-        recoil_px_expr += sep + "PxP" + std::to_string(idx);
-        recoil_py_expr += sep + "PyP" + std::to_string(idx);
-        recoil_pz_expr += sep + "PzP" + std::to_string(idx);
-        recoil_e_expr += sep + "EnP" + std::to_string(idx);
-    }
+    std::tie(recoil_px_expr, recoil_py_expr, recoil_pz_expr, recoil_e_expr) = buildExpressions(m_data_layout, m_lower_vertex_indices);
+
+    report(DEBUG, kModule) << "Recoil expressions for -t calculation:\n";
+    report(DEBUG, kModule) << "  recoil_px_expr: " << recoil_px_expr << "\n";
+    report(DEBUG, kModule) << "  recoil_py_expr: " << recoil_py_expr << "\n";
+    report(DEBUG, kModule) << "  recoil_pz_expr: " << recoil_pz_expr << "\n";
+    report(DEBUG, kModule) << "  recoil_e_expr: " << recoil_e_expr << "\n";
 
     // ---- DATA histogram via RDataFrame ----
     TH1D *h_result = nullptr;
@@ -604,11 +603,11 @@ TH1D *RootDataConverter::tHist(const std::string &weight_branch_name)
                       .Define("recoil_pz", recoil_pz_expr)
                       .Define("recoil_E", recoil_e_expr)
                       .Define("t_value",
-                              [m_proton](double rE, double rpx, double rpy, double rpz)
+                              [m_proton](float rE, float rpx, float rpy, float rpz)
                               {
-                                  double dE = m_proton - rE;
-                                  double p2 = rpx * rpx + rpy * rpy + rpz * rpz;
-                                  double t = dE * dE - p2;
+                                  float dE = m_proton - rE;
+                                  float p2 = rpx * rpx + rpy * rpy + rpz * rpz;
+                                  float t = dE * dE - p2;
                                   return std::fabs(t);
                               },
                               {"recoil_E", "recoil_px", "recoil_py", "recoil_pz"});
@@ -657,16 +656,22 @@ TH1D *RootDataConverter::tHist(const std::string &weight_branch_name)
         {
             ROOT::RDF::RResultPtr<TH1D> h_bkg;
             ROOT::RDataFrame df_bg(m_background_tree_name, m_background_files);
-            auto dfb = df_bg.Define("recoil_px", recoil_px_expr)
-                           .Define("recoil_py", recoil_py_expr)
-                           .Define("recoil_pz", recoil_pz_expr)
-                           .Define("recoil_E", recoil_e_expr)
+            std::string bg_recoil_px_expr;
+            std::string bg_recoil_py_expr;
+            std::string bg_recoil_pz_expr;
+            std::string bg_recoil_e_expr;
+            std::tie(bg_recoil_px_expr, bg_recoil_py_expr, bg_recoil_pz_expr, bg_recoil_e_expr) = buildExpressions(m_background_layout, m_lower_vertex_indices);
+
+            auto dfb = df_bg.Define("recoil_px", bg_recoil_px_expr)
+                           .Define("recoil_py", bg_recoil_py_expr)
+                           .Define("recoil_pz", bg_recoil_pz_expr)
+                           .Define("recoil_E", bg_recoil_e_expr)
                            .Define("t_value",
-                                   [m_proton](double rE, double rpx, double rpy, double rpz)
+                                   [m_proton](float rE, float rpx, float rpy, float rpz)
                                    {
-                                       double dE = m_proton - rE;
-                                       double p2 = rpx * rpx + rpy * rpy + rpz * rpz;
-                                       double t = dE * dE - p2;
+                                       float dE = m_proton - rE;
+                                       float p2 = rpx * rpx + rpy * rpy + rpz * rpz;
+                                       float t = dE * dE - p2;
                                        return std::fabs(t);
                                    },
                                    {"recoil_E", "recoil_px", "recoil_py", "recoil_pz"});
@@ -723,20 +728,17 @@ TH1D *RootDataConverter::massHist(const std::string &weight_branch_name)
         assert(false);
     }
 
-    // Prepare branch expression strings like "PxP2 + PxP3 + ..."
     std::string upper_px_expr;
     std::string upper_py_expr;
     std::string upper_pz_expr;
     std::string upper_e_expr;
-    for (size_t i = 0; i < m_upper_vertex_indices.size(); ++i)
-    {
-        int idx = m_upper_vertex_indices[i];
-        std::string sep = (i == 0) ? "" : " + ";
-        upper_px_expr += sep + "PxP" + std::to_string(idx);
-        upper_py_expr += sep + "PyP" + std::to_string(idx);
-        upper_pz_expr += sep + "PzP" + std::to_string(idx);
-        upper_e_expr += sep + "EnP" + std::to_string(idx);
-    }
+    std::tie(upper_px_expr, upper_py_expr, upper_pz_expr, upper_e_expr) = buildExpressions(m_data_layout, m_upper_vertex_indices);
+
+    report(DEBUG, kModule) << "Upper vertex expressions for mass calculation:\n";
+    report(DEBUG, kModule) << "  upper_px_expr: " << upper_px_expr << "\n";
+    report(DEBUG, kModule) << "  upper_py_expr: " << upper_py_expr << "\n";
+    report(DEBUG, kModule) << "  upper_pz_expr: " << upper_pz_expr << "\n";
+    report(DEBUG, kModule) << "  upper_e_expr: " << upper_e_expr << "\n";
 
     TH1D *h_result = nullptr;
     try
@@ -749,13 +751,13 @@ TH1D *RootDataConverter::massHist(const std::string &weight_branch_name)
                       .Define("upper_pz", upper_pz_expr)
                       .Define("upper_E", upper_e_expr)
                       .Define("m_value",
-                              [](double E, double px, double py, double pz)
+                              [](float E, float px, float py, float pz)
                               {
-                                  double p2 = px * px + py * py + pz * pz;
-                                  double m2 = E * E - p2;
+                                  float p2 = px * px + py * py + pz * pz;
+                                  float m2 = E * E - p2;
                                   if (m2 < 0 && m2 > -1e-12)
                                       m2 = 0.0;
-                                  return std::sqrt(std::max(0.0, m2));
+                                  return std::sqrt(std::max(0.0f, m2));
                               },
                               {"upper_E", "upper_px", "upper_py", "upper_pz"});
 
@@ -793,18 +795,24 @@ TH1D *RootDataConverter::massHist(const std::string &weight_branch_name)
         {
             ROOT::RDF::RResultPtr<TH1D> h_bkg;
             ROOT::RDataFrame df_bg(m_background_tree_name, m_background_files);
-            auto dfb = df_bg.Define("upper_px", upper_px_expr)
-                           .Define("upper_py", upper_py_expr)
-                           .Define("upper_pz", upper_pz_expr)
-                           .Define("upper_E", upper_e_expr)
+            std::string bg_upper_px_expr;
+            std::string bg_upper_py_expr;
+            std::string bg_upper_pz_expr;
+            std::string bg_upper_e_expr;
+            std::tie(bg_upper_px_expr, bg_upper_py_expr, bg_upper_pz_expr, bg_upper_e_expr) = buildExpressions(m_background_layout, m_upper_vertex_indices);
+
+            auto dfb = df_bg.Define("upper_px", bg_upper_px_expr)
+                           .Define("upper_py", bg_upper_py_expr)
+                           .Define("upper_pz", bg_upper_pz_expr)
+                           .Define("upper_E", bg_upper_e_expr)
                            .Define("m_value",
-                                   [](double E, double px, double py, double pz)
+                                   [](float E, float px, float py, float pz)
                                    {
-                                       double p2 = px * px + py * py + pz * pz;
-                                       double m2 = E * E - p2;
+                                       float p2 = px * px + py * py + pz * pz;
+                                       float m2 = E * E - p2;
                                        if (m2 < 0 && m2 > -1e-12)
                                            m2 = 0.0;
-                                       return std::sqrt(std::max(0.0, m2));
+                                       return std::sqrt(std::max(0.0f, m2));
                                    },
                                    {"upper_E", "upper_px", "upper_py", "upper_pz"});
 
@@ -1001,4 +1009,99 @@ void RootDataConverter::setUpperVertexIndices()
             m_upper_vertex_indices.push_back(i);
         }
     }
+}
+
+RootDataConverter::TreeLayout RootDataConverter::detectTreeLayout(const std::string &file_type,
+                                                                  const std::string &file_path,
+                                                                  const std::string &tree_name) const
+{
+    TFile *f = TFile::Open(file_path.c_str());
+    if (!f || f->IsZombie())
+    {
+        report(ERROR, kModule) << "Error opening ROOT file: " + file_path + "\n";
+        assert(false);
+    }
+
+    TTree *tree = f->Get<TTree>(tree_name.c_str());
+    if (!tree)
+    {
+        report(ERROR, kModule) << "Error: Tree '" + tree_name + "' not found in file: " + file_path + "\n";
+        assert(false);
+    }
+
+    if (tree->GetBranch("NumFinalState") && tree->GetBranch("E_FinalState") && tree->GetBranch("Px_FinalState") && tree->GetBranch("Py_FinalState") && tree->GetBranch("Pz_FinalState"))
+    {
+        f->Close();
+        return TreeLayout::FinalState;
+    }
+    else if (tree->GetBranch("EnPB") && tree->GetBranch("PxP0") && tree->GetBranch("EnP0"))
+    {
+        f->Close();
+        return TreeLayout::FSRoot;
+    }
+    else
+    {
+        report(ERROR, kModule) << "Unable to determine tree layout for file type '" << file_type
+                               << "' in tree '" << tree_name << "' from file: " << file_path << "\n";
+        assert(false);
+    }
+
+    f->Close();
+    return TreeLayout::FSRoot;
+}
+
+std::string RootDataConverter::beamEnergyBranch(TreeLayout layout) const
+{
+    switch (layout)
+    {
+    case TreeLayout::FSRoot:
+        return "EnPB";
+    case TreeLayout::FinalState:
+        return "E_Beam";
+    }
+
+    report(ERROR, kModule) << "Unknown tree layout when resolving beam energy branch\n";
+    assert(false);
+    return "";
+}
+
+std::string RootDataConverter::componentBranch(TreeLayout layout,
+                                               const std::string &component,
+                                               int particle_index) const
+{
+    switch (layout)
+    {
+    case TreeLayout::FSRoot:
+        return component + "P" + std::to_string(particle_index);
+    case TreeLayout::FinalState:
+        // Particle indices are labelled with 0 as beam, and final state particles 
+        // beginning index=1. But the FinalState container has the first final state 
+        // particle at index=0, so we need to subtract 1 from the particle_index
+        return component + "_FinalState[" + std::to_string(particle_index-1) + "]";
+    }
+
+    report(ERROR, kModule) << "Unknown tree layout when resolving component branch\n";
+    assert(false);
+    return "";
+}
+
+std::tuple<std::string, std::string, std::string, std::string>
+RootDataConverter::buildExpressions(TreeLayout layout, const std::vector<int> &indices) const
+{
+    std::string px_expr;
+    std::string py_expr;
+    std::string pz_expr;
+    std::string e_expr;
+
+    for (size_t i = 0; i < indices.size(); ++i)
+    {
+        int idx = indices[i];
+        std::string sep = (i == 0) ? "" : " + ";
+        px_expr += sep + componentBranch(layout, "Px", idx);
+        py_expr += sep + componentBranch(layout, "Py", idx);
+        pz_expr += sep + componentBranch(layout, "Pz", idx);
+        e_expr += sep + componentBranch(layout, "E", idx);
+    }
+
+    return std::make_tuple(px_expr, py_expr, pz_expr, e_expr);
 }
