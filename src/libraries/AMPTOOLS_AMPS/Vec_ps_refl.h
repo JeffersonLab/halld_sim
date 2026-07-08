@@ -12,7 +12,6 @@
 #include <vector>
 
 using std::complex;
-using namespace std;
 
 #ifdef GPU_ACCELERATION
 void
@@ -81,13 +80,18 @@ private:
 	int m_l;
 	int m_r;
 	int m_s;
-	int m_3pi;
 	
-	//AmpParameter polAngle;
+	bool m_polInfoInPhotonP4;
 	GDouble polFraction;
 	GDouble polAngle;
-	bool m_polInTree;
 	TH1D *polFrac_vs_E;
+
+	bool m_3pi;
+	bool m_gpi0;
+	int  m_ghel;
+	bool m_noBarrier;
+	
+	
 };
 
 #endif

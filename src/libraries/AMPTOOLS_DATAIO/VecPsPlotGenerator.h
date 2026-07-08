@@ -1,4 +1,4 @@
-#if !(defined VCPSPLOTGENERATOR)
+#if !(defined VECPSPLOTGENERATOR)
 #define VECPSPLOTGENERATOR
 
 #include <vector>
@@ -34,10 +34,13 @@ public:
       case VecPsPlotGenerator::kCosThetaH: return "CosTheta_H";
       case VecPsPlotGenerator::kPhiH: return "Phi_H";
       case VecPsPlotGenerator::kProd_Ang: return "Prod_Ang";
+      case VecPsPlotGenerator::kProdOffset: return "ProdOffset";
       case VecPsPlotGenerator::kt: return "t";
+      case VecPsPlotGenerator::kRecoilMass: return "MRecoil";
+      case VecPsPlotGenerator::kProtonPsMass: return "MProtonPs";
       case VecPsPlotGenerator::kRecoilPsMass: return "MRecoilPs";
       case VecPsPlotGenerator::kLambda: return "Lambda";
-      case VecPsPlotGenerator::kProdOffset: return "ProdOffset";
+      case VecPsPlotGenerator::kDalitz: return "Dalitz";
       case VecPsPlotGenerator::kPhi_ProdVsPhi: return "Phi_ProdVsPhi";
       case VecPsPlotGenerator::kPhiOffsetVsPhi: return "PhiOffsetVsPhi";
       // Add more variables here if needed

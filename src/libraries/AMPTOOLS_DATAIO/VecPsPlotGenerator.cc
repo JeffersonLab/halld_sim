@@ -1,13 +1,33 @@
+#include <algorithm>
+
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
 #include "AMPTOOLS_AMPS/vecPsAngles.h"
-
 #include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
+
 #include "IUAmpTools/Histogram1D.h"
 #include "IUAmpTools/Kinematics.h"
 
-// Function to check if a string is a valid number
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//....oooOO0OOooo........ Structs ........oooOO0OOooo.....
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+struct Vec_ps_plot_Args {
+  bool isMoment = false;  // default Vec_ps_refl, true if Vec_ps_moment detected
+
+  // Polarization information
+  bool   polInfoInPhotonP4    = true;
+  double polAngle             = -2.0;   // -2 = not set  
+  // Amorphous sometimes is referred as having a polAngle -1, so we use -2 to 
+  // avoid possible confusion for both polAngle 
+
+  // Default is 2-body vector decay, but if omega is used as vector:
+  // Omega decay mode
+  bool omega3pi  = false;
+};
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//....oooOO0OOooo........ Helper Functions ........oooOO0OOooo.....
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static bool isValidNumber(const string& argInput, double &value){
     char* end = nullptr;
     errno = 0;  // reset global error
@@ -27,9 +47,71 @@ static bool isValidNumber(const string& argInput, double &value){
 static double parseValidatedNumber(const string& label, const string& argInput){
     double tmpValue = 0.0;
     if(!isValidNumber(argInput, tmpValue)){
-      throw std::invalid_argument("Vec_ps_refl: invalid " + label + ": " + argInput);
+      throw std::invalid_argument("[ VecPsPlotGenerator ]: invalid " + label + ": " + argInput);
     }
     return tmpValue;
+}
+
+static Vec_ps_plot_Args parsedArgs( const std::vector<std::string>& args ){
+  Vec_ps_plot_Args inputArgs;
+
+  inputArgs.isMoment = ( args[0] == "Vec_ps_moment" );
+  if( inputArgs.isMoment ){ 
+    inputArgs.polAngle  = parseValidatedNumber( "polAngle", args[1] );
+    inputArgs.omega3pi = true;
+    inputArgs.polInfoInPhotonP4 = false;
+    return inputArgs; 
+  }
+
+  // If no optional args, return now
+  if( args.size() <= 6 ) return inputArgs;
+
+  // Detect format by checking if args[6] contains '='
+  bool isKeyValue = std::any_of( args.begin() + 6, args.end(),
+      []( const std::string& s ){ return s.find('=') != std::string::npos; } );
+
+  // Lambda function to detect bare flags (valid in both formats)
+  auto isBareFlag = []( const std::string& s ){
+    return s == "omega3pi" || s == "omegagpi0" || s == "nobarrier";
+  };
+
+  if( !isKeyValue ){
+    size_t i = 6;
+
+    // arg[6]: polarization angle
+    if( i < args.size() && !isBareFlag(args[i]) && args[i].find('=') == std::string::npos ){
+      inputArgs.polAngle  = parseValidatedNumber( "polAngle", args[i++] );
+      inputArgs.polInfoInPhotonP4 = false;
+    }
+
+    // Remaining: bare flags, and gHelicity bare integer after omegagpi0
+    for( size_t i = 6; i < args.size(); i++ ){
+      if( args[i] == "omega3pi" ){
+        inputArgs.omega3pi = true;
+      }
+    }
+  } 
+  else { // key=value format
+    for( size_t i = 6; i < args.size(); i++ ){
+      const std::string& arg = args[i];
+
+      if( arg == "omega3pi"  ){ inputArgs.omega3pi  = true; continue; }
+      auto sep = arg.find('='); //  '=' is used as separator
+      if( sep == std::string::npos )
+        throw std::invalid_argument(
+          "[ Vec_ps_refl ]: unrecognized argument '" + arg +
+          "' (expected key=value pair or known flag)" );
+
+      const std::string key   = arg.substr(0, sep);
+      const std::string value = arg.substr(sep + 1);
+
+      if( key == "polAngle" ){
+        inputArgs.polAngle  = parseValidatedNumber( "polAngle",    value );
+        inputArgs.polInfoInPhotonP4 = false;
+      }
+    }
+  }
+  return inputArgs;
 }
 
 /* Constructor to display FitResults */
@@ -84,102 +166,108 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin ){
 
   // This function will make this class backwards-compatible with older versions
   // (v0.10.x and prior) of AmpTools, but will not be able to properly obtain
-  // the polariation plane in the lab when multiple orientations are used
+  // the polarization plane in the lab when multiple orientations are used
   projectEvent( kin, "" );
 }
 
 void
 VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
-   //cout << "project event" << endl;
-   TLorentzVector beam   = kin->particle( 0 );
-   TLorentzVector recoil = kin->particle( 1 );
-   // 1st after proton is always the pseudoscalar (bachelor) meson
-   TLorentzVector bach = kin->particle( 2 );
+  // The first argument in the list is Vec_ps_refl or Vec_ps_moment
+  const vector<string> args =
+      cfgInfo()->amplitudeList(reactionName, "", "").at(0)->factors().at(0);
+  Vec_ps_plot_Args inputArgs = parsedArgs( args );
+  
+  bool m_polInfoInPhotonP4  = inputArgs.polInfoInPhotonP4;
+  double beam_polAngle      = inputArgs.polAngle;
 
-   // Default is 2-body vector decay (set flag in config file for omega->3pi)
-   bool m_3pi = false;  
+  bool m_3pi                = inputArgs.omega3pi;
+  
+  //cout << "project event" << endl;
+  TLorentzVector readBeam   = kin->particle( 0 );
+  TLorentzVector recoil     = kin->particle( 1 );
+  // 1st after proton is always the pseudoscalar (bachelor) meson
+  TLorentzVector ps         = kin->particle( 2 );
 
-   // Min particle index for recoil sum
-   int min_recoil = 5; 
+  TVector3 eps;              // beam polarization vector (eps)ilon
+  TLorentzVector beam;
+  if(m_polInfoInPhotonP4){
+    // When pol info is stored in the photon 4-vector in the tree
+    // the energy (pKin[0][0]) and the pz (pKin[0][3]) are used as normal 
+    beam.SetPxPyPzE( 0.0, 0.0, readBeam.Pz(), readBeam.E() );
+    // while the px and py components store the pol info
+    // The values should be stored as px = polFraction*cos(polAngle) 
+    // and py = polFraction*sin(polAngle)
+    eps.SetXYZ(readBeam.Px(), readBeam.Py(), 0.0); 
+    beam_polAngle = eps.Phi();
+  }
+  else{
+    beam = readBeam;
+  }
 
-   
-   // Properly read polarization angle from config file if provided
-   double beam_polAngle=0;
-   // Check config file for optional parameters -- we assume here that the
-   // first amplitude in the list is a Vec_ps_refl amplitude or a Vec_ps_moment
-   const vector<string> args =
-       cfgInfo()->amplitudeList(reactionName, "", "").at(0)->factors().at(0);
-   for(uint ioption = 0; ioption < args.size(); ioption++){
-      TString option = args[ioption].c_str();
-      if(option.EqualTo("Vec_ps_moment")){
-      // Force the 3pi decay as it's currently the only one handled by it
-      m_3pi = true;
-      break;
-     }
-     else{
-       if(ioption == 6){
-         beam_polAngle = parseValidatedNumber("polarization angle", args[6]);
-       }
-       if(option.EqualTo("omega3pi")){
-         m_3pi = true;
-       }
-     }
-   }
+  // Min particle index for recoil sum
+  int min_recoil = 5; 
 
-   // Compute vector meson from its decay products
-   // Make sure the order of daughters is correct in the config file!
-   TLorentzVector vec, vec_daught1, vec_daught2;  
-   double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc;
-   double dalitz_x = 0.0;
-   double dalitz_y = 0.0;
-
-   if(m_3pi) {
-     // Omega ps proton, omega -> 3pi (6 particles)
-     // Omega pi- Delta++, omega -> 3pi (7 particles)
-     TLorentzVector pi0 = kin->particle( 3 );
-     TLorentzVector pip = kin->particle( 4 );
-     TLorentzVector pim = kin->particle( 5 );
-     vec = pi0 + pip + pim;
-     vec_daught1 = pip;
-     vec_daught2 = pim;
-	  min_recoil = 6;
-
-	  // Dalitz variables
+  // Compute vector meson from its decay products
+  // Make sure the order of daughters is correct in the config file!
+  TLorentzVector vec, vec_daught1, vec_daught2;  
+  double dalitz_s, dalitz_t, dalitz_u, dalitz_d, dalitz_sc;
+  double dalitz_x = 0.0;
+  double dalitz_y = 0.0;
+  
+  if(m_3pi) {
+    // Omega ps proton, omega -> 3pi (6 particles):
+    // beam proton ps pi0 pip pim
+    // Omega pi- Delta++, omega -> 3pi (6 particles):
+    // beam delta ps pi0 pip pim
+    TLorentzVector pi0 = kin->particle( 3 );
+    TLorentzVector pip = kin->particle( 4 );
+    TLorentzVector pim = kin->particle( 5 );
+    vec = pi0 + pip + pim;
+    vec_daught1 = pip;
+    vec_daught2 = pim;
+    min_recoil = 6;
+    
+	  // Dalitz variables are included here.
+    // They amplitude tends to be multiply in the config file but that's not
+    // somthing we know here (can we?)
 	  const auto& p2 = pi0;
 	  const auto& p3 = pip;
 	  const auto& p4 = pim;
-     double pdg_m_pi0 = 0.1349766;
-     double pdg_m_chargedPi = 0.13957018;
-     dalitz_s = (p3 + p4).M2();  // s=M(pip pim)
-     dalitz_t = (p2 + p3).M2();  // s=M(pip pi0)
-     dalitz_u = (p2 + p4).M2();  // s=M(pim pi0)
-     dalitz_d = 2 * (p2 + p3 + p4).M() *
-                ((p2 + p3 + p4).M() - ((2 * pdg_m_chargedPi) + pdg_m_pi0));
-     dalitz_sc = (1.0 / 3.0) * ((p2 + p3 + p4).M2() +
-                                ((2 * (pdg_m_chargedPi * pdg_m_chargedPi)) +
-                                 (pdg_m_pi0 * pdg_m_pi0)));
-     dalitz_x = sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
-     dalitz_y = 3.0 * (dalitz_sc - dalitz_s) / dalitz_d;
-
-   }
+    double pdg_m_pi0 = 0.1349766;
+    double pdg_m_chargedPi = 0.13957018;
+    dalitz_s = (p3 + p4).M2();  // s=M(pip pim)
+    dalitz_t = (p2 + p3).M2();  // s=M(pip pi0)
+    dalitz_u = (p2 + p4).M2();  // s=M(pim pi0)
+    dalitz_d = 2 * (p2 + p3 + p4).M() *
+               ((p2 + p3 + p4).M() - ((2 * pdg_m_chargedPi) + pdg_m_pi0));
+    dalitz_sc = (1.0 / 3.0) * ((p2 + p3 + p4).M2() +
+                               ((2 * (pdg_m_chargedPi * pdg_m_chargedPi)) +
+                                (pdg_m_pi0 * pdg_m_pi0)));
+    dalitz_x = sqrt(3.0) * (dalitz_t - dalitz_u) / dalitz_d;
+    dalitz_y = 3.0 * (dalitz_sc - dalitz_s) / dalitz_d;
+  }
    else {
-	  // omega ps proton, omega -> pi0 g (4 particles)
-	  // omega pi- Delta++, omega -> pi0 g (5 particles)
-	  
-	  // (vec 2-body) ps proton, vec 2-body -> pipi, KK (5 particles)
-	  // (vec 2-body) pi- Delta++, vec 2-body -> pipi, KK (6 particles)
-	  // (vec 2-body) K+ Lambda, vec 2-body -> Kpi (6 particles)
+    // Omega ps proton, omega -> gpi0 (5 particles):
+    // beam proton ps pi0 gamma
+    // Omega pi- Delta++, omega -> gpi (5 particles):
+    // beam delta ps pi0 gamma
+    // Vec(KK) ps proton, (5 particles)
+    // beam proton ps K K
+	  // Vec(pipi) pi- Delta++, (5 particles)
+    // beam proton ps pi pi
+	  // Vec(Kpi) K+ Lambda, (5 particles)
+    // beam proton ps K pi
 	  vec_daught1 = kin->particle( 3 );
-     vec_daught2 = kin->particle( 4 );
-     vec = vec_daught1 + vec_daught2;
+    vec_daught2 = kin->particle( 4 );
+    vec = vec_daught1 + vec_daught2;
 	  min_recoil = 5;
    }
 
    // Final meson system P4
-   TLorentzVector X = vec + bach;
+   TLorentzVector X = vec + ps;
 
-   TLorentzVector proton_ps = recoil + bach;
+   TLorentzVector proton_ps = recoil + ps;
    TLorentzVector recoil_ps = proton_ps;
    for(uint i=min_recoil; i<kin->particleList().size(); i++){ 
 	   // Add mesons to recoil system (e.g. Delta or Lambda)
@@ -187,30 +275,29 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 	   recoil_ps += kin->particle(i);
    }
 
-   TLorentzVector target(0,0,0,0.938);
-   // Helicity coordinate system
-   TLorentzVector beamP = beam + target;
+   TLorentzVector target(0,0,0,0.938);  // proton at rest
+   TLorentzVector beamTarget = beam + target;
 
    // Calculate decay angles for X in helicity frame (same for all vectors)
    // Change getXDecayAngles to get Gottfried-Jackson angles if needed
    // Note: it also calculates the production angle
-   vector <double> xDecayAngles = getXDecayAngles( beam_polAngle, beam, beamP, X, vec);
+   vector <double> xDecayAngles = getXDecayAngles( beam_polAngle, beam, beamTarget, X, vec);
    // set polarization angle to zero to see shift in Phi_Prod distributions 
-   vector <double> xDecayAngles_offset = getXDecayAngles( 0, beam, beamP, X, vec);
+   vector <double> xDecayAngles_offset = getXDecayAngles( 0, beam, beamTarget, X, vec);
 
    // Calculate vector decay angles (unique for each vector)
    vector <double> vectorDecayAngles;
    if(m_3pi){
-    vectorDecayAngles = getVectorDecayAngles( beamP, X, vec,
+    vectorDecayAngles = getVectorDecayAngles( beamTarget, X, vec,
                                               vec_daught1, vec_daught2);
    }
    else{
-    vectorDecayAngles = getVectorDecayAngles( beamP, X, vec,
+    vectorDecayAngles = getVectorDecayAngles( beamTarget, X, vec,
                                         vec_daught1, TLorentzVector(0,0,0,0));
    }
 
    double Mandt = fabs((target-recoil).M2());
-   double recoil_mass = recoil.M();  
+   double recoil_mass = recoil.M2();  
 
    GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
    GDouble phi = xDecayAngles[1];
