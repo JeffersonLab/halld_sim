@@ -38,15 +38,15 @@
 /**
  * @class AmplitudeParser
  * @brief Parses amplitude names and builds coherent sums based on naming schemes
- * 
+ *
  * This class is responsible for parsing amplitude names from AmpTools fit results and
- * grouping them into coherent sums based on shared quantum numbers. It supports 
- * multiple naming schemes, which can be selected by the user or inferred from the 
- * amplitude labels. The parser identifies the relevant quantum numbers from the 
- * amplitude names and groups amplitudes that share those quantum numbers into sums, 
- * which can then be used to calculate intensities of sums e.g. total reflectivity 
- * contributions, or total spin contributions. 
- * 
+ * grouping them into coherent sums based on shared quantum numbers. It supports
+ * multiple naming schemes, which can be selected by the user or inferred from the
+ * amplitude labels. The parser identifies the relevant quantum numbers from the
+ * amplitude names and groups amplitudes that share those quantum numbers into sums,
+ * which can then be used to calculate intensities of sums e.g. total reflectivity
+ * contributions, or total spin contributions.
+ *
  * @note All amplitudes that match the criteria for a sum group will be included,
  * meaning amplitudes will be gathered across reactions and sums as long as they share
  * the relevant quantum numbers based on the selected naming scheme. For example, if we
@@ -56,7 +56,7 @@
  * - "reaction2::sum1::p1ppS"
  * Then all three of these amplitudes would be included in the same sum group "JPL"
  * because they all share the same J, P, and L values.
- * 
+ *
  */
 class AmplitudeParser
 {

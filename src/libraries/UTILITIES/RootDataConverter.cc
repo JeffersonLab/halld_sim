@@ -187,7 +187,6 @@ std::string RootDataConverter::getCSVRow() const
     return row;
 }
 
-
 std::vector<std::string> RootDataConverter::findFiles(const std::string &file_type) const
 {
     std::vector<std::string> files;

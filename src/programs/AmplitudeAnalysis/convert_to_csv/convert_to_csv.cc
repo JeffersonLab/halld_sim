@@ -11,7 +11,7 @@
  * naming schemes, which it uses to group amplitudes into coherent sums based on shared
  * quantum numbers. The output CSV files can then be easily imported into just about any
  * data analysis or plotting software.
- * 
+ *
  * Print the help message with
  * @verbatim
  * user@host:~$ convert_to_csv -h
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
     auto print_help = []()
     {
-        report(INFO, kModule) << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH] [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-n NAMING_SCHEME] [-p] [-v] [--correlation] [--covariance] [--norm-int] \n";                
+        report(INFO, kModule) << "Usage: convert_to_csv [-h] [-i INPUT_FILES] [-o OUTPUT_PATH] [-s] [--sort-index INDEX] [-a] [-d] [-l LOWER_VERTEX_INDICES] [-n NAMING_SCHEME] [-p] [-v] [--correlation] [--covariance] [--norm-int] \n";
         report(INFO, kModule) << "  -i INPUT_FILES:\t\tFull path to the .fit file(s)\n";
         report(INFO, kModule) << "  -o OUTPUT_PATH:\t\tFull path to the output .csv file\n";
         report(INFO, kModule) << "  -s, --sort:\t\t\tSort files by last number in the file name or path (default:true)\n";
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
     std::stringstream csv_result_data, csv_cov_data, csv_corr_data, csv_norm_int_data, csv_root_data;
     bool header_written = false;
     std::string first_file_result_header, first_file_cov_header, first_file_corr_header, first_file_norm_int_header, first_file_data_header;
-    
+
     for (const auto &file : input_files)
     {
         if (verbose)
@@ -316,9 +316,9 @@ int main(int argc, char *argv[])
             }
         }
         else
-        { 
+        {
             // this block ensures all files have the same csv header format. If this is
-            // not the case, then the csv files will be malformed and difficult to work 
+            // not the case, then the csv files will be malformed and difficult to work
             // with, so we enforce that here before processing any files
             std::string header = converter.getCSVHeader();
             if (header != first_file_result_header)
@@ -393,11 +393,10 @@ int main(int argc, char *argv[])
     result_file << csv_result_data.str();
     result_file.close();
 
-    // covariance and correlation matrix files are written to separate files in the same
-    // directory as the main output file, with suffixes _covariance.csv and 
-    // _correlation.csv
+    // supplemental files are written to separate files in the same directory as the
+    // main output file, with appropriate suffixes e.g. "_data.csv", "correlation.csv"
     if (create_covariance)
-    {        
+    {
         std::filesystem::path output_path(output_file);
         std::string covariance_file = (output_path.parent_path() / (output_path.stem().string() + "_covariance.csv")).string();
         std::ofstream cov_file(covariance_file);
