@@ -42,17 +42,17 @@
  * std::ofstream csv_file(output_file);
  * std::stringstream csv_data;
  * bool header_written = false;
- * 
+ *
  * for (const auto& file : input_files) {
  *    RootDataConverter converter(file);
- * 
+ *
  *    if (!header_written) {
  *        csv_data << converter.getCSVHeader() << "\n";
  *        header_written = true;
  *    }
  *    csv_data << converter.getCSVRow() << "\n";
  * }
- * 
+ *
  * csv_file << csv_data.str();
  * csv_file.close();
  * @endcode
@@ -129,24 +129,24 @@ public:
 
     /**
      * @brief Get the CSV header row
-     * 
+     *
      * Constructs a comma-separated header string based on the keys of the m_values map.
-     * 
+     *
      * @note It is crucial that the order of entries in the header matches the order of
      * values in getCSVRow().
-     * 
+     *
      * @return std::string Comma-separated header string
      */
     std::string getCSVHeader() const;
 
     /**
      * @brief Get the CSV row
-     * 
+     *
      * Constructs a comma-separated row string based on the values of the m_values map.
-     * 
+     *
      * @note It is crucial that the order of values in this row matches the order of
      * entries in getCSVHeader().
-     * 
+     *
      * @return std::string Comma-separated row string
      */
     std::string getCSVRow() const;
@@ -190,7 +190,7 @@ public:
     void validateDataFiles() const { validateFiles(m_data_files, "data"); }
     /**
      * @brief Validate that background files were found
-     * 
+     *
      * If no background files are found, it will warn the user and assume that weights
      * are stored directly in the data tree.
      */
@@ -445,11 +445,11 @@ private:
 
     /**
      * @brief Calculate the acceptance-corrected number of events and associated error
-     * 
+     *
      * @param events total number of events. See numberOfEvents.
      * @param events_err error on total number of events. See numberOfEvents.
      * @param efficiency acceptance efficiency. See efficiency().
-     * @return std::pair<double, double> acceptance-corrected number of events and 
+     * @return std::pair<double, double> acceptance-corrected number of events and
      * associated error
      */
     std::pair<double, double> acceptanceCorrectedEvents(double events, double events_err, double efficiency) const;

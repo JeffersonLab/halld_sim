@@ -205,7 +205,7 @@ std::set<std::string> FitConverter::uniqueSumAmpNames() const
         size_t last_colon = amplitude.rfind("::");
         if (first_colon != std::string::npos && last_colon != std::string::npos && first_colon != last_colon)
         {
-            std::string sum_amp_name = amplitude.substr(first_colon + 2, last_colon - first_colon - 2);
+            std::string sum_amp_name = amplitude.substr(first_colon + 2);
             unique_names.insert(sum_amp_name);
         }
     }
