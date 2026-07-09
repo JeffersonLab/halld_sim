@@ -92,8 +92,6 @@ int UseCurrentTimeForRandomSeed = TRUE;
  * When "Use*" is FALSE the corresponding bound is not applied
  * and returns to its original behavior).
  */
-double UserTMin=0.0, UserTMax=0.0;
-int UseUserTMin=0, UseUserTMax=0;
 double UserMMin=0.0, UserMMax=0.0;
 int UseUserMMin=0, UseUserMMax=0;
 
@@ -147,8 +145,6 @@ void PrintUsage(char *processName)
   fprintf(stderr,"\t-A<filename> Save in ascii format. \n");
   fprintf(stderr,"\t-s<seed> Set random number seed to <seed>. \n");
   fprintf(stderr,"\t         (default is to set using current time + pid) \n");
-  fprintf(stderr,"\t-tmin<t_min> Restrict generated |t| to be >= t_min (GeV^2). \n");
-  fprintf(stderr,"\t-tmax<t_max> Restrict generated |t| to be <= t_max (GeV^2). \n");
   fprintf(stderr,"\t-Mmin<M_min> Restrict generated X (isobar) mass to be >= M_min (GeV). \n");
   fprintf(stderr,"\t-Mmax<M_max> Restrict generated X (isobar) mass to be <= M_max (GeV). \n");
   fprintf(stderr,"\t-h Print this help message\n\n");
@@ -209,17 +205,7 @@ int main(int argc,char **argv)
     argptr = argv[i];
     if ((*argptr == '-') && (strlen(argptr) > 1)) {
 	    argptr++;
-  	  if (strncmp(argptr,"tmin",4) == 0) {
-	      UserTMin = atof(argptr+4);
-	      UseUserTMin = 1;
-	      fprintf(stderr,"Restricting generated |t| to be >= %lf GeV^2\n",UserTMin);
-	    }
-	    else if (strncmp(argptr,"tmax",4) == 0) {
-	      UserTMax = atof(argptr+4);
-	      UseUserTMax = 1;
-	      fprintf(stderr,"Restricting generated |t| to be <= %lf GeV^2\n",UserTMax);
-	    }
-      else if (strncmp(argptr,"Mmin",4) == 0) {
+      if (strncmp(argptr,"Mmin",4) == 0) {
         UserMMin = atof(argptr+4);
         UseUserMMin = 1;
         fprintf(stderr,"Restricting generated X mass to be >= %lf GeV\n",UserMMin);
@@ -281,18 +267,6 @@ int main(int argc,char **argv)
     }
   }
 }
-
-  /*
-   * Normalize the user-requested t window in case it was given
-   * with tmin/tmax reversed (t is signed, so "min"/"max" as typed on
-   * the command line may not match low/high numerically).
-   */
-  if(UseUserTMin && UseUserTMax && UserTMin > UserTMax){
-    double tmp = UserTMin;
-    UserTMin = UserTMax;
-    UserTMax = tmp;
-    fprintf(stderr,"Warning: -tmin was greater than -tmax; swapping them.\n");    
-  }
 
   /*
    *  Seed the random number generator.
@@ -698,9 +672,6 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
     expt_max = exp(-slope * t_max);
     expt_min = exp(-slope * t_min);
 
-    {
-      int t_tries = 0;
-      const int T_TRY_MAX = 1000000;
     do{
      
       expt = randm(expt_max,expt_min);
@@ -710,19 +681,7 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
 		   0.5*(t + (event_beam.mass)*(event_beam.mass) + (X->mass)*(X->mass))
 		   )/( v3mag(&(event_beam.p.space))*X_momentum ) ;
       
-    if(++t_tries > T_TRY_MAX){
-      fprintf(stderr,
-        "Could not find a valid t within the requested -tmin/-tmax window after %d tries.\n"
-        "The requested t window likely does not overlap the kinematically allowed t range "
-        "for this beam/target/mass combination. Exiting to avoid an infinite loop.\n",
-        T_TRY_MAX);
-      exit(-1);
-    }
-
-      }while(fabs(costheta)>1.0
-        || (UseUserTMin && t < UserTMin)
-        || (UseUserTMax && t > UserTMax) );
-    }
+      }while(fabs(costheta)>1.0  ); 
     
     theta = acos(costheta);
     phi = randm(-1*M_PI,M_PI);
