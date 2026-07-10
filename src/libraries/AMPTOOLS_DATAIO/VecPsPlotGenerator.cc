@@ -9,115 +9,47 @@
 #include "IUAmpTools/Histogram1D.h"
 #include "IUAmpTools/Kinematics.h"
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//....oooOO0OOooo........ Structs ........oooOO0OOooo.....
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-struct Vec_ps_plot_Args {
-  bool isMoment = false;  // default Vec_ps_refl, true if Vec_ps_moment detected
-
-  // Polarization information
-  bool   polInfoInPhotonP4    = true;
-  double polAngle             = -2.0;   // -2 = not set  
-  // Amorphous sometimes is referred as having a polAngle -1, so we use -2 to 
-  // avoid possible confusion for both polAngle 
-
-  // Default is 2-body vector decay, but if omega is used as vector:
-  // Omega decay mode
-  bool omega3pi  = false;
-};
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //....oooOO0OOooo........ Helper Functions ........oooOO0OOooo.....
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-static bool isValidNumber(const string& argInput, double &value){
-    char* end = nullptr;
-    errno = 0;  // reset global error
-    value = std::strtod(argInput.c_str(), &end);
+void VecPsPlotGenerator::cacheArgs(){
+    
+    const auto& reactionList = cfgInfo()->reactionList();
+    for( const auto& reaction : reactionList ){
+      const std::string reactionName = reaction->reactionName();
+      const std::vector<std::string>& fullAmplitudeArgs = 
+         cfgInfo()->amplitudeList(reactionName, "", "").at(0)->factors().at(0);
 
-    // Check if 
-    // (1) no conversion was performed 
-    // (2) there are leftover characters
-    // (3) an overflow/underflow occurred   
-    if(end == argInput.c_str() || *end != '\0' || errno != 0) {
-        return false;  // not a valid number
-    }
-    // If end points to the end of string, it's fully numeric
-    return true;
-}
-
-static double parseValidatedNumber(const string& label, const string& argInput){
-    double tmpValue = 0.0;
-    if(!isValidNumber(argInput, tmpValue)){
-      throw std::invalid_argument("[ VecPsPlotGenerator ]: invalid " + label + ": " + argInput);
-    }
-    return tmpValue;
-}
-
-static Vec_ps_plot_Args parsedArgs( const std::vector<std::string>& args ){
-  Vec_ps_plot_Args inputArgs;
-
-  inputArgs.isMoment = ( args[0] == "Vec_ps_moment" );
-  if( inputArgs.isMoment ){ 
-    inputArgs.polAngle  = parseValidatedNumber( "polAngle", args[1] );
-    inputArgs.omega3pi = true;
-    inputArgs.polInfoInPhotonP4 = false;
-    return inputArgs; 
-  }
-
-  // If no optional args, return now
-  if( args.size() <= 6 ) return inputArgs;
-
-  // Detect format by checking if args[6] contains '='
-  bool isKeyValue = std::any_of( args.begin() + 6, args.end(),
-      []( const std::string& s ){ return s.find('=') != std::string::npos; } );
-
-  // Lambda function to detect bare flags (valid in both formats)
-  auto isBareFlag = []( const std::string& s ){
-    return s == "omega3pi" || s == "omegagpi0" || s == "nobarrier";
-  };
-
-  if( !isKeyValue ){
-    size_t i = 6;
-
-    // arg[6]: polarization angle
-    if( i < args.size() && !isBareFlag(args[i]) && args[i].find('=') == std::string::npos ){
-      inputArgs.polAngle  = parseValidatedNumber( "polAngle", args[i++] );
-      inputArgs.polInfoInPhotonP4 = false;
-    }
-
-    // Remaining: bare flags, and gHelicity bare integer after omegagpi0
-    for( size_t i = 6; i < args.size(); i++ ){
-      if( args[i] == "omega3pi" ){
+      // Remove the amplitude name since the Vec_ps_refl parser expects only 
+      // the arguments of the amplitude
+      std::vector<std::string> args(fullAmplitudeArgs.begin() + 1, 
+                                    fullAmplitudeArgs.end());
+      
+      Vec_ps_refl::VecPsReflArgs inputArgs;
+      const std::string context = "VecPsPlotGenerator";
+      // The first argument in the list is Vec_ps_refl or Vec_ps_moment
+      if( fullAmplitudeArgs[0] == "Vec_ps_moment" ){ 
+        inputArgs.polAngle  = Vec_ps_refl::parseValidatedNumber( "polAngle", args[1], context );
         inputArgs.omega3pi = true;
-      }
-    }
-  } 
-  else { // key=value format
-    for( size_t i = 6; i < args.size(); i++ ){
-      const std::string& arg = args[i];
-
-      if( arg == "omega3pi"  ){ inputArgs.omega3pi  = true; continue; }
-      auto sep = arg.find('='); //  '=' is used as separator
-      if( sep == std::string::npos )
-        throw std::invalid_argument(
-          "[ Vec_ps_refl ]: unrecognized argument '" + arg +
-          "' (expected key=value pair or known flag)" );
-
-      const std::string key   = arg.substr(0, sep);
-      const std::string value = arg.substr(sep + 1);
-
-      if( key == "polAngle" ){
-        inputArgs.polAngle  = parseValidatedNumber( "polAngle",    value );
         inputArgs.polInfoInPhotonP4 = false;
       }
+      else if( fullAmplitudeArgs[0] == "Vec_ps_refl" ){
+        inputArgs = Vec_ps_refl::parsedArgs( args , context );
+      }
+      else{
+        throw std::invalid_argument(
+          "[ " + context + " ] unrecognized amplitude '" + fullAmplitudeArgs[0] +
+          "' (expected 'Vec_ps_refl' or 'Vec_ps_moment')" );
+      }
+      m_args.emplace(reactionName, inputArgs);
     }
   }
-  return inputArgs;
-}
 
 /* Constructor to display FitResults */
 VecPsPlotGenerator::VecPsPlotGenerator( const FitResults& results, Option opt ) :
 PlotGenerator( results, opt )
 {
+  cacheArgs();
 	createHistograms();
 }
 
@@ -173,15 +105,11 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin ){
 void
 VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
-  // The first argument in the list is Vec_ps_refl or Vec_ps_moment
-  const vector<string> args =
-      cfgInfo()->amplitudeList(reactionName, "", "").at(0)->factors().at(0);
-  Vec_ps_plot_Args inputArgs = parsedArgs( args );
+  const auto& inputArgs = m_args.at(reactionName);
   
-  bool polInfoInPhotonP4    = inputArgs.polInfoInPhotonP4;
-  double beamPolAngle      = inputArgs.polAngle;
-
-  bool omega3pi             = inputArgs.omega3pi;
+  bool polInfoInPhotonP4 = inputArgs.polInfoInPhotonP4;
+  double beamPolAngle    = inputArgs.polAngle;
+  bool omega3pi          = inputArgs.omega3pi;
   
   //cout << "project event" << endl;
   TLorentzVector readBeam   = kin->particle( 0 );

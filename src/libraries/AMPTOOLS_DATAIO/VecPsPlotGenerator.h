@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+
 #include "IUAmpTools/PlotGenerator.h"
 
 using namespace std;
@@ -54,6 +56,10 @@ private:
   void projectEvent( Kinematics* kin, const string& reactionName );
 
   void createHistograms( );
+
+  std::map<std::string, Vec_ps_refl::VecPsReflArgs> m_args;
+  
+  void cacheArgs();
  
 };
 

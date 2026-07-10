@@ -130,212 +130,162 @@
 
 #include "UTILITIES/BeamProperties.h"
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//....oooOO0OOooo........ Structs ........oooOO0OOooo.....
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-struct Vec_ps_refl_Args {
-  // Required positional args
-  int j;      // Total spin
-  int m;      // Spin projection
-  int l;      // Relative orbital angular momentum
-  int r;      // +1/-1 for (r)eal/imaginary part of the amplitude
-  int s;      // +1/-1 (s)ign of the P_gamma term
-
-  // Polarization information
-  bool   polInfoInPhotonP4    = true;
-  double polAngle             = -2.0;   // -2 = not set  
-  double polFraction          = -2.0;   // -2 = not set
-  // Amorphous sometimes is referred as having a polAngle -1, so we use -2 to 
-  // avoid possible confusion for both polAngle and polFraction
-  std::string polFile      = ""; // path to .root file with polarization vs E_beam
-  std::string polHist      = ""; // name of TH1D inside polFile
-
-  // Default is 2-body vector decay, but if omega is used as vector:
-  // Omega decay mode
-  bool omega3pi  = false;
-  bool omegagpi0 = false;
-  int  gHelicity = 0;  // +1/-1 helicity of the bachelor photon in omega->g pi0
-
-  bool noBarrier = false;    // Turn off barrier factors
-};
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//....oooOO0OOooo........ Helper Functions ........oooOO0OOooo.....
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-static bool isValidNumber(const std::string& argInput, double &value){
-    char* end = nullptr;
-    errno = 0;  // reset global error
-    value = std::strtod(argInput.c_str(), &end);
-
-    // Check if 
-    // (1) no conversion was performed 
-    // (2) there are leftover characters
-    // (3) an overflow/underflow occurred   
-    if(end == argInput.c_str() || *end != '\0' || errno != 0) {
-        return false;  // not a valid number
-    }
-    // If "end" points to the end of string, it's fully numeric
-    return true;
-}
-
-static double parseValidatedNumber(const std::string& label, const std::string& argInput){
-    double tmpValue = 0.0;
-    if(!isValidNumber(argInput, tmpValue)){
-      throw std::invalid_argument("[ Vec_ps_refl ]: invalid " + label + ": " + argInput);
-    }
-    return tmpValue;
-}
-
-static Vec_ps_refl_Args parsedArgs( const std::vector<std::string>& args ){
-  Vec_ps_refl_Args inputArgs;
-
-  // Required positional args 
-  inputArgs.j = static_cast<int>( parseValidatedNumber( "J",            args[0] ) );
-  inputArgs.m = static_cast<int>( parseValidatedNumber( "M",            args[1] ) );
-  inputArgs.l = static_cast<int>( parseValidatedNumber( "L",            args[2] ) );
-  inputArgs.r = static_cast<int>( parseValidatedNumber( "Re/Im",        args[3] ) );
-  inputArgs.s = static_cast<int>( parseValidatedNumber( "P_gamma sign", args[4] ) );
-
-  // Physics validation of required args
-  if( abs(inputArgs.m) > inputArgs.j )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: |M| must be <= J, got J=" + args[0] + " M=" + args[1] );
-  if( abs(inputArgs.r) != 1 )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: Re/Im flag must be +1 or -1, got " + args[3] );
-  if( abs(inputArgs.s) != 1 )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: P_gamma sign must be +1 or -1, got " + args[4] );
-
-  // If no optional args, return now
-  if( args.size() <= 5 ) return inputArgs;
-
-  // Detect format by checking if args[5] contains '='
-  bool isKeyValue = std::any_of( args.begin() + 5, args.end(),
-      []( const std::string& s ){ return s.find('=') != std::string::npos; } );
-
-  // Lambda function to detect bare flags (valid in both formats)
-  auto isBareFlag = []( const std::string& s ){
-    return s == "omega3pi" || s == "omegagpi0" || s == "nobarrier";
-  };
-
-  if( !isKeyValue ){
-    size_t i = 5;
-
-    // arg[5]: polarization angle
-    if( i < args.size() && !isBareFlag(args[i]) && args[i].find('=') == std::string::npos ){
-      inputArgs.polAngle  = parseValidatedNumber( "polAngle", args[i++] );
-      inputArgs.polInfoInPhotonP4 = false;
-    }
-
-    // arg[6]: fixed fraction or .root file path
-    if( i < args.size() && !isBareFlag(args[i]) && args[i].find('=') == std::string::npos ){
-      if( args[i].find(".root") != std::string::npos ){
-        inputArgs.polFile = args[i++];
-        if( i >= args.size() || isBareFlag(args[i]) )
-          throw std::invalid_argument(
-            "[ Vec_ps_refl ]: .root polarization file requires a histogram name immediately after it" );
-        inputArgs.polHist = args[i++];
-      } else {
-        inputArgs.polFraction = parseValidatedNumber( "polFraction", args[i++] );
-      }
-    }
-
-    // Remaining: bare flags, and gHelicity bare integer after omegagpi0
-    while( i < args.size() ){
-      if( args[i] == "omega3pi" ){
-        inputArgs.omega3pi = true;
-        i++;
-      }
-      else if( args[i] == "omegagpi0" ){
-        inputArgs.omegagpi0 = true;
-        if( i + 1 >= args.size() )
-          throw std::invalid_argument(
-            "[ Vec_ps_refl ]: omegagpi0 requires a photon helicity value (+1 or -1) immediately after it" );
-        inputArgs.gHelicity = static_cast<int>( parseValidatedNumber( "gHelicity", args[i+1] ) );
-        i += 2;
-      }
-      else if( args[i] == "nobarrier" ){
-        inputArgs.noBarrier = true;
-        i++;
-      }
-      else{
-        throw std::invalid_argument(
-          "[ Vec_ps_refl ]: unrecognized positional argument '" + args[i] + "'" );
-      }
-    }
-  } 
-  else { // key=value format
-    for( size_t i = 5; i < args.size(); i++ ){
-      const std::string& arg = args[i];
-
-      if( arg == "omega3pi"  ){ inputArgs.omega3pi  = true; continue; }
-      if( arg == "omegagpi0" ){ inputArgs.omegagpi0 = true; continue; }
-      if( arg == "nobarrier" ){ inputArgs.noBarrier = true; continue; }
-      auto sep = arg.find('='); //  '=' is used as separator
-      if( sep == std::string::npos )
-        throw std::invalid_argument(
-          "[ Vec_ps_refl ]: unrecognized argument '" + arg +
-          "' (expected key=value pair or known flag)" );
-
-      const std::string key   = arg.substr(0, sep);
-      const std::string value = arg.substr(sep + 1);
-
-      if( key == "polAngle" ){
-        inputArgs.polAngle  = parseValidatedNumber( "polAngle",    value );
-        inputArgs.polInfoInPhotonP4 = false;
-      }
-      else if( key == "polFraction" ){
-        inputArgs.polFraction = parseValidatedNumber( "polFraction", value );
-      }
-      else if( key == "polFile" ){ inputArgs.polFile = value; }
-      else if( key == "polHist" ){ inputArgs.polHist = value; }
-      else if( key == "gHelicity" ){
-        inputArgs.gHelicity = static_cast<int>( parseValidatedNumber( "gHelicity", value ) );
-      }
-      else{
-        throw std::invalid_argument(
-          "[ Vec_ps_refl ]: unrecognized key '" + key + "'" );
-      }
-    }
-  }
-
-  // Post-parse validation
-  if( inputArgs.polFile != "" && inputArgs.polHist == "" )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: polFile='" + inputArgs.polFile +
-      "' requires polHist=<histName> to also be specified" );
-
-  if( inputArgs.polHist != "" && inputArgs.polFile == "" )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: polHist='" + inputArgs.polHist +
-      "' was specified without polFile=<path.root>" );
-
-  if( inputArgs.polFraction >= 0.0 && inputArgs.polFile != "" )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: polFraction and polFile are mutually exclusive; specify only one" );
-      
-  if( inputArgs.omegagpi0 && abs(inputArgs.gHelicity) != 1 )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: omegagpi0 requires gHelicity=+1 or gHelicity=-1" );
-      
-  if( inputArgs.gHelicity != 0 && !inputArgs.omegagpi0 )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: gHelicity was specified but omegagpi0 flag is missing" );
-
-  if( inputArgs.omega3pi && inputArgs.omegagpi0 )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: omega3pi and omegagpi0 are mutually exclusive; specify only one" );
-
-  if( !inputArgs.polInfoInPhotonP4 && inputArgs.polFraction < 0.0 && inputArgs.polFile == "" )
-    throw std::invalid_argument(
-      "[ Vec_ps_refl ]: polAngle was given but neither polFraction nor polFile+polHist were provided" );
-
-  return inputArgs;
-}
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//....oooOO0OOooo........ Helper Functions ........oooOO0OOooo.....
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
+	Vec_ps_refl::VecPsReflArgs Vec_ps_refl::parsedArgs(
+                    const std::vector<std::string>& args, 
+									  const std::string& context){
+	  VecPsReflArgs inputArgs;
+	
+	  // Required positional args 
+	  inputArgs.j = static_cast<int>( parseValidatedNumber( "J",            args[0], context ) );
+	  inputArgs.m = static_cast<int>( parseValidatedNumber( "M",            args[1], context ) );
+	  inputArgs.l = static_cast<int>( parseValidatedNumber( "L",            args[2], context ) );
+	  inputArgs.r = static_cast<int>( parseValidatedNumber( "Re/Im",        args[3], context ) );
+	  inputArgs.s = static_cast<int>( parseValidatedNumber( "P_gamma sign", args[4], context ) );
+	
+	  // Physics validation of required args
+	  if( abs(inputArgs.m) > inputArgs.j )
+		throw std::invalid_argument(
+		  "[ " + context + " ] |M| must be <= J, got J=" + args[0] + " M=" + args[1] );
+	  if( abs(inputArgs.r) != 1 )
+		throw std::invalid_argument(
+		  "[ " + context + " ] Re/Im flag must be +1 or -1, got " + args[3] );
+	  if( abs(inputArgs.s) != 1 )
+		throw std::invalid_argument(
+		  "[ " + context + " ] P_gamma sign must be +1 or -1, got " + args[4] );
+	
+	  // If no optional args, return now
+	  if( args.size() <= 5 ) return inputArgs;
+	
+	  // Detect format by checking if args[5] contains '='
+	  bool isKeyValue = std::any_of( args.begin() + 5, args.end(),
+		  []( const std::string& s ){ return s.find('=') != std::string::npos; } );
+	
+	  // Lambda function to detect bare flags (valid in both formats)
+	  auto isBareFlag = []( const std::string& s ){
+		return s == "omega3pi" || s == "omegagpi0" || s == "nobarrier";
+	  };
+	
+	  if( !isKeyValue ){
+		size_t i = 5;
+	
+		// arg[5]: polarization angle
+		if( i < args.size() && !isBareFlag(args[i]) && args[i].find('=') == std::string::npos ){
+		  inputArgs.polAngle  = parseValidatedNumber( "polAngle", args[i++], context );
+		  inputArgs.polInfoInPhotonP4 = false;
+		}
+	
+		// arg[6]: fixed fraction or .root file path
+		if( i < args.size() && !isBareFlag(args[i]) && args[i].find('=') == std::string::npos ){
+		  if( args[i].find(".root") != std::string::npos ){
+			inputArgs.polFile = args[i++];
+			if( i >= args.size() || isBareFlag(args[i]) )
+			  throw std::invalid_argument(
+				"[ " + context + " ] .root polarization file requires a histogram name immediately after it" );
+			inputArgs.polHist = args[i++];
+		  } else {
+			inputArgs.polFraction = parseValidatedNumber( "polFraction", args[i++], context );
+		  }
+		}
+	
+		// Remaining: bare flags, and gHelicity bare integer after omegagpi0
+		while( i < args.size() ){
+		  if( args[i] == "omega3pi" ){
+			inputArgs.omega3pi = true;
+			i++;
+		  }
+		  else if( args[i] == "omegagpi0" ){
+			inputArgs.omegagpi0 = true;
+			if( i + 1 >= args.size() )
+			  throw std::invalid_argument(
+				"[ " + context + " ] omegagpi0 requires a photon helicity value (+1 or -1) immediately after it" );
+			inputArgs.gHelicity = static_cast<int>( parseValidatedNumber( "gHelicity", args[i+1], context ) );
+			i += 2;
+		  }
+		  else if( args[i] == "nobarrier" ){
+			inputArgs.noBarrier = true;
+			i++;
+		  }
+		  else{
+			throw std::invalid_argument(
+			  "[ " + context + " ] unrecognized positional argument '" + args[i] + "'" );
+		  }
+		}
+	  } 
+	  else { // key=value format
+		for( size_t i = 5; i < args.size(); i++ ){
+		  const std::string& arg = args[i];
+	
+		  if( arg == "omega3pi"  ){ inputArgs.omega3pi  = true; continue; }
+		  if( arg == "omegagpi0" ){ inputArgs.omegagpi0 = true; continue; }
+		  if( arg == "nobarrier" ){ inputArgs.noBarrier = true; continue; }
+		  auto sep = arg.find('='); //  '=' is used as separator
+		  if( sep == std::string::npos )
+			throw std::invalid_argument(
+			  "[ " + context + " ] unrecognized argument '" + arg +
+			  "' (expected key=value pair or known flag)" );
+	
+		  const std::string key   = arg.substr(0, sep);
+		  const std::string value = arg.substr(sep + 1);
+	
+		  if( key == "polAngle" ){
+			inputArgs.polAngle  = parseValidatedNumber( "polAngle",    value, context );
+			inputArgs.polInfoInPhotonP4 = false;
+		  }
+		  else if( key == "polFraction" ){
+			inputArgs.polFraction = parseValidatedNumber( "polFraction", value, context );
+		  }
+		  else if( key == "polFile" ){ inputArgs.polFile = value; }
+		  else if( key == "polHist" ){ inputArgs.polHist = value; }
+		  else if( key == "gHelicity" ){
+			inputArgs.gHelicity = static_cast<int>( parseValidatedNumber( "gHelicity", value, context ) );
+		  }
+		  else{
+			throw std::invalid_argument(
+			  "[ " + context + " ] unrecognized key '" + key + "'" );
+		  }
+		}
+	  }
+	
+	  // Post-parse validation
+	  if( inputArgs.polFile != "" && inputArgs.polHist == "" )
+		throw std::invalid_argument(
+		  "[ " + context + " ] polFile='" + inputArgs.polFile +
+		  "' requires polHist=<histName> to also be specified" );
+	
+	  if( inputArgs.polHist != "" && inputArgs.polFile == "" )
+		throw std::invalid_argument(
+		  "[ " + context + " ] polHist='" + inputArgs.polHist +
+		  "' was specified without polFile=<path.root>" );
+	
+	  if( inputArgs.polFraction >= 0.0 && inputArgs.polFile != "" )
+		throw std::invalid_argument(
+		  "[ " + context + " ] polFraction and polFile are mutually exclusive; specify only one" );
+		  
+	  if( inputArgs.omegagpi0 && abs(inputArgs.gHelicity) != 1 )
+		throw std::invalid_argument(
+		  "[ " + context + " ] omegagpi0 requires gHelicity=+1 or gHelicity=-1" );
+		  
+	  if( inputArgs.gHelicity != 0 && !inputArgs.omegagpi0 )
+		throw std::invalid_argument(
+		  "[ " + context + " ] gHelicity was specified but omegagpi0 flag is missing" );
+	
+	  if( inputArgs.omega3pi && inputArgs.omegagpi0 )
+		throw std::invalid_argument(
+		  "[ " + context + " ] omega3pi and omegagpi0 are mutually exclusive; specify only one" );
+	
+	  if( !inputArgs.polInfoInPhotonP4 && inputArgs.polFraction < 0.0 && inputArgs.polFile == "" )
+		throw std::invalid_argument(
+		  "[ " + context + " ] polAngle was given but neither polFraction nor polFile+polHist were provided" );
+	
+	  return inputArgs;
+	}
 
 Vec_ps_refl::Vec_ps_refl( const vector< string >& args ) :
 UserAmplitude< Vec_ps_refl >( args ){
-  Vec_ps_refl_Args inputArgs = parsedArgs( args );
+  VecPsReflArgs inputArgs = parsedArgs( args );
   m_j                  = inputArgs.j;
   m_m                  = inputArgs.m;
   m_l                  = inputArgs.l;
@@ -343,8 +293,8 @@ UserAmplitude< Vec_ps_refl >( args ){
   m_s                  = inputArgs.s;
   
   m_polInfoInPhotonP4  = inputArgs.polInfoInPhotonP4;
-  m_polAngle             = inputArgs.polAngle;
-  m_polFraction          = inputArgs.polFraction;
+  m_polAngle           = inputArgs.polAngle;
+  m_polFraction        = inputArgs.polFraction;
   m_polFracVsE         = nullptr;
 
   m_3pi                = inputArgs.omega3pi;
