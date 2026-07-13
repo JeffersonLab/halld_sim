@@ -1,0 +1,395 @@
+#ifndef RANDOMIZED_DOUBLE_SDME_H
+#define RANDOMIZED_DOUBLE_SDME_H
+
+#include <array>
+#include <complex>
+#include <vector>
+
+/**
+ * @file randomized_double_sdme.h
+ * @author Hao Li
+ * @William & Mary
+ * @date 2026-05
+ *
+ * @brief Generate randomized double-SDME parameters from parity-constrained
+ *        helicity amplitudes.
+ *
+ * @disclaimer
+ * This code is provided "as is", without warranty of any kind, express or implied.
+ *
+ * -----------------------------------------------------------------------------
+ * ## Overview
+ *
+ * This library provides a class `RandomizedDoubleSDME` that generates a random
+ * set of 26 real-valued double-SDME parameters for vector-meson photoproduction
+ * with recoil-hyperon polarization.
+ *
+ * The existing Schilling--Wolf randomizer returns the 9 standard SDMEs.  This
+ * class returns only the 26 recoil-correlation parameters in the double-SDME
+ * extension.
+ *
+ * The main idea is to randomize at the helicity-amplitude level, rather than
+ * randomizing the visible angular coefficients independently.  The amplitudes
+ * are generated with the parity relation already imposed.  Therefore the
+ * projected double-SDME coefficients automatically respect the intended
+ * Hermiticity and parity structure.
+ *
+ * -----------------------------------------------------------------------------
+ * ## Helicity Amplitude Definition
+ *
+ * The starting point is the helicity amplitude
+ *
+ *      M_{lambda_gamma, m, lambda_Y}
+ *
+ * where
+ *
+ *      lambda_gamma = +/-1        photon helicity,
+ *      m            = +1, 0, -1   vector-meson helicity,
+ *      lambda_Y     = +/-1/2      recoil-hyperon helicity.
+ *
+ * This object formally contains
+ *
+ *      2 x 3 x 2 = 12
+ *
+ * complex amplitudes.
+ *
+ * In the implementation, the indices are mapped as
+ *
+ *      gamma index: 0, 1     <->  +1, -1
+ *      m index:     0, 1, 2  <->  +1,  0, -1
+ *      Y index:     0, 1     <->  +1/2, -1/2
+ *
+ * -----------------------------------------------------------------------------
+ * ## Parity-Constrained Amplitude Randomization
+ *
+ * The amplitudes are not generated as 12 independent complex numbers.  Instead,
+ * only the lambda_gamma = +1 block is randomized:
+ *
+ *      M_{+1,m,lambda_Y},
+ *      m = +1, 0, -1,
+ *      lambda_Y = +/-1/2.
+ *
+ * Therefore only
+ *
+ *      3 x 2 = 6
+ *
+ * complex amplitudes are independently sampled.
+ *
+ * The remaining lambda_gamma = -1 amplitudes are filled using the amplitude-level
+ * parity relation
+ *
+ *      M_{-lambda_gamma,-m,-lambda_Y}
+ *        =
+ *      (-1)^m M_{lambda_gamma,m,lambda_Y}.
+ *
+ * Explicitly,
+ *
+ *      M_{-1,-m,-lambda_Y}
+ *        =
+ *      (-1)^m M_{+1,m,lambda_Y}.
+ *
+ * With the index convention above, the parity partner of
+ *
+ *      M[g][m][y]
+ *
+ * is
+ *
+ *      M[1-g][2-m][1-y].
+ *
+ * The phase factor is
+ *
+ *      (-1)^m =
+ *          -1,  m = +1,
+ *          +1,  m =  0,
+ *          -1,  m = -1.
+ *
+ * In code, this is equivalent to
+ *
+ *      phase = (m_index == 1 ? +1.0 : -1.0).
+ *
+ * This construction is the direct double-SDME analogue of the Schilling--Wolf
+ * case, where the 2 x 3 amplitudes reduce to 3 independent complex amplitudes.
+ *
+ * -----------------------------------------------------------------------------
+ * ## Random Number Distribution
+ *
+ * Each independent complex amplitude is generated randomly:
+ *
+ *      Re M, Im M ~ Gaussian(0,1),     if use_normal_dist = true,
+ *      Re M, Im M ~ Uniform(-1,1),     if use_normal_dist = false.
+ *
+ * The real and imaginary parts are independently randomized.
+ *
+ * -----------------------------------------------------------------------------
+ * ## Normalization
+ *
+ * The amplitudes are normalized using the unpolarized trace
+ *
+ *      N = (1/2) sum_{lambda_gamma,m,lambda_Y}
+ *              |M_{lambda_gamma,m,lambda_Y}|^2.
+ *
+ * The factor of 1/2 corresponds to averaging over the two photon helicities.
+ *
+ * The same normalization N is used for all projected matrices R^{a,i}_{m m'}.
+ * This is important: the double-SDME coefficients should remain on one common
+ * physical scale.  They should not be normalized independently sector by sector.
+ *
+ * -----------------------------------------------------------------------------
+ * ## Photon and Recoil Projection
+ *
+ * From the helicity amplitudes, construct the photon-polarization and recoil-spin
+ * projected vector-meson helicity matrices
+ *
+ *      R^{a,i}_{m m'}
+ *
+ * by contracting the photon and recoil indices:
+ *
+ *      R^{a,i}_{m m'}
+ *        =
+ *      (1 / N)
+ *      sum_{lambda_gamma,lambda'_gamma}
+ *      sum_{lambda_Y,lambda'_Y}
+ *          M_{lambda_gamma,m,lambda_Y}
+ *          Gamma^a_{lambda_gamma lambda'_gamma}
+ *          sigma^i_{lambda_Y lambda'_Y}
+ *          M^*_{lambda'_gamma,m',lambda'_Y}.
+ *
+ * Here
+ *
+ *      a = 0, 1, 2
+ *
+ * labels the photon-polarization structure:
+ *
+ *      Gamma^0 = identity photon matrix,
+ *      Gamma^1 = linear-polarization cosine matrix,
+ *      Gamma^2 = linear-polarization sine matrix.
+ *
+ * These correspond to the photon angular weights
+ *
+ *      g_0(Phi) = 1,
+ *      g_1(Phi) = cos(2 Phi),
+ *      g_2(Phi) = sin(2 Phi),
+ *
+ * up to the sign convention used by the final intensity kernel.
+ *
+ * The recoil index
+ *
+ *      i = x, y, z
+ *
+ * labels the Pauli projection of the recoil-hyperon spin:
+ *
+ *      sigma^x, sigma^y, sigma^z.
+ *
+ * -----------------------------------------------------------------------------
+ * ## Hermiticity and Parity
+ *
+ * Since R^{a,i}_{m m'} is built as a bilinear product of helicity amplitudes, it
+ * satisfies Hermiticity:
+ *
+ *      R^{a,i}_{m' m}
+ *        =
+ *      (R^{a,i}_{m m'})^*.
+ *
+ * Because the amplitudes are generated with the parity relation already imposed,
+ * the projected matrices also satisfy
+ *
+ *      R^{a,i}_{-m,-m'}
+ *        =
+ *      s_{a i} (-1)^{m-m'} R^{a,i}_{m m'},
+ *
+ * where
+ *
+ *      s_{a i} = eta_a xi_i.
+ *
+ * In the present convention,
+ *
+ *      eta_0 = +1,
+ *      eta_1 = +1,
+ *      eta_2 = -1,
+ *
+ * and
+ *
+ *      xi_x = -1,
+ *      xi_y = +1,
+ *      xi_z = -1.
+ *
+ * Therefore
+ *
+ *                  a=0   a=1   a=2
+ *          i=x     -1    -1    +1
+ *          i=y     +1    +1    -1
+ *          i=z     -1    -1    +1
+ *
+ * -----------------------------------------------------------------------------
+ * ## Visible Angular Coefficients
+ *
+ * For each (a,i) sector, the projected helicity matrix R^{a,i}_{m m'} is mapped
+ * onto the usual Schilling--Wolf visible angular basis.  The parity signature
+ * determines which coefficients survive.
+ *
+ * For s_{a i} = +1, the surviving coefficients are
+ *
+ *      P^{a,i}
+ *      A^{a,i}_{00}
+ *      A^{a,i}_{10c}
+ *      A^{a,i}_{1-1c}
+ *
+ * while the sine-type coefficients vanish.
+ *
+ * For s_{a i} = -1, the surviving coefficients are
+ *
+ *      A^{a,i}_{10s}
+ *      A^{a,i}_{1-1s}
+ *
+ * while the constant and cosine-type coefficients vanish.
+ *
+ * Therefore the formal
+ *
+ *      3 photon structures x 3 recoil directions x 6 angular coefficients
+ *      = 54
+ *
+ * double-SDME coefficients reduce to
+ *
+ *      (2+4+2)_{a=0}
+ *      +
+ *      (2+4+2)_{a=1}
+ *      +
+ *      (4+2+4)_{a=2}
+ *      = 26
+ *
+ * returned parameters.
+ *
+ * -----------------------------------------------------------------------------
+ * ## Returned Parameter Order
+ *
+ * The returned 26 parameters follow the order of the full 54-coefficient list,
+ * with the parity-killed terms removed:
+ *
+ *      A0x10s
+ *      A0x1m1s
+ *
+ *      P0y
+ *      A0y00
+ *      A0y10c
+ *      A0y1m1c
+ *
+ *      A0z10s
+ *      A0z1m1s
+ *
+ *      A1x10s
+ *      A1x1m1s
+ *
+ *      P1y
+ *      A1y00
+ *      A1y10c
+ *      A1y1m1c
+ *
+ *      A1z10s
+ *      A1z1m1s
+ *
+ *      P2x
+ *      A2x00
+ *      A2x10c
+ *      A2x1m1c
+ *
+ *      A2y10s
+ *      A2y1m1s
+ *
+ *      P2z
+ *      A2z00
+ *      A2z10c
+ *      A2z1m1c
+ *
+ * -----------------------------------------------------------------------------
+ */
+
+class RandomizedDoubleSDME {
+public:
+    using Complex = std::complex<double>;
+
+    // M[gamma][m][lambda_Y]
+    using AmplitudeArray =
+        std::array<std::array<std::array<Complex, 2>, 3>, 2>;
+
+    // Stores one projected 3 x 3 matrix R^{a,i}_{m m'} for a fixed (a,i) sector.
+    using ProjectedMatrix =
+        std::array<std::array<Complex, 3>, 3>;
+
+    /**
+     * @brief Generate the 26 parity-allowed double-SDME parameters.
+     *
+     * @param use_normal_dist If true, use Gaussian(0,1) amplitudes.
+     *                        If false, use Uniform(-1,1) amplitudes.
+     *
+     * @return std::vector<double> containing 26 double-SDME parameters.
+     */
+    std::vector<double> randomize(bool use_normal_dist = false) const;
+
+    /**
+     * @brief Generate parity-constrained 2 x 3 x 2 helicity amplitudes.
+     *
+     * Only the lambda_gamma = +1 block is randomized.  The lambda_gamma = -1
+     * block is filled using
+     *
+     *      M_{-lambda_gamma,-m,-lambda_Y}
+     *        =
+     *      (-1)^m M_{lambda_gamma,m,lambda_Y}.
+     *
+     * @param use_normal_dist If true, use Gaussian(0,1) amplitudes.
+     *                        If false, use Uniform(-1,1) amplitudes.
+     *
+     * @return AmplitudeArray containing parity-constrained amplitudes.
+     */
+    AmplitudeArray randomize_amplitudes(bool use_normal_dist = false) const;
+
+private:
+    /**
+     * @brief Compute the common unpolarized normalization N.
+     */
+    double normalization(const AmplitudeArray& amp) const;
+
+    /**
+     * @brief Project amplitudes into R^{a,i}_{m m'}.
+     *
+     * @param amp Parity-constrained helicity amplitudes.
+     * @param a Photon-polarization index: 0, 1, or 2.
+     * @param i Recoil-spin index: 0=x, 1=y, or 2=z.
+     *
+     * @return HelicityMatrix R^{a,i}_{m m'}.
+     */
+    HelicityMatrix project_R_ai(
+        const AmplitudeArray& amp,
+        int a,
+        int i
+    ) const;
+
+    /**
+     * @brief Append the parity-allowed visible coefficients for one (a,i) sector.
+     *
+     * The coefficients are appended according to the fixed 26-parameter order.
+     *
+     * @param R Projected helicity matrix R^{a,i}_{m m'}.
+     * @param a Photon-polarization index.
+     * @param i Recoil-spin index.
+     * @param pars Output parameter vector.
+     */
+    void append_visible_coefficients(
+        const HelicityMatrix& R,
+        int a,
+        int i,
+        std::vector<double>& pars
+    ) const;
+};
+
+/**
+ * @brief Convenience wrapper matching the function-style interface of
+ *        randomized_sdme().
+ *
+ * @param use_normal_dist If true, use Gaussian(0,1) amplitudes.
+ *                        If false, use Uniform(-1,1) amplitudes.
+ *
+ * @return std::vector<double> containing 26 double-SDME parameters.
+ */
+std::vector<double> randomized_double_sdme(bool use_normal_dist = false);
+
+#endif // RANDOMIZED_DOUBLE_SDME_H

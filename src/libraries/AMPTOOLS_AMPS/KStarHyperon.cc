@@ -141,17 +141,21 @@ KStarHyperon::KStarHyperon( const vector<string>& args ) :
 complex< GDouble >
 KStarHyperon::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
 
-  GDouble cosThetaX = userVars[kCosThetaX];
+  //GDouble cosThetaX = userVars[kCosThetaX];
   GDouble cosThetaY = userVars[kCosThetaY];
   GDouble cosThetaZ = userVars[kCosThetaZ];
-  GDouble phi = polAngle*0.017453293 + userVars[kPhi]; // rotate Phi (in rad)
-  GDouble Pgamma = userVars[kPgamma];
+  //GDouble phi = polAngle*0.017453293 + userVars[kPhi]; // rotate Phi (in rad)
+  //GDouble Pgamma = userVars[kPgamma];
   
   // CLAS paper intensity formulation (DOI 10.1103/physrevc.93.065201)
-  GDouble I = 1.0 + alpha*cosThetaY*P;
+  GDouble I = 1.0 + alpha * cosThetaY * P;
+  I += alpha * cosThetaZ * Oz;
+
+  //GDouble I = alpha*cosThetaY*P;
   //I -= Pgamma*cos(2.0*phi) * (Sigma + alpha*cosThetaY*T); 
-  I -= Pgamma*cos(2.0*phi) * (2 * rho111 + rho001 + alpha*cosThetaY*T); 
-  I += Pgamma*sin(2.0*phi) * alpha * (cosThetaX*Ox + cosThetaZ*Oz);
+  // I -= Pgamma*cos(2.0*phi) * (2 * rho111 + rho001 + alpha*cosThetaY*T); 
+  //I -= Pgamma*cos(2.0*phi) * alpha * (cosThetaY * T); 
+  //I += Pgamma*sin(2.0*phi) * alpha * (cosThetaX * Ox + cosThetaZ * Oz);
   
   return complex< GDouble > ( sqrt(fabs(I)) );
 }

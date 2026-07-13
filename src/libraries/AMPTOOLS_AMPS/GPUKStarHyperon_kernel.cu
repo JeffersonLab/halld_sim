@@ -15,16 +15,20 @@ GPUKStarHyperon_kernel( GPU_AMP_PROTO,
 
   int iEvent = GPU_THIS_EVENT;
 
-  GDouble Pgamma    = GPU_UVARS(0);
-  GDouble cosThetaX = GPU_UVARS(1);
+  //GDouble Pgamma    = GPU_UVARS(0);
+  //GDouble cosThetaX = GPU_UVARS(1);
   GDouble cosThetaY = GPU_UVARS(2);
   GDouble cosThetaZ = GPU_UVARS(3);
-  GDouble phi       = polAngle * 0.017453293 + GPU_UVARS(4);
+  //GDouble phi       = polAngle * 0.017453293 + GPU_UVARS(4);
 
   GDouble I = 1.0 + alpha * cosThetaY * P;
+  I += alpha * cosThetaZ * Oz;
+  //GDouble I = alpha * cosThetaY * P;
+
   //I -= Pgamma * cos(2.0 * phi) * (Sigma + alpha * cosThetaY * T);
-  I -= Pgamma * cos(2.0 * phi) * (2 * rho111 + rho001 + alpha * cosThetaY * T);
-  I += Pgamma * sin(2.0 * phi) * alpha * (cosThetaX * Ox + cosThetaZ * Oz);
+  // I -= Pgamma * cos(2.0 * phi) * (2 * rho111 + rho001 + alpha * cosThetaY * T);
+  //I -= Pgamma * cos(2.0 * phi) * alpha * (cosThetaY * T);
+  //I += Pgamma * sin(2.0 * phi) * alpha * (cosThetaX * Ox + cosThetaZ * Oz);
 
   WCUComplex amp = { sqrt(fabs(I)), 0 };
   pcDevAmp[iEvent] = amp;

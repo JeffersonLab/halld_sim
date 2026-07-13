@@ -30,6 +30,8 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/KStarHyperon.h"
+#include "AMPTOOLS_AMPS/KStarHyperonExtended.h"
+
 
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
@@ -51,6 +53,8 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( TwoPSMoment() );
   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
   AmpToolsInterface::registerAmplitude( KStarHyperon() );
+  AmpToolsInterface::registerAmplitude( KStarHyperonExtended() );
+
 
 
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
@@ -261,71 +265,116 @@ int main(int argc, char *argv[]) {
 
               // set unique histogram name for each plot (could put in
               // directories...)
-              string histname = "";
-              if (ivar == TwoPsPlotGenerator::k2PsMass)
-                histname += "M2Ps";
-              else if (ivar == TwoPsPlotGenerator::kLambdaKMass)
-                histname += "MLambdaK";
-              else if (ivar == TwoPsPlotGenerator::kLambdaPiMass)
-                histname += "MLambdaPi";
-              else if (ivar == TwoPsPlotGenerator::kLambdaMass)
-                histname += "MLambda";
-              else if (ivar == TwoPsPlotGenerator::kdaughter1Mass)
-                histname += "Mdaughter1"; // Proton mass
-              else if (ivar == TwoPsPlotGenerator::kdaughter2Mass)
-                histname += "Mdaughter2"; // Pi- mass
-              else if (ivar == TwoPsPlotGenerator::kPiCosTheta)
-                histname += "CosTheta";
-              else if (ivar == TwoPsPlotGenerator::kPhiK)
-                histname += "PhiK";
-              else if (ivar == TwoPsPlotGenerator::kPhiPi)
-                histname += "PhiPi";
-              else if (ivar == TwoPsPlotGenerator::kPhiLambda)
-                histname += "PhiLambda";
-              else if (ivar == TwoPsPlotGenerator::kThetaK)
-                histname += "ThetaK";
-              else if (ivar == TwoPsPlotGenerator::kThetaPi)
-                histname += "ThetaPi";
-              else if (ivar == TwoPsPlotGenerator::kThetaLambda)
-                histname += "ThetaLambda";
-              else if (ivar == TwoPsPlotGenerator::kMomK)
-                histname += "MomK";
-              else if (ivar == TwoPsPlotGenerator::kMomPi)
-                histname += "MomPi";
-              else if (ivar == TwoPsPlotGenerator::kMomLambda)
-                histname += "MomLambda";
-              else if (ivar == TwoPsPlotGenerator::kPhi_LAB)
-                histname += "Phi_LAB";
-              else if (ivar == TwoPsPlotGenerator::kPhi)
-                histname += "Phi";
-              else if (ivar == TwoPsPlotGenerator::kphi)
-                histname += "phi";
-              else if (ivar == TwoPsPlotGenerator::kPsi)
-                histname += "psi";
-              else if (ivar == TwoPsPlotGenerator::kt)
-                histname += "t";
-              else if (ivar == TwoPsPlotGenerator::kCosTheta_LambdaHel)
-                histname += "cosTheta_LambdaHel";
-              else if (ivar == TwoPsPlotGenerator::kphi_LambdaHel)
-                histname += "phi_LambdaHel";
-              else if (ivar == TwoPsPlotGenerator::kPhi_LambdaHel)
-                histname += "Phi_LambdaHel";
-              else if (ivar == TwoPsPlotGenerator::kPsi_LambdaHel)
-                histname += "psi_LambdaHel";
-              else if (ivar == TwoPsPlotGenerator::kCosThetaX_LambdaHel)
-                histname += "cosThetaX_LambdaHel";
-              else if (ivar == TwoPsPlotGenerator::kCosThetaY_LambdaHel)
-                histname += "cosThetaY_LambdaHel";
-              else if (ivar == TwoPsPlotGenerator::kCosThetaZ_LambdaHel)
-                histname += "cosThetaZ_LambdaHel";
-              else if (ivar == TwoPsPlotGenerator::kCosThetaX_Lambda)
-                histname += "cosThetaX_Lambda";
-              else if (ivar == TwoPsPlotGenerator::kCosThetaY_Lambda)
-                histname += "cosThetaY_Lambda";
-              else if (ivar == TwoPsPlotGenerator::kCosThetaZ_Lambda)
-                histname += "cosThetaZ_Lambda";
-              else
-                continue;
+              std::string histname;
+              switch (ivar) {
+                case TwoPsPlotGenerator::k2PsMass:              histname = "M2Ps"; break;
+                case TwoPsPlotGenerator::kLambdaKMass:          histname = "MLambdaK"; break;
+                case TwoPsPlotGenerator::kLambdaPiMass:         histname = "MLambdaPi"; break;
+                case TwoPsPlotGenerator::kLambdaMass:           histname = "MLambda"; break;
+                case TwoPsPlotGenerator::kdaughter1Mass:        histname = "Mdaughter1"; break;
+                case TwoPsPlotGenerator::kdaughter2Mass:        histname = "Mdaughter2"; break;
+                case TwoPsPlotGenerator::kPiCosTheta:           histname = "CosTheta"; break;
+                case TwoPsPlotGenerator::kPhiK:                 histname = "PhiK"; break;
+                case TwoPsPlotGenerator::kPhiPi:                histname = "PhiPi"; break;
+                case TwoPsPlotGenerator::kPhiLambda:            histname = "PhiLambda"; break;
+                case TwoPsPlotGenerator::kThetaK:               histname = "ThetaK"; break;
+                case TwoPsPlotGenerator::kThetaPi:              histname = "ThetaPi"; break;
+                case TwoPsPlotGenerator::kThetaLambda:          histname = "ThetaLambda"; break;
+                case TwoPsPlotGenerator::kMomK:                 histname = "MomK"; break;
+                case TwoPsPlotGenerator::kMomPi:                histname = "MomPi"; break;
+                case TwoPsPlotGenerator::kMomLambda:            histname = "MomLambda"; break;
+                case TwoPsPlotGenerator::kPhi_LAB:              histname = "Phi_LAB"; break;
+                case TwoPsPlotGenerator::kPhi:                  histname = "Phi"; break;
+                case TwoPsPlotGenerator::kphi:                  histname = "phi"; break;
+                case TwoPsPlotGenerator::kPsi:                  histname = "psi"; break;
+                case TwoPsPlotGenerator::kt:                    histname = "t"; break;
+                case TwoPsPlotGenerator::kCosTheta_LambdaHel:   histname = "cosTheta_LambdaHel"; break;
+                case TwoPsPlotGenerator::kphi_LambdaHel:        histname = "phi_LambdaHel"; break;
+                case TwoPsPlotGenerator::kPhi_LambdaHel:        histname = "Phi_LambdaHel"; break;
+                case TwoPsPlotGenerator::kPsi_LambdaHel:        histname = "psi_LambdaHel"; break;
+                case TwoPsPlotGenerator::kCosThetaX_LambdaHel:  histname = "cosThetaX_LambdaHel"; break;
+                case TwoPsPlotGenerator::kCosThetaY_LambdaHel:  histname = "cosThetaY_LambdaHel"; break;
+                case TwoPsPlotGenerator::kCosThetaZ_LambdaHel:  histname = "cosThetaZ_LambdaHel"; break;
+                case TwoPsPlotGenerator::kCosThetaX_Lambda:     histname = "cosThetaX_Lambda"; break;
+                case TwoPsPlotGenerator::kCosThetaY_Lambda:     histname = "cosThetaY_Lambda"; break;
+                case TwoPsPlotGenerator::kCosThetaZ_Lambda:     histname = "cosThetaZ_Lambda"; break;
+              
+                case TwoPsPlotGenerator::kA000:                 histname = "A000";     break;
+                case TwoPsPlotGenerator::kA100:                 histname = "A100";     break;
+                case TwoPsPlotGenerator::kA1m10:                histname = "A1m10";    break;
+                case TwoPsPlotGenerator::kA111:                 histname = "A111";     break;
+                case TwoPsPlotGenerator::kA001:                 histname = "A001";     break;
+                case TwoPsPlotGenerator::kA101:                 histname = "A101";     break;
+                case TwoPsPlotGenerator::kA1m11:                histname = "A1m11";    break;
+                case TwoPsPlotGenerator::kA102:                 histname = "A102";     break;
+                case TwoPsPlotGenerator::kA1m12:                histname = "A1m12";    break;
+
+                case TwoPsPlotGenerator::kB1:                   histname = "B1";       break;
+                case TwoPsPlotGenerator::kB2:                   histname = "B2";       break;
+                case TwoPsPlotGenerator::kB3:                   histname = "B3";       break;
+                case TwoPsPlotGenerator::kB4:                   histname = "B4";       break;
+                case TwoPsPlotGenerator::kB5:                   histname = "B5";       break;
+
+                // Extended
+                case TwoPsPlotGenerator::kPx0:                  histname = "Px0";     break;
+                case TwoPsPlotGenerator::kAx000:                histname = "Ax000";   break;
+                case TwoPsPlotGenerator::kAx10c0:               histname = "Ax10c0";  break;
+                case TwoPsPlotGenerator::kAx10s0:               histname = "Ax10s0";  break;
+                case TwoPsPlotGenerator::kAx1m1c0:              histname = "Ax1m1c0"; break;
+                case TwoPsPlotGenerator::kAx1m1s0:              histname = "Ax1m1s0"; break;
+                case TwoPsPlotGenerator::kPx1:                  histname = "Px1";     break;
+                case TwoPsPlotGenerator::kAx001:                histname = "Ax001";   break;
+                case TwoPsPlotGenerator::kAx10c1:               histname = "Ax10c1";  break;
+                case TwoPsPlotGenerator::kAx10s1:               histname = "Ax10s1";  break;
+                case TwoPsPlotGenerator::kAx1m1c1:              histname = "Ax1m1c1"; break;
+                case TwoPsPlotGenerator::kAx1m1s1:              histname = "Ax1m1s1"; break;
+                case TwoPsPlotGenerator::kPx2:                  histname = "Px2";     break;
+                case TwoPsPlotGenerator::kAx002:                histname = "Ax002";   break;
+                case TwoPsPlotGenerator::kAx10c2:               histname = "Ax10c2";  break;
+                case TwoPsPlotGenerator::kAx10s2:               histname = "Ax10s2";  break;
+                case TwoPsPlotGenerator::kAx1m1c2:              histname = "Ax1m1c2"; break;
+                case TwoPsPlotGenerator::kAx1m1s2:              histname = "Ax1m1s2"; break;
+
+                case TwoPsPlotGenerator::kPy0:                  histname = "Py0";     break;
+                case TwoPsPlotGenerator::kAy000:                histname = "Ay000";   break;
+                case TwoPsPlotGenerator::kAy10c0:               histname = "Ay10c0";  break;
+                case TwoPsPlotGenerator::kAy10s0:               histname = "Ay10s0";  break;
+                case TwoPsPlotGenerator::kAy1m1c0:              histname = "Ay1m1c0"; break;
+                case TwoPsPlotGenerator::kAy1m1s0:              histname = "Ay1m1s0"; break;
+                case TwoPsPlotGenerator::kPy1:                  histname = "Py1";     break;
+                case TwoPsPlotGenerator::kAy001:                histname = "Ay001";   break;
+                case TwoPsPlotGenerator::kAy10c1:               histname = "Ay10c1";  break;
+                case TwoPsPlotGenerator::kAy10s1:               histname = "Ay10s1";  break;
+                case TwoPsPlotGenerator::kAy1m1c1:              histname = "Ay1m1c1"; break;
+                case TwoPsPlotGenerator::kAy1m1s1:              histname = "Ay1m1s1"; break;
+                case TwoPsPlotGenerator::kPy2:                  histname = "Py2";     break;
+                case TwoPsPlotGenerator::kAy002:                histname = "Ay002";   break;
+                case TwoPsPlotGenerator::kAy10c2:               histname = "Ay10c2";  break;
+                case TwoPsPlotGenerator::kAy10s2:               histname = "Ay10s2";  break;
+                case TwoPsPlotGenerator::kAy1m1c2:              histname = "Ay1m1c2"; break;
+                case TwoPsPlotGenerator::kAy1m1s2:              histname = "Ay1m1s2"; break;
+
+                case TwoPsPlotGenerator::kPz0:                  histname = "Pz0";     break;
+                case TwoPsPlotGenerator::kAz000:                histname = "Az000";   break;
+                case TwoPsPlotGenerator::kAz10c0:               histname = "Az10c0";  break;
+                case TwoPsPlotGenerator::kAz10s0:               histname = "Az10s0";  break;
+                case TwoPsPlotGenerator::kAz1m1c0:              histname = "Az1m1c0"; break;
+                case TwoPsPlotGenerator::kAz1m1s0:              histname = "Az1m1s0"; break;
+                case TwoPsPlotGenerator::kPz1:                  histname = "Pz1";     break;
+                case TwoPsPlotGenerator::kAz001:                histname = "Az001";   break;
+                case TwoPsPlotGenerator::kAz10c1:               histname = "Az10c1";  break;
+                case TwoPsPlotGenerator::kAz10s1:               histname = "Az10s1";  break;
+                case TwoPsPlotGenerator::kAz1m1c1:              histname = "Az1m1c1"; break;
+                case TwoPsPlotGenerator::kAz1m1s1:              histname = "Az1m1s1"; break;
+                case TwoPsPlotGenerator::kPz2:                  histname = "Pz2";     break;
+                case TwoPsPlotGenerator::kAz002:                histname = "Az002";   break;
+                case TwoPsPlotGenerator::kAz10c2:               histname = "Az10c2";  break;
+                case TwoPsPlotGenerator::kAz10s2:               histname = "Az10s2";  break;
+                case TwoPsPlotGenerator::kAz1m1c2:              histname = "Az1m1c2"; break;
+                case TwoPsPlotGenerator::kAz1m1s2:              histname = "Az1m1s2"; break;
+                default: continue;
+              }
+              
 
               if (iplot == PlotGenerator::kData)
                 histname += "dat";

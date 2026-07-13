@@ -22,6 +22,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReaderHist.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReaderBootstrap.h"
+#include "AMPTOOLS_DATAIO/FSRootDataReaderSubSampling.h"
 #include "AMPTOOLS_AMPS/TwoPSAngles.h"
 #include "AMPTOOLS_AMPS/TwoPSHelicity.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
@@ -57,6 +58,7 @@
 #include "AMPTOOLS_AMPS/TwoPSMoment.h"
 #include "AMPTOOLS_AMPS/VecPSMoment.h"
 #include "AMPTOOLS_AMPS/KStarHyperon.h"
+#include "AMPTOOLS_AMPS/KStarHyperonExtended.h"
 #include "UTILITIES/randomized_sdme.h"
 
 
@@ -288,7 +290,12 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
-  if (strategy != 1) fitManager->setStrategy(strategy);
+
+  cout << "(runRdnFits) strategy = " << strategy << std::endl;
+  if (strategy != 1) {
+    fitManager->setStrategy(strategy);
+    cout << "[FitManager] Using strategy " << strategy << std::endl;
+  }
 
   vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
   vector< vector<string> > parSDMEKeywords = cfgInfo->userKeywordArguments("parSDME");
@@ -390,6 +397,9 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     }
   }
 
+  // print summary of all fits
+  summarizeFits(fitLLs);
+
   if (minFitTag < 0) {
     cout << "ALL FITS FAILED!" << endl;
     return;
@@ -440,7 +450,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   }
   fout.close();
 
-  // print best fit results
+
   // print best fit results
   if(minFitTag < 0) cout << "ALL FITS FAILED!" << endl;
   else {
@@ -448,8 +458,6 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
     gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
     if( seedfile.size() != 0 )
       gSystem->Exec(Form("cp %s_%d.txt %s.txt", seedfile.data(), minFitTag, seedfile.data()));
-    // print summary of all fits
-    summarizeFits(fitLLs);
   }
 
 }
@@ -762,6 +770,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPSMoment() );
    AmpToolsInterface::registerAmplitude( VecPSMoment() );
    AmpToolsInterface::registerAmplitude( KStarHyperon() );
+   AmpToolsInterface::registerAmplitude( KStarHyperonExtended() );
+
 
 
    AmpToolsInterface::registerDataReader( ROOTDataReader() );
@@ -771,7 +781,7 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
    AmpToolsInterface::registerDataReader( FSRootDataReader() );
    AmpToolsInterface::registerDataReader( FSRootDataReaderBootstrap() );
-
+   AmpToolsInterface::registerDataReader( FSRootDataReaderSubSampling() );
    if (numBootstrapIters==0){
       if(numRnd==0){
           if(scanPar=="")
@@ -781,6 +791,7 @@ int main( int argc, char* argv[] ){
       } else {
           cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
           AmpToolsInterface::setRandomSeed(randomSeed);
+          cout << "[ArgParser] Using strategy " << strategy << std::endl;
           runRndFits(cfgInfo, useMinos, hesse, maxIter, strategy, seedfile, numRnd, maxFraction, temperture);
       }
    }else{

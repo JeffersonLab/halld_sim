@@ -1,0 +1,303 @@
+#include "RandomizedDoubleSDME.h"
+
+#include <cmath>
+#include <random>
+#include <stdexcept>
+
+// anonymous namespace
+namespace {
+
+using Complex = RandomizedDoubleSDME::Complex;
+
+constexpr double kSqrt2 = 1.4142135623730950488;
+constexpr double kTiny = 1.0e-12;
+
+// -----------------------------------------------------------------------------
+// Random-number helpers
+// -----------------------------------------------------------------------------
+
+double random_real(bool use_normal_dist)
+{
+    static thread_local std::mt19937 generator(std::random_device{}());
+
+    if (use_normal_dist) {
+        static thread_local std::normal_distribution<double> normal_dist(0.0, 1.0);
+        return normal_dist(generator);
+    }
+
+    static thread_local std::uniform_real_distribution<double> uniform_dist(-1.0, 1.0);
+    return uniform_dist(generator);
+}
+
+Complex random_complex(bool use_normal_dist)
+{
+    return Complex(
+        random_real(use_normal_dist),
+        random_real(use_normal_dist)
+    );
+}
+
+// -----------------------------------------------------------------------------
+// Parity helper
+// -----------------------------------------------------------------------------
+
+double parity_phase_for_m_index(int m_index)
+{
+    // m_index = 0 -> m = +1 -> (-1)^m = -1
+    // m_index = 1 -> m =  0 -> (-1)^m = +1
+    // m_index = 2 -> m = -1 -> (-1)^m = -1
+    return (m_index == 1) ? +1.0 : -1.0;
+}
+
+// -----------------------------------------------------------------------------
+// Projection matrices
+// -----------------------------------------------------------------------------
+
+using Matrix2x2 = std::array<std::array<Complex, 2>, 2>;
+
+const std::array<Matrix2x2, 3> kPhotonMatrices = {{
+    // Gamma^0
+    {{
+        { Complex(1.0, 0.0), Complex(0.0, 0.0) },
+        { Complex(0.0, 0.0), Complex(1.0, 0.0) }
+    }},
+
+    // Gamma^1
+    {{
+        { Complex(0.0, 0.0), Complex(1.0, 0.0) },
+        { Complex(1.0, 0.0), Complex(0.0, 0.0) }
+    }},
+
+    // Gamma^2
+    {{
+        { Complex(0.0,  0.0), Complex(0.0, -1.0) },
+        { Complex(0.0, +1.0), Complex(0.0,  0.0) }
+    }}
+}};
+
+const std::array<Matrix2x2, 3> kRecoilMatrices = {{
+    // sigma^x, analysis convention
+    {{
+        { Complex(0.0,  0.0), Complex(0.0, -1.0) },
+        { Complex(0.0, +1.0), Complex(0.0,  0.0) }
+    }},
+
+    // sigma^y, analysis convention
+    {{
+        { Complex(0.0, 0.0), Complex(1.0, 0.0) },
+        { Complex(1.0, 0.0), Complex(0.0, 0.0) }
+    }},
+
+    // sigma^z
+    {{
+        { Complex(1.0,  0.0), Complex(0.0, 0.0) },
+        { Complex(0.0,  0.0), Complex(-1.0, 0.0) }
+    }}
+}};
+
+Complex photon_matrix(int a, int g, int gp)
+{
+    return kPhotonMatrices.at(a).at(g).at(gp);
+}
+
+Complex recoil_matrix(int i, int y, int yp)
+{
+    return kRecoilMatrices.at(i).at(y).at(yp);
+}
+
+int parity_signature(int a, int i)
+{
+    const int eta = (a == 2) ? -1 : +1;
+
+    // i = 0, 1, 2 <-> x, y, z
+    const int xi = (i == 1) ? +1 : -1;
+
+    return eta * xi;
+}
+
+} // namespace
+
+
+
+RandomizedDoubleSDME::AmplitudeArray
+RandomizedDoubleSDME::randomize_amplitudes(bool use_normal_dist) const
+{
+    AmplitudeArray amp{};
+
+    // Randomize only the lambda_gamma = +1 block.
+    // Fill the lambda_gamma = -1 block from
+    //
+    //   M_{-lambda_gamma,-m,-lambda_Y}
+    //     =
+    //   (-1)^m M_{lambda_gamma,m,lambda_Y}.
+    //
+    // With the chosen indices:
+    //
+    //   gbar = 1 - g,
+    //   mbar = 2 - m,
+    //   ybar = 1 - y.
+    for (int m = 0; m < 3; ++m) {
+        for (int y = 0; y < 2; ++y) {
+            amp[0][m][y] = random_complex(use_normal_dist);
+
+            const int mbar = 2 - m;
+            const int ybar = 1 - y;
+
+            const double phase = parity_phase_for_m_index(m);
+
+            amp[1][mbar][ybar] = phase * amp[0][m][y];
+        }
+    }
+
+    return amp;
+}
+
+double RandomizedDoubleSDME::normalization(const AmplitudeArray& amp) const
+{
+    double norm = 0.0;
+
+    for (int g = 0; g < 2; ++g) {
+        for (int m = 0; m < 3; ++m) {
+            for (int y = 0; y < 2; ++y) {
+                norm += std::norm(amp[g][m][y]);
+            }
+        }
+    }
+
+    // Average over the two photon helicities.
+    norm *= 0.5;
+
+    if (norm < kTiny) {
+        return kTiny;
+    }
+
+    return norm;
+}
+
+RandomizedDoubleSDME::ProjectedMatrix
+RandomizedDoubleSDME::project_R_ai(
+    const AmplitudeArray& amp,
+    int a,
+    int i
+) const
+{
+    ProjectedMatrix R{};
+
+    const double norm = normalization(amp);
+
+    for (int m = 0; m < 3; ++m) {
+        for (int mp = 0; mp < 3; ++mp) {
+            Complex value(0.0, 0.0);
+
+            for (int g = 0; g < 2; ++g) {
+                for (int gp = 0; gp < 2; ++gp) {
+                    const Complex gamma = photon_matrix(a, g, gp);
+
+                    if (std::abs(gamma) < kTiny) {
+                        continue;
+                    }
+
+                    for (int y = 0; y < 2; ++y) {
+                        for (int yp = 0; yp < 2; ++yp) {
+                            const Complex sigma = recoil_matrix(i, y, yp);
+
+                            if (std::abs(sigma) < kTiny) {
+                                continue;
+                            }
+
+                            value += amp[g][m][y]
+                                   * gamma
+                                   * sigma
+                                   * std::conj(amp[gp][mp][yp]);
+                        }
+                    }
+                }
+            }
+
+            R[m][mp] = value / norm;
+        }
+    }
+
+    return R;
+}
+
+
+void RandomizedDoubleSDME::append_visible_coefficients(
+    const ProjectedMatrix& R,
+    int a,
+    int i,
+    std::vector<double>& pars
+) const
+{
+    const int s = parity_signature(a, i);
+
+    // Index convention:
+    //
+    //   R[0][0] = R_{+1,+1}
+    //   R[1][1] = R_{ 0, 0}
+    //   R[0][1] = R_{+1, 0}
+    //   R[0][2] = R_{+1,-1}
+    //
+    // For s = +1:
+    //
+    //   P        = R_{11}
+    //   A00      = R_{00} - R_{11}
+    //   A10c     = -sqrt(2) Re R_{10}
+    //   A1m1c    = -Re R_{1,-1}
+    //
+    // For s = -1:
+    //
+    //   A10s     = -sqrt(2) Im R_{10}
+    //   A1m1s    = -Im R_{1,-1}
+
+    if (s == +1) {
+        pars.push_back(std::real(R[0][0]));
+        pars.push_back(std::real(R[1][1] - R[0][0]));
+        pars.push_back(-kSqrt2 * std::real(R[0][1]));
+        pars.push_back(-std::real(R[0][2]));
+    } else {
+        pars.push_back(-kSqrt2 * std::imag(R[0][1]));
+        pars.push_back(-std::imag(R[0][2]));
+    }
+
+}
+
+std::vector<double>
+RandomizedDoubleSDME::randomize(bool use_normal_dist) const
+{
+    const AmplitudeArray amp = randomize_amplitudes(use_normal_dist);
+
+    std::vector<double> pars;
+    pars.reserve(26);
+
+    // Parameter order:
+    //
+    //   a = 0:
+    //      x: A0x10s, A0x1m1s
+    //      y: P0y, A0y00, A0y10c, A0y1m1c
+    //      z: A0z10s, A0z1m1s
+    //
+    //   a = 1:
+    //      x: A1x10s, A1x1m1s
+    //      y: P1y, A1y00, A1y10c, A1y1m1c
+    //      z: A1z10s, A1z1m1s
+    //
+    //   a = 2:
+    //      x: P2x, A2x00, A2x10c, A2x1m1c
+    //      y: A2y10s, A2y1m1s
+    //      z: P2z, A2z00, A2z10c, A2z1m1c
+    for (int a = 0; a < 3; ++a) {
+        for (int i = 0; i < 3; ++i) {
+            const ProjectedMatrix R = project_R_ai(amp, a, i);
+            append_visible_coefficients(R, a, i, pars);
+        }
+    }
+
+    return pars;
+}
+
+std::vector<double> randomized_double_sdme(bool use_normal_dist)
+{
+    const RandomizedDoubleSDME randomizer;
+    return randomizer.randomize(use_normal_dist);
+}
