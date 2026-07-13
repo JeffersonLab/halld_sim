@@ -783,8 +783,27 @@ outfile << "r10_3m1_2_single" << "\t" << r10_3m1_2_single_value << "\t" << r10_3
   double rt10_3m1_0_minus_rt10_3m1_1_error = sqrt(results.parError("rt10_3m1_0")*results.parError("rt10_3m1_0") + results.parError("rt10_3m1_1")*results.parError("rt10_3m1_1") - 2*results.covariance("rt10_3m1_0","rt10_3m1_1"));
   outfile << "rt10_3m1_0_minus_rt10_3m1_1" << "\t" << rt10_3m1_0_minus_rt10_3m1_1_value << "\t" << rt10_3m1_0_minus_rt10_3m1_1_error << "\n";
   
+  double rt1m1_31_0_plus_rt1m1_31_1_value = results.parValue("rt1m1_31_0") + results.parValue("rt1m1_31_1");
+  double rt1m1_31_0_plus_rt1m1_31_1_error = sqrt(results.parError("rt1m1_31_0")*results.parError("rt1m1_31_0") + results.parError("rt1m1_31_1")*results.parError("rt1m1_31_1") + 2*results.covariance("rt1m1_31_0","rt1m1_31_1"));
+  outfile << "rt1m1_31_0_plus_rt1m1_31_1" << "\t" << rt1m1_31_0_plus_rt1m1_31_1_value << "\t" << rt1m1_31_0_plus_rt1m1_31_1_error << "\n";
+
+  double rt1m1_31_0_minus_rt1m1_31_1_value = results.parValue("rt1m1_31_0") - results.parValue("rt1m1_31_1");
+  double rt1m1_31_0_minus_rt1m1_31_1_error = sqrt(results.parError("rt1m1_31_0")*results.parError("rt1m1_31_0") + results.parError("rt1m1_31_1")*results.parError("rt1m1_31_1") - 2*results.covariance("rt1m1_31_0","rt1m1_31_1"));
+  outfile << "rt1m1_31_0_minus_rt1m1_31_1" << "\t" << rt1m1_31_0_minus_rt1m1_31_1_value << "\t" << rt1m1_31_0_minus_rt1m1_31_1_error << "\n";  
+
+  double rt1m1_3m1_0_plus_rt1m1_3m1_1_value = results.parValue("rt1m1_3m1_0") + results.parValue("rt1m1_3m1_1"); 
+  double rt1m1_3m1_0_plus_rt1m1_3m1_1_error = sqrt(results.parError("rt1m1_3m1_0")*results.parError("rt1m1_3m1_0") + results.parError("rt1m1_3m1_1")*results.parError("rt1m1_3m1_1") + 2*results.covariance("rt1m1_3m1_0","rt1m1_3m1_1"));
+  outfile << "rt1m1_3m1_0_plus_rt1m1_3m1_1" << "\t" << rt1m1_3m1_0_plus_rt1m1_3m1_1_value << "\t" << rt1m1_3m1_0_plus_rt1m1_3m1_1_error << "\n"; 
+
+  double rt1m1_3m1_0_minus_rt1m1_3m1_1_value = results.parValue("rt1m1_3m1_0") - results.parValue("rt1m1_3m1_1");
+  double rt1m1_3m1_0_minus_rt1m1_3m1_1_error = sqrt(results.parError("rt1m1_3m1_0")*results.parError("rt1m1_3m1_0") + results.parError("rt1m1_3m1_1")*results.parError("rt1m1_3m1_1") - 2*results.covariance("rt1m1_3m1_0","rt1m1_3m1_1"));
+  outfile << "rt1m1_3m1_0_minus_rt1m1_3m1_1" << "\t" << rt1m1_3m1_0_minus_rt1m1_3m1_1_value << "\t" << rt1m1_3m1_0_minus_rt1m1_3m1_1_error << "\n";
 
   
+
+
+  
+
    
 
   // covariance matrix

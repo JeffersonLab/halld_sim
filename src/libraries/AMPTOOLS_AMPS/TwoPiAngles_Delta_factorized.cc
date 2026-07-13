@@ -225,10 +225,8 @@ TwoPiAngles_Delta_factorized::calcUserVars( GDouble** pKin, GDouble* userVars ) 
   userVars[kBigPhi] = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 	
   // vector meson production from K. Schilling et. al.
-  GDouble Pgamma;
-  if(polFraction > 0.) { // for fitting with constant polarization 
-    Pgamma = polFraction;
-  }
+  GDouble Pgamma; // for fitting with constant polarization 
+  Pgamma = polFraction;
   // else{
   //   int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
   //   if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){

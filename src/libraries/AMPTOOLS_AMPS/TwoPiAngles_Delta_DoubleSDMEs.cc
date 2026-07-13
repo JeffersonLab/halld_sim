@@ -234,7 +234,7 @@ GDouble phi_proton = userVars[kPhi_proton];
 
 GDouble sinSqTh = sinSqTheta_proton;
 GDouble sin2Th = sin2Theta_proton;
-GDouble cosSqTh = 1.0 - sinSqTh;
+GDouble cosSqTh = cosTheta_proton * cosTheta_proton;
 
 GDouble cphi = cos(phi_proton);
 GDouble sphi = sin(phi_proton);
@@ -243,7 +243,7 @@ GDouble s2phi = sin(2.0 * phi_proton);
 
 GDouble sinSqThPi = sinSqTheta_pim;
 GDouble sin2ThPi = sin2Theta_pim;
-GDouble cosSqThPi = 1.0 - sinSqThPi;
+GDouble cosSqThPi = cosTheta_pim * cosTheta_pim;
 
 GDouble cphiPi = cos(phi_pim);
 GDouble sphiPi = sin(phi_pim);
@@ -408,9 +408,7 @@ TwoPiAngles_Delta_DoubleSDMEs::calcUserVars( GDouble** pKin, GDouble* userVars )
 	
   // vector meson production from K. Schilling et. al.
   GDouble Pgamma;
-  if(polFraction > 0.) { // for fitting with constant polarization 
-    Pgamma = polFraction;
-  }
+  Pgamma = polFraction;
   // else{
   //   int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
   //   if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){

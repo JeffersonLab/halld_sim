@@ -68,7 +68,7 @@ GPUTwoPiAngles_Delta_DoubleSDMEs_kernel( GPU_AMP_PROTO,
   
   GDouble sinSqTh = sinSqTheta_proton;
   GDouble sin2Th = sin2Theta_proton;
-  GDouble cosSqTh = 1.0 - sinSqTh;
+  GDouble cosSqTh = cosTheta_proton * cosTheta_proton;
 
   GDouble cphi = cos(phi_proton);
   GDouble sphi = sin(phi_proton);
@@ -77,7 +77,7 @@ GPUTwoPiAngles_Delta_DoubleSDMEs_kernel( GPU_AMP_PROTO,
 
   GDouble sinSqThPi = sinSqTheta_pim;
   GDouble sin2ThPi = sin2Theta_pim;
-  GDouble cosSqThPi = 1.0 - sinSqThPi;
+  GDouble cosSqThPi = cosTheta_pim * cosTheta_pim;
 
   GDouble cphiPi = cos(phi_pim);
   GDouble sphiPi = sin(phi_pim);
