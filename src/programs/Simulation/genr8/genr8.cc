@@ -4,7 +4,7 @@
  *         Use "genr8 -h" for help with options.
  ********************************************************
  *                      * Generate t-channel        
- *  genr8.c           * monte carlo events.        
+ *  genr8.c             * monte carlo events.        
  *                      * 
  ********************************************************
  * 
@@ -82,10 +82,19 @@ int UseName=0;
 int FIRST_EVENT=1;
 int PrintFlag=10;
 int WriteAscii=0;
-int runNo=9000;
+int RunNo=9000;
 int NFinalParts=0;
 unsigned int RandomSeed=0;
 int UseCurrentTimeForRandomSeed = TRUE;
+
+/*
+ * User-defined boundaries (set via command line flags).
+ * When "Use*" is FALSE the corresponding bound is not applied
+ * and returns to its original behavior).
+ */
+double UserMMin=0.0, UserMMax=0.0;
+int UseUserMMin=0, UseUserMMax=0;
+
 /***********************/
 /* Declarations         */
 /***********************/
@@ -128,7 +137,7 @@ void PrintUsage(char *processName)
   fprintf(stderr,"\t-n Use a particle name and not its ID number (ascii only) \n");
   fprintf(stderr,"\t-M<max> Process first max events\n");
   fprintf(stderr,"\t-l<lfevents> Determine the lorentz factor with this many number of events (default is 10000)\n");
-  fprintf(stderr,"\t-r<runNo> default runNo is 9000. \n");
+  fprintf(stderr,"\t-r<RunNo> default RunNo is 9000. \n");
   /*fprintf(stderr,"\t-o<name> The output file \n");*/
   fprintf(stderr,"\t-P save flag= 11 & 01 events(default saves 11 & 10 events) \n");
   /* fprintf(stderr,"\t-R Save recoiling baryon information. \n"); */
@@ -136,6 +145,8 @@ void PrintUsage(char *processName)
   fprintf(stderr,"\t-A<filename> Save in ascii format. \n");
   fprintf(stderr,"\t-s<seed> Set random number seed to <seed>. \n");
   fprintf(stderr,"\t         (default is to set using current time + pid) \n");
+  fprintf(stderr,"\t-Mmin<M_min> Restrict generated X (isobar) mass to be >= M_min (GeV). \n");
+  fprintf(stderr,"\t-Mmax<M_max> Restrict generated X (isobar) mass to be <= M_max (GeV). \n");
   fprintf(stderr,"\t-h Print this help message\n\n");
 
 }
@@ -186,64 +197,76 @@ int main(int argc,char **argv)
   }
   else {
     
-    /*
-     *  Read command line options.
-     */
+  /*
+  *  Read command line options.
+  */
 
-    for (i=1; i<argc; i++) {
-      argptr = argv[i];
-      if ((*argptr == '-') && (strlen(argptr) > 1)) {
-	argptr++;
-	switch (*argptr) {
-	case 'd':
-	  Debug =1;
-	  break;
-	case 'h':
-	  PrintUsage(argv[0]);
-	  exit(0);
-	  break;
-	case 'n':
-	  UseName =1;
-	  break;
-	case 'A':
-	  WriteAscii=1;
-	  fout = fopen(++argptr,"w");
-	  fprintf(stderr,"Opening file %s for output. \n",argptr);
-	  break;
-	case 'R':
-	  fprintf(stderr,"Printing recoil information.\n");
-	  PrintRecoil=1;
-	  break;
-	case 'P':
-	  fprintf(stderr,"Printing eta and pizeros and not gammas.\n");
-	  PrintProduction=1;
-	  break;
-	case 'l':
-	  lfevents = atoi(++argptr);
-	  fprintf(stderr,"Using %d events to determine the lorentz factor\n",lfevents);
-	  break;
-	case 'M':
-	  max = atoi(++argptr);
-	  fprintf(stderr,"Maximum number of events: %d\n",max);
-	  break;
-	case 'r':
-	  runNo = atoi(++argptr);
-	  fprintf(stderr,"Using runNo: %d\n",runNo);
-	  break;
-	case 's':
-	  RandomSeed = atoi(++argptr);
-	  UseCurrentTimeForRandomSeed = FALSE;
-	  break;
-	default:
-	  fprintf(stderr,"Unrecognized argument -%s\n\n",argptr);
-	  PrintUsage(argv[0]);	  
-	  exit(-1);
-	  break;
-	  
-	}
+  for (i=1; i<argc; i++) {
+    argptr = argv[i];
+    if ((*argptr == '-') && (strlen(argptr) > 1)) {
+	    argptr++;
+      if (strncmp(argptr,"Mmin",4) == 0) {
+        UserMMin = atof(argptr+4);
+        UseUserMMin = 1;
+        fprintf(stderr,"Restricting generated X mass to be >= %lf GeV\n",UserMMin);
+      }
+      else if (strncmp(argptr,"Mmax",4) == 0) {
+        UserMMax = atof(argptr+4);
+        UseUserMMax = 1;
+        fprintf(stderr,"Restricting generated X mass to be <= %lf GeV\n",UserMMax);
+      }
+	    else {
+      switch (*argptr) {
+        case 'd':
+          Debug =1;
+          break;
+        case 'h':
+          PrintUsage(argv[0]);
+          exit(0);
+          break;
+        case 'n':
+          UseName =1;
+          break;
+        case 'A':
+          WriteAscii=1;
+          fout = fopen(++argptr,"w");
+          fprintf(stderr,"Opening file %s for output. \n",argptr);
+          break;
+        case 'R':
+          fprintf(stderr,"Printing recoil information.\n");
+          PrintRecoil=1;
+          break;
+        case 'P':
+          fprintf(stderr,"Printing eta and pizeros and not gammas.\n");
+          PrintProduction=1;
+          break;
+        case 'l':
+          lfevents = atoi(++argptr);
+          fprintf(stderr,"Using %d events to determine the lorentz factor\n",lfevents);
+          break;
+        case 'M':
+          max = atoi(++argptr);
+          fprintf(stderr,"Maximum number of events: %d\n",max);
+          break;
+        case 'r':
+          RunNo = atoi(++argptr);
+          fprintf(stderr,"Using RunNo: %d\n",RunNo);
+          break;
+        case 's':
+          RandomSeed = atoi(++argptr);
+          UseCurrentTimeForRandomSeed = FALSE;
+          break;
+        default:
+          fprintf(stderr,"Unrecognized argument -%s\n\n",argptr);
+          PrintUsage(argv[0]);	  
+          exit(-1);
+          break;
+        
+        }
       }
     }
   }
+}
 
   /*
    *  Seed the random number generator.
@@ -525,6 +548,7 @@ int main(int argc,char **argv)
      */
    
     do{
+    int mgen_tries = 0;
 l0:   imassc2=0;
     if(!(X->width<0)) 
       do{/*use BreitWigner--phasespace distribution */
@@ -557,8 +581,20 @@ l1:	  imassc=setChildrenMass(X->child[i]);
 	       goto l0; 
           }
           }
+
+	if(++mgen_tries > 1000000){
+	  fprintf(stderr,
+	    "Could not generate an X mass within the requested -Mmin/-Mmax window after %d tries.\n"
+	    "The requested mass window likely does not overlap the Breit-Wigner-accessible mass "
+	    "range for this resonance. Exiting to avoid an infinite loop.\n",
+	    mgen_tries);
+	  exit(-1);
+	}
+
        }while((X->mass > MassHighBW) ||  ( X->nchildren==0 ? FALSE :
-	    (X->mass <  ( (X->child[0])->mass +  (X->child[1])->mass))) );
+	    (X->mass <  ( (X->child[0])->mass +  (X->child[1])->mass))) ||
+	    (UseUserMMin && X->mass < UserMMin) ||
+	    (UseUserMMax && X->mass > UserMMax) );
 
         else{/* there's an error.. */
 	  fprintf(stderr,"Cannot use a negative width!\n");
@@ -645,7 +681,7 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
 		   0.5*(t + (event_beam.mass)*(event_beam.mass) + (X->mass)*(X->mass))
 		   )/( v3mag(&(event_beam.p.space))*X_momentum ) ;
       
-    }while(fabs(costheta)>1.0  );
+      }while(fabs(costheta)>1.0  ); 
     
     theta = acos(costheta);
     phi = randm(-1*M_PI,M_PI);
@@ -726,8 +762,8 @@ l2:	  imassc=setChildrenMass(Y->child[i]);
 	
 	Nprinted =0;
 	/* event header information 
-	fprintf(fout,"RunNo %d EventNo %d\n",runNo,naccepted);*/
-	fprintf(fout,"%d %d %d\n",runNo,naccepted, NFinalParts);
+	fprintf(fout,"RunNo %d EventNo %d\n",RunNo,naccepted);*/
+	fprintf(fout,"%d %d %d\n",RunNo,naccepted, NFinalParts);
 
 	/*
 	 * Print out the production
@@ -960,10 +996,22 @@ double rawthresh(struct particleMC_t *Isobar)
 	rmassThresh += Isobar->child[i]->mass;
     }
   }else{
-    rmassThresh=Isobar->mass;
-    if(Isobar->mass <0){ /* error */
-      fprintf(stderr,"Error!: Isobar->mass <0 for Isobar with no children\nExit\n");
-      exit(-1);
+    if(Isobar->mass <0){
+      /*
+       * This is a final-state particle with a nonzero width that is
+       * being generated "inclusively" (e.g. omega, eta produced without
+       * their own explicit decay chain in the input file): it has no
+       * children of its own, so there is no daughter-mass sum to fall
+       * back on, and its own Breit-Wigner mass hasn't been drawn yet at
+       * the point this threshold is needed (see setMass()).  Treat its
+       * threshold contribution as zero; the bookmass +/- N*width cuts
+       * already applied in setMass() enforce a physically sensible
+       * bound on its eventual mass, so this is a safe, conservative
+       * placeholder rather than the fatal error this used to be.
+       */
+      rmassThresh = 0.0;
+    } else {
+      rmassThresh=Isobar->mass;
     }
   }
   return rmassThresh;
@@ -1209,4 +1257,3 @@ double randm(double low, double high)
  *                     *
  ***********************
  */
-
