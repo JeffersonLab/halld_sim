@@ -146,12 +146,30 @@ int main( int argc, char* argv[] ){
 	continue;
       }
 
-      TH1 *hist_data = plotGen.projection(ivar,reactionName, PlotGen::kData)->toRoot();
-      TH1 *hist_bkg = plotGen.projection(ivar,reactionName, PlotGen::kBkgnd)->toRoot();
-      TH1 *hist_accmc = plotGen.projection(ivar,reactionName, PlotGen::kAccMC)->toRoot();
-      TH1 *hist_genmc = plotGen.projection(ivar,reactionName, PlotGen::kGenMC)->toRoot();
 
+      TH1 *hist_data, *hist_bkg, *hist_accmc, *hist_genmc;
 
+      
+      
+      for(int iReac=0;iReac<results.reactionList().size();iReac++){
+
+	string current_reaction = results.reactionList()[iReac];
+
+	
+	if(iReac==0){
+	  hist_data = plotGen.projection(ivar,current_reaction, PlotGen::kData)->toRoot();
+	  hist_bkg = plotGen.projection(ivar,current_reaction, PlotGen::kBkgnd)->toRoot();
+	  hist_accmc = plotGen.projection(ivar,current_reaction, PlotGen::kAccMC)->toRoot();
+	  hist_genmc = plotGen.projection(ivar,current_reaction, PlotGen::kGenMC)->toRoot();
+	}else{
+	  hist_data->Add(plotGen.projection(ivar,current_reaction, PlotGen::kData)->toRoot());
+	  hist_bkg->Add(plotGen.projection(ivar,current_reaction, PlotGen::kBkgnd)->toRoot());
+	  hist_accmc->Add(plotGen.projection(ivar,current_reaction, PlotGen::kAccMC)->toRoot());
+	  hist_genmc->Add(plotGen.projection(ivar,current_reaction, PlotGen::kGenMC)->toRoot());
+	}
+      }
+
+      hist_data->SetMinimum(0);
       hist_data->Draw();
       hist_bkg->SetFillColor(kRed);
       hist_accmc->SetFillColor(kGreen-8);
