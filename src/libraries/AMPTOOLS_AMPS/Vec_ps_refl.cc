@@ -87,16 +87,15 @@
 //  For a 2P m=0 wave from an omega->gpi that belongs to the real part of
 //  the amplitude sum,has a negative sign in front of the polarization term, and
 //  a photon helicity -1, you would write:
-//  you would write:
 //  If polarization info stored in the beam P4:
-//  amplitude reactionName::SumName::WaveName Vec_ps_refl 1 1 2 -1 -1 omegagpi -1
-//  amplitude reactionName::SumName::WaveName Vec_ps_refl 1 1 2 -1 -1 omegagpi gHelicity=-1
+//  amplitude reactionName::SumName::WaveName Vec_ps_refl 2 0 1 1 -1 omegagpi -1
+//  amplitude reactionName::SumName::WaveName Vec_ps_refl 2 0 1 1 -1 omegagpi gHelicity=-1
 //  If polarization angle and fraction are fixed:
-//  amplitude reactionName::SumName::WaveName Vec_ps_refl 1 1 2 -1 -1 90 .35 omegagpi -1
-//  amplitude reactionName::SumName::WaveName Vec_ps_refl 1 1 2 -1 -1 polFraction=0.35 polAngle=90 omegagpi gHelicity=-1
+//  amplitude reactionName::SumName::WaveName Vec_ps_refl 2 0 1 1 -1 90 .35 omegagpi -1
+//  amplitude reactionName::SumName::WaveName Vec_ps_refl 2 0 1 1 -1 polFraction=0.35 polAngle=90 omegagpi gHelicity=-1
 //  If polarization vs E_gamma from histogram:
-//  amplitude reactionName::SumName::WaveName Vec_ps_refl 1 1 2 -1 -1 90 pathToFile.root histName omegagpi -1
-//  amplitude reactionName::SumName::WaveName Vec_ps_refl 1 1 2 -1 -1 polAngle=90 polFile=pathToFile.root polHist=histName omegagpi gHelicity=-1
+//  amplitude reactionName::SumName::WaveName Vec_ps_refl 2 0 1 1 -1 90 pathToFile.root histName omegagpi -1
+//  amplitude reactionName::SumName::WaveName Vec_ps_refl 2 0 1 1 -1 polAngle=90 polFile=pathToFile.root polHist=histName omegagpi gHelicity=-1
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.....
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -389,11 +388,11 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     // beam delta ps pi0 gamma
     // Vec(KK) ps proton, (5 particles)
     // beam proton ps K K
-	  // Vec(pipi) pi- Delta++, (5 particles)
+	// Vec(pipi) pi- Delta++, (5 particles)
     // beam proton ps pi pi
-	  // Vec(Kpi) K+ Lambda, (5 particles)
+	// Vec(Kpi) K+ Lambda, (5 particles)
     // beam proton ps K pi
-    vecDaught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+      vecDaught1 = TLorentzVector(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
 	  vecDaught2 = TLorentzVector(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
 	  vec = vecDaught1 + vecDaught2;
   }
