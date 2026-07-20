@@ -64,7 +64,7 @@ UserAmplitude< ThreePiAnglesSchilling >( args )
     m_polFraction = 0.;
     TFile* f = new TFile( args[10].c_str() );
     m_polFrac_vs_E = (TH1D*)f->Get( args[11].c_str() );
-    assert( polFrac_vs_E != NULL );
+    assert( m_polFrac_vs_E != NULL );
     cout << "Fitting with polarization from " << polFrac_vs_E->GetName() << endl;
   }
 }
