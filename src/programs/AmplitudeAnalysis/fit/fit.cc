@@ -71,23 +71,146 @@
 using std::complex;
 using namespace std;
 
-void summarizeFits(std::vector<std::tuple<int,bool,int,int,double>>& fitLLs) {
-    if(fitLLs.size() == 0) return;
-    std::sort(fitLLs.begin(), fitLLs.end(), [](const std::tuple<int,bool,int,int,double>& a, const std::tuple<int,bool,int,int,double>& b){ return std::get<4>(a) < std::get<4>(b); });
-    std::ofstream fout("fit_ranking.txt");
-    if(!fout) std::cerr << "Error: cannot open fit_ranking.txt\n";
-    auto print_header = [](std::ostream& os){ os << "\nSUMMARY OF ALL FITS:\n" << std::left << std::setw(6) << "#" << std::setw(9) << "Success" << std::setw(11) << "FitStatus" << std::setw(9) << "eMatrix" << std::setw(14) << "LogL" << '\n'; };
-    auto print_row = [&](std::ostream& os, size_t i){ os << std::left << std::setw(6) << std::get<0>(fitLLs[i]) << std::setw(9) << (std::get<1>(fitLLs[i]) ? "Y" : "N") << std::setw(11) << std::get<2>(fitLLs[i]) << std::setw(9) << std::get<3>(fitLLs[i]) << std::setw(14) << (std::ostringstream() << std::setprecision(8) << std::defaultfloat << std::get<4>(fitLLs[i])).str() << '\n'; };
-    print_header(std::cout);
-    if(fout) print_header(fout);
-    for(size_t i=0; i<fitLLs.size(); ++i) {
-        print_row(std::cout, i);
-        if(fout) print_row(fout, i);
+void summarizeFits(std::vector<std::tuple<int,bool,int,int,double>>& fitLLs, bool csvOutput = false,
+                    double tieEps = 1e-3) {
+    // tieEps: LogL difference below which two converged fits are considered "tied".
+    // MINUIT's default EDM convergence criterion is on the order of 1e-3 (for UP=1,
+    // i.e. -logL directly), so two independent runs that land on the same true
+    // minimum will typically agree to within about this tolerance. Tighten this
+    // (e.g. 1e-4) if you called MIGRAD with a smaller "tolerance" arg / SetErrorDef,
+    // or loosen it if you want a "statistically indistinguishable" cut instead
+    // (e.g. ~2.0, akin to a likelihood-ratio / AIC-difference threshold).
+
+    if(fitLLs.empty()) return;
+
+    // sort: converged (success) fits first, ranked by LogL ascending;
+    // failed fits pushed to the bottom (also LogL-sorted among themselves, but unranked)
+    std::sort(fitLLs.begin(), fitLLs.end(),
+        [](const auto& a, const auto& b){
+            bool sa = std::get<1>(a), sb = std::get<1>(b);
+            if (sa != sb) return sa; // successes before failures
+            return std::get<4>(a) < std::get<4>(b);
+        });
+
+    // collect all *successful* fits sharing the minimum LogL (ties, within tieEps)
+    auto tie_min = [&](int idx) {
+        using FitType = std::tuple<int,bool,int,int,double>;
+        double minVal = std::numeric_limits<double>::max();
+        for (const auto& v : fitLLs) {
+            if (!std::get<1>(v)) continue; // only consider converged fits
+            double val = (idx == 4) ? std::get<4>(v) : (double)std::get<3>(v);
+            if (val < minVal) minVal = val;
+        }
+        std::vector<FitType> out;
+        for (const auto& v : fitLLs) {
+            if (!std::get<1>(v)) continue;
+            double val = (idx == 4) ? std::get<4>(v) : (double)std::get<3>(v);
+            if (std::fabs(val - minVal) < tieEps) out.push_back(v);
+        }
+        return out;
+    };
+
+    // success rate
+    size_t succ = 0;
+    for (const auto& f : fitLLs) if (std::get<1>(f)) ++succ;
+    double pct = 100.0 * static_cast<double>(succ) / static_cast<double>(fitLLs.size());
+
+    // best successful fit (lowest LogL among successes only)
+    int    bestSuccIdx  = -1;
+    double bestSuccLogL = std::numeric_limits<double>::max();
+    for (const auto& f : fitLLs) {
+        if (std::get<1>(f) && std::get<4>(f) < bestSuccLogL) {
+            bestSuccLogL = std::get<4>(f);
+            bestSuccIdx  = std::get<0>(f);
+        }
     }
-    size_t succ = 0; // print overall success rate
-    for (size_t i = 0; i < fitLLs.size(); ++i) if (std::get<1>(fitLLs[i])) ++succ;
-    double pct = fitLLs.empty() ? 0.0 : (100.0 * static_cast<double>(succ) / static_cast<double>(fitLLs.size()));
-    std::cout << "\nSuccess: " << succ << " / " << fitLLs.size() << " (" << std::setprecision(3) << std::fixed << pct << "%)\n";
+
+    auto bestByLogL = tie_min(4);
+
+    // reference LogL for DeltaLogL column: best converged fit if one exists,
+    // otherwise just fall back to the first row so the column still prints
+    double refLogL = (bestSuccIdx >= 0) ? bestSuccLogL : std::get<4>(fitLLs[0]);
+
+    // ---- write to both stdout and file ----
+    std::string outfile = csvOutput ? "fit_ranking.csv" : "fit_ranking.txt";
+    std::ofstream fout(outfile);
+    if (!fout) std::cerr << "Error: cannot open " << outfile << "\n";
+
+    auto write = [&](std::ostream& os) {
+
+        if (csvOutput) {
+            os << "Rank,FitIndex,Success,FitStatus,eMatrix,LogL,DeltaLogL\n";
+            int rank = 0;
+            for (size_t i = 0; i < fitLLs.size(); ++i) {
+                const auto& f = fitLLs[i];
+                bool isSucc = std::get<1>(f);
+                if (isSucc) ++rank;
+                os << (isSucc ? std::to_string(rank) : std::string("-")) << ","
+                   << std::get<0>(f)          << ","
+                   << (isSucc ? 1:0)          << ","
+                   << std::get<2>(f)          << ","
+                   << std::get<3>(f)          << ","
+                   << std::setprecision(10) << std::fixed << std::get<4>(f) << ","
+                   << std::setprecision(6)  << std::fixed << (std::get<4>(f) - refLogL)
+                   << "\n";
+            }
+        } else {
+            os << "\n===== SUMMARY OF ALL FITS (converged fits ranked by LogL; failed fits listed unranked) =====\n";
+            os << std::left
+               << std::setw(6)  << "Rank"
+               << std::setw(6)  << "#"
+               << std::setw(9)  << "Success"
+               << std::setw(11) << "FitStatus"
+               << std::setw(9)  << "eMatrix"
+               << std::setw(18) << "LogL"
+               << std::setw(14) << "DeltaLogL"
+               << "\n";
+            int rank = 0;
+            for (size_t i = 0; i < fitLLs.size(); ++i) {
+                const auto& f = fitLLs[i];
+                bool isSucc = std::get<1>(f);
+                if (isSucc) ++rank;
+                std::string rankStr = isSucc ? std::to_string(rank) : std::string("-");
+                os << std::left
+                   << std::setw(6)  << rankStr
+                   << std::setw(6)  << std::get<0>(f)
+                   << std::setw(9)  << (isSucc ? "Y" : "N")
+                   << std::setw(11) << std::get<2>(f)
+                   << std::setw(9)  << std::get<3>(f)
+                   << std::setw(18) << (std::ostringstream() << std::setprecision(10) << std::fixed << std::get<4>(f)).str()
+                   << std::setw(14) << (std::ostringstream() << std::setprecision(6)  << std::fixed << (std::get<4>(f) - refLogL)).str()
+                   << "\n";
+            }
+        }
+
+        // best fit callout (converged fits only)
+        if (!bestByLogL.empty()) {
+            os << "\nBEST FIT(S) by LogL among converged fits (" << bestByLogL.size() << " tied):\n";
+            for (const auto& f : bestByLogL)
+                os << "  Fit #" << std::get<0>(f)
+                   << "  success=" << (std::get<1>(f) ? "Y":"N")
+                   << "  status="  << std::get<2>(f)
+                   << "  eMatrix=" << std::get<3>(f)
+                   << "  LogL="    << std::setprecision(10) << std::fixed << std::get<4>(f)
+                   << "\n";
+        } else {
+            os << "\nBEST FIT(S) by LogL among converged fits: none (no fits converged)\n";
+        }
+
+        if (bestSuccIdx >= 0)
+            os << "BEST SUCCESSFUL FIT: #" << bestSuccIdx
+               << "  LogL=" << std::setprecision(10) << std::fixed << bestSuccLogL << "\n";
+        else
+            os << "BEST SUCCESSFUL FIT: none (all fits failed)\n";
+
+        // success rate
+        os << "\nSuccess: " << succ << " / " << fitLLs.size()
+           << " (" << std::setprecision(1) << std::fixed << pct << "%)\n";
+        os << "=================================================\n";
+    };
+
+    write(std::cout);
+    if (fout) write(fout);
 }
 
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int eMatrixRequirement) {
@@ -236,6 +359,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
       gSystem->Exec(Form("cp %s_%d%s %s", seedfileBaseName.data(), minFitTag, seedfileExtension.data(), seedfile.data()));
     }
     // print summary of all fits
+    // summarizeFits(fitLLs,true); // write summary to CSV file
     summarizeFits(fitLLs);
   }
 }
