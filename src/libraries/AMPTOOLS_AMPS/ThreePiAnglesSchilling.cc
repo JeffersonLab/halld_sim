@@ -16,7 +16,7 @@
 ThreePiAnglesSchilling::ThreePiAnglesSchilling( const vector< string >& args ) :
 UserAmplitude< ThreePiAnglesSchilling >( args )
 {
-  assert( args.size() == 11 );
+  assert( args.size() == 11 || args.size() == 12 );
   
   m_rho000  = AmpParameter( args[0] );
   m_rho100  = AmpParameter( args[1] );
@@ -31,8 +31,8 @@ UserAmplitude< ThreePiAnglesSchilling >( args )
   m_rho1m12 = AmpParameter( args[8] );
   
   m_polAngle = AmpParameter( args[9] );
+
   
-  m_polFraction = atof(args[10].c_str());
   
   // need to register any free parameters so the framework knows about them
   registerParameter( m_rho000 );
@@ -48,17 +48,25 @@ UserAmplitude< ThreePiAnglesSchilling >( args )
   registerParameter( m_rho1m12 );
   
   registerParameter( m_polAngle );
-  
-   if (m_polFraction > 0.0)
-   cout << "Fitting with constant polarization" << endl;
-   else
-   {
-   cout << "Fitting with polarization from BeamProperties class" << endl;
-   // BeamProperties configuration file
-   TString beamConfigFile = args[10].c_str();
-   BeamProperties beamProp(beamConfigFile);
-   m_polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
-   }
+
+  if (args.size() == 11) {
+    m_polFraction = atof(args[10].c_str());
+    if (m_polFraction > 0.0) {
+      cout << "Fitting with constant polarization" << endl;
+    } else {
+      cout << "Fitting with polarization from BeamProperties class" << endl;
+      // BeamProperties configuration file
+      TString beamConfigFile = args[10].c_str();
+      BeamProperties beamProp(beamConfigFile);
+      m_polFrac_vs_E = (TH1D*)beamProp.GetPolFrac();
+    }
+  } else if (args.size() == 12) {
+    m_polFraction = 0.;
+    TFile* f = new TFile( args[10].c_str() );
+    m_polFrac_vs_E = (TH1D*)f->Get( args[11].c_str() );
+    assert( polFrac_vs_E != NULL );
+    cout << "Fitting with polarization from " << polFrac_vs_E->GetName() << endl;
+  }
 }
 
 complex< GDouble >
