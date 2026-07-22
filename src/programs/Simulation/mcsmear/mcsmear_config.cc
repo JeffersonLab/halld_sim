@@ -134,7 +134,7 @@ bool mcsmear_config_t::ParseRCDBConfigFile(int runNumber)
     }
 
     auto json = rtvsCondition->ToJsonDocument();               // The CODA rtvs is serialized as JSon dictionary.
-    string fileName(json["%(config)"].GetString());            // The file name is stored in '%(config)'
+    string fileName(json.at("%(config)").get_string());        // The file name is stored in '%(config)'
 
 
     // Get file out of RCDB (indexed by run number and name)
