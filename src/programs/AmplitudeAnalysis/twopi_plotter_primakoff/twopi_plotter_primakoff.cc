@@ -30,6 +30,7 @@
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
 #include "AMPTOOLS_AMPS/TwoPiW_brokenetas.h"
+#include "AMPTOOLS_AMPS/TwoPiW_emptytgt.h"
 #include "AMPTOOLS_AMPS/TwoPitdist.h"
 #include "AMPTOOLS_AMPS/TwoPiNC_tdist.h"
 #include "AMPTOOLS_AMPS/TwoPiEtas_tdist.h"
@@ -66,6 +67,7 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
   AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
   AmpToolsInterface::registerAmplitude( TwoPiW_brokenetas() );
+  AmpToolsInterface::registerAmplitude( TwoPiW_emptytgt() );
   AmpToolsInterface::registerAmplitude( TwoPitdist() );
   AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
   AmpToolsInterface::registerAmplitude( TwoPiEtas_tdist() );
@@ -153,7 +155,7 @@ int main( int argc, char* argv[] ){
     // cout << " sum segment=" << parsum << endl;
     vector<string> parbreak = stringSplit (parsum, "::");
 
-    if (parbreak[1] == "Aplus"  || parbreak[1] == "IAplus"  || parbreak[1] == "EAplus" ) { 
+    if (parbreak[1] == "Aplus"  || parbreak[1] == "IAplus"  || parbreak[1] == "EmptyAplus" || parbreak[1] == "EAplus" ) { 
       amplist.push_back(parbreak[2]);
       cout << " amp =" << parbreak[2] << endl;
        }
@@ -311,6 +313,7 @@ int main( int argc, char* argv[] ){
     double parError = results.parError( pars[i] );
     int ifindg = pars[i].find("g");
     outfile << pars[i].substr(ifindg) << "\t" << parValue << "\t" << parError << "\t";
+    cout << pars[i].substr(ifindg) << "\t" << parValue << "\t" << parError << endl;
   }
 
 

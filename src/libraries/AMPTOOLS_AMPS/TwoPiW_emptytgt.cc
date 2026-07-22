@@ -13,7 +13,7 @@
 #include "particleType.h"
 
 #include "IUAmpTools/Kinematics.h"
-#include "AMPTOOLS_AMPS/TwoPiW_brokenetas.h"
+#include "AMPTOOLS_AMPS/TwoPiW_emptytgt.h"
 
 // Class modeled after BreitWigner amplitude function provided for examples with AmpTools.
 // Dependence of swave 2pi cross section on W (mass of 2pi system) Elton 4/17/2017
@@ -21,8 +21,8 @@
 // Simple version for broken etas (3pi0 reconstructed as 2pi0) Elton 5/7/2020
 // Changed from Gaussian to Exponential to mimic empty target distribution Elton 5/15/2026
 
-TwoPiW_brokenetas::TwoPiW_brokenetas( const vector< string >& args ) :
-UserAmplitude< TwoPiW_brokenetas >( args )
+TwoPiW_emptytgt::TwoPiW_emptytgt( const vector< string >& args ) :
+UserAmplitude< TwoPiW_emptytgt >( args )
 {
   
   assert( args.size() == 4 );
@@ -31,7 +31,7 @@ UserAmplitude< TwoPiW_brokenetas >( args )
 	m_daughters = pair< string, string >( args[2], args[3] );
   
   // need to register any free parameters so the framework knows about them
-  // for brokenetas, parameters are Gmean and Gsigma of the Gaussian in GeV
+  // for emptytgt, parameters are Gmean and Gsigma of the Gaussian in GeV
   registerParameter( m_par1 );
   registerParameter( m_par2 );
   
@@ -40,7 +40,7 @@ UserAmplitude< TwoPiW_brokenetas >( args )
 }
 
 complex< GDouble >
-TwoPiW_brokenetas::calcAmplitude( GDouble** pKin ) const
+TwoPiW_emptytgt::calcAmplitude( GDouble** pKin ) const
 {
   TLorentzVector P1, P2, Ptot, Ptemp, Precoil;
   
@@ -100,13 +100,13 @@ TwoPiW_brokenetas::calcAmplitude( GDouble** pKin ) const
 
     // if (Wpipi < mass1+mass2) Aw = 0;  // let phase space cut off intensity
     
-    // cout << "TwoPiW_brokenetas: calcAmplitude: 2pi mass=" << Wpipi << " Gmean=" << Gmean << " Gsigma=" << Gsigma << " AwNorm=" << std::norm(Aw) << " AwPhase=" << std::arg(Aw) << endl;
+    // cout << "TwoPiW_emptytgt: calcAmplitude: 2pi mass=" << Wpipi << " Gmean=" << Gmean << " Gsigma=" << Gsigma << " AwNorm=" << std::norm(Aw) << " AwPhase=" << std::arg(Aw) << endl;
   
   return( Aw );
 }
 
 void
-TwoPiW_brokenetas::updatePar( const AmpParameter& par ){
+TwoPiW_emptytgt::updatePar( const AmpParameter& par ){
  
   // could do expensive calculations here on parameter updates
   

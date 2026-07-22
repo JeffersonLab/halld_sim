@@ -24,6 +24,7 @@
 #include "AMPTOOLS_AMPS/TwoPiWt_primakoff.h"
 #include "AMPTOOLS_AMPS/TwoPiWt_sigma.h"
 #include "AMPTOOLS_AMPS/TwoPiW_brokenetas.h"
+#include "AMPTOOLS_AMPS/TwoPiW_emptytgt.h"
 #include "AMPTOOLS_AMPS/TwoPitdist.h"
 #include "AMPTOOLS_AMPS/TwoPiNC_tdist.h"
 #include "AMPTOOLS_AMPS/TwoPiEtas_tdist.h"
@@ -417,6 +418,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( TwoPiAngles_primakoff() );
    AmpToolsInterface::registerAmplitude( TwoPiWt_primakoff() );
    AmpToolsInterface::registerAmplitude( TwoPiWt_sigma() );
+   AmpToolsInterface::registerAmplitude( TwoPiW_brokenetas() );
+   AmpToolsInterface::registerAmplitude( TwoPiW_emptytgt() );
    AmpToolsInterface::registerAmplitude( TwoPitdist() );
    AmpToolsInterface::registerAmplitude( TwoPiNC_tdist() );
    AmpToolsInterface::registerAmplitude( ThreePiAngles() );
