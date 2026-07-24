@@ -251,6 +251,7 @@ MACRO dcut
     exitm
   endif
   satt * lsty 7
+  igset ltyp 1
   next
   dcut [1] [caxis] [h] [u] [v] [su] [sv]
   global/create wcaxis [caxis] 'cut axis for wc'
