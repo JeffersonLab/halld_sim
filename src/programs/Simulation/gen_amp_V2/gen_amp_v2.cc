@@ -77,6 +77,7 @@ int main( int argc, char* argv[] ){
   	
   bool fixedGen = false;
   bool fsRootFormat = false;
+  bool centeredVertex = true;
   bool diag = false;
 
   // default upper and lower bounds -- these
@@ -195,6 +196,7 @@ int main( int argc, char* argv[] ){
     }
     if (arg == "-f") fixedGen = true; 
     if (arg == "-d") diag = true;
+    if (arg == "-v") centeredVertex = false;
     if (arg == "-h"){
       cout << endl << " Usage for: " << argv[0] << endl << endl;
       cout << "\t -ac       <file>" << endl;
@@ -215,6 +217,8 @@ int main( int argc, char* argv[] ){
       cout << "\t           Option will skip AmpTools accept/reject process. Output information of FixedTargetGenerator [optional]" << endl;
       cout << "\t -d "            << endl; 
       cout << "\t           Plot only diagnostic histograms [optional]" << endl; 
+      cout << "\t -v " << endl;
+      cout << "\t           Throw vertex distribution in gen_amp_V2, not in hdgeant(4) [not recommended]" << endl;
       cout << "\t -n        <number>" << endl;
       cout << "\t           Minimum number of events to generate [optional]" << endl;
       cout << "\t -r        <run number>" << endl;
@@ -483,7 +487,7 @@ int main( int argc, char* argv[] ){
 	  // we want to save events with weight 1
 	  if( !fixedGen ) evt->setWeight( 1.0 );
 					
-	  if( hddmOut ) hddmOut->writeEvent( *evt, pTypes);
+	  if( hddmOut ) hddmOut->writeEvent( *evt, pTypes, centeredVertex);
 	  rootOut->writeEvent( *evt );
 	  ++eventCounter;
 	  if(eventCounter >= nEvents) break;
