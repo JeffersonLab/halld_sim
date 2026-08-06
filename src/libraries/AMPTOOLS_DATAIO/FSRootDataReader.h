@@ -31,22 +31,24 @@ class FSRootDataReader : public UserDataReader< FSRootDataReader >{
 
    private:
 
-      TFile* m_inFile;
-      TTree* m_inTree;
-      TTree* m_inFriendTree;
-      unsigned int m_eventCounter;
-      unsigned int m_numParticles;
+      // these are default initialized so that a four-momentum which never gets
+      // bound to a branch reads back as zero rather than as uninitialized memory
+      TFile* m_inFile = nullptr;
+      TTree* m_inTree = nullptr;
+      TTree* m_inFriendTree = nullptr;
+      unsigned int m_eventCounter = 0;
+      unsigned int m_numParticles = 0;
 
-      double m_EnPB;
-      double m_PxPB;
-      double m_PyPB;
-      double m_PzPB;
-      double m_EnP[50];
-      double m_PxP[50];
-      double m_PyP[50];
-      double m_PzP[50];
+      double m_EnPB = 0.;
+      double m_PxPB = 0.;
+      double m_PyPB = 0.;
+      double m_PzPB = 0.;
+      double m_EnP[50] = {};
+      double m_PxP[50] = {};
+      double m_PyP[50] = {};
+      double m_PzP[50] = {};
 
-      double m_weight;
+      double m_weight = 1.;
 
       static const char* kModule;
 };

@@ -18,6 +18,23 @@ const char* FSRootDataReader::kModule = "FSRootDataReader";
 
 using namespace std;
 
+namespace {
+
+   // TTree::SetBranchAddress on a branch that does not exist prints a ROOT
+   // error but is not fatal, which would leave the four-momentum arrays holding
+   // whatever they were initialized to and let a fit run to completion on data
+   // that was never read.  Collect the missing names first so that a single
+   // mistake -- a wrong fourMomentumPrefix makes every branch miss at once --
+   // is reported in one go rather than one branch at a time.
+   //
+   // Note TTree::GetBranch also searches friend trees, so this covers branches
+   // supplied by an attached friend.
+   void checkBranch( TTree* tree, const TString& name, vector< TString >& missing ){
+      if( tree->GetBranch( name ) == NULL ) missing.push_back( name );
+   }
+
+}
+
 // Constructor expects one of the following argument patterns:
 //
 // 3 args: inFileName inTreeName numParticles
@@ -53,24 +70,30 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
       TString friendFileName = "";
       TString friendTreeName = "";
       TString weightBranchName = "weight"; // default weight branch name
-      
-      if (args.size() == 4) {        
+      // a weight branch the user asked for by name is required to exist; the
+      // default one is optional and falls back to a weight of 1
+      bool weightBranchSpecified = false;
+
+      if (args.size() == 4) {
         fourMomentumPrefix = args[3];
       }
-      else if (args.size() == 5) {        
+      else if (args.size() == 5) {
         fourMomentumPrefix = args[3];
         weightBranchName = args[4];
+        weightBranchSpecified = true;
       }
       else if (args.size() == 6) {
         friendFileName = args[3];
         friendTreeName = args[4];
         weightBranchName = args[5];
+        weightBranchSpecified = true;
       }
       else if (args.size() == 7) {
         friendFileName = args[3];
         friendTreeName = args[4];
         weightBranchName = args[5];
         fourMomentumPrefix = args[6];
+        weightBranchSpecified = true;
       }
 
       TH1::AddDirectory( kFALSE );
@@ -119,6 +142,35 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
          TString sPxPB = fourMomentumPrefix+"PxPB";
          TString sPyPB = fourMomentumPrefix+"PyPB";
          TString sPzPB = fourMomentumPrefix+"PzPB";
+
+         // check that every branch we are about to read actually exists before
+         // binding any of them -- see the note on checkBranch above
+         vector< TString > missing;
+         checkBranch( m_inTree, sEnPB, missing );
+         checkBranch( m_inTree, sPxPB, missing );
+         checkBranch( m_inTree, sPyPB, missing );
+         checkBranch( m_inTree, sPzPB, missing );
+         for (unsigned int i = 0; i < m_numParticles; i++){
+            TString sI("");  sI += (i+1);
+            checkBranch( m_inTree, fourMomentumPrefix+"EnP"+sI, missing );
+            checkBranch( m_inTree, fourMomentumPrefix+"PxP"+sI, missing );
+            checkBranch( m_inTree, fourMomentumPrefix+"PyP"+sI, missing );
+            checkBranch( m_inTree, fourMomentumPrefix+"PzP"+sI, missing );
+         }
+         if (weightBranchSpecified) checkBranch( m_inTree, weightBranchName, missing );
+
+         if (!missing.empty()){
+            report( ERROR, kModule ) << "FSRootDataReader ERROR:  " << missing.size()
+               << " branch(es) not found in tree " << inTreeName
+               << " of file " << inFileName << ":" << endl;
+            for (unsigned int i = 0; i < missing.size(); i++)
+               report( ERROR, kModule ) << "     " << missing[i] << endl;
+            report( ERROR, kModule ) << "  check the arguments:  numParticles = "
+               << m_numParticles << ", fourMomentumPrefix = \"" << fourMomentumPrefix
+               << "\", weightBranchName = \"" << weightBranchName << "\"" << endl;
+            exit( 1 );
+         }
+
          m_inTree->SetBranchAddress( sEnPB, &m_EnPB );
          m_inTree->SetBranchAddress( sPxPB, &m_PxPB );
          m_inTree->SetBranchAddress( sPyPB, &m_PyPB );
@@ -134,11 +186,10 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
             m_inTree->SetBranchAddress( sPyPi, &m_PyP[i] );
             m_inTree->SetBranchAddress( sPzPi, &m_PzP[i] );
          }
-         
-         // Set up weight branch if it exists, otherwise default to 1.0
-         if (friendFileName != "")
-            m_inTree->SetBranchAddress( weightBranchName, &m_weight );
-         else if (m_inTree->GetBranch(weightBranchName) != NULL)
+
+         // a weight branch named by the user is bound above having been checked;
+         // the default one is used only if the tree happens to provide it
+         if (weightBranchSpecified || m_inTree->GetBranch(weightBranchName) != NULL)
             m_inTree->SetBranchAddress( weightBranchName, &m_weight );
          else
             m_weight = 1.0;

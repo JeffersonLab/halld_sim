@@ -17,6 +17,23 @@
 
 const char* FSRootDataReaderBootstrap::kModule = "FSRootDataReaderBootstrap";
 
+namespace {
+
+   // TTree::SetBranchAddress on a branch that does not exist prints a ROOT
+   // error but is not fatal, which would leave the four-momentum arrays holding
+   // whatever they were initialized to and let a fit run to completion on data
+   // that was never read.  Collect the missing names first so that a single
+   // mistake -- a wrong fourMomentumPrefix makes every branch miss at once --
+   // is reported in one go rather than one branch at a time.
+   //
+   // Note TTree::GetBranch also searches friend trees, so this covers branches
+   // supplied by an attached friend.
+   void checkBranch( TTree* tree, const TString& name, vector< TString >& missing ){
+      if( tree->GetBranch( name ) == NULL ) missing.push_back( name );
+   }
+
+}
+
 // Constructor expects one of the following argument patterns:
 //
 // 3 args: inFileName inTreeName numParticles
@@ -56,6 +73,9 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
       TString friendFileName = "";
       TString friendTreeName = "";
       TString weightBranchName = "weight"; // default weight branch name
+      // a weight branch the user asked for by name is required to exist; the
+      // default one is optional and falls back to a weight of 1
+      bool weightBranchSpecified = false;
       int randSeed = 0;
 
       auto isInteger = [](const string& s) {
@@ -77,7 +97,8 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
           friendFileName = args[3];
           friendTreeName = args[4];
           weightBranchName = args[5];
-        
+          weightBranchSpecified = true;
+
         if (args.size() == 7) {
           if (isInteger(args[6])) {
             randSeed = atoi(args[6].c_str());
@@ -155,6 +176,35 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
          TString sPxPB = fourMomentumPrefix+"PxPB";
          TString sPyPB = fourMomentumPrefix+"PyPB";
          TString sPzPB = fourMomentumPrefix+"PzPB";
+
+         // check that every branch we are about to read actually exists before
+         // binding any of them -- see the note on checkBranch above
+         vector< TString > missing;
+         checkBranch( m_inTree, sEnPB, missing );
+         checkBranch( m_inTree, sPxPB, missing );
+         checkBranch( m_inTree, sPyPB, missing );
+         checkBranch( m_inTree, sPzPB, missing );
+         for (unsigned int i = 0; i < m_numParticles; i++){
+            TString sI("");  sI += (i+1);
+            checkBranch( m_inTree, fourMomentumPrefix+"EnP"+sI, missing );
+            checkBranch( m_inTree, fourMomentumPrefix+"PxP"+sI, missing );
+            checkBranch( m_inTree, fourMomentumPrefix+"PyP"+sI, missing );
+            checkBranch( m_inTree, fourMomentumPrefix+"PzP"+sI, missing );
+         }
+         if (weightBranchSpecified) checkBranch( m_inTree, weightBranchName, missing );
+
+         if (!missing.empty()){
+            report( ERROR, kModule ) << "FSRootDataReaderBootstrap ERROR:  " << missing.size()
+               << " branch(es) not found in tree " << inTreeName
+               << " of file " << inFileName << ":" << endl;
+            for (unsigned int i = 0; i < missing.size(); i++)
+               report( ERROR, kModule ) << "     " << missing[i] << endl;
+            report( ERROR, kModule ) << "  check the arguments:  numParticles = "
+               << m_numParticles << ", fourMomentumPrefix = \"" << fourMomentumPrefix
+               << "\", weightBranchName = \"" << weightBranchName << "\"" << endl;
+            exit( 1 );
+         }
+
          m_inTree->SetBranchAddress( sEnPB, &m_EnPB );
          m_inTree->SetBranchAddress( sPxPB, &m_PxPB );
          m_inTree->SetBranchAddress( sPyPB, &m_PyPB );
@@ -170,11 +220,10 @@ FSRootDataReaderBootstrap::FSRootDataReaderBootstrap( const vector< string >& ar
             m_inTree->SetBranchAddress( sPyPi, &m_PyP[i] );
             m_inTree->SetBranchAddress( sPzPi, &m_PzP[i] );
          }
-         
-         // Set up weight branch if it exists, otherwise default to 1.0
-         if (friendFileName != "")
-            m_inTree->SetBranchAddress( weightBranchName, &m_weight );
-         else if (m_inTree->GetBranch(weightBranchName) != NULL)
+
+         // a weight branch named by the user is bound above having been checked;
+         // the default one is used only if the tree happens to provide it
+         if (weightBranchSpecified || m_inTree->GetBranch(weightBranchName) != NULL)
             m_inTree->SetBranchAddress( weightBranchName, &m_weight );
          else
             m_weight = 1.0;
@@ -200,6 +249,7 @@ Kinematics* FSRootDataReaderBootstrap::getEvent(){
       // Modified: Use bootstrapped index instead of sequential order
       assert( m_nextEntry != m_entryOrder.end() );
       m_inTree->GetEntry( *m_nextEntry++ );
+      m_eventCounter++;
 
       vector< TLorentzVector > particleList;
       particleList.push_back( TLorentzVector( m_PxPB, m_PyPB, m_PzPB, m_EnPB ) );
