@@ -11,13 +11,13 @@ using namespace std;
 class FitResults;
 class Kinematics;
 
-class TwoPiPlotGenerator : public PlotGenerator
+class KPiPlotGenerator : public PlotGenerator
 {
     
 public:
   
   // create an index for different histograms
-  enum { k2PiMass = 0, kPPipMass, kPPimMass, kPiPCosTheta, kThetaPiPlus, kThetaPiMinus, kThetaProton, kMomPiPlus, kMomPiMinus, kMomProton, kPhiPiPlus, kPhiPiMinus, kPhiProton, kPhi, kphi, kPsi, kt, kNumHists};
+  enum { kKPiMass = 0, kLambKMass, kLambPiMass, kKCosTheta, kThetaK, kThetaPi, kThetaLamb, kMomK, kMomPi, kMomLamb, kPhiK, kPhiPi, kPhiLamb, kPhi, kphi, kPsi, kt, kNumHists};
   
   KPiPlotGenerator( const FitResults& results );
   KPiPlotGenerator( );

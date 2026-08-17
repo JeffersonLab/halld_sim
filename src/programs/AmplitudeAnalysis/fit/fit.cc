@@ -62,8 +62,8 @@
 #include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
 #include "AMPTOOLS_AMPS/Vec_ps_moment.h"
+#include "AMPTOOLS_AMPS/PiPiSWaveAMPK.h"
 #include "UTILITIES/randomized_sdme.h"
-
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpTools/AmpToolsInterface.h"

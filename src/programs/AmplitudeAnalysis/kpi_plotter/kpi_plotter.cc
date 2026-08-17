@@ -18,21 +18,27 @@
 #include "AmpPlotter/PlotterMainWindow.h"
 #include "AmpPlotter/PlotFactory.h"
 
-#include "AMPTOOLS_DATAIO/TwoPiPlotGenerator.h"
+#include "AMPTOOLS_DATAIO/KPiPlotGenerator.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderHist.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/BernsteinPoly.h"
+// #include "AMPTOOLS_AMPS/BreitWignerRooFit.h"
+// #include "AMPTOOLS_AMPS/BernsteinPolyRooFitQ.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 
-typedef TwoPiPlotGenerator PlotGen;
+typedef KPiPlotGenerator PlotGen;
 
 void atiSetup(){
   
   AmpToolsInterface::registerAmplitude( Zlm() );
   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
+  AmpToolsInterface::registerAmplitude( BernsteinPoly() );
+  // AmpToolsInterface::registerAmplitude( BreitWignerRooFit() );
+  // AmpToolsInterface::registerAmplitude( BernsteinPolyRooFitQ() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
   AmpToolsInterface::registerDataReader( FSRootDataReader() );
@@ -143,16 +149,16 @@ int main( int argc, char* argv[] ){
           if (isum < sums.size() && iplot == PlotGenerator::kData) continue; // only plot data once
     
           // loop over different variables
-          for (unsigned int ivar  = 0; ivar  < TwoPiPlotGenerator::kNumHists; ivar++){
+          for (unsigned int ivar  = 0; ivar  < KPiPlotGenerator::kNumHists; ivar++){
     
             // set unique histogram name for each plot (could put in directories...)
             string histname =  "";
-            if (ivar == TwoPiPlotGenerator::k2PiMass)  histname += "M2pi";
-    	else if (ivar == TwoPiPlotGenerator::kPiPCosTheta)  histname += "cosTheta";
-            else if (ivar == TwoPiPlotGenerator::kPhi)  histname += "Phi";
-            else if (ivar == TwoPiPlotGenerator::kphi)  histname += "phi";
-            else if (ivar == TwoPiPlotGenerator::kPsi)  histname += "psi";
-            else if (ivar == TwoPiPlotGenerator::kt)  histname += "t";
+            if (ivar == KPiPlotGenerator::kKPiMass)  histname += "MKpi";
+    	      else if (ivar == KPiPlotGenerator::kKCosTheta)  histname += "cosTheta";
+            else if (ivar == KPiPlotGenerator::kPhi)  histname += "Phi";
+            else if (ivar == KPiPlotGenerator::kphi)  histname += "phi";
+            else if (ivar == KPiPlotGenerator::kPsi)  histname += "psi";
+            else if (ivar == KPiPlotGenerator::kt)  histname += "t";
             else continue;
     
             if (iplot == PlotGenerator::kData) histname += "dat";
