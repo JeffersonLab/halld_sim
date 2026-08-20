@@ -31,12 +31,12 @@ public:
 
   complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
 
-  enum UserVars { uv_mass = 0, kNumUserVars };
+  enum UserVars { kMass = 0, kNumUserVars };
   unsigned int numUserVars() const { return kNumUserVars; }
 
   void calcUserVars( GDouble** pKin, GDouble* userVars ) const;
 
-  bool needsUserVarsOnly() const { return false; }
+  bool needsUserVarsOnly() const { return true; }
   bool areUserVarsStatic() const { return false; }
 
   void updatePar( const AmpParameter& par );
@@ -48,7 +48,7 @@ private:
   AmpParameter m_real_p1;
   AmpParameter m_imag_p0;
 
-  double imag_p1;
+  double m_imag_p1;
 
 };
 

@@ -60,20 +60,25 @@ UserAmplitude< DeltaAngles >( args )
 complex< GDouble >
 DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {	
 
-	GDouble sinSqTheta 	= userVars[kSinSqTheta];
-//	GDouble cosSqTheta 	= userVars[kCosSqTheta];
-	GDouble sin2Theta	= userVars[kSin2Theta];
-	GDouble phi		= userVars[kPhi];
 	GDouble cosTheta	= userVars[kCosTheta];
-	GDouble bigPhi		= userVars[kBigPhi];
+	GDouble sinSqTheta 	= userVars[kSinSqTheta];
+	GDouble sin2Theta	= userVars[kSin2Theta];
+	GDouble cosPhi		= userVars[kCosPhi];
+	GDouble cos2Phi		= userVars[kCos2Phi];
+	GDouble sinPhi		= userVars[kSinPhi];
+	GDouble sin2Phi		= userVars[kSin2Phi];
+	GDouble sin2BigPhi	= userVars[kSin2BigPhi];
+	GDouble cos2BigPhi	= userVars[kCos2BigPhi];
 	GDouble Pgamma		= userVars[kPgamma];
+        GDouble sqrt3           = TMath::Sqrt(3);
+
 	
 	// SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
-	GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosTheta*cosTheta) - 2.*TMath::Sqrt(3.)*rho031*cos(phi)*sin2Theta - 2.*TMath::Sqrt(3.)*rho03m1*cos(2.*phi)*sinSqTheta;
+	GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosTheta*cosTheta) - 2.*sqrt3*rho031*cosPhi*sin2Theta - 2.*sqrt3*rho03m1*cos2Phi*sinSqTheta;
 	
-	W -= Pgamma*cos(2.*bigPhi) * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosTheta*cosTheta) - 2.*TMath::Sqrt(3.)*rho131*cos(phi)*sin2Theta - 2.*TMath::Sqrt(3.)*rho13m1*cos(2.*phi)*sinSqTheta);
+	W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosTheta*cosTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
 	
-	W -= Pgamma*sin(2.*bigPhi) * (2.*TMath::Sqrt(3.)*rho231*sin(phi)*sin2Theta + 2.*TMath::Sqrt(3.)*rho23m1*sin(2.*phi)*sinSqTheta);
+	W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
 	
 	W *= 1./(4.*PI);
 	
@@ -105,10 +110,14 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	userVars[kCosTheta]	= TMath::Cos( thetaPhi[0] );
 	userVars[kSinSqTheta]	= TMath::Sin( thetaPhi[0] ) * TMath::Sin( thetaPhi[0] );
 	userVars[kSin2Theta]	= TMath::Sin( 2.*thetaPhi[0] );
-	userVars[kPhi]		= thetaPhi[1];
+	userVars[kCosPhi]	= cos( thetaPhi[1] );
+	userVars[kCos2Phi]	= cos( 2*thetaPhi[1] );
+	userVars[kSinPhi]	= sin( thetaPhi[1] );
+	userVars[kSin2Phi]	= sin( 2*thetaPhi[1] );
 
 	double phiProd = getPhiProd( polAngle, pDelta, beam, target, 2, false );
-	userVars[kBigPhi]	= phiProd;
+	userVars[kCos2BigPhi]	= cos(2*phiProd);
+	userVars[kSin2BigPhi]	= sin(2*phiProd);
 
 
 /*

@@ -26,10 +26,10 @@ UserAmplitude< Linear >( args )
 complex< GDouble >
 Linear::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
-  GDouble mass = userVars[uv_mass];
+  GDouble mass = userVars[kMass];
 
   double real_tot = m_real_p0 + m_real_p1 * mass;
-  double imag_tot = m_imag_p0 + imag_p1 * mass;
+  double imag_tot = m_imag_p0 + m_imag_p1 * mass;
 
   complex< GDouble > ans( real_tot, imag_tot );
   return ans;
@@ -58,13 +58,13 @@ void Linear::calcUserVars( GDouble** pKin, GDouble* userVars ) const
     P2 += Ptemp;
     Ptot += Ptemp;
   }
-  userVars[uv_mass] = Ptot.M(); 
+  userVars[kMass] = Ptot.M(); 
 }
 
 void
 Linear::updatePar( const AmpParameter& par )
 {
-  imag_p1 = m_real_p1 * m_imag_p0 / m_real_p0;
+  m_imag_p1 = m_real_p1 * m_imag_p0 / m_real_p0;
 }
 
 
