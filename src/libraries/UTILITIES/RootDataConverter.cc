@@ -184,7 +184,10 @@ std::string RootDataConverter::getCSVRow() const
     std::string row = m_fit_file;
     for (const auto &pair : m_values)
     {
-        row += "," + std::to_string(pair.second);
+        std::stringstream ss;
+        ss.precision(std::numeric_limits<double>::max_digits10);
+        ss << pair.second;
+        row += "," + ss.str();
     }
     return row;
 }
