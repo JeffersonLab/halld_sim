@@ -152,8 +152,20 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   //vector <double> locthetaphi = getomegapiAngles(0, vec, X, beam, Gammap);
   vector< double > locDecayAngles;
   if(m_3pi) locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, vec_daught2, beam, target, 2, true ); 
-  else locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true ); 
+  else locDecayAngles = getTwoStepAngles( X, vec, vec_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true );
 
+  cout << "X meson:" << endl;
+  X.Print();
+  cout << "omega meson:" << endl;
+  vec.Print();
+  cout << "pi+:" << endl;
+  vec_daught1.Print();
+  cout << "pi-:" << endl;
+  vec_daught2.Print();
+  cout << "beam:" << endl;
+  beam.Print();
+  cout << "target:" << endl;
+  target.Print();
 
   // Calculate vector decay angles (unique for each vector)
   //vector <double> locthetaphih;
@@ -169,6 +181,11 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
   GDouble MVec = vec.M();
   GDouble MPs = ps.M();
 
+  cout << "cosTheta = " << cosTheta << endl;
+  cout << "cosThetaH = " << cosThetaH << endl;
+  cout << "Phi = " << Phi << endl;
+  cout << "PhiH = " << PhiH << endl;
+  cout << "prod_angle = " << prod_angle << endl;
 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
