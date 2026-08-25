@@ -58,6 +58,8 @@
 #include "AMPTOOLS_AMPS/KopfKMatrixRho.h"
 #include "AMPTOOLS_AMPS/KopfKMatrixPi1.h"
 #include "AMPTOOLS_AMPS/Vec_ps_moment.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
+#include "AMPTOOLS_AMPS/Linear.h"
 
 #include "MinuitInterface/MinuitMinimizationManager.h"
 #include "IUAmpToolsMPI/AmpToolsInterfaceMPI.h"
@@ -449,6 +451,8 @@ int main( int argc, char* argv[] ){
    AmpToolsInterface::registerAmplitude( KopfKMatrixRho() );
    AmpToolsInterface::registerAmplitude( KopfKMatrixPi1() );
    AmpToolsInterface::registerAmplitude( Vec_ps_moment() );
+   AmpToolsInterface::registerAmplitude( DeltaAngles() );
+   AmpToolsInterface::registerAmplitude( Linear() );
    AmpToolsInterface::registerAmplitude( PiPiSWaveAMPK() );
 
    
