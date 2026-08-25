@@ -28,16 +28,24 @@ class BreitWigner : public UserAmplitude< BreitWigner >
   
 public:
 	
-	BreitWigner() : UserAmplitude< BreitWigner >() {}
-	BreitWigner( const vector< string >& args );
+    BreitWigner() : UserAmplitude< BreitWigner >() {}
+    BreitWigner( const vector< string >& args );
 	
-  ~BreitWigner(){}
+    ~BreitWigner(){}
   
-	string name() const { return "BreitWigner"; }
+    string name() const { return "BreitWigner"; }
   
-  complex< GDouble > calcAmplitude( GDouble** pKin ) const;
+    complex< GDouble > calcAmplitude( GDouble** pKin, GDouble* userVars ) const;
 	  
-  void updatePar( const AmpParameter& par );
+    void updatePar( const AmpParameter& par );
+
+    enum UserVars { uv_mass  = 0, uv_massDaught1, uv_massDaught2, uv_q, uv_F, kNumUserVars };
+    unsigned int numUserVars() const { return kNumUserVars; }
+
+    void calcUserVars( GDouble** pKin, GDouble* userVars ) const;
+
+    bool needsUserVarsOnly() const { return true; }
+    bool areUserVarsStatic() const { return false; }
     
 #ifdef GPU_ACCELERATION
 
