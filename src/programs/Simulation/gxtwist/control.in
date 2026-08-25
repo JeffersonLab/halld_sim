@@ -19,8 +19,8 @@ c process the following 100 input events and stop.  If the end of the file is
 c reached before the event count specified in card TRIG is exhausted then the
 c processing will stop at the end of file.
 TRIG 10000
-cINFILE 'rhop.hddm'
-cBEAM 12. 9.
+cINFILE 'mollergen.hddm'
+cBEAM 3.814 1.10
 RUNG 9999
 
 c Commenting out the following line will disable simulated hits output.
@@ -45,7 +45,8 @@ c  - delta_theta = spread in initial track polar angle, full width (degrees)
 c  - delta_phi = spread in initial track azimuthal angle, full width (degrees)
 c
 c   particle  momentum  theta  phi  delta_momentum delta_theta delta_phi
-KINE   103      12.0        0.   0.      0.              0.        360.
+cKINE   103     0.042    8.87  180.      0.              0.        0.
+KINE   103      2.814    0.2     0.      0.0             0.        0.
 
 c The SCAP card determines the vertex position for the particle gun.  It
 c supports the following three arguments, all of which default to 0.

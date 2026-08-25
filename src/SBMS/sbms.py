@@ -584,6 +584,10 @@ def AddHDDS(env):
 # HDDM
 ##################################
 def AddHDDM(env):
+	hddm_dir = os.getenv('HDDM_DIR', 'hddm')
+	env.AppendUnique(CPPPATH = ["%s/include" % (hddm_dir)])
+	env.AppendUnique(CPPPATH = ["%s/include/xrootd" % (hddm_dir)])
+	env.AppendUnique(LIBPATH = ["%s/lib" % (hddm_dir)])
 	env.AppendUnique(LIBS = 'HDDM')
 	env.PrependUnique(OPTIONAL_PLUGIN_LIBS = 'HDDM')
 	Add_xstream(env)
@@ -647,7 +651,6 @@ def AddDANA(env):
 # xstream
 ##################################
 def Add_xstream(env):
-	env.AppendUnique(CPPPATH = ['#external/xstream/include'])
 	env.AppendUnique(CPPPATH = ['/usr/include/tirpc'])
 	env.AppendUnique(CCFLAGS = ['-fPIC'])
 	env.AppendUnique(LIBS=['xstream', 'tirpc', 'bz2', 'z'])
@@ -874,7 +877,10 @@ def AddROOT(env):
 			AddROOT.ROOT_CFLAGS    += ' -DHAVE_TMVA=1'
 			AddROOT.ROOT_LINKFLAGS += ' -lTMVA'
 
-	AddCompileFlags(env, AddROOT.ROOT_CFLAGS)
+	# AddCompileFlags(env, AddROOT.ROOT_CFLAGS)
+	# ROOT CFLAGS are actually C++ flags: apply only to CXXFLAGS
+	env.AppendUnique(CXXFLAGS = AddROOT.ROOT_CFLAGS.split())
+
 	AddLinkFlags(env, AddROOT.ROOT_LINKFLAGS)
 
 	if env['OSNAME'].startswith("Darwin_macosx"):

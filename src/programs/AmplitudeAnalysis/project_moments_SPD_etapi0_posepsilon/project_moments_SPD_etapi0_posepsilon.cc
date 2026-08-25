@@ -54,8 +54,8 @@ int main( int argc, char* argv[] ){
         exit(1);
     }
     
-    double step = ( highMass - lowMass ) / kNumBins;
-    double stept = ( hight - lowt ) / kNumBinst;
+    double step = ( highMass - lowMass ) / static_cast<double>(kNumBins);
+    double stept = ( hight - lowt ) / static_cast<double>(kNumBinst);
     
     ofstream outfile;
     outfile.open( outfileName.c_str() );

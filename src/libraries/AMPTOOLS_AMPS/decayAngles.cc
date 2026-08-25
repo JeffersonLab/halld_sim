@@ -199,13 +199,27 @@ vector< double > getTwoStepAngles(TLorentzVector parentLab, TLorentzVector daugh
 	TVector3 x = locxyz[0];
 	TVector3 y = locxyz[1];
 	TVector3 z = locxyz[2];
-
+/*
+        cout << "GJ x:" << endl;
+        x.Print();
+        cout << "GJ y:" << endl;
+        y.Print();
+        cout << "GJ z:" << endl;
+        z.Print();
+*/
 	// project daughter in parent's rest frame onto xyz axes
 	TVector3 daughterParent3 = daughterParent.Vect();
 	TVector3 angles( daughterParent3.Dot( x ),
 				daughterParent3.Dot( y ),
 				daughterParent3.Dot( z ) );
+/*
+        cout << "omega in X rest frame: " << endl;
+        daughterParent.Print();
+        daughterParent3.Unit().Print();
 
+        cout << "GJ angles: " << endl;
+        angles.Unit().Print();
+*/
 	double theta = angles.Theta();
 	double phi = angles.Phi();
 
@@ -222,16 +236,29 @@ vector< double > getTwoStepAngles(TLorentzVector parentLab, TLorentzVector daugh
 	TVector3 xH = locxyzH[0];	
 	TVector3 yH = locxyzH[1];	
 	TVector3 zH = locxyzH[2];
-
+/*
+        cout << "H x:" << endl;
+        xH.Print();
+        cout << "H y:" << endl;
+        yH.Print();
+        cout << "H z:" << endl;
+        zH.Print();
+*/
 	TVector3 daughterDecayVector;
 	if( granddaughter2Lab.E() > 0) 
 		daughterDecayVector = ( granddaughter1Daughter.Vect() ).Cross( granddaughter2Daughter.Vect() );
 	else
 		daughterDecayVector = granddaughter1Daughter.Vect();
 
+//        cout << "Decay Vector (mine):" << endl;
+//        daughterDecayVector.Unit().Print();
+
 	TVector3 anglesH( daughterDecayVector.Dot( xH ), 
 				daughterDecayVector.Dot( yH ), 
 				daughterDecayVector.Dot( zH ) );
+
+//        cout << "Vector helicity angles (mine):" << endl;
+//        anglesH.Print();
 
 	double thetaH = anglesH.Theta();
 	double phiH = anglesH.Phi();	

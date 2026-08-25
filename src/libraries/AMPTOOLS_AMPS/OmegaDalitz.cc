@@ -10,7 +10,7 @@
 
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 
 OmegaDalitz::OmegaDalitz( const vector< string >& args ) :
 UserAmplitude< OmegaDalitz >( args )

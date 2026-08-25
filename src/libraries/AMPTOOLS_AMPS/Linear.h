@@ -10,12 +10,16 @@
 #include <complex>
 #include <vector>
 
+#ifdef GPU_ACCELERATION
+void GPULinear_exec( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO,
+                     GDouble real_p0, GDouble real_p1,
+                     GDouble imag_p0, GDouble imag_p1 );
+#endif // GPU_ACCELERATION
 
 using std::complex;
 using namespace std;
 
 class Kinematics;
-
 
 class Linear : public UserAmplitude< Linear >
 {
@@ -41,6 +45,14 @@ public:
 
   void updatePar( const AmpParameter& par );
 
+#ifdef GPU_ACCELERATION
+
+  void launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const;
+
+  bool isGPUEnabled() const { return true; }
+
+#endif // GPU_ACCELERATION
+  
 private:
 
   pair< string, string > m_daughters;
@@ -48,7 +60,7 @@ private:
   AmpParameter m_real_p1;
   AmpParameter m_imag_p0;
 
-  double m_imag_p1;
+  GDouble m_imag_p1;
 
 };
 

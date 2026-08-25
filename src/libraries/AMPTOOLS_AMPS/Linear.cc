@@ -7,11 +7,17 @@
 #include "IUAmpTools/Kinematics.h"
 #include "AMPTOOLS_AMPS/Linear.h"
 
+// this amplitude returns a function that is linear in
+// invariant mass and has a constant phase.  It takes
+// the form of e^(i*phi) ( a + b*M ), where M is an
+// invaraiant mass and phi, a, and b, are all real
+// numbers -- the computation below is equivalent but
+// done in terms of real and imaginary parts
+
 Linear::Linear( const vector< string >& args ) :
 UserAmplitude< Linear >( args )
 {
   assert( args.size() == 5 );
-
   m_daughters = pair< string, string >( args[0], args[1] );
 
   m_real_p0 = AmpParameter( args[2] );
@@ -58,7 +64,7 @@ void Linear::calcUserVars( GDouble** pKin, GDouble* userVars ) const
     P2 += Ptemp;
     Ptot += Ptemp;
   }
-  userVars[kMass] = Ptot.M(); 
+  userVars[kMass] = Ptot.M();
 }
 
 void
@@ -67,4 +73,14 @@ Linear::updatePar( const AmpParameter& par )
   m_imag_p1 = m_real_p1 * m_imag_p0 / m_real_p0;
 }
 
+
+#ifdef GPU_ACCELERATION
+void
+Linear::launchGPUKernel( dim3 dimGrid, dim3 dimBlock, GPU_AMP_PROTO ) const {
+  
+  GPULinear_exec( dimGrid,  dimBlock, GPU_AMP_ARGS,
+                  m_real_p0, m_real_p1, m_imag_p0, m_imag_p1 );
+
+}
+#endif //GPU_ACCELERATION
 

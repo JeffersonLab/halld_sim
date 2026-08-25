@@ -10,8 +10,8 @@
 #include "TLorentzVector.h"
 #include "TLorentzRotation.h"
 
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/decayAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 
 //#include <cmath>
 //#include <complex>
@@ -116,23 +116,16 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
   TLorentzVector Gammap = beam + target;
  
   //Calculate decay angles in helicity frame
-//  vector <double> locthetaphi = getomegapiAngles(polAngle, omega, X, beam, Gammap);
+  vector <double> xDecayAngles = getXDecayAngles(polAngle, beam, Gammap, X, omega);
 
-//  vector <double> locthetaphih = getomegapiAngles(rhos_pip, omega, X, Gammap, rhos_pim);
+  vector <double> vectorDecayAngles = getVectorDecayAngles(Gammap, X, omega, rhos_pip, rhos_pim);
 
-   vector< double > upperVertexAngles = getTwoStepAngles( X, omega, rhos_pip, rhos_pim, beam, target, 2, true );
-   vector< double > lowerVertexAngles = getOneStepAngles( recoil, proton, beam, target, 2, false );
-
-   GDouble cosTheta = TMath::Cos( upperVertexAngles[0] );
-   GDouble Phi = upperVertexAngles[1];
-   GDouble cosThetaH = TMath::Cos( upperVertexAngles[2] );
-   GDouble PhiH = upperVertexAngles[3];
-   GDouble prod_angle = getPhiProd( polAngle, X, beam, target, 2, true );
-   GDouble lambda = upperVertexAngles[4];
-
-   GDouble cosThetaDelta = TMath::Cos( lowerVertexAngles[0] );
-   GDouble phiDelta = lowerVertexAngles[1];
-
+   GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
+   GDouble Phi = xDecayAngles[1];
+   GDouble prod_angle = xDecayAngles[2];
+   GDouble cosThetaH = TMath::Cos(vectorDecayAngles[0]);
+   GDouble PhiH = vectorDecayAngles[1];
+   GDouble lambda = vectorDecayAngles[2];
 
    // cout << "calls to fillHistogram go here" << endl;
    fillHistogram( kOmegaPiMass, b1_mass );
@@ -170,6 +163,9 @@ OmegaPiPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName 
    fillHistogram( kDalitz, dalitzx, dalitzy );
 
    // Angles related to lower vertex
+   vector< double > lowerVertexAngles = getOneStepAngles( recoil, proton, beam, target, 2, false );
+   GDouble cosThetaDelta = TMath::Cos( lowerVertexAngles[0] );
+   GDouble phiDelta = lowerVertexAngles[1];
 
    fillHistogram( kCosThetaDelta, cosThetaDelta );
    fillHistogram( kPhiDelta, phiDelta );

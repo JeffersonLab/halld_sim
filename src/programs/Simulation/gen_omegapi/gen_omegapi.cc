@@ -19,8 +19,8 @@
 #include "AMPTOOLS_DATAIO/ASCIIDataWriter.h"
 
 #include "AMPTOOLS_AMPS/omegapi_amplitude.h"
-#include "AMPTOOLS_AMPS/omegapiAngles.h"
 #include "AMPTOOLS_AMPS/decayAngles.h"
+#include "AMPTOOLS_AMPS/vecPsAngles.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/Uniform.h"
@@ -579,34 +579,33 @@ int main( int argc, char* argv[] ){
 					
 					t->Fill(-1*(recoil-target).M2());
 
-                                        TLorentzVector Gammap = beam + target;
-					vector< double > upperVertexAngles = getTwoStepAngles( resonance, isobar, p3, p4, beam, target, 2, true  );
-//                                        vector <double> loccosthetaphi = getomegapiAngles(polAngle, isobar, resonance, beam, Gammap);
-                                        double cosTheta = cos( upperVertexAngles[0] );
-                                        double phi = upperVertexAngles[1];
+                    TLorentzVector Gammap = beam + target;
+                    vector <double> xDecayAngles = getXDecayAngles(polAngle, beam, Gammap, isobar, resonance);
+                    double cosTheta = cos(xDecayAngles[0]);
+                    double phi = xDecayAngles[1];
+					double Phi = xDecayAngles[2];
 
-//                                        vector <double> loccosthetaphih = getomegapiAngles( p3, isobar, resonance, Gammap, p4);
-                                        double cosThetaH = cos( upperVertexAngles[2] );
-                                        double phiH = upperVertexAngles[3];
+                    vector <double> vectorDecayAngles = getVectorDecayAngles( Gammap, isobar, resonance, p3, p4);
+                    double cosThetaH = cos(vectorDecayAngles[0]);
+                    double phiH = vectorDecayAngles[1];
+					double lambda_omega = vectorDecayAngles[2];
 
 					M_CosTheta->Fill( resonance.M(), cosTheta);
 					M_Phi->Fill( resonance.M(), phi);
 					M_CosThetaH->Fill( resonance.M(), cosThetaH);
 					M_PhiH->Fill( resonance.M(), phiH);
 
-					double lambda_omega = upperVertexAngles[4];
 					lambda->Fill(lambda_omega);
 
-                                        double Phi = getPhiProd( polAngle, resonance, beam, target, 2, true );
 					M_Phi_Prod->Fill( resonance.M(), Phi);
 
-                                        GDouble psi = phi - Phi;
-                                        if(psi < -1*PI) psi += 2*PI;
-                                        if(psi > PI) psi -= 2*PI;
+                    GDouble psi = phi - Phi;
+                    if(psi < -1*PI) psi += 2*PI;
+                    if(psi > PI) psi -= 2*PI;
 
 					GDouble psiprime = phi + Phi;
-                                        if(psiprime < -1*PI) psiprime += 2*PI;
-                                        if(psiprime > PI) psiprime -= 2*PI;
+                    if(psiprime < -1*PI) psiprime += 2*PI;
+                    if(psiprime > PI) psiprime -= 2*PI;
 					
 					CosTheta_psi->Fill( psi, cosTheta);
 					PhiH_Psi->Fill(psi, phiH);

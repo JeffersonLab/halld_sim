@@ -72,7 +72,6 @@ DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
 	GDouble Pgamma		= userVars[kPgamma];
         GDouble sqrt3           = TMath::Sqrt(3);
 
-	
 	// SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
 	GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosTheta*cosTheta) - 2.*sqrt3*rho031*cosPhi*sin2Theta - 2.*sqrt3*rho03m1*cos2Phi*sinSqTheta;
 	
@@ -118,7 +117,6 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	double phiProd = getPhiProd( polAngle, pDelta, beam, target, 2, false );
 	userVars[kCos2BigPhi]	= cos(2*phiProd);
 	userVars[kSin2BigPhi]	= sin(2*phiProd);
-
 
 /*
 	//p3 is sum of all particles in upper vertex

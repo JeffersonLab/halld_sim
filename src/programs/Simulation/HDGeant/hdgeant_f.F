@@ -8,7 +8,7 @@ C call it from the C++ main() which is in hdgeant.cc
       implicit none
       real q,hq
       integer ispace,hspace
-      parameter (ispace=5000000)
+      parameter (ispace=8000000)
       parameter (hspace=5000000)
       common /gcbank/ q(ispace)
       common /pawc/ hq(hspace)
