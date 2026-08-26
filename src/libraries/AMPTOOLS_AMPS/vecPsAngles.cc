@@ -132,7 +132,7 @@ vector<double> getXDecayAngles( double polAngle,
     //        the beam both vectors are expressed in the center-of-mass frame
     //        (the same as helicity frame)
     // TLorentzVector beam_x = beam_cm;
-    // beam_x.Boost(-1.0*xBoost);
+    // beam_x.Boost(xBoost);
     // TVector3 z = (beam_x.Vect()).Unit();
     // TVector3 y = ((beam_cm_unit.Vect()).Cross(particleX_cm.Vect())).Unit();
     // TVector3 x = (y.Cross(z)).Unit();
