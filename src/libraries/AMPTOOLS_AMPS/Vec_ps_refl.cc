@@ -127,8 +127,6 @@
 #include "AMPTOOLS_AMPS/barrierFactor.h"
 #include "IUAmpTools/report.h"
 
-#include "UTILITIES/BeamProperties.h"
-
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	//....oooOO0OOooo........ Helper Functions ........oooOO0OOooo.....
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
