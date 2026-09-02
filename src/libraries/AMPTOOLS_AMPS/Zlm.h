@@ -51,8 +51,11 @@ class Zlm : public UserAmplitude< Zlm >
       // the framework to purge the four-vectors
       bool needsUserVarsOnly() const { return true; }
 
-      // the user variables above are the same for all instances of this amplitude
-      bool areUserVarsStatic() const { return true; }
+      // are the user variables above are the same for all instances of this amplitude?
+      // this is true if the polarization is embedded in the data file, but it
+      // is not true if, for example, pGamma is computed from polarization angle
+      // and fraction that are passed as arguments to the amplitude
+      bool areUserVarsStatic() const { return m_polInTree; }
 
 #ifdef GPU_ACCELERATION
 
