@@ -333,6 +333,17 @@ private:
      */
     static std::string getReactionString(const std::string &full_amp_name);
 
+    /**
+     * @brief Convert a double to string with max precision
+     * 
+     * Uses std::numeric_limits<double>::max_digits10 to ensure that the string 
+     * representation is precise enough to reconstruct the original double value. 
+     * 
+     * @param value 
+     * @return std::string 
+     */
+    std::string preciseDoubleToString(double value) const;
+
     static const char *kModule;
 };
 
