@@ -5,10 +5,13 @@
 
 #include "Smearer.h"
 
+#include <ECAL/DECALGeometry.h>
+
+
 class ecal_config_t 
 {
   public:
-	ecal_config_t(const std::shared_ptr<const JEvent>& event);
+  ecal_config_t(const std::shared_ptr<const JEvent>& event, const DECALGeometry *ecalGeom);
 
 	double ECAL_EN_SCALE;
 	
@@ -24,10 +27,18 @@ class ecal_config_t
 	// Time smearing factor
 	double ECAL_TSIGMA;
 	
-	
 	// Single block energy threshold (applied after smearing)
-	double ECAL_BLOCK_THRESHOLD;
-	
+
+        double ADC_EN_SCALE;
+        double INT_OVER_PEAK;
+        double ECAL_ADC_THRESHOLD;
+
+        vector<double> GAINS; 
+        vector<double> PEDESTALS;
+        vector<double> BAD_BLOCKS;
+
+        double PED_SIGMA = 0;
+  
 };
 
 
@@ -35,17 +46,18 @@ class ECALSmearer : public Smearer
 {
   public:
         ECALSmearer(const std::shared_ptr<const JEvent>& event, mcsmear_config_t *in_config) : Smearer(event, in_config) {
-        ecal_config = new ecal_config_t(event);
-         }
-	~ECALSmearer() {
+	  event->GetSingle(ecalGeom);
+	  ecal_config = new ecal_config_t(event,ecalGeom);
+	}
+        ~ECALSmearer() {
 		delete ecal_config;
 	}
-	
+  
 	void SmearEvent(hddm_s::HDDM *record);
 	
   private:
   	ecal_config_t  *ecal_config;
-
+        const DECALGeometry *ecalGeom;
 };
 
 
