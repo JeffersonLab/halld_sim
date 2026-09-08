@@ -24,9 +24,9 @@
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/TwoPiAngles.h"
 #include "AMPTOOLS_AMPS/BreitWigner.h"
+#include "AMPTOOLS_AMPS/BreitWignerRooFit.h"
 #include "AMPTOOLS_AMPS/BernsteinPoly.h"
-// #include "AMPTOOLS_AMPS/BreitWignerRooFit.h"
-// #include "AMPTOOLS_AMPS/BernsteinPolyRooFitQ.h"
+#include "AMPTOOLS_AMPS/BernsteinPolyRooFitQ.h"
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 
 typedef KPiPlotGenerator PlotGen;
@@ -37,8 +37,6 @@ void atiSetup(){
   AmpToolsInterface::registerAmplitude( TwoPiAngles() );
   AmpToolsInterface::registerAmplitude( BreitWigner() );
   AmpToolsInterface::registerAmplitude( BernsteinPoly() );
-  // AmpToolsInterface::registerAmplitude( BreitWignerRooFit() );
-  // AmpToolsInterface::registerAmplitude( BernsteinPolyRooFitQ() );
   AmpToolsInterface::registerDataReader( ROOTDataReader() );
   AmpToolsInterface::registerDataReader( ROOTDataReaderHist() );
   AmpToolsInterface::registerDataReader( FSRootDataReader() );
@@ -94,7 +92,9 @@ int main( int argc, char* argv[] ){
     // load the results and display the configuration info
     // ************************
 
+  cout << "About to load FitResults..." << endl << flush;
   FitResults results( resultsName );
+  cout << "FitResults loaded successfully." << endl << flush;
   if( !results.valid() ){
     
     cout << "Invalid fit results in file:  " << resultsName << endl;
@@ -106,7 +106,9 @@ int main( int argc, char* argv[] ){
     // ************************
 
   atiSetup();
+  cout << "atiSetup complete." << endl << flush;
   PlotGen plotGen( results );
+  cout << "PlotGenerator constructed — all data loaded." << endl << flush;
 
     // ************************
     // set up an output ROOT file to store histograms
@@ -118,8 +120,9 @@ int main( int argc, char* argv[] ){
   TH1::AddDirectory(kFALSE); 
   size_t nReactions = results.reactionList().size();
   for (size_t polFile = 0; polFile < nReactions; polFile++) {
-    //  if (polFile > 0) break; // remove to enable all pol files
-      string reactionName = results.reactionList()[polFile];
+     string reactionName = results.reactionList()[polFile];
+     cout << "Processing reaction: " << reactionName << endl << flush;
+     //  if (polFile > 0) break; // remove to enable all pol files
       outName = reactionName + ".root";
 
       TFile* plotfile = new TFile(outName.c_str(), "recreate");
