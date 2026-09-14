@@ -113,7 +113,7 @@ ecal_config_t::ecal_config_t(const std::shared_ptr<const JEvent>& event, const D
 	  }
 	}
 
-	cout << "Get ECAL/bad_clock from CCDB ..." << endl;
+	cout << "Get ECAL/bad_block from CCDB ..." << endl;
 	vector<double> ecal_bad_blocks_ch;
 	
 	if (DEvent::GetCalib(event, "/ECAL/bad_block", ecal_bad_blocks_ch)){
