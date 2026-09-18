@@ -93,9 +93,9 @@ double g_rho_eta_gamma=0.81;
 double g_omega_eta_gamma=0.29;
 double g_eta_gamma_gamma=0.0429;
 double g_phi_eta_gamma=0.38;
-double G=0.; // CV coupling constant
+double G=0.; // CP-violation parameter for eta->e+e-pi+pi-
 
-double max_asq=0.;
+//double max_asq=0.;
 
 int Nevents=10000;
 int runNo=10000;
@@ -507,6 +507,8 @@ void GraphCrossSection(double &xsec_max){
        << " micro-barns"<<endl;
 }
 
+// Generates squared amplitude for eta->e+e-pi+pi- decay using the model
+// described in Gao hep-ph/0202002
 void GenerateEpEmPipPim(TRandom3 *myrand,TGenPhaseSpace &phase_space){
   double amp_sq=0., rand_amp_sq=0.;
   double q_sq=0.;
@@ -517,6 +519,8 @@ void GenerateEpEmPipPim(TRandom3 *myrand,TGenPhaseSpace &phase_space){
   double f0=1.1*fpi;
   double efac=sqrt(4.*M_PI/137.);
   double theta_mix=-20.*M_PI/180.; // eta-eta' mixing angle
+  // Scale factor for electromagnetic transition. Form is taken from eq. 16
+  // and eq. 17 in Gao
   double Escale=efac*0.19*G/pow(m_eta,3);
   do {
     double weight=phase_space.Generate();
@@ -532,7 +536,8 @@ void GenerateEpEmPipPim(TRandom3 *myrand,TGenPhaseSpace &phase_space){
     double s=pippim.M2();
     TLorentzVector k=positron-electron;
     q_sq=q4.M2();
-  
+
+    // Magnetic transition term
     double M=efac/(8.*M_PI*M_PI*fpi*fpi)
       *(cos(theta_mix)/(sqrt(3.)*f8)-sqrt(2.)*sin(theta_mix)/(sqrt(3.)*f0))
       *(1.-3.*mV2/(mV2-s));
@@ -554,23 +559,24 @@ void GenerateEpEmPipPim(TRandom3 *myrand,TGenPhaseSpace &phase_space){
       double k_dot_pp=k.Dot(piplus);
       double q_dot_pm=q4.Dot(piminus);
       double q_dot_pp=q4.Dot(piplus);
+      double kx_py_minus_ky_px=kvec.x()*pipvec.y()-kvec.y()*pipvec.x();
       
       amp_sq=2*efac*efac/(q_sq*q_sq)*weight
 	*(M*M*m_eta_sq*qvec.Mag2()
-	  *(q_sq*pipvec.Perp2()-pow(kvec.x()*pipvec.y()-kvec.y()*pipvec.x(),2))
+	  *(q_sq*pipvec.Perp2()-pow(kx_py_minus_ky_px,2))
 	  +pow(Escale*(q_sq+2*q_dot_pp),2)
 	  *(q_dot_pm*q_dot_pm-k_dot_pm*k_dot_pm-q_sq*pion_mass_sq)
 	  +pow(Escale*(q_sq+2*q_dot_pm),2)
 	  *(q_dot_pp*q_dot_pp-k_dot_pp*k_dot_pp-q_sq*pion_mass_sq)
 	  -2.*Escale*Escale*(q_sq+2*q_dot_pm)*(q_sq+2*q_dot_pp)
 	  *(q_dot_pp*q_dot_pm-q_sq*piplus.Dot(piminus)-k_dot_pp*k_dot_pm)
-	-2.*M*Escale*((q_sq+2*q_dot_pm)*k_dot_pp-(q_sq+2*q_dot_pp)*k_dot_pm)
-	  *m_eta*qvec.Mag()*(kvec.x()*pipvec.y()-kvec.y()*pipvec.x())
+	  -2.*M*Escale*((q_sq+2*q_dot_pm)*k_dot_pp-(q_sq+2*q_dot_pp)*k_dot_pm)
+	  *m_eta*qvec.Mag()*kx_py_minus_ky_px
 	  );
-      if (amp_sq>0.){
-	//thrown_qsq->Fill(q_sq,amp_sq*weight);
-	if (amp_sq>max_asq) max_asq=amp_sq;
-      }
+      //if (amp_sq>0.){
+      //thrown_qsq->Fill(q_sq,amp_sq*weight);
+      //if (amp_sq>max_asq) max_asq=amp_sq;
+      //}
     }
     rand_amp_sq=myrand->Uniform(15.0);
   } while (rand_amp_sq>amp_sq);
@@ -1309,7 +1315,7 @@ int main(int narg, char *argv[])
     if (((10*i)%Nevents)==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }
 
-  cout << "max " << max_asq << endl;
+  // cout << "max " << max_asq << endl;
 
   // Write histograms and close root file
   rootfile->Write();
