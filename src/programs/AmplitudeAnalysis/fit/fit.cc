@@ -366,6 +366,78 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   }
 }
 
+void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numBootstrap, unsigned int bootstrapSeed, int eMatrixRequirement) {
+  AmpToolsInterface ati( cfgInfo );
+  string fitName = cfgInfo->fitName();
+
+  cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+
+  MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
+  fitManager->setMaxIterations(maxIter);
+
+  vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
+  vector< vector<string> > parSDMEKeywords = cfgInfo->userKeywordArguments("parSDME");
+
+  bool atLeastOneFitSuccessful = false;
+
+  vector < tuple<int, bool, int, int, double> > fitLLs;
+
+  vector<ReactionInfo*> reactionList = cfgInfo->reactionList();
+
+  for(int i=0; i<numBootstrap; i++) {
+    cout << endl << "###############################" << endl;
+    cout << "FIT " << i << " OF " << numBootstrap << endl;
+    cout << endl << "###############################" << endl;
+
+    for(ReactionInfo* reaction : reactionList) {
+      ati.bootstrapSignalData(reaction->reactionName(), bootstrapSeed);
+    }
+    bootstrapSeed++;
+    ati.reinitializePars();
+    if(useMinos)
+      fitManager->minosMinimization();
+    else
+      fitManager->migradMinimization();
+
+    if(hesse)
+      fitManager->hesseEvaluation();
+    
+    bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() < eMatrixRequirement);
+
+    if( fitFailed ){
+      cout << "ERROR: fit failed use results with caution..." << endl;
+      cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
+    }
+
+    cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
+
+    ati.finalizeFit(to_string(i));
+    fitLLs.push_back(std::make_tuple(
+        i, !fitFailed, fitManager->status(), fitManager->eMatrixStatus(), ati.likelihood()
+    ));
+
+    if( seedfile.size() != 0 && !fitFailed ){
+      string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
+      string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
+
+      string seedfile_bootstrap = seedfileBaseName + Form("_%d%s", i, seedfileExtension.data());
+      ati.fitResults()->writeSeed( seedfile_bootstrap );
+    }
+
+    // update best fit
+    if( !fitFailed ) {
+      atLeastOneFitSuccessful = true;
+    }
+  }
+
+  // print best fit results
+  if(!atLeastOneFitSuccessful) cout << "ALL FITS FAILED!" << endl;
+  else {
+    // print summary of all fits    
+    summarizeFits(fitLLs);
+  }
+} // TODO: if this works and is faster, write some warnings in the Bootstrap versions of the data readers to use this instead.
+
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan, int eMatrixRequirement) {
   double minVal=0, maxVal=0, stepSize=0;
   int steps=0;
@@ -494,7 +566,9 @@ int main( int argc, char* argv[] ){
    string seedfile;
    string scanPar;
    int numRnd = 0;
+   int numBootstrap = 0;
    unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
+   unsigned int bootstrapSeed=static_cast<unsigned int>(time(NULL));
    int maxIter = 10000;
    int eMatrixRequirement = 3;
 
@@ -515,7 +589,13 @@ int main( int argc, char* argv[] ){
          else  numRnd = atoi(argv[++i]); }
       if (arg == "-rs"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
-         else  randomSeed = atoi(argv[++i]); } 
+         else  randomSeed = atoi(argv[++i]); }
+      if (arg == "-b"){
+        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+        else   numBootstrap = atoi(argv[++i]); }
+      if (arg == "-bs"){
+        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+        else   bootstrapSeed = atoi(argv[++i]); }
       if (arg == "-m"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
@@ -538,6 +618,8 @@ int main( int argc, char* argv[] ){
          cout << "   -s <output file>\t\t for seeding next fit based on this fit (optional)" << endl;
          cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
          cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
+         cout << "   -b <int>\t\t\t Perform <int> fits, randomly sampled with replacement. If -bs <seed> is set, the first fit will use this randomized seed for selecting events, and sequential fits will use <seed> + 1" << endl;
+         cout << "   -bs <int>\t\t\t Sets the random seed used by the random number generator for randomly sampling events with replacement for bootstrap fits. If not set, will use the time()" << endl;
          cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          cout << "   -e <int>\t\t\t Minimum required level of error matrix status for a successful fit." << endl;
@@ -626,15 +708,20 @@ int main( int argc, char* argv[] ){
      saveDummyFit(cfgInfo);
    else if(printAmps)
      printAmplitudes(cfgInfo);
-   else if(numRnd==0){
+   else if(numRnd!=0){
+     cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+     AmpToolsInterface::setRandomSeed(randomSeed);
+     runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5, eMatrixRequirement);
+   }
+   else if(numBootstrap!=0){
+    cout << "Running " << numBootstrap << " fits, beginning with seed=" << bootstrapSeed << endl;
+    runBootstrapFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numBootstrap, bootstrapSeed, eMatrixRequirement);
+   } else {
      if(scanPar=="")
        runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile, eMatrixRequirement);
      else
        runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar, eMatrixRequirement);
-   } else {
-     cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
-     AmpToolsInterface::setRandomSeed(randomSeed);
-     runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5, eMatrixRequirement);
+     
    }
 
   return 0;

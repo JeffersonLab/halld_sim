@@ -5,10 +5,12 @@
 #include "IUAmpTools/UserDataReader.h"
 
 #include "TString.h"
+#include "TRandom2.h"
 #include "TFile.h"
 #include "TTree.h"
 
 #include <string>
+#include <set>
 
 using namespace std;
 
@@ -34,6 +36,7 @@ public:
   
   virtual Kinematics* getEvent();
   virtual void resetSource();
+  virtual void resample( unsigned int seed );
 
   /**
    * This function returns a true if the file was open
@@ -60,6 +63,10 @@ private:
   float m_pyBeam;
   float m_pzBeam;
   float m_weight;
+
+  TRandom2* m_randGenerator = NULL;
+  multiset< unsigned int > m_entryOrder;
+  mutable multiset< unsigned int >::const_iterator m_nextEntry;
 };
 
 #endif

@@ -73,15 +73,41 @@ ROOTDataReader::resetSource()
   
   // this will cause the read to start back at event 0
   m_eventCounter = 0;
+  if( m_randGenerator ) m_nextEntry = m_entryOrder.begin();
+}
+
+void
+ROOTDataReader::resample( unsigned int seed )
+{
+  if( !m_randGenerator ){
+    m_randGenerator =  new TRandom2( seed );
+  }
+  else{
+    m_randGenerator->SetSeed( seed );
+  }
+  
+  cout << "scrambling events with seed " << seed << endl; // TEMP
+
+  unsigned int nEvents = numEvents();
+  m_entryOrder.clear();
+  for( unsigned int i = 0; i < nEvents; ++i){
+    cout <<" " << i; // TEMP
+    m_entryOrder.insert( (unsigned int)floor( m_randGenerator->Rndm() * nEvents ) );
+  }
+  cout << endl; // TEMP
+  m_nextEntry = m_entryOrder.begin();
 }
 
 Kinematics*
 ROOTDataReader::getEvent()
 {
-  if( m_eventCounter < static_cast< unsigned int >( m_inTree->GetEntries() ) ){
-    //  if( m_eventCounter < 10 ){
+  if( m_eventCounter++ < numEvents() ){
     
-    m_inTree->GetEntry( m_eventCounter++ );
+    assert( m_nextEntry != m_entryOrder.end() );
+
+    unsigned int entry = m_randGenerator ? *m_nextEntry++ : m_eventCounter - 1;
+    
+    m_inTree->GetEntry( entry );
     assert( m_nPart < Kinematics::kMaxParticles );
     
     vector< TLorentzVector > particleList;
