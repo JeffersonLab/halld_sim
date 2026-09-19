@@ -229,7 +229,7 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 	  delete smearer;
 	
         if(ecal_installed < 0.5){ // exclude ECAL
-          cout << " mcsmear: ECAL is not installed in this run  = " << endl;
+          cout << "ECAL is not installed in this run  = " << endl;
           // Since DETECTORS_TO_LOAD="all" uses all sub-detectoctors listed in smear.cc, just use this list and exclude the ECAL         
           config->DETECTORS_TO_LOAD = "BCAL,FCAL,CDC,FDC,TOF,START,TAGH,TAGM,PS,PSC,TPOL,DIRC,CCAL,FMWPC,CTOF,TRD";
         }
