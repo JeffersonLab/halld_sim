@@ -180,49 +180,63 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
     // we check to see if the variation is set and if it contains the string "mc".
     // Note that for now, we only print a warning and do not exit immediately.
     // It might be advisable to apply some tougher love.
-   auto locRunNumber = event->GetRunNumber();
-    if(locCheckCCDBContext) {
-        // only do this once per brun record
-        locCheckCCDBContext = true;
+        double ecal_installed = 0;
 
-        // load the CCDB context
-        auto app =  event->GetJApplication();
-        auto run_number = event->GetRunNumber();
-        JCalibration* jcalib = app->GetService<JCalibrationManager>()->GetJCalibration(run_number);
-    
-        string context = jcalib->GetContext();
-      
-        jout << "checking context = " << context << endl;
-
-        // Really we should parse the context string, but since "mc" shouldn't show up
-        // outside of the context, we just search the whole string.
-        // Also make sure that the variation is being set
-        if( (context.find("variation") == string::npos) || (context.find("mc") == string::npos) ) {
-            PrintCCDBWarning(context);
-        }
-
-        std::map<string, float> parms;
-        jcalib->Get("TOF/tof_parms", parms);
-        hddm_s_merger::set_ftof_min_delta_t_ns(parms.at("TOF_TWO_HIT_RESOL"));
-        jcalib->Get("FDC/fdc_parms", parms);
-        hddm_s_merger::set_fdc_wires_min_delta_t_ns(parms.at("FDC_TWO_HIT_RESOL"));
-        jcalib->Get("START_COUNTER/start_parms", parms);
-        hddm_s_merger::set_stc_min_delta_t_ns(parms.at("START_TWO_HIT_RESOL"));
-        jcalib->Get("BCAL/bcal_parms", parms);
-        hddm_s_merger::set_bcal_min_delta_t_ns(parms.at("BCAL_TWO_HIT_RESOL"));
-        jcalib->Get("FCAL/fcal_parms", parms);
-        hddm_s_merger::set_fcal_min_delta_t_ns(parms.at("FCAL_TWO_HIT_RESOL"));
-    }
-   
+	auto locRunNumber = event->GetRunNumber();
+	
+	if(locCheckCCDBContext) {
+	  // only do this once per brun record
+	  locCheckCCDBContext = true;
+	  
+	  // load the CCDB context
+	  auto app =  event->GetJApplication();
+	  auto run_number = event->GetRunNumber();
+	  JCalibration* jcalib = app->GetService<JCalibrationManager>()->GetJCalibration(run_number);
+	  
+	  string context = jcalib->GetContext();
+	  
+	  jout << "checking context = " << context << endl;
+	  
+	  // Really we should parse the context string, but since "mc" shouldn't show up
+	  // outside of the context, we just search the whole string.
+	  // Also make sure that the variation is being set
+	  if( (context.find("variation") == string::npos) || (context.find("mc") == string::npos) ) {
+	    PrintCCDBWarning(context);
+	  }
+	  
+	  std::map<string, float> parms;
+	  jcalib->Get("TOF/tof_parms", parms);
+	  hddm_s_merger::set_ftof_min_delta_t_ns(parms.at("TOF_TWO_HIT_RESOL"));
+	  jcalib->Get("FDC/fdc_parms", parms);
+	  hddm_s_merger::set_fdc_wires_min_delta_t_ns(parms.at("FDC_TWO_HIT_RESOL"));
+	  jcalib->Get("START_COUNTER/start_parms", parms);
+	  hddm_s_merger::set_stc_min_delta_t_ns(parms.at("START_TWO_HIT_RESOL"));
+	  jcalib->Get("BCAL/bcal_parms", parms);
+	  hddm_s_merger::set_bcal_min_delta_t_ns(parms.at("BCAL_TWO_HIT_RESOL"));
+	  jcalib->Get("FCAL/fcal_parms", parms);
+	  hddm_s_merger::set_fcal_min_delta_t_ns(parms.at("FCAL_TWO_HIT_RESOL"));
+	  
+	  jcalib->Get("ECAL/install_status", ecal_installed); 
+	  
+	}
+	
 
 	// load configuration parameters for all the detectors
-    pthread_mutex_lock(&smearer_mutex);
-    smearer_mutex_last_owner = pthread_self();
-
+	pthread_mutex_lock(&smearer_mutex);
+	smearer_mutex_last_owner = pthread_self();
+	
 	if(smearer != NULL)
-		delete smearer;
+	  delete smearer;
+	
+        if(ecal_installed < 0.5){ // exclude ECAL
+          cout << " mcsmear: ECAL is not installed in this run  = " << endl;
+          // Since DETECTORS_TO_LOAD="all" uses all sub-detectoctors listed in smear.cc, just use this list and exclude the ECAL         
+          config->DETECTORS_TO_LOAD = "BCAL,FCAL,CDC,FDC,TOF,START,TAGH,TAGM,PS,PSC,TPOL,DIRC,CCAL,FMWPC,CTOF,TRD";
+        }
+	
 	smearer = new Smear(config, event, config->DETECTORS_TO_LOAD);
-
+	
+	
 #ifdef HAVE_RCDB
 	// Pull configuration parameters from RCDB
 	bool haveRCDBConfigFile = false;
@@ -230,7 +244,7 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 	  haveRCDBConfigFile = config->ParseRCDBConfigFile(locRunNumber);
 	}
 	if(haveRCDBConfigFile) {
-
+	  
 	        const double fadc250_period_ns(4.);
 	        const double fadc125_period_ns(8.);
 		
