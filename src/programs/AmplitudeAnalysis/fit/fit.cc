@@ -366,7 +366,33 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
   }
 }
 
-void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numBootstrap, unsigned int bootstrapSeed, int eMatrixRequirement) {
+void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numBootstrap, unsigned int bootstrapSeed, int eMatrixRequirement, bool bootstrapBackground) {
+  cout << "******************** WARNING ***********************" << endl;
+  cout << "*  You are bootstrapping events, which             *" << endl;
+  cout << "*  should only be used for evaluating errors.      *" << endl;
+  cout << "*  The results with different seeds will be random *" << endl;
+  cout << "*  due to random oversampling of the input file(s).*" << endl;
+  cout << "****************************************************" << endl;
+  cout << endl;
+
+  vector<ReactionInfo*> reactionList = cfgInfo->reactionList();
+
+  bool bkgndDataReaderExists = false;
+  for(ReactionInfo* reaction : reactionList) {
+    string bkgndReader = reaction->bkgnd().first;
+    if(!bkgndReader.empty()) bkgndDataReaderExists = true;
+  }
+  if(!bootstrapBackground && bkgndDataReaderExists) { 
+    cout << "******************** WARNING ***********************" << endl;
+    cout << "*  Background files are present, but only the      *" << endl;
+    cout << "*  signal events are being randomly oversampled.   *" << endl;
+    cout << "*  Use the -bb flag to also resample the background*" << endl;
+    cout << "*  files.                                          *" << endl;
+    cout << "****************************************************" << endl;
+    cout << endl;
+  }
+  
+
   AmpToolsInterface ati( cfgInfo );
   string fitName = cfgInfo->fitName();
 
@@ -382,8 +408,6 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
 
   vector < tuple<int, bool, int, int, double> > fitLLs;
 
-  vector<ReactionInfo*> reactionList = cfgInfo->reactionList();
-
   for(int i=0; i<numBootstrap; i++) {
     cout << endl << "###############################" << endl;
     cout << "FIT " << i << " OF " << numBootstrap << endl;
@@ -391,6 +415,7 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
 
     for(ReactionInfo* reaction : reactionList) {
       ati.bootstrapSignalData(reaction->reactionName(), bootstrapSeed);
+      if(bootstrapBackground) ati.bootstrapBackgroundData(reaction->reactionName(), bootstrapSeed);
     }
     bootstrapSeed++;
     ati.reinitializePars();
@@ -411,7 +436,7 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
 
     cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
-    ati.finalizeFit(to_string(i));
+    ati.finalizeFit("b" + to_string(i)); // add "b" prefix to prevent overwriting randomized fits with similar tag
     fitLLs.push_back(std::make_tuple(
         i, !fitFailed, fitManager->status(), fitManager->eMatrixStatus(), ati.likelihood()
     ));
@@ -420,7 +445,7 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
       string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
       string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
 
-      string seedfile_bootstrap = seedfileBaseName + Form("_%d%s", i, seedfileExtension.data());
+      string seedfile_bootstrap = seedfileBaseName + Form("_b%d%s", i, seedfileExtension.data());
       ati.fitResults()->writeSeed( seedfile_bootstrap );
     }
 
@@ -436,7 +461,7 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
     // print summary of all fits    
     summarizeFits(fitLLs);
   }
-} // TODO: if this works and is faster, write some warnings in the Bootstrap versions of the data readers to use this instead.
+}
 
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan, int eMatrixRequirement) {
   double minVal=0, maxVal=0, stepSize=0;
@@ -569,6 +594,8 @@ int main( int argc, char* argv[] ){
    int numBootstrap = 0;
    unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
    unsigned int bootstrapSeed=static_cast<unsigned int>(time(NULL));
+   string bootstrapInclude = "";
+   bool bootstrapBackground = false;
    int maxIter = 10000;
    int eMatrixRequirement = 3;
 
@@ -596,6 +623,10 @@ int main( int argc, char* argv[] ){
       if (arg == "-bs"){
         if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
         else   bootstrapSeed = atoi(argv[++i]); }
+      if (arg == "-bi"){
+        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+        else   bootstrapInclude = argv[++i]; }
+      if (arg == "-bb") bootstrapBackground = true;
       if (arg == "-m"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
@@ -620,6 +651,8 @@ int main( int argc, char* argv[] ){
          cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
          cout << "   -b <int>\t\t\t Perform <int> fits, randomly sampled with replacement. If -bs <seed> is set, the first fit will use this randomized seed for selecting events, and sequential fits will use <seed> + 1" << endl;
          cout << "   -bs <int>\t\t\t Sets the random seed used by the random number generator for randomly sampling events with replacement for bootstrap fits. If not set, will use the time()" << endl;
+         cout << "   -bi <file>\t\t\t seed file of parameters to include for sourcing a boostrap fit. It's recommended to set this to the '-s' seed file produced by the best nominal fit" << endl;
+         cout << "   -bb \t\t\t\t bootstrap sample the background file (if it exists)" << endl;
          cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
          cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
          cout << "   -e <int>\t\t\t Minimum required level of error matrix status for a successful fit." << endl;
@@ -637,6 +670,24 @@ int main( int argc, char* argv[] ){
       cout << "No config file specified" << endl;
             exit(1);
    }
+
+  // The config file used for fitting is now the original, but with an 'include' line 
+  // for the seed file given. The expectation is that the user has run a fit with the 
+  // original config, produced a seed file of the "best parameters", and is now 
+  // performing a bootstrap fit initialized to these values.
+  if (!bootstrapInclude.empty()){
+    ifstream sourceConfig(configfile);
+    const string bootstrapConfigfile = configfile.erase(configfile.length()-4) + "_bootstrap.cfg";
+    ofstream bootstrapConfig(bootstrapConfigfile);
+    if (!sourceConfig || !bootstrapConfig){
+      cout << "Unable to create bootstrap config file: " << bootstrapConfigfile << endl;
+      exit(1);
+    }
+    bootstrapConfig << sourceConfig.rdbuf();
+    bootstrapConfig << "\ninclude " << bootstrapInclude << "\n";
+    bootstrapConfig.close();
+    configfile = bootstrapConfigfile;
+  }
 
    ConfigFileParser parser(configfile);
    ConfigurationInfo* cfgInfo = parser.getConfigurationInfo();
@@ -715,7 +766,7 @@ int main( int argc, char* argv[] ){
    }
    else if(numBootstrap!=0){
     cout << "Running " << numBootstrap << " fits, beginning with seed=" << bootstrapSeed << endl;
-    runBootstrapFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numBootstrap, bootstrapSeed, eMatrixRequirement);
+    runBootstrapFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numBootstrap, bootstrapSeed, eMatrixRequirement, bootstrapBackground);
    } else {
      if(scanPar=="")
        runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile, eMatrixRequirement);

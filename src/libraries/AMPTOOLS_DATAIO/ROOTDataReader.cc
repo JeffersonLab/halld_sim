@@ -85,16 +85,12 @@ ROOTDataReader::resample( unsigned int seed )
   else{
     m_randGenerator->SetSeed( seed );
   }
-  
-  cout << "scrambling events with seed " << seed << endl; // TEMP
 
   unsigned int nEvents = numEvents();
   m_entryOrder.clear();
   for( unsigned int i = 0; i < nEvents; ++i){
-    cout <<" " << i; // TEMP
     m_entryOrder.insert( (unsigned int)floor( m_randGenerator->Rndm() * nEvents ) );
   }
-  cout << endl; // TEMP
   m_nextEntry = m_entryOrder.begin();
 }
 

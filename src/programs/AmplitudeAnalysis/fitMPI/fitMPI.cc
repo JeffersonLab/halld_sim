@@ -211,6 +211,101 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
    MPI_Finalize();
 }
 
+void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numBootstrap, unsigned int bootstrapSeed, int eMatrixRequirement, bool bootstrapBackground) {
+   cout << "******************** WARNING ***********************" << endl;
+   cout << "*  You are bootstrapping events, which             *" << endl;
+   cout << "*  should only be used for evaluating errors.      *" << endl;
+   cout << "*  The results with different seeds will be random *" << endl;
+   cout << "*  due to random oversampling of the input file(s).*" << endl;
+   cout << "****************************************************" << endl;
+   cout << endl;
+
+   vector<ReactionInfo*> reactionList = cfgInfo->reactionList();
+
+   bool bkgndDataReaderExists = false;
+   for(ReactionInfo* reaction : reactionList) {
+      string bkgndReader = reaction->bkgnd().first;
+      if(!bkgndReader.empty()) bkgndDataReaderExists = true;
+   }
+   if(!bootstrapBackground && bkgndDataReaderExists) { 
+      cout << "******************** WARNING ***********************" << endl;
+      cout << "*  Background files are present, but only the      *" << endl;
+      cout << "*  signal events are being randomly oversampled.   *" << endl;
+      cout << "*  Use the -bb flag to also resample the background*" << endl;
+      cout << "*  files.                                          *" << endl;
+      cout << "****************************************************" << endl;
+      cout << endl;
+   }
+   
+
+   AmpToolsInterfaceMPI ati( cfgInfo );
+   MinuitMinimizationManager* fitManager = NULL;
+   vector< vector<string> > parRangeKeywords;
+   string fitName;
+   bool atLeastOneFitSuccessful;
+
+   if(rank_mpi==0) {
+      fitName = cfgInfo->fitName();
+      cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+      fitManager = ati.minuitMinimizationManager();
+      fitManager->setMaxIterations(maxIter);
+      parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
+      atLeastOneFitSuccessful = false;
+   }
+
+   for(int i=0; i<numBootstrap; i++) {
+      if(rank_mpi==0) {
+         cout << endl << "###############################" << endl;
+         cout << "FIT " << i << " OF " << numBootstrap << endl;
+         cout << endl << "###############################" << endl;
+      
+
+         for(ReactionInfo* reaction : reactionList) {
+            ati.bootstrapSignalData(reaction->reactionName(), bootstrapSeed);
+            if(bootstrapBackground) ati.bootstrapBackgroundData(reaction->reactionName(), bootstrapSeed);
+         }
+         bootstrapSeed++;
+         ati.reinitializePars();
+         if(useMinos)
+            fitManager->minosMinimization();
+         else
+            fitManager->migradMinimization();
+
+         if(hesse)
+            fitManager->hesseEvaluation();
+         
+         bool fitFailed = (fitManager->status() != 0 || fitManager->eMatrixStatus() < eMatrixRequirement);
+
+         if( fitFailed ){
+            cout << "ERROR: fit failed use results with caution..." << endl;
+            cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
+         }
+
+         cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
+
+         ati.finalizeFit("b" + to_string(i)); // add "b" prefix to prevent overwriting randomized fits with similar tag
+
+         if( seedfile.size() != 0 && !fitFailed ){
+            string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
+            string seedfileExtension = seedfile.substr(seedfile.find_last_of("."));
+
+            string seedfile_bootstrap = seedfileBaseName + Form("_b%d%s", i, seedfileExtension.data());
+            ati.fitResults()->writeSeed( seedfile_bootstrap );
+         }
+
+         // update fit flag
+         if( !fitFailed ) {
+            atLeastOneFitSuccessful = true;
+         }
+      }
+   }
+   
+   if(!atLeastOneFitSuccessful) cout << "ALL FITS FAILED!" << endl;
+
+   ati.exitMPI();
+   MPI_Finalize();
+}
+
 
 void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, string parScan, int eMatrixRequirement) {
    double minVal=0, maxVal=0, stepSize=0;
@@ -342,7 +437,11 @@ int main( int argc, char* argv[] ){
    string seedfile;
    string scanPar;
    int numRnd = 0;
+   int numBootstrap = 0;
    unsigned int randomSeed=static_cast<unsigned int>(time(NULL));
+   unsigned int bootstrapSeed=static_cast<unsigned int>(time(NULL));
+   string bootstrapInclude = "";
+   bool bootstrapBackground = false;
    int maxIter = 10000;
    int eMatrixRequirement = 3;
 
@@ -364,6 +463,16 @@ int main( int argc, char* argv[] ){
       if (arg == "-rs"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  randomSeed = atoi(argv[++i]); }
+      if (arg == "-b"){
+        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+        else   numBootstrap = atoi(argv[++i]); }
+      if (arg == "-bs"){
+        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+        else   bootstrapSeed = atoi(argv[++i]); }
+      if (arg == "-bi"){
+        if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
+        else   bootstrapInclude = argv[++i]; }
+      if (arg == "-bb") bootstrapBackground = true;
       if (arg == "-m"){
          if ((i+1 == argc) || (argv[i+1][0] == '-')) arg = "-h";
          else  maxIter = atoi(argv[++i]); }
@@ -380,13 +489,17 @@ int main( int argc, char* argv[] ){
       if (arg == "-h"){
          if(rank_mpi==0) {
             cout << endl << " Usage for: " << argv[0] << endl << endl;
-            cout << "   -n \t\t\t\t\t use MINOS instead of MIGRAD" << endl;
-            cout << "   -H \t\t\t\t\t evaluate HESSE matrix after minimization" << endl;
-            cout << "   -c <file>\t\t\t\t config file" << endl;
-            cout << "   -s <output file>\t\t\t for seeding next fit based on this fit (optional)" << endl;
+            cout << "   -n \t\t\t\t use MINOS instead of MIGRAD" << endl;
+            cout << "   -H \t\t\t\t evaluate HESSE matrix after minimization" << endl;
+            cout << "   -c <file>\t\t\t config file" << endl;
+            cout << "   -s <output file>\t\t for seeding next fit based on this fit (optional)" << endl;
             cout << "   -r <int>\t\t\t Perform <int> fits each seeded with random parameters" << endl;
             cout << "   -rs <int>\t\t\t Sets the random seed used by the random number generator for the fits with randomized initial parameters. If not set will use the time()" << endl;
-            cout << "   -p <parameter> \t\t\t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
+            cout << "   -b <int>\t\t\t Perform <int> fits, randomly sampled with replacement. If -bs <seed> is set, the first fit will use this randomized seed for selecting events, and sequential fits will use <seed> + 1" << endl;
+            cout << "   -bs <int>\t\t\t Sets the random seed used by the random number generator for randomly sampling events with replacement for bootstrap fits. If not set, will use the time()" << endl;
+            cout << "   -bi <file>\t\t\t seed file of parameters to include for sourcing a boostrap fit. It's recommended to set this to the '-s' seed file produced by the best nominal fit" << endl;
+            cout << "   -bb \t\t\t\t bootstrap sample the background file (if it exists)" << endl;
+            cout << "   -p <parameter> \t\t Perform a scan of given parameter. Stepsize, min, max are to be set in cfg file" << endl;
             cout << "   -m <int>\t\t\t Maximum number of fit iterations" << endl; 
             cout << "   -e <int>\t\t\t Minimum required level of error matrix status for a successful fit." << endl;
             cout << "   \t\t\t\t\t 0 = not calculated at all" << endl;
@@ -394,6 +507,7 @@ int main( int argc, char* argv[] ){
             cout << "   \t\t\t\t\t 2 = full matrix, but forced positive-definite" << endl;
             cout << "   \t\t\t\t\t 3 = full accurate covariance matrix (default, recommended for most fits)" << endl;
             cout << "   -l \t\t\t\t Calculate likelihood and exit without running a fit" << endl; 
+            cout << "   -test \t\t\t Print amplitude details for the first 2 data events" << endl;
             cout << "   -d \t\t\t\t Create dummy .fit file and exit without running a fit." << endl;
          }
          MPI_Finalize();
@@ -405,6 +519,24 @@ int main( int argc, char* argv[] ){
       cout << "No config file specified" << endl;
       MPI_Finalize();
       exit(1);
+   }
+
+   // The config file used for fitting is now the original, but with an 'include' line 
+   // for the seed file given. The expectation is that the user has run a fit with the 
+   // original config, produced a seed file of the "best parameters", and is now 
+   // performing a bootstrap fit initialized to these values.
+   if (!bootstrapInclude.empty()){
+      ifstream sourceConfig(configfile);
+      const string bootstrapConfigfile = configfile.erase(configfile.length()-4) + "_bootstrap.cfg";
+      ofstream bootstrapConfig(bootstrapConfigfile);
+      if (!sourceConfig || !bootstrapConfig){
+         cout << "Unable to create bootstrap config file: " << bootstrapConfigfile << endl;
+         exit(1);
+      }
+      bootstrapConfig << sourceConfig.rdbuf();
+      bootstrapConfig << "\ninclude " << bootstrapInclude << "\n";
+      bootstrapConfig.close();
+      configfile = bootstrapConfigfile;
    }
 
    ConfigFileParser parser(configfile);
@@ -473,18 +605,21 @@ int main( int argc, char* argv[] ){
       getLikelihood(cfgInfo);
    else if(createDummyFit)
       saveDummyFit(cfgInfo);
-   else if(numRnd==0){
-      if(scanPar=="")
-         runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile, eMatrixRequirement);
-      else
-         runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar, eMatrixRequirement);
+   else if(numRnd!=0){
+     cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
+     AmpToolsInterface::setRandomSeed(randomSeed);
+     runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5, eMatrixRequirement);
+   }
+   else if(numBootstrap!=0){
+    cout << "Running " << numBootstrap << " fits, beginning with seed=" << bootstrapSeed << endl;
+    runBootstrapFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numBootstrap, bootstrapSeed, eMatrixRequirement, bootstrapBackground);
    } else {
-      cout << "Running " << numRnd << " fits with randomized parameters with seed=" << randomSeed << endl;
-      AmpToolsInterface::setRandomSeed(randomSeed);
-      runRndFits(cfgInfo, useMinos, hesse, maxIter, seedfile, numRnd, 0.5, eMatrixRequirement);
+     if(scanPar=="")
+       runSingleFit(cfgInfo, useMinos, hesse, maxIter, seedfile, eMatrixRequirement);
+     else
+       runParScan(cfgInfo, useMinos, hesse, maxIter, seedfile, scanPar, eMatrixRequirement);
+     
    }
 
    return 0;
 }
-
-

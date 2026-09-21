@@ -149,12 +149,34 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
 
 void FSRootDataReader::resetSource(){
    m_eventCounter = 0;
+   if( m_randGenerator ) m_nextEntry = m_entryOrder.begin();
+}
+
+void
+FSRootDataReader::resample( unsigned int seed )
+{
+  if( !m_randGenerator ){
+    m_randGenerator =  new TRandom2( seed );
+  }
+  else{
+    m_randGenerator->SetSeed( seed );
+  }
+
+  unsigned int nEvents = numEvents();
+  m_entryOrder.clear();
+  for( unsigned int i = 0; i < nEvents; ++i){
+    m_entryOrder.insert( (unsigned int)floor( m_randGenerator->Rndm() * nEvents ) );
+  }
+  m_nextEntry = m_entryOrder.begin();
 }
 
 
 Kinematics* FSRootDataReader::getEvent(){
-   if( m_eventCounter < numEvents() ){
-      m_inTree->GetEntry( m_eventCounter++ );
+   if( m_eventCounter++ < numEvents() ){
+      assert( m_nextEntry != m_entryOrder.end() );
+      unsigned int entry = m_randGenerator ? *m_nextEntry++ : m_eventCounter - 1;
+
+      m_inTree->GetEntry( entry );
       vector< TLorentzVector > particleList;
       particleList.push_back( TLorentzVector( m_PxPB, m_PyPB, m_PzPB, m_EnPB ) );
       for (unsigned int i = 0; i < m_numParticles; i++){
