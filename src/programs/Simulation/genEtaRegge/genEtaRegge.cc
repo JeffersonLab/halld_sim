@@ -827,6 +827,14 @@ int main(int narg, char *argv[])
 	  } 
 	  cout << endl;
   }
+  
+  // Set specific particle order for eta->e+e-pi+pi-
+  if (num_decay_particles==4){
+    // Order according to particle type and mass
+    sort(particle_types.begin(),particle_types.end());
+    sort(decay_masses.begin(),decay_masses.end(),[&](double a,double b){return a<b;});
+  }
+  
   unsigned int num_res_decay_particles=0; 
   double reson_mass=0.,reson_width=0.;
   int reson_L=0;
