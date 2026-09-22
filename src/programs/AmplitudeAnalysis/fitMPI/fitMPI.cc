@@ -212,32 +212,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 }
 
 void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int numBootstrap, unsigned int bootstrapSeed, int eMatrixRequirement, bool bootstrapBackground) {
-   cout << "******************** WARNING ***********************" << endl;
-   cout << "*  You are bootstrapping events, which             *" << endl;
-   cout << "*  should only be used for evaluating errors.      *" << endl;
-   cout << "*  The results with different seeds will be random *" << endl;
-   cout << "*  due to random oversampling of the input file(s).*" << endl;
-   cout << "****************************************************" << endl;
-   cout << endl;
-
    vector<ReactionInfo*> reactionList = cfgInfo->reactionList();
-
-   bool bkgndDataReaderExists = false;
-   for(ReactionInfo* reaction : reactionList) {
-      string bkgndReader = reaction->bkgnd().first;
-      if(!bkgndReader.empty()) bkgndDataReaderExists = true;
-   }
-   if(!bootstrapBackground && bkgndDataReaderExists) { 
-      cout << "******************** WARNING ***********************" << endl;
-      cout << "*  Background files are present, but only the      *" << endl;
-      cout << "*  signal events are being randomly oversampled.   *" << endl;
-      cout << "*  Use the -bb flag to also resample the background*" << endl;
-      cout << "*  files.                                          *" << endl;
-      cout << "****************************************************" << endl;
-      cout << endl;
-   }
-   
-
    AmpToolsInterfaceMPI ati( cfgInfo );
    MinuitMinimizationManager* fitManager = NULL;
    vector< vector<string> > parRangeKeywords;
@@ -245,6 +220,29 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
    bool atLeastOneFitSuccessful;
 
    if(rank_mpi==0) {
+      cout << "******************** WARNING ***********************" << endl;
+      cout << "*  You are bootstrapping events, which             *" << endl;
+      cout << "*  should only be used for evaluating errors.      *" << endl;
+      cout << "*  The results with different seeds will be random *" << endl;
+      cout << "*  due to random oversampling of the input file(s).*" << endl;
+      cout << "****************************************************" << endl;
+      cout << endl;
+
+      bool bkgndDataReaderExists = false;
+      for(ReactionInfo* reaction : reactionList) {
+         string bkgndReader = reaction->bkgnd().first;
+         if(!bkgndReader.empty()) bkgndDataReaderExists = true;
+      }
+      if(!bootstrapBackground && bkgndDataReaderExists) { 
+         cout << "******************** WARNING ***********************" << endl;
+         cout << "*  Background files are present, but only the      *" << endl;
+         cout << "*  signal events are being randomly oversampled.   *" << endl;
+         cout << "*  Use the -bb flag to also resample the background*" << endl;
+         cout << "*  files.                                          *" << endl;
+         cout << "****************************************************" << endl;
+         cout << endl;
+      }
+
       fitName = cfgInfo->fitName();
       cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
       fitManager = ati.minuitMinimizationManager();
