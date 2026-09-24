@@ -46,8 +46,8 @@ vector< TVector3 > getGJAxes(TVector3 parentCM, TVector3 inverseCM, TVector3 inv
 
 // Calculate production plane angle
 double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
-{
-	// whichFrame = 1 for helicity, 2 for GJ
+{  
+       // whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
 
 	// Boost all P4 from lab to CM rest frame
@@ -82,7 +82,7 @@ double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beam
 	TVector3 y = locxyz[1];
 
 	TVector3 eps( cos( polAngle ), sin( polAngle ), 0.0 );
-
+	
 	double phiProd = atan2( y.Dot( eps ), inverseCM.Vect().Unit().Dot( eps.Cross( y ) ) );
 
 	return phiProd;	

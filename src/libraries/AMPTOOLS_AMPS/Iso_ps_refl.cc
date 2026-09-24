@@ -1,4 +1,3 @@
-
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -44,9 +43,8 @@ static double parseValidatedNumber(const string& label, const string& argInput){
 }
 
 
-Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) :
-UserAmplitude< Iso_ps_refl >( args ){
-
+Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) : UserAmplitude< Iso_ps_refl >( args )
+{
   // This function is only for the two-body Isobar decay: xi -> pipi
   
   // 6 possibilities to initialize this amplitude:
@@ -84,60 +82,46 @@ UserAmplitude< Iso_ps_refl >( args ){
   // Default polarization information stored in tree
   m_polInTree = true;
 
-  // Loop over any additional amplitude arguments to change defaults
-  for(uint ioption=6; ioption<args.size(); ioption++) {
-	  TString option = args[ioption].c_str();
-    // Polarization provided in configuration file
-    if(ioption==6){
-      m_polInTree = false;
+  // Polarization information passed with additional arguments
+  if (args.size() > 6){
 
-      polAngle = parseValidatedNumber("polarization angle", args[6]);    
+    m_polInTree = false;
+    polAngle = parseValidatedNumber("polarization angle", args[6]);    
+      std::string pol_option = args[7];      
 
-      TString polOption = args[7].c_str();
-      if(polOption.Contains(".root")){
-        polFraction = 0.0;
-        TFile* f = new TFile(polOption);
-        polFrac_vs_E = (TH1D*)f->Get(args[8].c_str());
-        if(polFrac_vs_E  != nullptr ){
-          throw std::runtime_error(
-            "Iso_ps_refl ERROR: Could not find histogram '" + args[8] +
-            "' in file " + std::string(polOption.Data()));
-        }
-      }
+      if (pol_option.find(".root") == std::string::npos)
+	polFraction = parseValidatedNumber("polarization fraction", args[7]);
       else{
-        polFraction = parseValidatedNumber("polarization fraction", args[7]);
-      }
-    }
+	polFraction = -1;
+        TFile* pol_file = new TFile(pol_option.c_str());
+        polFrac_vs_E = (TH1D*)pol_file->Get(args[8].c_str());
+        if(polFrac_vs_E  == nullptr )
+          throw std::runtime_error("Iso_ps_refl ERROR: Could not find histogram '" + args[8] + "' in file " + pol_option);
+      }	
   }  
+
 }
 
-void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 
-  TLorentzVector beam;
-  TVector3 eps;
-  GDouble beam_polFraction;
-  GDouble beam_polAngle;
+void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const
+{  
 
-  if(m_polInTree){
-    beam.SetPxPyPzE( 0.0, 0.0, pKin[0][0], pKin[0][0]);
-    eps.SetXYZ(pKin[0][1], pKin[0][2], 0.0); // beam polarization vector;
+  GDouble beam_polFraction, beam_polAngle;
+  TLorentzVector beam( 0.0, 0.0, pKin[0][3], pKin[0][0]);
 
-    beam_polFraction = eps.Mag();
-    beam_polAngle = eps.Phi();
+  
+  if(m_polInTree){    
+    beam_polAngle = TMath::DegToRad()*pKin[0][1]; //Px
+    beam_polFraction = pKin[0][2];  //Py  
   }
   else{
-    beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );
-    beam_polAngle = polAngle;
+    beam_polAngle = TMath::DegToRad()*polAngle;
+    beam_polFraction = polFraction;     
 
-    if(polFraction > 0.0){ // for fitting with fixed polarization
-	    beam_polFraction = polFraction;
-    }
-    else{ // for fitting with polarization vs E_gamma from input histogram 
-	    int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
-	    if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
-		    beam_polFraction = 0.0;
-	    } else
-		    beam_polFraction = polFrac_vs_E->GetBinContent(bin);
+    if(beam_polFraction == -1){ // extract the polarization fraction from its dependence on E_gamma 
+      int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+      if (bin > 0 && bin <= polFrac_vs_E->GetXaxis()->GetNbins())
+	beam_polFraction = polFrac_vs_E->GetBinContent(bin);
     }
   }
 
