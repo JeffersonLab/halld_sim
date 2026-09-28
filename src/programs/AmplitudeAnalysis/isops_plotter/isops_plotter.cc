@@ -128,8 +128,8 @@ int main( int argc, char* argv[] ){
 	atiSetup();
         cout << "Plotgen results"<< endl;
 
-	//	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // optional can be omitted
-	IsoPsPlotGenerator plotGen( results ); 
+	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // 2nd argument is optional 
+	//	IsoPsPlotGenerator plotGen( results ); 
 	cout << " Initialized ati and PlotGen" << endl;
 
  
@@ -409,7 +409,7 @@ int main( int argc, char* argv[] ){
     for(unsigned int j = i+1; j < fullamps.size(); j++){
 
       // leave only the Spring2017_PARA_0::ImagPosSign and Spring2017_PARA_0::ImagNegSign coherent sums
-      if (fullamps[i].find("Spring2017_PARA_0") == std::string::npos || fullamps[j].find("Spring2017_PARA_0") == std::string::npos) continue;      
+      if (fullamps[i].find("Spring2017") == std::string::npos || fullamps[j].find("Spring2017") == std::string::npos) continue;      
       if (fullamps[i].find("UniBG") != std::string::npos || fullamps[j].find("UniBG") != std::string::npos) continue;      
       if (fullamps[i].find("Real") != std::string::npos || fullamps[j].find("Real") != std::string::npos) continue;      
       
