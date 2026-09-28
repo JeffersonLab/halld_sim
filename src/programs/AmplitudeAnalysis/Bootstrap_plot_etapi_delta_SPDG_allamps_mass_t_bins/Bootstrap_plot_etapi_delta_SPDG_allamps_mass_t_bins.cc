@@ -107,9 +107,9 @@ int main( int argc, char* argv[] ){
 
 
 
-   // print out the bin center                                                                     
-    double step = ( highMass - lowMass ) / kNumBins;
-    double stept = ( hight - lowt ) / kNumBinst;
+    // print out the bin center                                                                     
+    double step = ( highMass - lowMass ) / static_cast<double>(kNumBins);
+    double stept = ( hight - lowt ) / static_cast<double>(kNumBinst);
     ofstream outfile[kNumBins][kNumBinst];
     // descend into the directory that contains the bins
     chdir( fitDir.c_str() );

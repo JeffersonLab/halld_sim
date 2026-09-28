@@ -11,6 +11,11 @@
 #include "AMPTOOLS_DATAIO/FSRootDataReader.h"
 #include "TSystem.h"
 
+#include "IUAmpTools/report.h"
+
+const char* FSRootDataReader::kModule = "FSRootDataReader";
+
+
 using namespace std;
 
 // Constructor expects one of the following argument patterns:
@@ -77,7 +82,7 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
          fileexists.close();
          m_inFile = new TFile( inFileName.c_str() );
          if (!m_inFile || m_inFile->IsZombie()) {
-            cout << "FSRootDataReader WARNING:  Cannot open file... " << inFileName << endl;
+            report( ERROR, kModule ) << "FSRootDataReader ERROR:  Cannot open file... " << inFileName << endl;
             m_inFile = NULL;
             m_inTree = NULL;
             return;
@@ -85,7 +90,7 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
          m_inTree = static_cast<TTree*>( m_inFile->Get( inTreeName.c_str() ) );
          
          if (!m_inTree) {
-            cout << "FSRootDataReader WARNING:  Cannot open tree... " << inTreeName << endl;
+            report( ERROR, kModule ) << "FSRootDataReader ERROR:  Cannot open tree... " << inTreeName << endl;
             m_inFile->Close();
             delete m_inFile;
             m_inFile = NULL;
@@ -97,17 +102,18 @@ FSRootDataReader::FSRootDataReader( const vector< string >& args ) :
             m_inTree->AddFriend(friendTreeName, friendFileName);
       }
       else{
-         cout << "FSRootDataReader WARNING:  Cannot find file... " << inFileName << endl;
+         report( ERROR, kModule ) << "FSRootDataReader ERROR:  Cannot find file... " << inFileName << endl;
          m_inFile = NULL;
          m_inTree = NULL;
          return;
       }
       
-      cout << "Opening Tree: " << inFileName << " " << inTreeName << " (numParticles=" << m_numParticles << ")";
-      if (fourMomentumPrefix != "") cout << " fourMomentumPrefix=" << fourMomentumPrefix;
-      if (friendFileName != "") cout << " friendFile=" << friendFileName << " friendTree=" << friendTreeName;
-      if (weightBranchName != "weight") cout << " weightBranch=" << weightBranchName;
-      cout << endl;
+     report( DEBUG, kModule ) << "Opening Tree: " << inFileName << " " << inTreeName << " (numParticles=" << m_numParticles << ")";
+     if (fourMomentumPrefix != "") report( DEBUG, kModule ) << " fourMomentumPrefix=" << fourMomentumPrefix;
+     if (friendFileName != "") report( DEBUG, kModule ) << " friendFile=" << friendFileName << " friendTree=" << friendTreeName;
+     if (weightBranchName != "weight") report( DEBUG, kModule ) << " weightBranch=" << weightBranchName;
+     report( DEBUG, kModule ) << endl;
+
       if (m_inTree){
          TString sEnPB = fourMomentumPrefix+"EnPB";
          TString sPxPB = fourMomentumPrefix+"PxPB";

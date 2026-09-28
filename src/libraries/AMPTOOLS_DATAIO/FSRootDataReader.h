@@ -48,6 +48,7 @@ class FSRootDataReader : public UserDataReader< FSRootDataReader >{
 
       double m_weight;
 
+      static const char* kModule;
 };
 
 #endif
