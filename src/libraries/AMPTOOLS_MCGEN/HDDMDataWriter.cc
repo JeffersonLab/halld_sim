@@ -5,13 +5,13 @@
 #include "AMPTOOLS_MCGEN/HDDMDataWriter.h"
 #include "HDDM/hddm_s.hpp"
 
-HDDMDataWriter::HDDMDataWriter(const string& outFile, int runNumber, int seed)
+HDDMDataWriter::HDDMDataWriter(const string& outFile, int runNumber, int seed, int firstEventNumber)
 {
   m_OutputFile = new ofstream(outFile.c_str());
   m_OutputStream = new hddm_s::ostream(*m_OutputFile);
   m_runNumber = runNumber;
-  
-  m_eventCounter = 1;
+
+  m_eventCounter = firstEventNumber;
 
   // initialize root's pseudo-random generator
   gRandom->SetSeed(seed);
@@ -54,7 +54,7 @@ writeEvent( const Kinematics& kin, const vector<int>& ptype,
 {
   vector< TLorentzVector > particleList = kin.particleList();
   int nParticles=kin.particleList().size();
-  
+
   // Start a new event in the HDDM record
   hddm_s::HDDM record;
   hddm_s::PhysicsEventList pes = record.addPhysicsEvents();
@@ -98,7 +98,7 @@ writeEvent( const Kinematics& kin, const vector<int>& ptype,
   hddm_s::PropertiesList tpros = ts().addPropertiesList();
   tpros().setCharge(+1);
   tpros().setMass(0.938272);
-  
+
   for(int i=1; i < nParticles; i++)
   {
       ps(i-1).setType((Particle_t)ptype[i]);
@@ -112,7 +112,7 @@ writeEvent( const Kinematics& kin, const vector<int>& ptype,
       pmoms().setPz(kin.particle(i).Pz());
       pmoms().setE(kin.particle(i).E());
   }
-  
+
   if (nParticles > 0)
     *m_OutputStream << record;
   m_eventCounter++;

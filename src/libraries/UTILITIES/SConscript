@@ -5,8 +5,11 @@ import sbms
 # get env object and clone it
 Import('*')
 
-env = env.Clone()
+if os.getenv('AMPTOOLS', 'nada')!='nada':
 
-sbms.AddROOT(env)
-sbms.AddCCDB(env)
-sbms.library(env)
+    env = env.Clone()
+
+    sbms.AddROOT(env)
+    sbms.AddAmpTools(env)
+    sbms.AddCCDB(env)
+    sbms.library(env)
