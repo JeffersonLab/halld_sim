@@ -233,7 +233,6 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
       cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
       fitManager = ati.minuitMinimizationManager();
       fitManager->setMaxIterations(maxIter);
-      parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
       atLeastOneFitSuccessful = false;
    }
 

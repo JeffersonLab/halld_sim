@@ -384,9 +384,6 @@ void runBootstrapFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
 
-  vector< vector<string> > parRangeKeywords = cfgInfo->userKeywordArguments("parRange");
-  vector< vector<string> > parSDMEKeywords = cfgInfo->userKeywordArguments("parSDME");
-
   bool atLeastOneFitSuccessful = false;
 
   vector < tuple<int, bool, int, int, double> > fitLLs;
