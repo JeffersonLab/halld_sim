@@ -68,18 +68,20 @@ DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
     GDouble cos2Phi     = userVars[kCos2Phi];
     GDouble sinPhi      = userVars[kSinPhi];
     GDouble sin2Phi     = userVars[kSin2Phi];
+    GDouble phiProd     = userVars[kPhiProd] - polAngle*TMath::DegToRad();
 
-    GDouble sin2BigPhi	= userVars[kSin2BigPhi];
-    GDouble cos2BigPhi  = userVars[kCos2BigPhi];
+    GDouble sin2BigPhi	= sin( 2*phiProd );
+    GDouble cos2BigPhi  = cos( 2*phiProd );;
     GDouble Pgamma      = userVars[kPgamma];
     GDouble sqrt3       = TMath::Sqrt(3);
 	
     // SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
     GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosSqTheta) - 2.*sqrt3*rho031*cosPhi*sin2Theta - 2.*sqrt3*rho03m1*cos2Phi*sinSqTheta;
+
+// comment out polarized SDMEs - not used for factorized fits	
+//    W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosSqTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
 	
-    W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosSqTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
-	
-    W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
+//    W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
 	
     W *= 1./(4.*PI);
 	
@@ -114,10 +116,7 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
     userVars[kCos2Phi]          = cos( 2*angles.phiLV );
     userVars[kSinPhi]           = sin( angles.phiLV );
     userVars[kSin2Phi]          = sin( 2*angles.phiLV );
-
-    double phiProd = angles.bigPhiLV - polAngle*TMath::DegToRad();
-    userVars[kCos2BigPhi]	= cos( 2*phiProd );
-    userVars[kSin2BigPhi]       = sin( 2*phiProd );
+    userVars[kPhiProd]          = angles.bigPhiLV;
 
 
 //    vector< double > thetaPhi = getOneStepAngles( pDelta, p1, beam, target, 2, false );

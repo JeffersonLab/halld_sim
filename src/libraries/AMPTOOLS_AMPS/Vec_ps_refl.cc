@@ -450,7 +450,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   userVars[kPhiX]       = angles.phiX;
   userVars[kCosThetaH]  = angles.cosThetaH;
   userVars[kPhiH]       = angles.phiH;
-  userVars[kBigPhiLab]  = angles.bigPhiX + beamPolAngle*TMath::DegToRad();
+  userVars[kBigPhiLab]  = angles.bigPhiX;
   userVars[kXMesonMass] = xMesonMass;
   userVars[kVecMass]    = vecMass;
   userVars[kPSMass]     = psMass;
@@ -554,8 +554,7 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
     GDouble factor = sqrt( 1 + m_s*m_polFraction );
 
     complex< GDouble > zjm = 0;
-//    complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*( bigPhiLab + m_polAngle*TMath::DegToRad() ) ) );
-    complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)( 1.*bigPhiLab ) ); // include the polarization adjustment in calcUserVars instead
+    complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*( bigPhiLab + m_polAngle*TMath::DegToRad() ) ) );
 
     if( m_r == 1 )
         zjm = real( amplitude * rotateY );

@@ -36,7 +36,7 @@ public:
 	DeltaAngles( const vector< string >& args );
 
 	enum UserVars { kPgamma = 0, kCosSqTheta, kSinSqTheta, kSin2Theta,
-    kCosPhi, kCos2Phi, kSinPhi, kSin2Phi, kCos2BigPhi, kSin2BigPhi, kNumUserVars };
+    kCosPhi, kCos2Phi, kSinPhi, kSin2Phi, kPhiProd, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	string name() const { return "DeltaAngles"; }
