@@ -121,9 +121,9 @@ vector<double> getXDecayAngles( double polAngle,
     // z-axis is along the direction of particle X in the center-of-mass frame
     // y-axis is normal to the production plane defined by particle X and
     //        the beam both vectors are expressed in the center-of-mass frame
-    TVector3 z = (particleX_cm.Vect()).Unit();
-    TVector3 y = ((beam_cm_unit).Cross(z)).Unit();
-    TVector3 x = (y.Cross(z)).Unit();
+//    TVector3 z = (particleX_cm.Vect()).Unit();
+//    TVector3 y = ((beam_cm_unit).Cross(z)).Unit();
+//    TVector3 x = (y.Cross(z)).Unit();
 
     // One could use the Gottfried-Jackson frame instead of the helicity frame
     // The axis would be defined as follows:
@@ -131,17 +131,56 @@ vector<double> getXDecayAngles( double polAngle,
     // y-axis is normal to the production plane defined by particle X and
     //        the beam both vectors are expressed in the center-of-mass frame
     //        (the same as helicity frame)
-    // TLorentzVector beam_x = beam_cm;
-    // beam_x.Boost(xBoost);
-    // TVector3 z = (beam_x.Vect()).Unit();
-    // TVector3 y = ((beam_cm_unit.Vect()).Cross(particleX_cm.Vect())).Unit();
-    // TVector3 x = (y.Cross(z)).Unit();
+    TLorentzVector beam_x = beam_cm;
+    beam_x.Boost(xBoost);
+    TVector3 z = (beam_x.Vect()).Unit();
+    TVector3 y = ((beam_cm_unit).Cross(particleX_cm.Vect())).Unit();
+    TVector3 x = (y.Cross(z)).Unit();
 
+    TVector3 vecPSBoost = -particleXLab.BoostVector();
+    TLorentzVector beamVecPS = beamLab;
+    beamVecPS.Boost( vecPSBoost );
+    TLorentzVector vecVPS = daughterLab;
+    vecVPS.Boost( vecPSBoost );
+
+    TVector3 z_alt = beamVecPS.Vect().Unit();
+    TVector3 y_alt = ( beamLab.Vect().Unit()).Cross( particleXLab.Vect().Unit() ).Unit();
+    TVector3 x_alt = ( y_alt.Cross( z_alt ) ).Unit();
+
+/*    cout << "z-axis: " << endl;
+    z.Print();
+    z_alt.Print();
+
+    cout << "y-axis: " << endl;
+    y.Print();
+    y_alt.Print();
+
+    cout << "x-axis: " << endl;
+    x.Print();
+    x_alt.Print();
+*/
     TVector3 components(daughter_x_unit.Dot(x), daughter_x_unit.Dot(y),
                         daughter_x_unit.Dot(z));
 
+/*
+    TVector3 components_alt(vecVPS.Vect().Unit().Dot(x_alt), vecVPS.Vect().Unit().Dot(y_alt),
+                        vecVPS.Vect().Unit().Dot(z_alt));
+
+    cout << "components:" << endl;
+    components.Print();
+    components_alt.Print();
+*/
     double theta = components.Theta();
     double phi = components.Phi();
+/*
+    double theta_alt = components_alt.Theta();
+    double phi_alt = components_alt.Phi();
+
+    cout << "theta: " << theta << endl;
+    cout << "theta_alt: " << theta_alt << endl;
+    cout << "phi: " << phi << endl;
+    cout << "phi_alt: " << phi_alt << endl;
+*/
 
     // Compute the production angle (bigPhi) between the polarization 
     // angle and the normal to the production plane

@@ -124,6 +124,7 @@
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/vecPsAngles.h"
+#include "AMPTOOLS_AMPS/decayAnglesTest.h"
 #include "AMPTOOLS_AMPS/barrierFactor.h"
 #include "IUAmpTools/report.h"
 
@@ -360,8 +361,6 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     }
   }
   
-  TLorentzVector recoil( pKin[1][1], pKin[1][2], pKin[1][3], pKin[1][0] ); 
-
   // Fill in four-vectors for final state particles
   // 1st after proton is always the pseudoscalar meson
   TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]); 
@@ -369,11 +368,13 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   // Make sure the order of daughters is correct in the config file!
   TLorentzVector vec, vecDaught1, vecDaught2; 
 
+// cout << pKin.size() << endl;
+
   if(m_3pi){
     // Omega ps proton, omega -> 3pi (6 particles):
     // beam proton ps pi0 pip pim
-    // Omega pi- Delta++, omega -> 3pi (6 particles):
-    // beam delta ps pi0 pip pim
+    // Omega pi- Delta++, omega -> 3pi (7 particles):
+    // beam proton_delta ps pi0 pip pim pip_delta
 	  TLorentzVector pi0(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
 	  TLorentzVector pip(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
 	  TLorentzVector pim(pKin[5][1], pKin[5][2], pKin[5][3], pKin[5][0]);
@@ -404,11 +405,12 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 
   TLorentzVector target(0,0,0,0.938); // proton at rest
   TLorentzVector beamTarget = beam + target;
+  TLorentzVector recoil = beamTarget - xMeson;
 
   // Calculate decay angles for X in helicity frame (same for all vectors)
   // Change getXDecayAngles to get Gottfried-Jackson angles if needed
   // Note: it also calculates the production angle
-  vector <double> xDecayAngles = getXDecayAngles( beamPolAngle, beam, beamTarget, xMeson, vec);
+  vector <double> xDecayAngles = getXDecayAngles( beamPolAngle, beam, beamTarget, xMeson, vec );
 
   // Calculate vector decay angles (unique for each vector)
   vector <double> vectorDecayAngles;
@@ -421,6 +423,8 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
                                         vecDaught1, TLorentzVector(0,0,0,0));
   }
 
+  VecPSAngles angles = getVecPSAnglesGJ( beam, xMeson, vec, vecDaught1, vecDaught2 );
+
   GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
   GDouble phi = xDecayAngles[1];
   GDouble prodAngle = xDecayAngles[2]; // bigPhi
@@ -430,6 +434,27 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   GDouble vecMass = vec.M();
   GDouble psMass = ps.M();
 
+  cout << "Upper Vertex Angles:" << endl;
+  cout << "cos(thetaX) (old): " << cosTheta << endl;
+  cout << "cos(thetaX) (new): " << angles.cosThetaX << endl;
+  cout << "phiX (old): " << phi << endl;
+  cout << "phiX (new): " << angles.phiX << endl;
+  cout << "Phi_Lab (old): " << prodAngle << endl;
+  cout << "Phi_Lab (new): " << angles.bigPhiX + beamPolAngle*TMath::DegToRad() << endl;
+  cout << "cos(thetaH) (old): " << cosThetaH << endl;
+  cout << "cos(thetaH) (new): " << angles.cosThetaH << endl;
+  cout << "phiH (old): " << phiH << endl;
+  cout << "phiH (new): " << angles.phiH << endl;
+
+  userVars[kCosThetaX]  = angles.cosThetaX;
+  userVars[kPhiX]       = angles.phiX;
+  userVars[kCosThetaH]  = angles.cosThetaH;
+  userVars[kPhiH]       = angles.phiH;
+  userVars[kBigPhiLab]  = angles.bigPhiX + beamPolAngle*TMath::DegToRad();
+  userVars[kXMesonMass] = xMesonMass;
+  userVars[kVecMass]    = vecMass;
+  userVars[kPSMass]     = psMass;
+/*
   complex <GDouble> amplitude(0,0);
   static const complex <GDouble> i(0,1);
 
@@ -481,7 +506,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   
   userVars[uv_ampRe] = ( factor * zjm ).real();
   userVars[uv_ampIm] = ( factor * zjm ).imag();
-
+*/
   return;
 }
 
@@ -490,7 +515,63 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 complex< GDouble >
 Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 {
-  return complex< GDouble >( userVars[uv_ampRe], userVars[uv_ampIm] );
+    complex< GDouble > amplitude(0,0);
+    static const complex< GDouble > i(0,1);
+
+    GDouble cosThetaX   = userVars[kCosThetaX];
+    GDouble phiX        = userVars[kPhiX];
+    GDouble cosThetaH   = userVars[kCosThetaH];
+    GDouble phiH        = userVars[kPhiH];
+    GDouble bigPhiLab   = userVars[kBigPhiLab];
+    GDouble xMesonMass  = userVars[kXMesonMass];
+    GDouble vecMass     = userVars[kVecMass];
+    GDouble psMass      = userVars[kPSMass];
+    // pass m_l, m_j, etc in here somehow? or are they already here?
+
+    if( m_gpi0 ){       // radiative omega decay
+        for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
+            GDouble helAmp = clebschGordan(m_l, 1, 0, lambda, m_j, lambda);
+            if(lambda==0){
+              amplitude += conj(wignerD(m_j, m_m, lambda, cosThetaX, phiX)) *
+                           helAmp * conj(wignerD(1, lambda, m_ghel, cosThetaH, phiH)) *
+                           (m_ghel*1.0); // m_ghel is int
+            }
+            else{
+              amplitude += conj(wignerD(m_j, m_m, lambda, cosThetaX, phiX)) *
+                            helAmp * conj(wignerD(1, -1*lambda, m_ghel, cosThetaH, phiH)) *
+                      -1.0;
+              // the power of lambda is irrelevant for lambda =/= 0: (-1)^lambda = -1
+            }
+        }
+    }
+    else{
+        for( int lambda = -1; lambda <= 1; lambda++ ){  // sum over vector helicity
+            GDouble helAmp = clebschGordan( m_l, 1, 0, lambda, m_j, lambda );
+            amplitude += conj( wignerD( m_j, m_m, lambda, cosThetaX, phiX ) ) * 
+                        helAmp * conj( wignerD( 1, lambda, 0, cosThetaH, phiH ) );
+        }
+    }
+
+    GDouble factor = sqrt( 1 + m_s*m_polFraction );
+
+    complex< GDouble > zjm = 0;
+//    complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*( bigPhiLab + m_polAngle*TMath::DegToRad() ) ) );
+    complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)( 1.*bigPhiLab ) ); // this is wrong, but want to make sure everything else is right first
+
+    if( m_r == 1 )
+        zjm = real( amplitude * rotateY );
+    if( m_r == -1 )
+        zjm = i*imag( amplitude * rotateY );
+
+    if( !m_noBarrier ){
+        GDouble kinFactor = barrierFactor( xMesonMass, m_l, vecMass, psMass );
+        factor *= kinFactor;    // can these lines be combined?
+    }
+
+    return complex< GDouble >( static_cast< GDouble >( factor ) * zjm );
+
+//  return complex< GDouble >( userVars[uv_ampRe], userVars[uv_ampIm] );
+
 }
 
 void Vec_ps_refl::updatePar( const AmpParameter& par ){

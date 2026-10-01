@@ -40,10 +40,9 @@ public:
 	// Use this for indexing a user-defined data array and notifying
 	// the framework of the number of user-defined variables.
 		
-	//enum UserVars { uv_cosTheta = 0, uv_Phi, uv_cosThetaH, uv_PhiH,
-	//                uv_prod_Phi, uv_MX, uv_MVec, uv_MPs, uv_beam_polFraction,
-	//                uv_beam_polAngle, kNumUserVars };
-	enum UserVars { uv_ampRe = 0, uv_ampIm, kNumUserVars };
+	enum UserVars { kCosThetaX = 0, kPhiX, kCosThetaH, kPhiH,
+	                kBigPhiLab, kXMesonMass, kVecMass, kPSMass, kNumUserVars };
+	//enum UserVars { uv_ampRe = 0, uv_ampIm, kNumUserVars };
 	unsigned int numUserVars() const { return kNumUserVars; }
 	
 	// This function needs to be defined -- see comments and discussion

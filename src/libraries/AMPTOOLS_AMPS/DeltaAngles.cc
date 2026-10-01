@@ -13,6 +13,7 @@
 #include "AMPTOOLS_AMPS/clebschGordan.h"
 #include "AMPTOOLS_AMPS/wignerD.h"
 #include "AMPTOOLS_AMPS/decayAngles.h"
+#include "AMPTOOLS_AMPS/decayAnglesTest.h"
 
 DeltaAngles::DeltaAngles( const vector< string >& args ) :
 UserAmplitude< DeltaAngles >( args )
@@ -60,65 +61,87 @@ UserAmplitude< DeltaAngles >( args )
 complex< GDouble >
 DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {	
 
-  GDouble cosTheta  = userVars[kCosTheta];
-	GDouble sinSqTheta 	= userVars[kSinSqTheta];
-	GDouble sin2Theta	= userVars[kSin2Theta];
-  
-  GDouble cosPhi  = userVars[kCosPhi];
-  GDouble cos2Phi = userVars[kCos2Phi];
-  GDouble sinPhi  = userVars[kSinPhi];
-  GDouble sin2Phi = userVars[kSin2Phi];
+    GDouble cosSqTheta  = userVars[kCosSqTheta];
+    GDouble sinSqTheta 	= userVars[kSinSqTheta];
+    GDouble sin2Theta	= userVars[kSin2Theta];
+    GDouble cosPhi      = userVars[kCosPhi];
+    GDouble cos2Phi     = userVars[kCos2Phi];
+    GDouble sinPhi      = userVars[kSinPhi];
+    GDouble sin2Phi     = userVars[kSin2Phi];
 
-	GDouble sin2BigPhi		= userVars[kSin2BigPhi];
-  GDouble cos2BigPhi    = userVars[kCos2BigPhi];
-	GDouble Pgamma		= userVars[kPgamma];
-  GDouble sqrt3 = TMath::Sqrt(3);
+    GDouble sin2BigPhi	= userVars[kSin2BigPhi];
+    GDouble cos2BigPhi  = userVars[kCos2BigPhi];
+    GDouble Pgamma      = userVars[kPgamma];
+    GDouble sqrt3       = TMath::Sqrt(3);
 	
-	// SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
-	GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosTheta*cosTheta) - 2.*sqrt3*rho031*cosPhi*sin2Theta - 2.*sqrt3*rho03m1*cos2Phi*sinSqTheta;
+    // SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
+    GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosSqTheta) - 2.*sqrt3*rho031*cosPhi*sin2Theta - 2.*sqrt3*rho03m1*cos2Phi*sinSqTheta;
 	
-	W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosTheta*cosTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
+    W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosSqTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
 	
-	W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
+    W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
 	
-	W *= 1./(4.*PI);
+    W *= 1./(4.*PI);
 	
 // 	return W;
-	return complex< GDouble > ( sqrt(fabs(W)) );
+    return complex< GDouble > ( sqrt(fabs(W)) );
 }
 
 void
 DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 
-	TLorentzVector target ( 0, 0, 0, 0.9382720813 );
-	TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
-//	TLorentzVector p1, p2, p3, ptot, ptemp; //p1 and p2 from decaying lower vertex, p2 used to calculate angles for SDME calculation, p3 = upper vertex resonance (b1 in this case)
-	TLorentzVector p1, p2, pDelta; //p1 and p2 from decaying lower vertex, p2 used to calculate angles for SDME calculation, p3 = upper vertex resonance (b1 in this case)
+    TLorentzVector target ( 0, 0, 0, 0.9382720813 );
+    TLorentzVector beam   ( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] ); 
+    TLorentzVector p1, p2, pDelta; //p1 and p2 from decaying lower vertex, p2 used to calculate angles for SDME calculation, p3 = upper vertex resonance (b1 in this case)
 	
-	string lv1; lv1 += lowerVertex[0];
-	string lv2; lv2 += lowerVertex[1];
+    string lv1; lv1 += lowerVertex[0];
+    string lv2; lv2 += lowerVertex[1];
 
-        int index1 = atoi( lv1.c_str() );
-        int index2 = atoi( lv2.c_str() );
+    int index1 = atoi( lv1.c_str() );
+    int index2 = atoi( lv2.c_str() );
 
-	p1.SetPxPyPzE( pKin[index1][1], pKin[index1][2], pKin[index1][3], pKin[index1][0] );
-	p2.SetPxPyPzE( pKin[index2][1], pKin[index2][2], pKin[index2][3], pKin[index2][0] );
+    p1.SetPxPyPzE( pKin[index1][1], pKin[index1][2], pKin[index1][3], pKin[index1][0] );
+    p2.SetPxPyPzE( pKin[index2][1], pKin[index2][2], pKin[index2][3], pKin[index2][0] );
 
-	pDelta = p1 + p2;
+    pDelta = p1 + p2;
 
-	vector< double > thetaPhi = getOneStepAngles( pDelta, p1, beam, target, 2, false );
+    LVAngles angles = getLVAnglesGJ( beam, pDelta, p1 );
 
-	userVars[kCosTheta]	= TMath::Cos( thetaPhi[0] );
-	userVars[kSinSqTheta]	= TMath::Sin( thetaPhi[0] ) * TMath::Sin( thetaPhi[0] );
-	userVars[kSin2Theta]	= TMath::Sin( 2.*thetaPhi[0] );
-	userVars[kCosPhi]		= cos(thetaPhi[1]);
-  userVars[kCos2Phi]  = cos(2*thetaPhi[1]);
-  userVars[kSinPhi]   = sin(thetaPhi[1]);
-  userVars[kSin2Phi]  = sin(2*thetaPhi[1]);
-           
-	double phiProd = getPhiProd( polAngle, pDelta, beam, target, 2, false );
-	userVars[kCos2BigPhi]	= cos(2*phiProd);
-  userVars[kSin2BigPhi] = sin(2*phiProd);
+    userVars[kCosSqTheta]       = angles.cosThetaLV*angles.cosThetaLV;
+    userVars[kSinSqTheta]       = 1 - angles.cosThetaLV*angles.cosThetaLV;
+    userVars[kSin2Theta]        = sin( 2*TMath::ACos( angles.cosThetaLV ) );
+    userVars[kCosPhi]           = cos( angles.phiLV );
+    userVars[kCos2Phi]          = cos( 2*angles.phiLV );
+    userVars[kSinPhi]           = sin( angles.phiLV );
+    userVars[kSin2Phi]          = sin( 2*angles.phiLV );
+
+    double phiProd = angles.bigPhiLV - polAngle*TMath::DegToRad();  //TODO: subtract polarization angle from this to get correct Phi_Prod. Leave as is for now
+    userVars[kCos2BigPhi]	= cos( 2*phiProd );
+    userVars[kSin2BigPhi]       = sin( 2*phiProd );
+
+
+//    vector< double > thetaPhi = getOneStepAngles( pDelta, p1, beam, target, 2, false );
+/*
+    userVars[kCosTheta]	= TMath::Cos( thetaPhi[0] );
+    userVars[kSinSqTheta]	= TMath::Sin( thetaPhi[0] ) * TMath::Sin( thetaPhi[0] );
+    userVars[kSin2Theta]	= TMath::Sin( 2.*thetaPhi[0] );
+    userVars[kCosPhi]		= cos(thetaPhi[1]);
+    userVars[kCos2Phi]  = cos(2*thetaPhi[1]);
+    userVars[kSinPhi]   = sin(thetaPhi[1]);
+    userVars[kSin2Phi]  = sin(2*thetaPhi[1]);
+*/           
+//    double phiProd_old = getPhiProd( polAngle, pDelta, beam, target, 2, false );
+//    userVars[kCos2BigPhi]	= cos(2*phiProd);
+//    userVars[kSin2BigPhi] = sin(2*phiProd);
+
+
+    cout << "Lower Vertex Angles: " << endl;
+/*    cout << "cos(theta) (old): " << TMath::Cos( thetaPhi[0] ) << endl;
+    cout << "phi (old): " << thetaPhi[1] << endl;
+    cout << "Phi_Prod (old): " << phiProd_old << endl;
+    cout << "cos(theta) (new): " << angles.cosThetaLV << endl;
+    cout << "phi (new): " << angles.phiLV << endl; */
+    cout << "Phi_Prod (lab): " << angles.bigPhiLV - polAngle*TMath::DegToRad() << endl;
 
 
 /*
@@ -159,13 +182,13 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 	userVars[kBigPhi] = atan2(y.Dot(eps), beam.Vect().Unit().Dot(eps.Cross(y)));
 //	Phi = Phi > 0? Phi : Phi + 3.14159;
 */	
-	// polarization BeamProperties
-	GDouble Pgamma = polFraction;
+    // polarization BeamProperties
+    GDouble Pgamma = polFraction;
 	
-	if(polAngle == -1)
-		Pgamma = 0.;
+    if(polAngle == -1)
+	Pgamma = 0.;
 
-	userVars[kPgamma] = Pgamma;
+    userVars[kPgamma] = Pgamma;
 }
 
 
