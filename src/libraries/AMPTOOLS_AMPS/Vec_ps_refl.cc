@@ -433,7 +433,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   GDouble xMesonMass = xMeson.M();
   GDouble vecMass = vec.M();
   GDouble psMass = ps.M();
-
+/*
   cout << "Upper Vertex Angles:" << endl;
   cout << "cos(thetaX) (old): " << cosTheta << endl;
   cout << "cos(thetaX) (new): " << angles.cosThetaX << endl;
@@ -445,7 +445,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   cout << "cos(thetaH) (new): " << angles.cosThetaH << endl;
   cout << "phiH (old): " << phiH << endl;
   cout << "phiH (new): " << angles.phiH << endl;
-
+*/
   userVars[kCosThetaX]  = angles.cosThetaX;
   userVars[kPhiX]       = angles.phiX;
   userVars[kCosThetaH]  = angles.cosThetaH;
@@ -526,7 +526,6 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
     GDouble xMesonMass  = userVars[kXMesonMass];
     GDouble vecMass     = userVars[kVecMass];
     GDouble psMass      = userVars[kPSMass];
-    // pass m_l, m_j, etc in here somehow? or are they already here?
 
     if( m_gpi0 ){       // radiative omega decay
         for (int lambda = -1; lambda <= 1; lambda++) { // sum over vector helicity
@@ -556,7 +555,7 @@ Vec_ps_refl::calcAmplitude( GDouble** pKin, GDouble* userVars ) const
 
     complex< GDouble > zjm = 0;
 //    complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)(-1.*( bigPhiLab + m_polAngle*TMath::DegToRad() ) ) );
-    complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)( 1.*bigPhiLab ) ); // this is wrong, but want to make sure everything else is right first
+    complex< GDouble > rotateY = polar( (GDouble)1., (GDouble)( 1.*bigPhiLab ) ); // include the polarization adjustment in calcUserVars instead
 
     if( m_r == 1 )
         zjm = real( amplitude * rotateY );

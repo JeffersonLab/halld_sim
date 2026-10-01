@@ -115,7 +115,7 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
     userVars[kSinPhi]           = sin( angles.phiLV );
     userVars[kSin2Phi]          = sin( 2*angles.phiLV );
 
-    double phiProd = angles.bigPhiLV - polAngle*TMath::DegToRad();  //TODO: subtract polarization angle from this to get correct Phi_Prod. Leave as is for now
+    double phiProd = angles.bigPhiLV - polAngle*TMath::DegToRad();
     userVars[kCos2BigPhi]	= cos( 2*phiProd );
     userVars[kSin2BigPhi]       = sin( 2*phiProd );
 
@@ -135,13 +135,13 @@ DeltaAngles::calcUserVars( GDouble** pKin, GDouble* userVars ) const {
 //    userVars[kSin2BigPhi] = sin(2*phiProd);
 
 
-    cout << "Lower Vertex Angles: " << endl;
+//    cout << "Lower Vertex Angles: " << endl;
 /*    cout << "cos(theta) (old): " << TMath::Cos( thetaPhi[0] ) << endl;
     cout << "phi (old): " << thetaPhi[1] << endl;
     cout << "Phi_Prod (old): " << phiProd_old << endl;
     cout << "cos(theta) (new): " << angles.cosThetaLV << endl;
     cout << "phi (new): " << angles.phiLV << endl; */
-    cout << "Phi_Prod (lab): " << angles.bigPhiLV - polAngle*TMath::DegToRad() << endl;
+//    cout << "Phi_Prod (lab): " << angles.bigPhiLV - polAngle*TMath::DegToRad() << endl;
 
 
 /*
