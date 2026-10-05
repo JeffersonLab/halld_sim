@@ -128,10 +128,12 @@ void Usage(void){
   printf("   Options:  -N<number of events> (number of events to generate)\n");
   printf("             -O<output.hddm>   (default: eta_gen.hddm)\n");
   printf("             -I<input.in>      (default: eta548.in)\n");
+  printf("             -G<value>         (default: 0)\n");
   printf("             -R<run number>    (default: 10000)\n");
   printf("             -h                (Print this message and exit.)\n");
   printf("Coupling constants, photon beam energy range, and eta decay products are\n");
-  printf("specified in the <input.in> file.\n");
+  printf("specified in the <input.in> file.  The G parameter scales the contribution\n");
+  printf("of the parity-violating ampitudes to the eta->e+e-pi+pi- decay.\n");
 
   exit(0);
 }
