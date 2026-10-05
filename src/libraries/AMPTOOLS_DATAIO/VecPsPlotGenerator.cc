@@ -69,9 +69,6 @@ void VecPsPlotGenerator::createHistograms( ) {
   bookHistogram(kCosTheta, new Histogram1D(50, -1., 1., "CosTheta",
                  ";cos#theta"));
   bookHistogram(kPhi, new Histogram1D(50, -PI, PI, "Phi", ";#phi [rad.]"));
-  bookHistogram(kCosThetaGJ, new Histogram1D(50, -1., 1., "CosThetaGJ",
-                 ";cos#theta_{GJ}"));
-  bookHistogram(kPhiGJ, new Histogram1D(50, -PI, PI, "PhiGJ", ";#phi_{GJ} [rad.]"));
   bookHistogram(kCosThetaH, new Histogram1D(50, -1., 1., "CosTheta_H",
                  ";cos#theta_H"));
   bookHistogram(kPhiH, new Histogram1D(50, -PI, PI, "Phi_H", ";#phi_H [rad.]"));
@@ -95,11 +92,6 @@ void VecPsPlotGenerator::createHistograms( ) {
   bookHistogram(kPhiOffsetVsPhi, new Histogram2D(25, -PI, PI, 25, -PI, PI,
                  "PhiOffsetVsPhi",
                  ";#phi [rad.]; Prod_Ang (#Phi) Uncorrected [rad.]" ));
-  bookHistogram(kPhi_ProdVsPhiGJ, new Histogram2D(25, -PI, PI, 25, -PI, PI,
-                 "Phi_ProdVsPhiGJ", ";#phi_{GJ} [rad.]; Prod_Ang (#Phi) [rad.]" ));
-  bookHistogram(kPhiOffsetVsPhiGJ, new Histogram2D(25, -PI, PI, 25, -PI, PI,
-                 "PhiOffsetVsPhiGJ",
-                 ";#phi_{GJ} [rad.]; Prod_Ang (#Phi) Uncorrected [rad.]" ));
 }
 
 void
@@ -236,26 +228,30 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    double momentumTransfer = fabs((target-recoil).M2());
    double recoilMass = recoil.M2();
 
-   VecPSAngles anglesGJ;
-   VecPSAngles anglesHel;
-   if( omega3pi ){
-       anglesGJ = getVecPSAnglesGJ( beam, X, vec, vecDaught1, vecDaught2 );
-       anglesHel = getVecPSAnglesHelicity( beam, X, vec, vecDaught1, vecDaught2 );
+   // If omega decays to 3pi, the angles are calculated using 
+   // the cross product of the charged pion daughters
+   // Otherwise, they're calculated using one of the daughters,
+   // with the other set to zero
+   TLorentzVector vecDaught2Calc(0,0,0,0);
+   if( omega3pi )
+        vecDaught2Calc = vecDaught2;
+
+   bool gottJack = true;
+   VecPSAngles angles;
+   if( gottJack ){
+       angles = getVecPSAnglesGJ( beam, X, vec, vecDaught1, vecDaught2Calc );
    }
    else{
-       anglesGJ = getVecPSAnglesGJ( beam, X, vec, vecDaught1, TLorentzVector(0,0,0,0) );
-       anglesHel = getVecPSAnglesHelicity( beam, X, vec, vecDaught1, TLorentzVector(0,0,0,0) );
+       angles = getVecPSAnglesHelicity( beam, X, vec, vecDaught1, vecDaught2Calc );
    }
 
-   GDouble cosTheta     = anglesHel.cosThetaX;
-   GDouble cosThetaGJ   = anglesGJ.cosThetaX;
-   GDouble phi          = anglesHel.phiX;
-   GDouble phiGJ        = anglesGJ.phiX;
-   GDouble prodAngleOffset = anglesGJ.bigPhiX;
+   GDouble cosTheta     = angles.cosThetaX;
+   GDouble phi          = angles.phiX;
+   GDouble prodAngleOffset = angles.bigPhiX;
    GDouble prodAngle    = prodAngleOffset + beamPolAngle;
-   GDouble cosThetaH    = anglesGJ.cosThetaH;
-   GDouble phiH         = anglesGJ.phiH;
-   GDouble lambda       = anglesGJ.lambda;
+   GDouble cosThetaH    = angles.cosThetaH;
+   GDouble phiH         = angles.phiH;
+   GDouble lambda       = angles.lambda;
 
 /*
    GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
@@ -270,8 +266,6 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    fillHistogram( kVecPsMass, X.M() );
    fillHistogram( kCosTheta, cosTheta );
    fillHistogram( kPhi, phi );
-   fillHistogram( kCosThetaGJ, cosThetaGJ );
-   fillHistogram( kPhiGJ, phiGJ );
    fillHistogram( kCosThetaH, cosThetaH );
    fillHistogram( kPhiH, phiH );
    fillHistogram( kProd_Ang, prodAngle );
@@ -283,6 +277,4 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    fillHistogram( kDalitz, dalitzX, dalitzY );
    fillHistogram( kPhi_ProdVsPhi, phi, prodAngle );
    fillHistogram( kPhiOffsetVsPhi, phi, prodAngleOffset );
-   fillHistogram( kPhi_ProdVsPhiGJ, phiGJ, prodAngle );
-   fillHistogram( kPhiOffsetVsPhiGJ, phiGJ, prodAngleOffset );
 }
