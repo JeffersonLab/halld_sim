@@ -62,11 +62,11 @@ PlotGenerator( )
 void IsoPsPlotGenerator::createHistograms( ) {
   cout << " calls to bookHistogram go here" << endl;
   
-   bookHistogram( kProd_Ang, new Histogram1D( 50, -180., 180., "ProdAng", "Production Angle [deg.]" ) );
+   bookHistogram( kProd_Ang, new Histogram1D( 50, -180., 180., "ProdAng", "#Phi [deg]" ) );
    bookHistogram( kCosTheta, new Histogram1D( 50, -1., 1., "CosTheta_GJ", "cos#theta^{[GJ]}" ) );
-   bookHistogram( kPhi, new Histogram1D( 50, -180., 180., "Phi_GJ", "#phi^{[GJ]} [deg.]" ) );
+   bookHistogram( kPhi, new Histogram1D( 50, -180., 180., "Phi_GJ", "#phi^{[GJ]} [deg]" ) );
    bookHistogram( kCosThetaH, new Histogram1D( 50, -1., 1., "CosTheta_HF", "cos#theta^{[HF]}" ) );
-   bookHistogram( kPhiH, new Histogram1D( 50, -180., 180., "Phi_HF", "#phi^{[HF]} [deg.]" ) );
+   bookHistogram( kPhiH, new Histogram1D( 50, -180., 180., "Phi_HF", "#phi^{[HF]} [deg]" ) );
 
    bookHistogram( kIsoMass, new Histogram1D( 200, 0., 3., "MIso", "m(2#pi)  [GeV]") );
    bookHistogram( kIsoPsMass, new Histogram1D( 200, 0.2, 3.2, "MIsoPs", "m(3#pi)  [GeV]") );
@@ -78,8 +78,7 @@ void IsoPsPlotGenerator::createHistograms( ) {
  
 }
 
-void
-IsoPsPlotGenerator::projectEvent( Kinematics* kin ){
+void IsoPsPlotGenerator::projectEvent( Kinematics* kin ){
 
   // this function will make this class backwards-compatible with older versions
   // (v0.10.x and prior) of AmpTools, but will not be able to properly obtain
@@ -87,13 +86,12 @@ IsoPsPlotGenerator::projectEvent( Kinematics* kin ){
   projectEvent( kin, "" );
 }
 
-void
-IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
+void IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
-   // We work only with a 2-body vector decay 
+   // We work only with a 2-body vector decay   
 
-  
-  // Fixed target
+
+   // Fixed target
    TLorentzVector target(0,0,0,0.938272);
 
    
@@ -104,8 +102,9 @@ IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    TLorentzVector iso_daught1 = kin->particle( 3 );
    TLorentzVector iso_daught2 = kin->particle( 4 );
    TLorentzVector piplusL = kin->particle( 5 );
-   
+  
 
+   
    // Final state P4 momenta
    TLorentzVector X = iso_daught1 + iso_daught2 + bach;
    TLorentzVector recoil = proton + piplusL;
@@ -121,24 +120,29 @@ IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    TLorentzVector recoil_ps_b = recoil + iso_daught1;
 
    
-
-   // Properly read polarization angle from config file if provided
-   double beam_polAngle=0;
-   // Check config file for optional parameters -- we assume here that the first amplitude in the list is a Iso_ps_refl amplitude
+  
+   // Read polarization angle either from config file (if provided), or from the X-component of p_beam
+   // We assume here that the first amplitude in the list is always the Iso_ps_refl amplitude
    const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
-   for(uint ioption=5; ioption<args.size(); ioption++) {
-          TString option = args[ioption].c_str();
-	  if(ioption == 6) beam_polAngle = parseValidatedNumber("polarization angle", args[6]);
-   }
-
-
+   double beam_polAngle;
+   
+   if (args.size() > 6)     
+     beam_polAngle = TMath::DegToRad()*parseValidatedNumber("polarization angle", args[6]);    
+   else 
+     beam_polAngle = TMath::DegToRad()*beam.X(); //Px should be the 0th position in TLorentzVector
+   
+   //forcibly put xy-components of the beam vector to zero     
+   beam.SetX(0.);
+   beam.SetY(0.);
+   
 
    //Momentum transfer
    double Mandt = fabs((target-recoil).M2());
    
    //Calculate production angle in the Gottfried-Jackson frame
    double prod_angle = TMath::RadToDeg()*getPhiProd(beam_polAngle, X, beam, target, 2, true);
-
+   
+   
    // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
    // Angles for the 1st permutation
    vector <double> thetaPhiAnglesTwoStep_a = getTwoStepAngles(X, iso_a, iso_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
