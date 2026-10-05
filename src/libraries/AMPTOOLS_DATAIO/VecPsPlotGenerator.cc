@@ -4,6 +4,7 @@
 #include "TLorentzRotation.h"
 
 #include "AMPTOOLS_AMPS/vecPsAngles.h"
+#include "AMPTOOLS_AMPS/decayAnglesTest.h"
 #include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
 
 #include "IUAmpTools/Histogram1D.h"
@@ -68,6 +69,9 @@ void VecPsPlotGenerator::createHistograms( ) {
   bookHistogram(kCosTheta, new Histogram1D(50, -1., 1., "CosTheta",
                  ";cos#theta"));
   bookHistogram(kPhi, new Histogram1D(50, -PI, PI, "Phi", ";#phi [rad.]"));
+  bookHistogram(kCosThetaGJ, new Histogram1D(50, -1., 1., "CosThetaGJ",
+                 ";cos#theta_{GJ}"));
+  bookHistogram(kPhiGJ, new Histogram1D(50, -PI, PI, "PhiGJ", ";#phi_{GJ} [rad.]"));
   bookHistogram(kCosThetaH, new Histogram1D(50, -1., 1., "CosTheta_H",
                  ";cos#theta_H"));
   bookHistogram(kPhiH, new Histogram1D(50, -PI, PI, "Phi_H", ";#phi_H [rad.]"));
@@ -91,6 +95,11 @@ void VecPsPlotGenerator::createHistograms( ) {
   bookHistogram(kPhiOffsetVsPhi, new Histogram2D(25, -PI, PI, 25, -PI, PI,
                  "PhiOffsetVsPhi",
                  ";#phi [rad.]; Prod_Ang (#Phi) Uncorrected [rad.]" ));
+  bookHistogram(kPhi_ProdVsPhiGJ, new Histogram2D(25, -PI, PI, 25, -PI, PI,
+                 "Phi_ProdVsPhiGJ", ";#phi_{GJ} [rad.]; Prod_Ang (#Phi) [rad.]" ));
+  bookHistogram(kPhiOffsetVsPhiGJ, new Histogram2D(25, -PI, PI, 25, -PI, PI,
+                 "PhiOffsetVsPhiGJ",
+                 ";#phi_{GJ} [rad.]; Prod_Ang (#Phi) Uncorrected [rad.]" ));
 }
 
 void
@@ -108,7 +117,7 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
   const auto& inputArgs = m_args.at(reactionName);
   
   bool polInfoInPhotonP4 = inputArgs.polInfoInPhotonP4;
-  double beamPolAngle    = inputArgs.polAngle;
+  double beamPolAngle    = inputArgs.polAngle*TMath::DegToRad(); // assume that if polarization angle is included in config file, it's in degrees
   bool omega3pi          = inputArgs.omega3pi;
   
   //cout << "project event" << endl;
@@ -209,12 +218,12 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    // Calculate decay angles for X in helicity frame (same for all vectors)
    // Change getXDecayAngles to get Gottfried-Jackson angles if needed
    // Note: it also calculates the production angle
-   vector <double> xDecayAngles = getXDecayAngles( beamPolAngle, beam, beamTarget, X, vec);
+//   vector <double> xDecayAngles = getXDecayAngles( beamPolAngle, beam, beamTarget, X, vec);
    // set polarization angle to zero to see shift in Phi_Prod distributions 
-   vector <double> xDecayAnglesOffset = getXDecayAngles( 0, beam, beamTarget, X, vec);
+//   vector <double> xDecayAnglesOffset = getXDecayAngles( 0, beam, beamTarget, X, vec);
 
    // Calculate vector decay angles (unique for each vector)
-   vector <double> vectorDecayAngles;
+/*   vector <double> vectorDecayAngles;
    if(omega3pi){
     vectorDecayAngles = getVectorDecayAngles( beamTarget, X, vec,
                                               vecDaught1, vecDaught2);
@@ -223,10 +232,32 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
     vectorDecayAngles = getVectorDecayAngles( beamTarget, X, vec,
                                         vecDaught1, TLorentzVector(0,0,0,0));
    }
-
+*/
    double momentumTransfer = fabs((target-recoil).M2());
-   double recoilMass = recoil.M2();  
+   double recoilMass = recoil.M2();
 
+   VecPSAngles anglesGJ;
+   VecPSAngles anglesHel;
+   if( omega3pi ){
+       anglesGJ = getVecPSAnglesGJ( beam, X, vec, vecDaught1, vecDaught2 );
+       anglesHel = getVecPSAnglesHelicity( beam, X, vec, vecDaught1, vecDaught2 );
+   }
+   else{
+       anglesGJ = getVecPSAnglesGJ( beam, X, vec, vecDaught1, TLorentzVector(0,0,0,0) );
+       anglesHel = getVecPSAnglesHelicity( beam, X, vec, vecDaught1, TLorentzVector(0,0,0,0) );
+   }
+
+   GDouble cosTheta     = anglesHel.cosThetaX;
+   GDouble cosThetaGJ   = anglesGJ.cosThetaX;
+   GDouble phi          = anglesHel.phiX;
+   GDouble phiGJ        = anglesGJ.phiX;
+   GDouble prodAngleOffset = anglesGJ.bigPhiX;
+   GDouble prodAngle    = prodAngleOffset + beamPolAngle;
+   GDouble cosThetaH    = anglesGJ.cosThetaH;
+   GDouble phiH         = anglesGJ.phiH;
+   GDouble lambda       = anglesGJ.lambda;
+
+/*
    GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
    GDouble phi = xDecayAngles[1];
    GDouble prodAngle = xDecayAngles[2]; // bigPhi
@@ -234,11 +265,13 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    GDouble cosThetaH = TMath::Cos(vectorDecayAngles[0]);
    GDouble phiH = vectorDecayAngles[1];
    GDouble lambda = vectorDecayAngles[2];
-
+*/
    //cout << "calls to fillHistogram go here" << endl;
    fillHistogram( kVecPsMass, X.M() );
    fillHistogram( kCosTheta, cosTheta );
    fillHistogram( kPhi, phi );
+   fillHistogram( kCosThetaGJ, cosThetaGJ );
+   fillHistogram( kPhiGJ, phiGJ );
    fillHistogram( kCosThetaH, cosThetaH );
    fillHistogram( kPhiH, phiH );
    fillHistogram( kProd_Ang, prodAngle );
@@ -250,4 +283,6 @@ VecPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
    fillHistogram( kDalitz, dalitzX, dalitzY );
    fillHistogram( kPhi_ProdVsPhi, phi, prodAngle );
    fillHistogram( kPhiOffsetVsPhi, phi, prodAngleOffset );
+   fillHistogram( kPhi_ProdVsPhiGJ, phiGJ, prodAngle );
+   fillHistogram( kPhiOffsetVsPhiGJ, phiGJ, prodAngleOffset );
 }

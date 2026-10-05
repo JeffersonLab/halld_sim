@@ -19,10 +19,11 @@ class VecPsPlotGenerator : public PlotGenerator
 public:
   
   // create an index for different histograms
-  enum Hist_index{ kVecPsMass, kCosTheta, kPhi, kCosThetaH, kPhiH, 
-                   kProd_Ang, kProdOffset, kt, kRecoilMass, kProtonPsMass, 
-                   kRecoilPsMass, kLambda, kDalitz, kPhi_ProdVsPhi, 
-                   kPhiOffsetVsPhi, kNumHists};
+  enum Hist_index{ kVecPsMass, kCosTheta, kPhi, kCosThetaGJ, kPhiGJ, 
+                   kCosThetaH, kPhiH, kProd_Ang, kProdOffset, kt, 
+                   kRecoilMass, kProtonPsMass, kRecoilPsMass, 
+                   kLambda, kDalitz, kPhi_ProdVsPhi, kPhiOffsetVsPhi, 
+                   kPhi_ProdVsPhiGJ, kPhiOffsetVsPhiGJ, kNumHists};
 
   VecPsPlotGenerator( const FitResults& results, Option opt);
   VecPsPlotGenerator( const FitResults& results );
@@ -33,6 +34,8 @@ public:
       case VecPsPlotGenerator::kVecPsMass: return "MVecPs"; 
       case VecPsPlotGenerator::kCosTheta: return "CosTheta";
       case VecPsPlotGenerator::kPhi: return "Phi";
+      case VecPsPlotGenerator::kCosThetaGJ: return "CosThetaGJ";
+      case VecPsPlotGenerator::kPhiGJ: return "PhiGJ";
       case VecPsPlotGenerator::kCosThetaH: return "CosTheta_H";
       case VecPsPlotGenerator::kPhiH: return "Phi_H";
       case VecPsPlotGenerator::kProd_Ang: return "Prod_Ang";
@@ -45,6 +48,8 @@ public:
       case VecPsPlotGenerator::kDalitz: return "Dalitz";
       case VecPsPlotGenerator::kPhi_ProdVsPhi: return "Phi_ProdVsPhi";
       case VecPsPlotGenerator::kPhiOffsetVsPhi: return "PhiOffsetVsPhi";
+      case VecPsPlotGenerator::kPhi_ProdVsPhiGJ: return "Phi_ProdVsPhiGJ";
+      case VecPsPlotGenerator::kPhiOffsetVsPhiGJ: return "PhiOffsetVsPhiGJ";
       // Add more variables here if needed
             default: return "Unknown";
     }
