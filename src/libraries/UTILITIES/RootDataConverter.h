@@ -314,6 +314,12 @@ public:
     ~RootDataConverter() = default;
 
 private:
+    enum class TreeLayout
+    {
+        FSRoot,
+        FinalState
+    };
+
     const std::string m_fit_file;            ///< Path to the .fit file
     const FitResults m_fit_results;          ///< AmpTools FitResults object
     const ConfigurationInfo *m_cfg_info;     ///< ConfigurationInfo from the fit
@@ -333,6 +339,9 @@ private:
     const std::string m_background_tree_name;
     const std::string m_genMC_tree_name;
     const std::string m_accMC_tree_name;
+
+    const TreeLayout m_data_layout;
+    const TreeLayout m_background_layout;
 
     std::map<std::string, double> m_values; //< Map of headers to their values for the CSV output (except for the "file" header)
 
@@ -381,6 +390,37 @@ private:
     std::vector<std::string> treesInFile(const std::string &filename) const;
 
     /**
+     * @brief Detect the branch layout used by a ROOT tree
+     *
+     * This distinguishes between the FSRoot-style layout with branches like EnPB and
+     * PxP1, and the standard NumFinalState layout with E_Beam and E_FinalState.
+     */
+    TreeLayout detectTreeLayout(const std::string &file_type,
+                                const std::string &file_path,
+                                const std::string &tree_name) const;
+
+    /**
+     * @brief Return the beam energy branch name dependent on the TreeLayout
+     *
+     * @param layout
+     * @return std::string "EnPb" or "E_Beam" for FSRoot and FinalState layouts, respectively
+     */
+    std::string beamEnergyBranch(TreeLayout layout) const;
+
+    /**
+     * @brief Given a tree layout, 4-momenta component, and particle index, get the branch name
+     *
+     * @param layout which tree layout is being used
+     * @param component The four momentum component. These are "E", "Px", "Py", or "Pz"
+     * @param particle_index The index of the particle in the tree
+     *
+     * @return std::string The branch name for the given component and particle index, e.g. "PxP1", "E_FinalState"
+     */
+    std::string componentBranch(TreeLayout layout,
+                                const std::string &component,
+                                int particle_index) const;
+
+    /**
      * @brief Get the histogram of the beam energy distribution
      *
      * @param[in] weight_branch_name Name of the weight branch (if empty, weights assumed to be 1.0)
@@ -388,6 +428,16 @@ private:
      * @return TH1D* pointer to the beam energy histogram (background subtracted if background files exist)
      */
     TH1D *beamEnergyHist(const std::string &weight_branch_name);
+
+    /**
+     * @brief Build math expressions for adding 4-momenta components across particles
+     *
+     * @param layout which tree layout is being used
+     * @param indices indices for particles that will be summed together
+     * @return std::tuple<std::string, std::string, std::string, std::string> px, py, pz, E expressions
+     */
+    std::tuple<std::string, std::string, std::string, std::string>
+    buildExpressions(TreeLayout layout, const std::vector<int> &indices) const;
 
     /**
      * @brief Get the -t 4-momentum transfer histogram

@@ -268,32 +268,32 @@ std::string FitConverter::getCSVRow() const
     // standard results
     for (const auto &pair : m_standard_results)
     {
-        row += std::to_string(pair.second) + ",";
+        row += preciseDoubleToString(pair.second) + ",";        
     }
     // parameters
     for (const auto &pair : m_parameters)
     {
-        row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
+        row += preciseDoubleToString(pair.second.first) + "," + preciseDoubleToString(pair.second.second) + ",";
     }
     // production coefficients
     for (const auto &pair : m_production_coefficients)
     {
-        row += std::to_string(pair.second.real()) + "," + std::to_string(pair.second.imag()) + ",";
+        row += preciseDoubleToString(pair.second.real()) + "," + preciseDoubleToString(pair.second.imag()) + ",";
     }
     // unique amplitude intensities
     for (const auto &pair : m_unique_amp_intensities)
     {
-        row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
+        row += preciseDoubleToString(pair.second.first) + "," + preciseDoubleToString(pair.second.second) + ",";
     }
     // coherent sum intensities
     for (const auto &pair : m_coherent_sum_intensities)
     {
-        row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
+        row += preciseDoubleToString(pair.second.first) + "," + preciseDoubleToString(pair.second.second) + ",";
     }
     // phase differences
     for (const auto &pair : m_phase_differences)
     {
-        row += std::to_string(pair.second.first) + "," + std::to_string(pair.second.second) + ",";
+        row += preciseDoubleToString(pair.second.first) + "," + preciseDoubleToString(pair.second.second) + ",";
     }
     // remove trailing comma
     if (!row.empty() && row.back() == ',')
@@ -338,7 +338,7 @@ std::string FitConverter::getCSVCovarianceMatrix() const
                 assert(false);
             }
 
-            csv += "," + std::to_string(m_error_matrix[row][col]);
+            csv += "," + preciseDoubleToString(m_error_matrix[row][col]);
         }
 
         // don't add newline to last row, to avoid extra blank line at end of file
@@ -379,7 +379,7 @@ std::string FitConverter::getCSVCorrelationMatrix() const
             }
 
             double correlation = m_error_matrix[row][col] / (row_par_error * col_par_error);
-            csv += "," + std::to_string(correlation);
+            csv += "," + preciseDoubleToString(correlation);
         }
 
         // don't add newline to last row, to avoid extra blank line at end of file
@@ -596,4 +596,12 @@ std::string FitConverter::getReactionString(const std::string &full_amplitude)
     }
     std::string reaction = full_amplitude.substr(0, first_colon);
     return reaction;
+}
+
+std::string FitConverter::preciseDoubleToString(double value) const
+{
+    std::stringstream oss;
+    oss.precision(std::numeric_limits<double>::max_digits10);
+    oss << value;
+    return oss.str();
 }

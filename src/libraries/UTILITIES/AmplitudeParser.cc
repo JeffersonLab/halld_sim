@@ -121,7 +121,7 @@ AmplitudeParser::sumsForScheme(NamingScheme scheme) const
         return {
             {{'e'}},
             {{'L'}},
-            {{'e', 'L'}},
+            {{'L', 'e'}},
             {{'L', 'm'}},
         };
     }
@@ -232,7 +232,7 @@ AmplitudeParser::buildSumGroups(const std::vector<std::string> &full_amplitudes)
 
     // loop over all amplitudes across all reactions and sums, parse the amplitude name,
     // and group according to the requested scheme
-    for (const auto &full_amp : full_amplitudes)
+    for (const auto &full_amp : amplitudes_in_scheme)
     {
         const ParsedAmplitude parsed = parseAmplitudeName(ampName(full_amp), effective_scheme);
 

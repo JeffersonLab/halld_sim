@@ -15,20 +15,20 @@ class HDDMDataWriter
 {
 
 public:
-	
-  HDDMDataWriter( const string& outFile, int runNumber=9000, int seed=0);
+
+  HDDMDataWriter( const string& outFile, int runNumber=9000, int seed=0, int firstEventNumber=1);
   ~HDDMDataWriter();
-  
+
   void writeEvent( const Kinematics& kin, const vector<int>& ptype,
 		   bool centeredVertex=false);
   void writeEvent( const Kinematics& kin, const vector<int>& ptype,
 		   float vx, float vy, float vz_min, float vz_max);
   void writeEvent( const Kinematics& kin, const vector<int>& ptype,
 		   float vx, float vy, float vz);
-    
+
   int eventCounter() const { return m_eventCounter; }
   bool FileOpen() { return m_OutputStream; }
-  
+
 private:
 
   std::ofstream *m_OutputFile;        // output hddm file ofstream

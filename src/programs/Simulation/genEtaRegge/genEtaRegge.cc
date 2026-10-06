@@ -93,6 +93,9 @@ double g_rho_eta_gamma=0.81;
 double g_omega_eta_gamma=0.29;
 double g_eta_gamma_gamma=0.0429;
 double g_phi_eta_gamma=0.38;
+double G=0.; // CP-violation parameter for eta->e+e-pi+pi-
+
+//double max_asq=0.;
 
 int Nevents=10000;
 int runNo=10000;
@@ -108,6 +111,7 @@ TH2D *thrown_theta_vs_p_eta;
 TH1D *cobrems_vs_E;
 TH1D *thrown_FermiP;
 TH1D *thrown_f;
+TH1D *thrown_qsq;
 
 char input_file_name[250]="eta548.in";
 char output_file_name[250]="eta_gen.hddm";
@@ -124,10 +128,12 @@ void Usage(void){
   printf("   Options:  -N<number of events> (number of events to generate)\n");
   printf("             -O<output.hddm>   (default: eta_gen.hddm)\n");
   printf("             -I<input.in>      (default: eta548.in)\n");
+  printf("             -G<value>         (default: 0)\n");
   printf("             -R<run number>    (default: 10000)\n");
   printf("             -h                (Print this message and exit.)\n");
   printf("Coupling constants, photon beam energy range, and eta decay products are\n");
-  printf("specified in the <input.in> file.\n");
+  printf("specified in the <input.in> file.  The G parameter scales the contribution\n");
+  printf("of the parity-violating ampitudes to the eta->e+e-pi+pi- decay.\n");
 
   exit(0);
 }
@@ -147,6 +153,10 @@ void ParseCommandLineArguments(int narg, char* argv[])
     if(ptr[0] == '-'){
       switch(ptr[1]){
       case 'h': Usage(); break;
+      case 'G':
+	sscanf(&ptr[2],"%lf",&G);
+	cout << "G=" << G << endl;
+	break;
       case 'I':
 	sscanf(&ptr[2],"%s",input_file_name);
 	break;
@@ -445,6 +455,9 @@ void CreateHistograms(string beamConfigFile,int num_decay_particles){
       thrown_dalitzZ=new TH1D("thrown_dalitzZ","thrown dalitz Z",110,-0.05,1.05);
       thrown_dalitzXY=new TH2D("thrown_dalitzXY","Dalitz distribution Y vs X",100,-1.,1.,100,-1.,1);
   }
+  if (num_decay_particles==4){
+    thrown_qsq=new TH1D("thrown_qsq",";q^{2} [Gev^{2}]",800,0,0.08);
+  }
   
   BeamProperties beamProp(beamConfigFile);
   cobrems_vs_E = (TH1D*)beamProp.GetFlux();
@@ -496,7 +509,84 @@ void GraphCrossSection(double &xsec_max){
        << " micro-barns"<<endl;
 }
 
+// Generates squared amplitude for eta->e+e-pi+pi- decay using the model
+// described in Gao hep-ph/0202002
+void GenerateEpEmPipPim(TRandom3 *myrand,TGenPhaseSpace &phase_space){
+  double amp_sq=0., rand_amp_sq=0.;
+  double q_sq=0.;
+  double pion_mass_sq=0.13957*0.13957;
+  double mV2=0.77*0.77; // rho mass in GeV
+  double fpi=0.093; // GeV
+  double f8=1.3*fpi;
+  double f0=1.1*fpi;
+  double efac=sqrt(4.*M_PI/137.);
+  double theta_mix=-20.*M_PI/180.; // eta-eta' mixing angle
+  // Scale factor for electromagnetic transition. Form is taken from eq. 16
+  // and eq. 17 in Gao
+  double Escale=efac*0.19*G/pow(m_eta,3);
+  do {
+    double weight=phase_space.Generate();
+    amp_sq=0.; // reinitialize
+    
+    TLorentzVector positron=*phase_space.GetDecay(0);  
+    TLorentzVector electron=*phase_space.GetDecay(1);
+    TLorentzVector piplus=*phase_space.GetDecay(2);
+    TLorentzVector piminus=*phase_space.GetDecay(3);
 
+    TLorentzVector q4=positron+electron;
+    TLorentzVector pippim=piplus+piminus;
+    double s=pippim.M2();
+    TLorentzVector k=positron-electron;
+    q_sq=q4.M2();
+
+    // Magnetic transition term
+    double M=efac/(8.*M_PI*M_PI*fpi*fpi)
+      *(cos(theta_mix)/(sqrt(3.)*f8)-sqrt(2.)*sin(theta_mix)/(sqrt(3.)*f0))
+      *(1.-3.*mV2/(mV2-s));
+    
+    TLorentzVector eta=q4+pippim;
+    TVector3 boost=-eta.BoostVector();
+    electron.Boost(boost);
+    positron.Boost(boost);
+    piplus.Boost(boost);
+    TVector3 kvec=(positron-electron).Vect();
+    TVector3 qvec=(electron+positron).Vect();
+    if (qvec.Mag()>1e-16){
+      TVector3 qdir=qvec.Unit();
+      TVector3 pipvec=piplus.Vect();
+      kvec.RotateUz(qdir);
+      pipvec.RotateUz(qdir);
+      
+      double k_dot_pm=k.Dot(piminus);
+      double k_dot_pp=k.Dot(piplus);
+      double q_dot_pm=q4.Dot(piminus);
+      double q_dot_pp=q4.Dot(piplus);
+      double kx_py_minus_ky_px=kvec.x()*pipvec.y()-kvec.y()*pipvec.x();
+      
+      amp_sq=2*efac*efac/(q_sq*q_sq)*weight
+	*(M*M*m_eta_sq*qvec.Mag2()
+	  *(q_sq*pipvec.Perp2()-pow(kx_py_minus_ky_px,2))
+	  +pow(Escale*(q_sq+2*q_dot_pp),2)
+	  *(q_dot_pm*q_dot_pm-k_dot_pm*k_dot_pm-q_sq*pion_mass_sq)
+	  +pow(Escale*(q_sq+2*q_dot_pm),2)
+	  *(q_dot_pp*q_dot_pp-k_dot_pp*k_dot_pp-q_sq*pion_mass_sq)
+	  -2.*Escale*Escale*(q_sq+2*q_dot_pm)*(q_sq+2*q_dot_pp)
+	  *(q_dot_pp*q_dot_pm-q_sq*piplus.Dot(piminus)-k_dot_pp*k_dot_pm)
+	  -2.*M*Escale*((q_sq+2*q_dot_pm)*k_dot_pp-(q_sq+2*q_dot_pp)*k_dot_pm)
+	  *m_eta*qvec.Mag()*kx_py_minus_ky_px
+	  );
+      //if (amp_sq>0.){
+      //thrown_qsq->Fill(q_sq,amp_sq*weight);
+      //if (amp_sq>max_asq) max_asq=amp_sq;
+      //}
+    }
+    rand_amp_sq=myrand->Uniform(15.0);
+  } while (rand_amp_sq>amp_sq);
+  if (q_sq>0.){
+    thrown_qsq->Fill(q_sq);
+  }
+}
+  
 //-----------
 // main
 //-----------
@@ -739,6 +829,14 @@ int main(int narg, char *argv[])
 	  } 
 	  cout << endl;
   }
+  
+  // Set specific particle order for eta->e+e-pi+pi-
+  if (num_decay_particles==4){
+    // Order according to particle type and mass
+    sort(particle_types.begin(),particle_types.end());
+    sort(decay_masses.begin(),decay_masses.end(),[&](double a,double b){return a<b;});
+  }
+  
   unsigned int num_res_decay_particles=0; 
   double reson_mass=0.,reson_width=0.;
   int reson_L=0;
@@ -1058,7 +1156,7 @@ int main(int narg, char *argv[])
     double pt=p_eta*sin(theta_cm);
     TLorentzVector eta4(pt*cos(phi_cm),pt*sin(phi_cm),p_eta*cos(theta_cm),
 			sqrt(p_eta*p_eta+m_eta_sq));
-
+    
     //Boost the eta 4-momentum into the lab
     //eta4.Boost(v_cm);
     // IA modified boost
@@ -1148,16 +1246,21 @@ int main(int narg, char *argv[])
         }
     } else {   // no evtgen
 #endif //HAVE_EVTGEN
-		// Generate 3-body decay of eta according to phase space
+		// Generate n-body decay of eta according to phase space
 		TGenPhaseSpace phase_space;
 		phase_space.SetDecay(eta4,num_decay_particles,decay_masses.data());
 		double weight=0.,rand_weight=1.;
-		do{
-		  weight=phase_space.Generate();
-		  rand_weight=myrand->Uniform(1.);
+		if (num_decay_particles<4){		
+		  do{
+		    weight=phase_space.Generate();
+		    rand_weight=myrand->Uniform(1.);
+		  }
+		  while (rand_weight>weight);
 		}
-		while (rand_weight>weight);
-
+		else {
+		  GenerateEpEmPipPim(myrand,phase_space);
+		}
+		  
 		// Histograms of Dalitz distribution
 		if (num_decay_particles==3){
 		  TLorentzVector one=*phase_space.GetDecay(0);  
@@ -1222,6 +1325,7 @@ int main(int narg, char *argv[])
     if (((10*i)%Nevents)==0) cout << 100.*double(i)/double(Nevents) << "\% done" << endl;
   }
 
+  // cout << "max " << max_asq << endl;
 
   // Write histograms and close root file
   rootfile->Write();
