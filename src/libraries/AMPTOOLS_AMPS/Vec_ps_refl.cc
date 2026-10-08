@@ -481,9 +481,9 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     cout << "cosTheta = " << cosTheta << endl;
     cout << "cosThetaH = " << cosThetaH << endl;
     cout << "phi = " << phi << endl;
-    cout << "phiH = " << phiH << endl;
+    cout << "phiH = " << phiH << endl;*/
     cout << "prodAngle = " << prodAngle << endl;
-*/
+
   complex <GDouble> amplitude(0,0);
   static const complex <GDouble> i(0,1);
 
@@ -518,7 +518,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   complex <GDouble> zjm = 0;
   // A - sign translates to + in the prod_angle
   // This is because reflectivity conventions introduce exp(-iPhi)
-  complex <GDouble> rotateY = polar((GDouble)1., (GDouble)(-1. * prodAngle ));  
+  complex <GDouble> rotateY = polar((GDouble)1., (GDouble)(-1. * ( prodAngle + m_polAngle*TMath::DegToRad() )));  
 
   if (m_r == 1)
 	  zjm = real(amplitude * rotateY);
