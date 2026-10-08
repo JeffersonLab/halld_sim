@@ -68,7 +68,7 @@ DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
     GDouble cos2Phi     = userVars[kCos2Phi];
     GDouble sinPhi      = userVars[kSinPhi];
     GDouble sin2Phi     = userVars[kSin2Phi];
-    GDouble phiProd     = userVars[kPhiProd]; // - polAngle*TMath::DegToRad();
+    GDouble phiProd     = userVars[kPhiProd] - polAngle*TMath::DegToRad();
 
     GDouble sin2BigPhi	= sin( 2*phiProd );
     GDouble cos2BigPhi  = cos( 2*phiProd );;
