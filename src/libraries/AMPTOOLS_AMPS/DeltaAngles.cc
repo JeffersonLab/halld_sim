@@ -68,7 +68,7 @@ DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
     GDouble cos2Phi     = userVars[kCos2Phi];
     GDouble sinPhi      = userVars[kSinPhi];
     GDouble sin2Phi     = userVars[kSin2Phi];
-    GDouble phiProd     = userVars[kPhiProd] - polAngle*TMath::DegToRad();
+    GDouble phiProd     = userVars[kPhiProd]; // - polAngle*TMath::DegToRad();
 
     GDouble sin2BigPhi	= sin( 2*phiProd );
     GDouble cos2BigPhi  = cos( 2*phiProd );;
@@ -79,9 +79,9 @@ DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
     GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosSqTheta) - 2.*sqrt3*rho031*cosPhi*sin2Theta - 2.*sqrt3*rho03m1*cos2Phi*sinSqTheta;
 
 // comment out polarized SDMEs - not used for factorized fits	
-//    W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosSqTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
+    W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosSqTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
 	
-//    W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
+    W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
 	
     W *= 1./(4.*PI);
 	

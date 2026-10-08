@@ -45,6 +45,7 @@ public:
 	void calcUserVars( GDouble** pKin, GDouble* userVars ) const;
 
 	bool needsUserVarsOnly() const { return true; }
+	bool areUserVarsStatic() const { return true; }
 
 #ifdef GPU_ACCELERATION
 
