@@ -6,6 +6,8 @@
 
 #include "AMPTOOLS_AMPS/BreitWigner.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
+#include "AMPTOOLS_AMPS/DeltaAngles.h"
+#include "AMPTOOLS_AMPS/Linear.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
 #include "AMPTOOLS_AMPS/PhaseOffset.h"
 #include "AMPTOOLS_AMPS/Piecewise.h"
@@ -16,6 +18,7 @@
 #include "AMPTOOLS_DATAIO/ROOTDataReader.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderBootstrap.h"
 #include "AMPTOOLS_DATAIO/ROOTDataReaderTEM.h"
+#include "AMPTOOLS_DATAIO/VecPsDeltaPlotGenerator.h"
 #include "AMPTOOLS_DATAIO/VecPsPlotGenerator.h"
 #include "AmpPlotter/PlotFactory.h"
 #include "AmpPlotter/PlotterMainWindow.h"
@@ -34,16 +37,19 @@
 #include "TROOT.h"
 #include "TStyle.h"
 
-typedef VecPsPlotGenerator vecps_PlotGen;
+//typedef VecPsPlotGenerator vecps_PlotGen;
+typedef VecPsDeltaPlotGenerator vecps_PlotGen;
 
 void atiSetup() {
     AmpToolsInterface::registerAmplitude(BreitWigner());
+    AmpToolsInterface::registerAmplitude(ComplexCoeff());
+    AmpToolsInterface::registerAmplitude(DeltaAngles());
+    AmpToolsInterface::registerAmplitude(Linear());
+    AmpToolsInterface::registerAmplitude(OmegaDalitz());
+    AmpToolsInterface::registerAmplitude(PhaseOffset());
+    AmpToolsInterface::registerAmplitude(Piecewise());
     AmpToolsInterface::registerAmplitude(Uniform());
     AmpToolsInterface::registerAmplitude(Vec_ps_refl());
-    AmpToolsInterface::registerAmplitude(PhaseOffset());
-    AmpToolsInterface::registerAmplitude(ComplexCoeff());
-    AmpToolsInterface::registerAmplitude(Piecewise());
-    AmpToolsInterface::registerAmplitude(OmegaDalitz());
     AmpToolsInterface::registerAmplitude(Vec_ps_moment());
 
     AmpToolsInterface::registerDataReader(ROOTDataReader());
@@ -650,16 +656,16 @@ void generatePlots(ProgramOptions& options, std::unique_ptr<vecps_PlotGen>& plot
         // The loop variable should be defined using the first entry in the 
         // enum, in this case kVecPsMass (change if needed). The last one is 
         // kNumHists and this one should not change
-        for (VecPsPlotGenerator::Hist_index ivar = VecPsPlotGenerator::kVecPsMass; 
-            ivar < VecPsPlotGenerator::kNumHists; 
-            ivar = static_cast<VecPsPlotGenerator::Hist_index>(ivar + 1)){
+        for (vecps_PlotGen::Hist_index ivar = vecps_PlotGen::kVecPsMass; 
+            ivar < vecps_PlotGen::kNumHists; 
+            ivar = static_cast<vecps_PlotGen::Hist_index>(ivar + 1)){
             Histogram* hist = plotResults->projection(ivar, reactionName, iType);
             if (!hist) continue; // safety skip
             TH1* histRoot = hist->toRoot();
 
             // Assign proper names to each histogram. Note that the names 
             // and the translation table are defined in VecPsPlotGenerator 
-            std::string histName = VecPsPlotGenerator::numToString(ivar);
+            std::string histName = vecps_PlotGen::numToString(ivar);
 
             if(!(iType==PlotGenerator::kData))
                 histName += "_" + dataType + cfgLabel.histName;
