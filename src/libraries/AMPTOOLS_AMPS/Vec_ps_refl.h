@@ -60,7 +60,7 @@ public:
 	// grows dramatically as UserVars values are stored for each instance
 	// of the amplitude.  NOTE: To use this make sure that UserVars only 
 	// depend on kinematics and no arguments provided to the amplitude!
-	bool areUserVarsStatic() const { return false; }
+	bool areUserVarsStatic() const { return true; }
 
 	void updatePar( const AmpParameter& par );
 

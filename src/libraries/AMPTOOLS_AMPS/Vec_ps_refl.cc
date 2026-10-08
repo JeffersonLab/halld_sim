@@ -406,7 +406,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   TLorentzVector target(0,0,0,0.938); // proton at rest
   TLorentzVector beamTarget = beam + target;
   TLorentzVector recoil = beamTarget - xMeson;
-
+/*
   // Calculate decay angles for X in helicity frame (same for all vectors)
   // Change getXDecayAngles to get Gottfried-Jackson angles if needed
   // Note: it also calculates the production angle
@@ -422,9 +422,9 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     vectorDecayAngles = getVectorDecayAngles( beamTarget, xMeson, vec,
                                         vecDaught1, TLorentzVector(0,0,0,0));
   }
-
+*/
   VecPSAngles angles = getVecPSAnglesGJ( beam, xMeson, vec, vecDaught1, vecDaught2 );
-
+/*
   GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
   GDouble phi = xDecayAngles[1];
   GDouble prodAngle = xDecayAngles[2]; // bigPhi
@@ -433,7 +433,7 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   GDouble xMesonMass = xMeson.M();
   GDouble vecMass = vec.M();
   GDouble psMass = ps.M();
-/*
+
   cout << "Upper Vertex Angles:" << endl;
   cout << "cos(thetaX) (old): " << cosTheta << endl;
   cout << "cos(thetaX) (new): " << angles.cosThetaX << endl;
@@ -451,9 +451,9 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   userVars[kCosThetaH]  = angles.cosThetaH;
   userVars[kPhiH]       = angles.phiH;
   userVars[kBigPhiLab]  = angles.bigPhiX;
-  userVars[kXMesonMass] = xMesonMass;
-  userVars[kVecMass]    = vecMass;
-  userVars[kPSMass]     = psMass;
+  userVars[kXMesonMass] = xMeson.M();
+  userVars[kVecMass]    = vec.M();
+  userVars[kPSMass]     = ps.M();
 /*
   complex <GDouble> amplitude(0,0);
   static const complex <GDouble> i(0,1);
