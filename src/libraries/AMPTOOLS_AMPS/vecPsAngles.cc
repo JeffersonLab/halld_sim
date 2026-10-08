@@ -186,7 +186,8 @@ vector<double> getXDecayAngles( double polAngle,
     }
 */
     polAngle = DEG_TO_RAD * polAngle;
-    TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // polarization vector
+//    TVector3 eps(cos(polAngle), sin(polAngle), 0.0); // polarization vector
+    TVector3 eps(1, 0, 0.0); // polarization vector
     double bigPhi = atan2(y.Dot(eps), beamLab.Vect().Unit().Dot(eps.Cross(y)));    
 
     TVector3 altEps( 1.0, 0.0, 0.0 );
