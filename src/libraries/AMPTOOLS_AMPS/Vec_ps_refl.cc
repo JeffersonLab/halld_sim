@@ -451,11 +451,14 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
                                         vecDaught1, TLorentzVector(0,0,0,0));
   }
 
+  vector< double > justPhiH = getTwoStepAngles( xMeson, vec, vecDaught1, vecDaught2, beam, target, 2, true );
+
   GDouble cosTheta = TMath::Cos(xDecayAngles[0]);
   GDouble phi = xDecayAngles[1];
   GDouble prodAngle = xDecayAngles[2]; // bigPhi
   GDouble cosThetaH = TMath::Cos(vectorDecayAngles[0]);
-  GDouble phiH = vectorDecayAngles[1];
+//  GDouble phiH = vectorDecayAngles[1];
+  GDouble phiH = justPhiH[3];
   GDouble xMesonMass = xMeson.M();
   GDouble vecMass = vec.M();
   GDouble psMass = ps.M();
@@ -480,10 +483,10 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     cout << "prodAngle_old = " << prodAngle_old << endl;
     cout << "cosTheta = " << cosTheta << endl;
     cout << "cosThetaH = " << cosThetaH << endl;
-    cout << "phi = " << phi << endl;*/
+    cout << "phi = " << phi << endl;
     cout << "phiH = " << phiH << endl;
-    cout << "prodAngle = " << prodAngle << endl;
-
+    cout << "prodAngleUV = " << prodAngle << endl;
+*/
   complex <GDouble> amplitude(0,0);
   static const complex <GDouble> i(0,1);
 
