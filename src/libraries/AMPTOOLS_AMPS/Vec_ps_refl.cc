@@ -480,8 +480,8 @@ Vec_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
     cout << "prodAngle_old = " << prodAngle_old << endl;
     cout << "cosTheta = " << cosTheta << endl;
     cout << "cosThetaH = " << cosThetaH << endl;
-    cout << "phi = " << phi << endl;
-    cout << "phiH = " << phiH << endl;*/
+    cout << "phi = " << phi << endl;*/
+    cout << "phiH = " << phiH << endl;
     cout << "prodAngle = " << prodAngle << endl;
 
   complex <GDouble> amplitude(0,0);
