@@ -251,14 +251,16 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 		// Default parameters
 
 		int cdc_npeak     =  1;
-		double cdc_nw     =  179.;
+		double cdc_nw     =  200.;
 
-		int fdc_nhits     =  100;
+                // cathode strips fa125 readout
 		int fdc_npeak     =  1;
-		double fdc_width  =  80.;
-		double fdc_ie     =  16;
-		double fdc_pg     =  4;
+		double fdc_nw  =  80.;
 
+		// wires f1tdc readout
+		int fdc_nhits     =  100;
+		double fdc_width = 50;
+		
 		int stc_npeak     =  3;
 		int stc_nhits     =  8;
 		double stc_width  =  80;
@@ -307,28 +309,28 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 		  cdc_nw      =  config->readout["CDC"].at("NW");
 		}
 
-		double cdc_gate = (cdc_nw - 21) * fadc125_period_ns;   
+		// first 16 and last 20 samples are used for data processing
+		double cdc_gate = (cdc_nw - 36) * fadc125_period_ns;   
 
 		hddm_s_merger::set_cdc_max_hits(cdc_npeak);
-		hddm_s_merger::set_cdc_integration_window_ns(cdc_gate);
+		hddm_s_merger::set_cdc_readout_window_ns(cdc_gate);
 		
 
 
 		// hits merging / truncation parameters for the FDC
 		if(config->readout["FDC"].size() > 0){
 		  fdc_nhits  =  config->readout["FDC"].at("NHITS");
+		  fdc_width = config->readout["FDC"].at("WIDTH");
 		  fdc_npeak  =  config->readout["FDC"].at("NPEAK");
-		  fdc_width  =  config->readout["FDC"].at("WIDTH");
-		  fdc_ie     =  config->readout["FDC"].at("IE");
-		  fdc_pg     =  config->readout["FDC"].at("PG");
+		  fdc_nw  =  config->readout["FDC"].at("NW");
 		}
 
-		double fdc_gate = (fdc_ie + fdc_pg) * fadc125_period_ns;
+		double fdc_gate = (fdc_nw - 36) * fadc125_period_ns;
 
 		hddm_s_merger::set_fdc_wires_max_hits(fdc_nhits);
 		hddm_s_merger::set_fdc_wires_min_delta_t_ns(fdc_width + 5.);
 		hddm_s_merger::set_fdc_strips_max_hits(fdc_npeak);
-		hddm_s_merger::set_fdc_strips_integration_window_ns(fdc_gate);
+		hddm_s_merger::set_fdc_strips_readout_window_ns(fdc_gate);
 
 
 

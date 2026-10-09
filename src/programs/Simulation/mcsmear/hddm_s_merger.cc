@@ -35,13 +35,13 @@ static thread_local double t_shift_ns(0);
 
 static thread_local bool   enable_cdc_merging(true);
 static thread_local int    cdc_max_hits(1);
-static thread_local double cdc_integration_window_ns(1432.);
+static thread_local double cdc_readout_window_ns(1312.);
 
 static thread_local bool   enable_fdc_merging(true);
 static thread_local int    fdc_wires_max_hits(8);
 static thread_local double fdc_wires_min_delta_t_ns(35.);
 static thread_local int    fdc_strips_max_hits(1);
-static thread_local double fdc_strips_integration_window_ns(200.);
+static thread_local double fdc_strips_readout_window_ns(352.);
 
 static thread_local bool   enable_stc_merging(true);
 static thread_local int    stc_adc_max_hits(3);
@@ -144,12 +144,12 @@ namespace hddm_s_merger {
       cdc_max_hits = maxhits;
    }
 
-   double get_cdc_integration_window_ns() {
-      return cdc_integration_window_ns;
+   double get_cdc_readout_window_ns() {
+      return cdc_readout_window_ns;
    }
 
-   void set_cdc_integration_window_ns(double dt_ns) {
-      cdc_integration_window_ns = dt_ns;
+   void set_cdc_readout_window_ns(double dt_ns) {
+      cdc_readout_window_ns = dt_ns;
    }
 
    bool get_fdc_merging() {
@@ -184,12 +184,12 @@ namespace hddm_s_merger {
       fdc_strips_max_hits = maxhits;
    }
 
-   double get_fdc_strips_integration_window_ns() {
-      return fdc_strips_integration_window_ns;
+   double get_fdc_strips_readout_window_ns() {
+      return fdc_strips_readout_window_ns;
    }
 
-   void set_fdc_strips_integration_window_ns(double dt_ns) {
-      fdc_strips_integration_window_ns = dt_ns;
+   void set_fdc_strips_readout_window_ns(double dt_ns) {
+      fdc_strips_readout_window_ns = dt_ns;
    }
 
    bool get_stc_merging() {
@@ -742,7 +742,7 @@ hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
      
    double t = iter_firsthit->getT() + t_shift_ns;
 
-   if (t > cdc_integration_window_ns) return dst;       // new hit is too late, don't use it.
+   if (t > cdc_readout_window_ns) return dst;       // new hit is too late, don't use it.
 
    
    double newQ = iter_firsthit->getQ();    
@@ -987,7 +987,7 @@ hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
    }
 
    double t = iter_firsthit->getT() + t_shift_ns;   
-   if (t > fdc_strips_integration_window_ns) return dst; // random is too late
+   if (t > fdc_strips_readout_window_ns) return dst; // random is too late
    
    double newQ = iter_firsthit->getQ();
    
