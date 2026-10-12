@@ -37,6 +37,8 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/TwoPiAngles_Delta_DoubleSDMEs.h"
+#include "AMPTOOLS_AMPS/TwoPiAngles_Delta_factorized.h"
 
 #include "AMPTOOLS_MCGEN/FixedTargetGenerator.h"
 #include "AMPTOOLS_MCGEN/BreitWignerGenerator.h"
@@ -317,6 +319,8 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( ComplexCoeff() );
   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+  AmpToolsInterface::registerAmplitude( TwoPiAngles_Delta_DoubleSDMEs() );
+  AmpToolsInterface::registerAmplitude( TwoPiAngles_Delta_factorized() );
   AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
   if(beamConfigFile.Length() == 0) {
