@@ -128,8 +128,8 @@ int main( int argc, char* argv[] ){
 	atiSetup();
         cout << "Plotgen results"<< endl;
 
-	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // 2nd argument is optional 
-	//	IsoPsPlotGenerator plotGen( results ); 
+	//	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // 2nd argument is optional
+	IsoPsPlotGenerator plotGen( results );
 	cout << " Initialized ati and PlotGen" << endl;
 
  

@@ -106,16 +106,35 @@ Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) : UserAmplitude< Iso_ps
 void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const
 {  
 
-  GDouble beam_polFraction, beam_polAngle;
   TLorentzVector beam( 0.0, 0.0, pKin[0][3], pKin[0][0]);
+  TVector3 eps(pKin[0][1], pKin[0][2], 0.);   
 
   
+  // Fill in four-vectors for final state particles
+  TLorentzVector target(0,0,0,0.938272);   // Fixed target
+  TLorentzVector recoil( pKin[1][1]+pKin[5][1], pKin[1][2]+pKin[5][2], pKin[1][3]+pKin[5][3], pKin[1][0]+pKin[5][0] ); // Recoiling baryon
+  TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]);     // 1st after proton is always the pseudoscalar meson
+
+  
+  // Fill in four-vectors for the isobar meson (xi -> pipi, make sure the order of daughters is correct in the config file!)
+  TLorentzVector iso_daught1(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
+  TLorentzVector iso_daught2(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
+  TLorentzVector iso = iso_daught1 + iso_daught2;
+
+  // Final meson system P4
+  TLorentzVector X = iso + ps;
+
+
+  //Define Pgamma and calculate BigPhi angle in the Gottfried-Jackson frame
+  GDouble beam_polFraction, beam_polAngle, prod_angle;
+  
   if(m_polInTree){    
-    beam_polAngle = TMath::DegToRad()*pKin[0][1]; //Px
-    beam_polFraction = pKin[0][2];  //Py  
+    beam_polFraction = eps.Mag();
+    prod_angle = getPhiProd(eps, X, beam, target, 2, true);
   }
   else{
-    beam_polAngle = TMath::DegToRad()*polAngle;
+    beam_polAngle = TMath::DegToRad()*polAngle; //conversion factor, since angles in the config files are by default in degrees
+    prod_angle = getPhiProd(beam_polAngle, X, beam, target, 2, true);
     beam_polFraction = polFraction;     
 
     if(beam_polFraction == -1){ // extract the polarization fraction from its dependence on E_gamma 
@@ -126,29 +145,9 @@ void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const
   }
 
 
-  // Fill in four-vectors for final state particles
-  TLorentzVector target(0,0,0,0.938272);   // Fixed target
-  TLorentzVector recoil( pKin[1][1]+pKin[5][1], pKin[1][2]+pKin[5][2], pKin[1][3]+pKin[5][3], pKin[1][0]+pKin[5][0] ); // Recoiling baryon
-  TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]);     // 1st after proton is always the pseudoscalar meson
-
-  
-  // Compute isobar meson from its decay products (xi -> pipi)
-  // Make sure the order of daughters is correct in the config file!
-  TLorentzVector iso_daught1(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
-  TLorentzVector iso_daught2(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
-  TLorentzVector iso = iso_daught1 + iso_daught2;
-
-  // Final meson system P4
-  TLorentzVector X = iso + ps;
-
-
-  //Calculate production angle in the Gottfried-Jackson frame
-  GDouble prod_angle = getPhiProd(beam_polAngle, X, beam, target, 2, true);
-
-  // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
+  // Calculate two angles of X decay (we use the Gottfried-Jackson frame) and two angles of Isobar decay (we use the Helicity frame)
   vector <double> thetaPhiAnglesTwoStep;
   thetaPhiAnglesTwoStep = getTwoStepAngles(X, iso, iso_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
-
   
   
   GDouble cosTheta = TMath::Cos(thetaPhiAnglesTwoStep[0]);
@@ -159,6 +158,7 @@ void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const
   GDouble m_iso = iso.M();
   GDouble m_ps = ps.M();
 
+  // Calculate amplitude 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
 

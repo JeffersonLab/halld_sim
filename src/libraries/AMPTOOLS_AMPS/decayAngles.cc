@@ -44,6 +44,7 @@ vector< TVector3 > getGJAxes(TVector3 parentCM, TVector3 inverseCM, TVector3 inv
 	return xyz;
 }
 
+
 // Calculate production plane angle
 double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
 {
@@ -87,6 +88,50 @@ double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beam
 
 	return phiProd;	
 } 
+
+
+// Calculate production plane angle using eps-vector already defined in user's amplitude
+double getPhiProd(TVector3 eps, TLorentzVector parentLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
+{
+	// whichFrame = 1 for helicity, 2 for GJ
+	assert( whichFrame == 1 || whichFrame == 2 );
+
+	// Boost all P4 from lab to CM rest frame
+	TLorentzVector cmLab = beamLab + targetLab;
+	TVector3 boostCMToLab = cmLab.BoostVector();
+
+	TLorentzVector parentCM = parentLab;
+	TLorentzVector inverseLab;
+	if( upperVertex == false )
+		inverseLab = targetLab;
+	else
+		inverseLab = beamLab;
+	TLorentzVector inverseCM = inverseLab;			
+	parentCM.Boost( -1.0*boostCMToLab );
+	inverseCM.Boost( -1.0*boostCMToLab );
+
+	TVector3 boostParentToCM = parentCM.BoostVector();
+	TLorentzVector inverseParent = inverseCM;
+	inverseParent.Boost( -1.0*boostParentToCM );
+
+	// convert P4s to P3
+	TVector3 parentCM3 = parentCM.Vect();
+	TVector3 inverseCM3 = inverseCM.Vect();
+	TVector3 inverseParent3 = inverseParent.Vect();
+
+	vector< TVector3 > locxyz;
+	if( whichFrame == 1 )
+		locxyz = getHelicityAxes(parentCM3, inverseCM3);
+	else
+		locxyz = getGJAxes(parentCM3, inverseCM3, inverseParent3);
+
+	TVector3 y = locxyz[1];
+
+	double phiProd = atan2( y.Dot( eps ), inverseCM.Vect().Unit().Dot( eps.Cross( y ) ) );
+
+	return phiProd;	
+} 
+
 
 
 // Calculate angles for a one-step decay. If only one of the daughter particles has spin, that one should be used in this calculation 

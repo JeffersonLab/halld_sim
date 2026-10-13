@@ -16,6 +16,7 @@ vector< TVector3 > getHelicityAxes(TVector3 parentCM, TVector3 inverseCM);
 vector< TVector3 > getGJAxes(TVector3 parentCM, TVector3 inverseCM, TVector3 inverseParent);
 
 double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex);
+double getPhiProd(TVector3 eps, TLorentzVector parentLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex);
 
 vector< double > getOneStepAngles(TLorentzVector parentLab, TLorentzVector daughterLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex = true);
 
