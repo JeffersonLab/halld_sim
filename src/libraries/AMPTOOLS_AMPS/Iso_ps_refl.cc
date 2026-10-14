@@ -1,4 +1,3 @@
-
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -44,9 +43,8 @@ static double parseValidatedNumber(const string& label, const string& argInput){
 }
 
 
-Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) :
-UserAmplitude< Iso_ps_refl >( args ){
-
+Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) : UserAmplitude< Iso_ps_refl >( args )
+{
   // This function is only for the two-body Isobar decay: xi -> pipi
   
   // 6 possibilities to initialize this amplitude:
@@ -84,72 +82,41 @@ UserAmplitude< Iso_ps_refl >( args ){
   // Default polarization information stored in tree
   m_polInTree = true;
 
-  // Loop over any additional amplitude arguments to change defaults
-  for(uint ioption=6; ioption<args.size(); ioption++) {
-	  TString option = args[ioption].c_str();
-    // Polarization provided in configuration file
-    if(ioption==6){
-      m_polInTree = false;
+  // Polarization information passed with additional arguments
+  if (args.size() > 6){
 
-      polAngle = parseValidatedNumber("polarization angle", args[6]);    
+    m_polInTree = false;
+    polAngle = parseValidatedNumber("polarization angle", args[6]);    
+      std::string pol_option = args[7];      
 
-      TString polOption = args[7].c_str();
-      if(polOption.Contains(".root")){
-        polFraction = 0.0;
-        TFile* f = new TFile(polOption);
-        polFrac_vs_E = (TH1D*)f->Get(args[8].c_str());
-        if(polFrac_vs_E  != nullptr ){
-          throw std::runtime_error(
-            "Iso_ps_refl ERROR: Could not find histogram '" + args[8] +
-            "' in file " + std::string(polOption.Data()));
-        }
-      }
+      if (pol_option.find(".root") == std::string::npos)
+	polFraction = parseValidatedNumber("polarization fraction", args[7]);
       else{
-        polFraction = parseValidatedNumber("polarization fraction", args[7]);
-      }
-    }
+	polFraction = -1;
+        TFile* pol_file = new TFile(pol_option.c_str());
+        polFrac_vs_E = (TH1D*)pol_file->Get(args[8].c_str());
+        if(polFrac_vs_E  == nullptr )
+          throw std::runtime_error("Iso_ps_refl ERROR: Could not find histogram '" + args[8] + "' in file " + pol_option);
+      }	
   }  
+
 }
 
-void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
 
-  TLorentzVector beam;
-  TVector3 eps;
-  GDouble beam_polFraction;
-  GDouble beam_polAngle;
+void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const
+{  
 
-  if(m_polInTree){
-    beam.SetPxPyPzE( 0.0, 0.0, pKin[0][0], pKin[0][0]);
-    eps.SetXYZ(pKin[0][1], pKin[0][2], 0.0); // beam polarization vector;
+  TLorentzVector beam( 0.0, 0.0, pKin[0][3], pKin[0][0]);
+  TVector3 eps(pKin[0][1], pKin[0][2], 0.);   
 
-    beam_polFraction = eps.Mag();
-    beam_polAngle = eps.Phi();
-  }
-  else{
-    beam.SetPxPyPzE( pKin[0][1], pKin[0][2], pKin[0][3], pKin[0][0] );
-    beam_polAngle = polAngle;
-
-    if(polFraction > 0.0){ // for fitting with fixed polarization
-	    beam_polFraction = polFraction;
-    }
-    else{ // for fitting with polarization vs E_gamma from input histogram 
-	    int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
-	    if (bin == 0 || bin > polFrac_vs_E->GetXaxis()->GetNbins()){
-		    beam_polFraction = 0.0;
-	    } else
-		    beam_polFraction = polFrac_vs_E->GetBinContent(bin);
-    }
-  }
-
-
+  
   // Fill in four-vectors for final state particles
   TLorentzVector target(0,0,0,0.938272);   // Fixed target
   TLorentzVector recoil( pKin[1][1]+pKin[5][1], pKin[1][2]+pKin[5][2], pKin[1][3]+pKin[5][3], pKin[1][0]+pKin[5][0] ); // Recoiling baryon
   TLorentzVector ps(pKin[2][1], pKin[2][2], pKin[2][3], pKin[2][0]);     // 1st after proton is always the pseudoscalar meson
 
   
-  // Compute isobar meson from its decay products (xi -> pipi)
-  // Make sure the order of daughters is correct in the config file!
+  // Fill in four-vectors for the isobar meson (xi -> pipi, make sure the order of daughters is correct in the config file!)
   TLorentzVector iso_daught1(pKin[3][1], pKin[3][2], pKin[3][3], pKin[3][0]);
   TLorentzVector iso_daught2(pKin[4][1], pKin[4][2], pKin[4][3], pKin[4][0]);
   TLorentzVector iso = iso_daught1 + iso_daught2;
@@ -158,13 +125,29 @@ void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   TLorentzVector X = iso + ps;
 
 
-  //Calculate production angle in the Gottfried-Jackson frame
-  GDouble prod_angle = getPhiProd(beam_polAngle, X, beam, target, 2, true);
+  //Define Pgamma and calculate BigPhi angle in the Gottfried-Jackson frame
+  GDouble beam_polFraction, beam_polAngle, prod_angle;
+  
+  if(m_polInTree){    
+    beam_polFraction = eps.Mag();
+    prod_angle = getPhiProd(eps, X, beam, target, 2, true);
+  }
+  else{
+    beam_polAngle = TMath::DegToRad()*polAngle; //conversion factor, since angles in the config files are by default in degrees
+    prod_angle = getPhiProd(beam_polAngle, X, beam, target, 2, true);
+    beam_polFraction = polFraction;     
 
-  // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
+    if(beam_polFraction == -1){ // extract the polarization fraction from its dependence on E_gamma 
+      int bin = polFrac_vs_E->GetXaxis()->FindBin(pKin[0][0]);
+      if (bin > 0 && bin <= polFrac_vs_E->GetXaxis()->GetNbins())
+	beam_polFraction = polFrac_vs_E->GetBinContent(bin);
+    }
+  }
+
+
+  // Calculate two angles of X decay (we use the Gottfried-Jackson frame) and two angles of Isobar decay (we use the Helicity frame)
   vector <double> thetaPhiAnglesTwoStep;
   thetaPhiAnglesTwoStep = getTwoStepAngles(X, iso, iso_daught1, TLorentzVector(0,0,0,0), beam, target, 2, true);
-
   
   
   GDouble cosTheta = TMath::Cos(thetaPhiAnglesTwoStep[0]);
@@ -175,6 +158,7 @@ void Iso_ps_refl::calcUserVars( GDouble** pKin, GDouble* userVars ) const{
   GDouble m_iso = iso.M();
   GDouble m_ps = ps.M();
 
+  // Calculate amplitude 
   complex <GDouble> amplitude(0,0);
   complex <GDouble> i(0,1);
 
