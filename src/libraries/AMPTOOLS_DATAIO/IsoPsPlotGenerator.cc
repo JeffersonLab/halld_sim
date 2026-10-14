@@ -88,12 +88,12 @@ void IsoPsPlotGenerator::projectEvent( Kinematics* kin ){
 
 void IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionName ){
 
-   // We work only with a 2-body vector decay   
-
+   // PlotGenerator works only with a 2-body vector decay   
 
    // Fixed target
    TLorentzVector target(0,0,0,0.938272);
-
+   TVector3 eps;
+   
    
    //cout << "project event" << endl;
    TLorentzVector beam   = kin->particle( 0 );
@@ -103,7 +103,6 @@ void IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionNa
    TLorentzVector iso_daught2 = kin->particle( 4 );
    TLorentzVector piplusL = kin->particle( 5 );
   
-
    
    // Final state P4 momenta
    TLorentzVector X = iso_daught1 + iso_daught2 + bach;
@@ -119,28 +118,32 @@ void IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionNa
    TLorentzVector proton_ps_b = proton + iso_daught1;
    TLorentzVector recoil_ps_b = recoil + iso_daught1;
 
+   //Momentum transfer
+   double Mandt = fabs((target-recoil).M2());
+
    
   
-   // Read polarization angle either from config file (if provided), or from the X-component of p_beam
+   // Either read the diamond orientation angle directly from the config file (if provided), or read eps-vector from the (Beam_PX,Beam_PY)-components in the input tree   
+   // Then calculate polarization angle in the Gottfried-Jackson frame
    // We assume here that the first amplitude in the list is always the Iso_ps_refl amplitude
    const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
-   double beam_polAngle;
+   double beam_polAngle, prod_angle;
    
-   if (args.size() > 6)     
+   if (args.size() > 6) {    
      beam_polAngle = TMath::DegToRad()*parseValidatedNumber("polarization angle", args[6]);    
-   else 
-     beam_polAngle = TMath::DegToRad()*beam.X(); //Px should be the 0th position in TLorentzVector
+     prod_angle = TMath::RadToDeg()*getPhiProd(beam_polAngle, X, beam, target, 2, true);
+   }
+   else {
+     eps.SetXYZ(beam.X(),beam.Y(),0.);
+     prod_angle = TMath::RadToDeg()*getPhiProd(eps, X, beam, target, 2, true);
+   }
    
    //forcibly put xy-components of the beam vector to zero     
    beam.SetX(0.);
    beam.SetY(0.);
    
-
-   //Momentum transfer
-   double Mandt = fabs((target-recoil).M2());
    
-   //Calculate production angle in the Gottfried-Jackson frame
-   double prod_angle = TMath::RadToDeg()*getPhiProd(beam_polAngle, X, beam, target, 2, true);
+  
    
    
    // Calculate decay angles for X in the Gottfried-Jackson frame and for Isobar in the Helicity frame  
