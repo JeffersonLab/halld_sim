@@ -83,7 +83,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
    double lh = 1e7;
 
    if(rank_mpi==0) {
-      cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+      cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << std::setprecision(12) << ati.likelihood() << endl;
 
       MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
       fitManager->setMaxIterations(maxIter);
@@ -105,7 +105,7 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
       else 
          lh = ati.likelihood();
 
-      cout << "LIKELIHOOD AFTER MINIMIZATION:  " << lh << endl;
+      cout << "LIKELIHOOD AFTER MINIMIZATION:  " << std::setprecision(12) << lh << endl;
       ati.finalizeFit();
    }
 
@@ -131,7 +131,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
    if(rank_mpi==0) {
       fitName = cfgInfo->fitName();
 
-      cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+      cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << std::setprecision(12) << ati.likelihood() << endl;
 
       fitManager = ati.minuitMinimizationManager();
       fitManager->setMaxIterations(maxIter);
@@ -177,7 +177,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
          }
 
          curLH = ati.likelihood();
-         cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
+         cout << "LIKELIHOOD AFTER MINIMIZATION:  " << std::setprecision(12) << curLH << endl;
 
 	 ati.finalizeFit(to_string(i));
 
@@ -202,7 +202,7 @@ void runRndFits(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
    if(rank_mpi==0) {
       if(minFitTag < 0) cout << "ALL FITS FAILED!" << endl;
       else {
-         cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRnd << " RANDOM PRODUCTION PARS = " << minLH << endl;
+         cout << "MINIMUM LIKELIHOOD FROM " << minFitTag << " of " << numRnd << " RANDOM PRODUCTION PARS = " << std::setprecision(12) << minLH << endl;
          gSystem->Exec(Form("cp %s_%d.fit %s.fit", fitName.data(), minFitTag, fitName.data()));
          if( seedfile.size() != 0 ) {
             string seedfileBaseName = seedfile.substr(0, seedfile.find_last_of("."));
@@ -246,7 +246,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 
    if(rank_mpi==0) {
       fitName = cfgInfo->fitName();
-      cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+      cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << std::setprecision(12) << ati.likelihood() << endl;
 
       parMgr = ati.parameterManager();
       fitManager = ati.minuitMinimizationManager();
@@ -299,7 +299,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
             cout << "Fit status = " << fitManager->status() << ", eMatrix status = " << fitManager->eMatrixStatus() << endl;
          }
 
-         cout << "LIKELIHOOD AFTER MINIMIZATION:  " << curLH << endl;
+         cout << "LIKELIHOOD AFTER MINIMIZATION:  " << std::setprecision(12) << curLH << endl;
 
          ati.finalizeFit(to_string(i));
          if( seedfile.size() != 0 && !fitFailed ){
@@ -318,7 +318,7 @@ void runParScan(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIt
 void getLikelihood( ConfigurationInfo* cfgInfo ){
     AmpToolsInterfaceMPI ati( cfgInfo );
     if( rank_mpi == 0 )
-        cout << "LIKELIHOOD WITHOUT MINIMIZATION:  " << ati.likelihood() << endl;
+        cout << "LIKELIHOOD WITHOUT MINIMIZATION:  " << std::setprecision(12) << ati.likelihood() << endl;
     ati.exitMPI();
     MPI_Finalize();
 }
