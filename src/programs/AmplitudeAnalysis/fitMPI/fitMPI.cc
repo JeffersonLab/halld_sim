@@ -71,6 +71,8 @@
 #include "IUAmpTools/ConfigFileParser.h"
 #include "IUAmpTools/ConfigurationInfo.h"
 
+#include <sys/time.h>
+
 using std::complex;
 using namespace std;
 
@@ -83,7 +85,14 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
    double lh = 1e7;
 
    if(rank_mpi==0) {
+
+    // setup timer
+    timeval tStart,tFirst,tSpan1,tEnd,tFinal,tSpan2;
+    double dTime1,dTime2;
+
+    gettimeofday( &(tStart), NULL );
       cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << std::setprecision(12) << ati.likelihood() << endl;
+    gettimeofday( &(tFirst), NULL );
 
       MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
       fitManager->setMaxIterations(maxIter);
@@ -106,7 +115,15 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
          lh = ati.likelihood();
 
       cout << "LIKELIHOOD AFTER MINIMIZATION:  " << std::setprecision(12) << lh << endl;
+    gettimeofday( &(tEnd), NULL );
       ati.finalizeFit();
+    gettimeofday( &(tFinal), NULL );
+    timersub( &(tFirst), &(tStart), &tSpan1 );
+    timersub( &(tFinal), &(tEnd), &tSpan2 );
+    dTime1 = tSpan1.tv_sec + tSpan1.tv_usec/1000000.0; // 10^6 uSec per second
+    dTime2 = tSpan2.tv_sec + tSpan2.tv_usec/1000000.0; // 10^6 uSec per second
+    cout << "Time to first function call:  " << dTime1 << " s." << endl;
+    cout << "       Time to finalize fit:  " << dTime2 << " s." << endl;
    }
 
 
