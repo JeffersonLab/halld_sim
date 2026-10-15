@@ -18,43 +18,50 @@
 DeltaAngles::DeltaAngles( const vector< string >& args ) :
 UserAmplitude< DeltaAngles >( args )
 {
-	assert( args.size() == 13 || args.size() == 11 );
+	assert( args.size() == 13 || args.size() == 7 );
+        if( args.size() == 7 )
+            factorized = true;
 	
 	rho011  = AmpParameter( args[0] );
 	rho031  = AmpParameter( args[1] );
 	rho03m1 = AmpParameter( args[2] );
 	
-	rho111  = AmpParameter( args[3] );
-	rho133  = AmpParameter( args[4] );
-	rho131  = AmpParameter( args[5] );
-	rho13m1 = AmpParameter( args[6] );
+        if( args.size() == 13 ){
+	    rho111  = AmpParameter( args[3] );
+	    rho133  = AmpParameter( args[4] );
+	    rho131  = AmpParameter( args[5] );
+	    rho13m1 = AmpParameter( args[6] );
 	
-	rho231  = AmpParameter( args[7] );
-	rho23m1 = AmpParameter( args[8] );
+	    rho231  = AmpParameter( args[7] );
+	    rho23m1 = AmpParameter( args[8] );
 
-	lowerVertex = args[9].c_str();
-	upperVertex = args[10].c_str();
-	
+	    lowerVertex = args[9].c_str();
+	    upperVertex = args[10].c_str();
+
+            polAngle  = atof( args[11].c_str() ); // azimuthal angle of the photon polarization vector in the lab.
+            polFraction = AmpParameter( args[12] ); // fraction of polarization (0-1)
+        }
+        else{
+            lowerVertex = args[3].c_str();
+            upperVertex = args[4].c_str();
+
+            polAngle  = atof( args[5].c_str() );
+            polFraction = AmpParameter( args[6] );
+        }
 	// need to register any free parameters so the framework knows about them
 	registerParameter( rho011 );
 	registerParameter( rho031 );
 	registerParameter( rho03m1 );
-	
-	registerParameter( rho111 );
-	registerParameter( rho133 );
-	registerParameter( rho131 );
-	registerParameter( rho13m1 );
-	
-	registerParameter( rho231 );
-	registerParameter( rho23m1 );
 
-	if(args.size() == 13){
-		polAngle  = atof(args[11].c_str() ); // azimuthal angle of the photon polarization vector in the lab.
-		polFraction = AmpParameter( args[12] ); // fraction of polarization (0-1)
-//		std::cout << "Fixed polarisation of " << polFraction << " and angle of " << polAngle << " degrees." << std::endl;
-	}
-	else
-		assert(0);
+        if( args.size() == 13 ){
+	    registerParameter( rho111 );
+	    registerParameter( rho133 );
+	    registerParameter( rho131 );
+	    registerParameter( rho13m1 );
+	
+	    registerParameter( rho231 );
+	    registerParameter( rho23m1 );
+        }
 }
 
 
@@ -78,10 +85,11 @@ DeltaAngles::calcAmplitude( GDouble** pKin, GDouble* userVars ) const {
     // SDMEs for 3/2- -> 1/2+ + 0- (doi.org/10.1103/PhysRevC.96.025208)
     GDouble W = 3.*(0.5 - rho011)*sinSqTheta + rho011*(1.+3.*cosSqTheta) - 2.*sqrt3*rho031*cosPhi*sin2Theta - 2.*sqrt3*rho03m1*cos2Phi*sinSqTheta;
 
-// comment out polarized SDMEs - not used for factorized fits	
-    W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosSqTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
-	
-    W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
+    if( !factorized ){	
+        W -= Pgamma*cos2BigPhi * (3.*rho133*sinSqTheta + rho111*(1.+3.*cosSqTheta) - 2.*sqrt3*rho131*cosPhi*sin2Theta - 2.*sqrt3*rho13m1*cos2Phi*sinSqTheta);
+
+        W -= Pgamma*sin2BigPhi * (2.*sqrt3*rho231*sinPhi*sin2Theta + 2.*sqrt3*rho23m1*sin2Phi*sinSqTheta);
+    }
 	
     W *= 1./(4.*PI);
 	

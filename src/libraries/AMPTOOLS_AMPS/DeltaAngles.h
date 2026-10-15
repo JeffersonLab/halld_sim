@@ -75,6 +75,7 @@ private:
 	string lowerVertex;
 	string upperVertex;
 
+        bool factorized = false;
 };
 
 #endif
