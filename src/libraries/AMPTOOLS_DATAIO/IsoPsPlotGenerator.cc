@@ -128,20 +128,22 @@ void IsoPsPlotGenerator::projectEvent( Kinematics* kin, const string& reactionNa
    // We assume here that the first amplitude in the list is always the Iso_ps_refl amplitude
    const vector< string > args = cfgInfo()->amplitudeList( reactionName, "", "" ).at(0)->factors().at(0);
    double beam_polAngle, prod_angle;
+
+   
+   //Initialize eps-vector and forcibly set xy-components of the beam vector to zero     
+   eps.SetXYZ(beam.X(),beam.Y(),0.);
+   beam.SetX(0.);
+   beam.SetY(0.);
+ 
    
    if (args.size() > 6) {    
      beam_polAngle = TMath::DegToRad()*parseValidatedNumber("polarization angle", args[6]);    
      prod_angle = TMath::RadToDeg()*getPhiProd(beam_polAngle, X, beam, target, 2, true);
    }
    else {
-     eps.SetXYZ(beam.X(),beam.Y(),0.);
      prod_angle = TMath::RadToDeg()*getPhiProd(eps, X, beam, target, 2, true);
    }
-   
-   //forcibly put xy-components of the beam vector to zero     
-   beam.SetX(0.);
-   beam.SetY(0.);
-   
+  
    
   
    

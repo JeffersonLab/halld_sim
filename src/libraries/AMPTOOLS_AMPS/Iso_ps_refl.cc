@@ -45,7 +45,7 @@ static double parseValidatedNumber(const string& label, const string& argInput){
 
 Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) : UserAmplitude< Iso_ps_refl >( args )
 {
-  // This function is only for the two-body Isobar decay: xi -> pipi
+  // This function applies only to the two-body Isobar decay, such as xi -> pipi
   
   // 6 possibilities to initialize this amplitude:
   // <S>: isobar spin
@@ -55,6 +55,14 @@ Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) : UserAmplitude< Iso_ps
   // <r>: +1/-1 for real/imaginary part; 
   // <s>: +1/-1 sign in P_gamma term
 
+  // By default, beam polarization info is read from the input tree  
+  // 3 additional arguments to pass the beam polarization pars in this amplitude
+  // <Phi0>: diamond orientation angle in degrees
+  // <Pgamma> or <*.root>: either Pgamma value, or root-file with a TH1D Pgamma_vs_E histogram 
+  // <histname>: name of the histogram 
+
+  
+  
   // Isobar spin S
   m_s = static_cast<int>(parseValidatedNumber("S",args[0]));    
   // Resonance spin J
@@ -87,7 +95,7 @@ Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) : UserAmplitude< Iso_ps
 
     m_polInTree = false;
     polAngle = parseValidatedNumber("polarization angle", args[6]);    
-      std::string pol_option = args[7];      
+    std::string pol_option = args[7];      
 
       if (pol_option.find(".root") == std::string::npos)
 	polFraction = parseValidatedNumber("polarization fraction", args[7]);
@@ -97,6 +105,8 @@ Iso_ps_refl::Iso_ps_refl( const vector< string >& args ) : UserAmplitude< Iso_ps
         polFrac_vs_E = (TH1D*)pol_file->Get(args[8].c_str());
         if(polFrac_vs_E  == nullptr )
           throw std::runtime_error("Iso_ps_refl ERROR: Could not find histogram '" + args[8] + "' in file " + pol_option);
+	polFrac_vs_E->SetDirectory(0); 	// Detach histogram from the file, so it persists after the file is closed
+	pol_file->Close();
       }	
   }  
 

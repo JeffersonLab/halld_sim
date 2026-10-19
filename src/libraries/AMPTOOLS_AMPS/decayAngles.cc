@@ -23,7 +23,7 @@
 #include "TMath.h"
 
 // Calculate the x, y, and z axes in the helicity reference frame
-vector< TVector3 > getHelicityAxes(TVector3 parentCM, TVector3 inverseCM)
+vector< TVector3 > getHelicityAxes(const TVector3 &parentCM, const TVector3 &inverseCM)
 {
 	TVector3 z = parentCM.Unit();
 	TVector3 y = ( inverseCM.Unit() ).Cross( parentCM.Unit() ).Unit();
@@ -34,7 +34,7 @@ vector< TVector3 > getHelicityAxes(TVector3 parentCM, TVector3 inverseCM)
 } 
 
 // Calculate the x, y, and z axes in the Gottfried-Jackson reference frame
-vector< TVector3 > getGJAxes(TVector3 parentCM, TVector3 inverseCM, TVector3 inverseParent)
+vector< TVector3 > getGJAxes(const TVector3 &parentCM, const TVector3 &inverseCM, const TVector3 &inverseParent)
 {
 	TVector3 z = inverseParent.Unit();
 	TVector3 y = ( inverseCM.Unit() ).Cross( parentCM.Unit() ).Unit();
@@ -46,7 +46,7 @@ vector< TVector3 > getGJAxes(TVector3 parentCM, TVector3 inverseCM, TVector3 inv
 
 
 // Calculate production plane angle
-double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
+double getPhiProd(double polAngle, const TLorentzVector &parentLab, const TLorentzVector &beamLab, const TLorentzVector &targetLab, int whichFrame, bool upperVertex)
 {
 	// whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
@@ -90,8 +90,8 @@ double getPhiProd(double polAngle, TLorentzVector parentLab, TLorentzVector beam
 } 
 
 
-// Calculate production plane angle using eps-vector already defined in user's amplitude
-double getPhiProd(TVector3 eps, TLorentzVector parentLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
+// Calculate production plane angle using already defined eps-vector
+double getPhiProd(const TVector3 &eps, const TLorentzVector &parentLab, const TLorentzVector &beamLab, const TLorentzVector &targetLab, int whichFrame, bool upperVertex)
 {
 	// whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
@@ -135,7 +135,7 @@ double getPhiProd(TVector3 eps, TLorentzVector parentLab, TLorentzVector beamLab
 
 
 // Calculate angles for a one-step decay. If only one of the daughter particles has spin, that one should be used in this calculation 
-vector< double > getOneStepAngles(TLorentzVector parentLab, TLorentzVector daughterLab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
+vector< double > getOneStepAngles(const TLorentzVector &parentLab, const TLorentzVector &daughterLab, const TLorentzVector &beamLab, const TLorentzVector &targetLab, int whichFrame, bool upperVertex)
 {
 	// whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
@@ -193,7 +193,7 @@ vector< double > getOneStepAngles(TLorentzVector parentLab, TLorentzVector daugh
 
 
 // Calculate angles for a two-step decay. This has been tested for photoproduction of a resonance decaying to omega and pi, with the omega subequently decaying to three pions. If the second step of the decay is a two-body decay, the input for granddaughter2Lab should be TLorentzVector(0,0,0,0)  
-vector< double > getTwoStepAngles(TLorentzVector parentLab, TLorentzVector daughterLab, TLorentzVector granddaughter1Lab, TLorentzVector granddaughter2Lab, TLorentzVector beamLab, TLorentzVector targetLab, int whichFrame, bool upperVertex)
+vector< double > getTwoStepAngles(const TLorentzVector &parentLab, const TLorentzVector &daughterLab, const TLorentzVector &granddaughter1Lab, const TLorentzVector &granddaughter2Lab, const TLorentzVector &beamLab, const TLorentzVector &targetLab, int whichFrame, bool upperVertex)
 {
 	// whichFrame = 1 for helicity, 2 for GJ
 	assert( whichFrame == 1 || whichFrame == 2 );
