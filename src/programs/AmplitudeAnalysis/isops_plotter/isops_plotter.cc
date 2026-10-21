@@ -65,10 +65,6 @@ using namespace std;
 int main( int argc, char* argv[] ){
 
 
-    // ************************
-    // usage
-    // ************************
-
   cout << endl << " *** Viewing Results Using AmpPlotter and writing root histograms *** " << endl << endl;
 
   if (argc < 2){
@@ -78,16 +74,19 @@ int main( int argc, char* argv[] ){
   }
 
   bool showGui = false;
+  bool writeRootFile = false;
+  bool writeTextFile = false;  
+
   string resultsName(argv[1]);
-  string outName = "isops_histos.root";
-  string outparsName = "isops__fitpars.txt";
+  string outName, outparsName;
+
   
-  for (int i = 2; i < argc; i++){
+  for (int iarg = 2; iarg < argc; iarg++){
 
-    string arg(argv[i]);
+    string arg(argv[iarg]);
 
-    if (arg == "-o")  outName = argv[++i];
-    if (arg == "-t")  outparsName = argv[++i];
+    if (arg == "-o" && iarg+1 < argc)  {outName = argv[++iarg]; writeRootFile = true;}
+    if (arg == "-t" && iarg+1 < argc)  {outparsName = argv[++iarg]; writeTextFile = true;}
     if (arg == "-g")  showGui = true;
 
     
@@ -96,7 +95,7 @@ int main( int argc, char* argv[] ){
       cout << "\t -o <file>\t output root file path" << endl;
       cout << "\t -t <file>\t output text file path" << endl;
       cout << "\t -g <file>\t show GUI" << endl;  
-      exit(1);
+      exit(0);
     }
   }
 
@@ -139,323 +138,324 @@ int main( int argc, char* argv[] ){
 
     vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
     vector<string> amphistname = {"Flat"};    
-    vector<string> pipiIsobar_amps = {"pipiIso_0-S","pipiIso_1+P-","pipiIso_1+P0","pipiIso_1+P+"};
-    vector<string> rhoIsobar_amps = {"rhoIso_0-P", "rhoIso_1+S-", "rhoIso_1+S0", "rhoIso_1+S+", "rhoIso_1+D-", "rhoIso_1+D0", "rhoIso_1+D+", "rhoIso_2+D--", "rhoIso_2+D-", "rhoIso_2+D0", "rhoIso_2+D+", "rhoIso_2+D++"}; 
-    vector<string> f2Isobar_amps = {"f2Iso_1+P-","f2Iso_1+P0","f2Iso_1+P+","f2Iso_2+P--","f2Iso_2+P-","f2Iso_2+P0","f2Iso_2+P+","f2Iso_2+P++","f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++","f2Iso_2-D--","f2Iso_2-D-","f2Iso_2-D0","f2Iso_2-D+","f2Iso_2-D++"};
+    vector<string> amphistname_pipiIso = {"pipiIso_0-S","pipiIso_1+P-","pipiIso_1+P0","pipiIso_1+P+"};
+    vector<string> amphistname_rhoIso = {"rhoIso_0-P", "rhoIso_1+S-", "rhoIso_1+S0", "rhoIso_1+S+", "rhoIso_2+D--", "rhoIso_2+D-", "rhoIso_2+D0", "rhoIso_2+D+", "rhoIso_2+D++"}; 
+    vector<string> amphistname_f2Iso = {"f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++"};
 
-    amphistname.insert(amphistname.end(), pipiIsobar_amps.begin(), pipiIsobar_amps.end());
-    amphistname.insert(amphistname.end(), rhoIsobar_amps.begin(), rhoIsobar_amps.end());
-    amphistname.insert(amphistname.end(), f2Isobar_amps.begin(), f2Isobar_amps.end());
+    amphistname.insert(amphistname.end(), amphistname_pipiIso.begin(), amphistname_pipiIso.end());
+    amphistname.insert(amphistname.end(), amphistname_rhoIso.begin(), amphistname_rhoIso.end());
+    amphistname.insert(amphistname.end(), amphistname_f2Iso.begin(), amphistname_f2Iso.end());
 
     vector<string> ampsumname = {"pipiIso_0-S","pipiIso_1+P","rhoIso_0-P","rhoIso_1+S","rhoIso_1+D","rhoIso_2+D","f2Iso_1+P","f2Iso_2+P","f2Iso_2-S","f2Iso_2-D"};
 
     
     
     // ************************
-    // set up an output ROOT file to store histograms
+    // Set up an output ROOT file to store histograms
     // ************************
 
-     TFile* plotfile = new TFile( outName.c_str(), "recreate");
-     TH1::AddDirectory(kFALSE);
-     TDirectory* plotfiledir = plotfile->mkdir("Contributions");  
-
-     
-     // *************************
-     // Loop over different polarization types 
-    // *************************
-     size_t nReactions = results.reactionList().size();
-     std::map<std::string, TH1*> summedHists;
-
-     
-  for (unsigned int polType = 0; polType < nReactions; polType++) {
-
+    if (writeRootFile) {
     
-    string reactionName = results.reactionList()[polType];
+      TFile* plotfile = new TFile( outName.c_str(), "recreate");
+      TH1::AddDirectory(kFALSE);
+      TDirectory* plotfiledir = plotfile->mkdir("Contributions");  
 
-    //WRITING SEPARATE FILES FOR DIFF POLS    
-    //  outName = reactionName + ".root";
-    //TFile* plotfile = new TFile( outName.c_str(), "recreate");
-    //TH1::AddDirectory(kFALSE);
+     
+      // *************************
+      // Loop over 'reactions', which are different beamtimes and/or different polarization types 
+      // *************************
+      size_t nReactions = results.reactionList().size();
+      std::map<std::string, TH1*> summedHists;
 
-    //    string dirname = "Contributions_"+reactionName;
-    //    TDirectory* plotfiledir = plotfile->mkdir(dirname.c_str());  
+     
+      for (unsigned int ireaction = 0; ireaction < nReactions; ireaction++) {
+
+	string reactionName = results.reactionList()[ireaction];
+
+	//WRITING SEPARATE FILES FOR DIFF POLS    
+	//  outName = reactionName + ".root";
+	//TFile* plotfile = new TFile( outName.c_str(), "recreate");
+	//TH1::AddDirectory(kFALSE);
+
+	//    string dirname = "Contributions_"+reactionName;
+	//    TDirectory* plotfiledir = plotfile->mkdir(dirname.c_str());  
 
   
-    plotGen.enableReaction( reactionName );
-    vector<string> sums = plotGen.uniqueSums();
-    vector<string> amps = plotGen.uniqueAmplitudes();
-    cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
+	plotGen.enableReaction( reactionName );
+	vector<string> sums = plotGen.uniqueSums();
+	vector<string> amps = plotGen.uniqueAmplitudes();
+	cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-    string locampname;
+	string locampname;
   
-    // loop over sum configurations (one for each of the individual contributions, and the combined sum of all)
-    for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
+	// loop over defined reflectivity configurations (Uniform, PosRefl and NegRefl)
+	for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
 
-      // loop over desired amplitudes 
-      for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
+	// loop over defined sums (these are JPLM amplitudes, coherently summed over M)
+	  //	  for (unsigned int isum = 0; isum <= ampsumname.size(); isum++ ) {
+	    
+	  // loop over defined amplitudes 
+	  for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
+	    
+	    // by default, turn on all amplitudes and all sums in AmpTools  
+	    for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) plotGen.enableAmp( jamp );
+	    for (unsigned int jsum = 0; jsum < sums.size(); jsum++) plotGen.enableSum(jsum);
 
-	// turn on all ampltiudes by default 
-	for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) plotGen.enableAmp( jamp );
-      
-	if (iamp < amphistname.size()){
-	  // amplitude name
-	  locampname = amphistname[iamp];	
+	    
+	    // go on with only one amplitude
+	    if (iamp < amphistname.size()){
 
-	  // turn on all sums by default
-	  for (unsigned int jsum = 0; jsum < sums.size(); jsum++) plotGen.enableSum(jsum);
+	      locampname = amphistname[iamp];  	      
 	
-	  //Arrange the negative and positive reflectivity sums 
-	  //Negative reflectivity: "ImagNegSign" & "RealPosSign", as in the config file
-	  //Positive reflectivity: "RealNegSign" & "ImagPosSign", as in the config file
+	      //Pick up the right reflectivity sum by excluding all nonmatching reflectivity names
+	      //Negative reflectivity: "ImagNegSign" & "RealPosSign", as in the config file
+	      //Positive reflectivity: "RealNegSign" & "ImagPosSign", as in the config file
 	   	
-	  if (irefl < 3) {
-	    for (unsigned int i = 0; i < sums.size(); i++){
-	      if( reflname[irefl] == "NegRefl" ){
-		if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos || sums[i].find("UniBG") != std::string::npos){
-		  plotGen.disableSum(i);
-		  //cout<<"disable sum "<<sums[i]<<"\n";
-		}
+	      if (irefl < 3) {
+		for (unsigned int i = 0; i < sums.size(); i++){
+		  if( reflname[irefl] == "NegRefl" ){
+		    if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos || sums[i].find("UniBG") != std::string::npos){
+		      plotGen.disableSum(i);     //cout<<"disable sum "<<sums[i]<<"\n";
+		    }
+		  }
+		  if( reflname[irefl] == "PosRefl" ){
+		    if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos || sums[i].find("UniBG") != std::string::npos) {
+		      plotGen.disableSum(i);      //cout<<"disable sum "<<sums[i]<<"\n";
+		    }
+		  }
+		  if( reflname[irefl] == "Uniform" ){
+		    if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos
+		       || sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos) {
+		      plotGen.disableSum(i);      //cout<<"disable sum "<<sums[i]<<"\n";
+		    }
+		  }
+		}	 
 	      }
-	      if( reflname[irefl] == "PosRefl" ){
-		if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos || sums[i].find("UniBG") != std::string::npos) {
-		  //cout<<"disable sum "<<sums[i]<<"\n";
-		  plotGen.disableSum(i);
-		}
-	      }
-	      if( reflname[irefl] == "Uniform" ){
-		if(sums[i].find("ImagNegSign") != std::string::npos || sums[i].find("RealPosSign") != std::string::npos
-		   || sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos) {
-		  //cout<<"disable sum "<<sums[i]<<"\n";
-		  plotGen.disableSum(i);
-		}
-	      }
-	    }	 
-	  }
 	  
-	  //Pick up the right amplitude by excluding all nonmatching amplitude names
-	  for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
-	    if( amps[jamp].find(locampname.data()) == std::string::npos )  plotGen.disableAmp( jamp );
+	      //Pick up the right amplitude by excluding all nonmatching amplitude names
+	      for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
+		if( amps[jamp].find(locampname.data()) == std::string::npos )  plotGen.disableAmp( jamp );
 
-	} // close if (iamp < amphistname.size())
+	    } // close if (iamp < amphistname.size())
 
 
 	
-	// GENERATE HISTOGRAMS BY MEANS OF PLOT GENERATOR	
+	    // GENERATE HISTOGRAMS BY MEANS OF PLOT GENERATOR	
     
-      cout << "Looping over input data" << endl;
-      // loop over data, accMC, and genMC
-      for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
-		bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
-		bool singleFlatWave = (irefl == 0 && iamp > 0) || (irefl > 0 && iamp == 0);
+	    cout << "Looping over input data" << endl;
+	    // loop over data, accMC, and genMC
+	    for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
+	      bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
+	      bool singleFlatWave = (irefl == 0 && iamp > 0) || (irefl > 0 && iamp == 0);
 		
-		if ( iplot == PlotGenerator::kGenMC) continue; // no acceptance correction
-		if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
-		if ( iplot == PlotGenerator::kBkgnd && !singleData ) continue; // only plot background once
-		if ( iplot == PlotGenerator::kAccMC && singleFlatWave ) continue; // only plot Flat wave once
-		if ( iplot == PlotGenerator::kGenMC && singleFlatWave ) continue; // only plot Flat wave once
+	      if ( iplot == PlotGenerator::kGenMC) continue; // no acceptance correction
+	      if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
+	      if ( iplot == PlotGenerator::kBkgnd && !singleData ) continue; // only plot background once
+	      if ( iplot == PlotGenerator::kAccMC && singleFlatWave ) continue; // only plot Flat wave once
+	      if ( iplot == PlotGenerator::kGenMC && singleFlatWave ) continue; // only plot Flat wave once
 		
 		
-	// loop over different variables
-	for (unsigned int ivar  = 0; ivar  < IsoPsPlotGenerator::kNumHists; ivar++){
+	      // loop over different variables
+	      for (unsigned int ivar  = 0; ivar  < IsoPsPlotGenerator::kNumHists; ivar++){
 	  
-	  // set reaction name as a prefix to the histogram name if all reactions are saved separately
-	  // set a common name or no name as a prefix to the histogram name if all reactions are summed up 
-	  //string histname = reactionName;
-	  string histname = "";
+		// set reaction name as a prefix to the histogram name if all reactions are saved separately
+		// set a common name or no name as a prefix to the histogram name if all reactions are summed up 
+		//string histname = reactionName;
+		string histname = "";
 	  
 	  
-	  if (ivar == IsoPsPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
-	  else if (ivar == IsoPsPlotGenerator::kCosTheta)  histname += "CosTheta_GJ";
-	  else if (ivar == IsoPsPlotGenerator::kPhi)  histname += "Phi_GJ";
-	  else if (ivar == IsoPsPlotGenerator::kCosThetaH)  histname += "CosTheta_HF";
-	  else if (ivar == IsoPsPlotGenerator::kPhiH)  histname += "Phi_HF";
-	  else if (ivar == IsoPsPlotGenerator::kIsoMass)  histname += "MIso";
-	  else if (ivar == IsoPsPlotGenerator::kIsoPsMass)  histname += "MIsoPs";
-	  else if (ivar == IsoPsPlotGenerator::kt)  histname += "minust";
-	  else if (ivar == IsoPsPlotGenerator::kRecoilMass)  histname += "ProtonPiplusL_M";
-	  else if (ivar == IsoPsPlotGenerator::kProtonPsMass)  histname += "ProtonPiminus_M";
-	  else if (ivar == IsoPsPlotGenerator::kRecoilPsMass)  histname += "ProtonPiplusLPiminus_M";
-	  else continue;	  
+		if (ivar == IsoPsPlotGenerator::kProd_Ang)  histname += "Prod_Ang";
+		else if (ivar == IsoPsPlotGenerator::kCosTheta)  histname += "CosTheta_GJ";
+		else if (ivar == IsoPsPlotGenerator::kPhi)  histname += "Phi_GJ";
+		else if (ivar == IsoPsPlotGenerator::kCosThetaH)  histname += "CosTheta_HF";
+		else if (ivar == IsoPsPlotGenerator::kPhiH)  histname += "Phi_HF";
+		else if (ivar == IsoPsPlotGenerator::kIsoMass)  histname += "MIso";
+		else if (ivar == IsoPsPlotGenerator::kIsoPsMass)  histname += "MIsoPs";
+		else if (ivar == IsoPsPlotGenerator::kt)  histname += "minust";
+		else if (ivar == IsoPsPlotGenerator::kRecoilMass)  histname += "ProtonPiplusL_M";
+		else if (ivar == IsoPsPlotGenerator::kProtonPsMass)  histname += "ProtonPiminus_M";
+		else if (ivar == IsoPsPlotGenerator::kRecoilPsMass)  histname += "ProtonPiplusLPiminus_M";
+		else continue;	  
 
-	  if (iplot == PlotGenerator::kData) histname += "_data";
-	  if (iplot == PlotGenerator::kBkgnd) histname += "_bkgnd";
-	  if (iplot == PlotGenerator::kAccMC) histname += "_fit";
-	  if (iplot == PlotGenerator::kGenMC) histname += "_gen";
+		if (iplot == PlotGenerator::kData) histname += "_data";
+		if (iplot == PlotGenerator::kBkgnd) histname += "_bkgnd";
+		if (iplot == PlotGenerator::kAccMC) histname += "_fit";
+		if (iplot == PlotGenerator::kGenMC) histname += "_gen";
 	  
-	  if (irefl < reflname.size()){
-	    // get name of sum for naming histogram
-	    string sumName = reflname[irefl];
-	    histname += "_";
-	    histname += sumName;
-	  }
-	  //	  if (iamp > 0 && iamp < amphistname.size()) {
-	  if (iamp < amphistname.size()) {
-	    // get name of amp for naming histogram  
-	    histname += "_";
-	    histname += amphistname[iamp];
-	  }
+		if (irefl < reflname.size()){
+		  // get name of sum for naming histogram
+		  string sumName = reflname[irefl];
+		  histname += "_";
+		  histname += sumName;
+		}
+		//	  if (iamp > 0 && iamp < amphistname.size()) {
+		if (iamp < amphistname.size()) {
+		  // get name of amp for naming histogram  
+		  histname += "_";
+		  histname += amphistname[iamp];
+		}
 	  
-	  Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
-	  TH1* thist = hist->toRoot();
-	  thist->SetName(histname.c_str());
+		Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
+		TH1* thist = hist->toRoot();
+		thist->SetName(histname.c_str());
 
-	  // sum histograms across reactions
-	  if (summedHists.find(histname) == summedHists.end())
-	    summedHists[histname] = (TH1*) thist->Clone();
-	  else 
-	    summedHists[histname]->Add(thist);
+		// sum histograms across reactions
+		if (summedHists.find(histname) == summedHists.end())
+		  summedHists[histname] = (TH1*) thist->Clone();
+		else 
+		  summedHists[histname]->Add(thist);
 
-	  //write separate histogram for each reaction
-	  //if (iamp > 0 && iamp < amphistname.size())  plotfiledir->cd();
-	  //else  plotfile->cd();
-	  //thist->Write();
+		//write separate histogram for each reaction
+		//if (iamp > 0 && iamp < amphistname.size())  plotfiledir->cd();
+		//else  plotfile->cd();
+		//thist->Write();
 	  
-	  delete thist;
+		delete thist;
+	      }
+	    }
+	  } // end of loop over amplitudes
+	} // end of loop over sum configurations
+      }// end of loop over 'reactions'
+
+  
+
+      //Now, write (nonzero) summed up histograms to the root file
+      for (auto it = summedHists.begin(); it != summedHists.end(); it++) {
+
+	std::string hsummed_name = it->first;
+	TH1* hsummed = it->second;    
+
+	if (hsummed->Integral() == 0.) continue;
+	else hsummed->SetName(hsummed_name.c_str());
+    
+	if (hsummed_name.find("+") != std::string::npos || hsummed_name.find("-") != std::string::npos)  plotfiledir->cd();              
+	else  plotfile->cd();    
+
+	hsummed->Write();
+	delete hsummed;
+      }
+      
+      plotfile->Close(); 
+    }
+  
+
+    if (writeTextFile){
+    
+      // ************************
+      // Open an output text file to write fit parameters and results
+      // ************************
+
+      ofstream outfile;
+      outfile.open(outparsName);
+
+  
+      //PRINT ALL THE MODEL PARAMETERS   
+      const vector <string> par_names = results.parNameList();  
+      for(unsigned int ii = 0; ii < par_names.size(); ii++) 
+	outfile << par_names[ii] << " = " << results.parValue(par_names[ii]) << " +- " << results.parError(par_names[ii]) << endl;
+ 
+  
+      // CALCULATE INTENSITY FRACTIONS AND PHASE DIFFERENCES
+      // All 'reactions' are already turned on
+      // The next calculations only need to happen one time
+
+  
+      //Define vector with full amplitudes
+      vector<string> fullamps = plotGen.fullAmplitudes();
+
+      //Define vectors for combining amplitudes with unique JPLMeps 
+      const int nAmps = amphistname.size();
+      vector<string> ampPosRefl[nAmps];
+      vector<string> ampNegRefl[nAmps];
+      vector< pair<string,string> > phaseDiffNames;
+
+      //Define vectors for combining amplitudes with unique JPLeps 
+      const int nSums = ampsumname.size();
+      vector<string> ampsumPosRefl[nSums];
+      vector<string> ampsumNegRefl[nSums];
+
+
+      for(unsigned int i = 0; i < fullamps.size(); i++){    
+
+	// Split by reflectivities and grab contributions for each JPLM amplitude 
+	for(int iamp=0; iamp<nAmps; iamp++) {
+	  string locampname = amphistname[iamp];
+	    
+	  if (fullamps[i].find("::" + locampname) == std::string::npos) continue;
+
+	  if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos)
+	    ampNegRefl[iamp].push_back(fullamps[i]);
+
+	  if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos)
+	    ampPosRefl[iamp].push_back(fullamps[i]);
+	}
+
+	// Split by reflectivities and grab contributions for each JPL sum 
+	for(int isum=0; isum<nSums; isum++) {
+	  string locsumname = ampsumname[isum];
+	    
+	  if (fullamps[i].find("::" + locsumname) == std::string::npos) continue;
+
+	  if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos)
+	    ampsumNegRefl[isum].push_back(fullamps[i]);
+	      
+	  if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos)
+	    ampsumPosRefl[isum].push_back(fullamps[i]);
+	}
+    
+    
+	// second loop over amplitudes to get phase difference names
+	for(unsigned int j = i+1; j < fullamps.size(); j++){
+
+	  // leave only the Spring2017_PARA_0::ImagPosSign and Spring2017_PARA_0::ImagNegSign coherent sums
+	  if (fullamps[i].find("Spring2017") == std::string::npos || fullamps[j].find("Spring2017") == std::string::npos) continue;      
+	  if (fullamps[i].find("UniBG") != std::string::npos || fullamps[j].find("UniBG") != std::string::npos) continue;      
+	  if (fullamps[i].find("Real") != std::string::npos || fullamps[j].find("Real") != std::string::npos) continue;      
+      
+	  // only pair amplitudes in the same coherent sums
+	  if (fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos) continue;
+	  if (fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
+	    
+	  phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
+	  //      std::cout << "PAIRED:\t" << fullamps[i] << "\t" << fullamps[j] << endl; 
 	}
       }
-    } // end of loop over amplitudes
-   } // end of loop over sum configurations
-  }// end of loop over 'reactions'
 
+
+      outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
   
-
-  //Now, write (nonzero) summed up histograms to the root file
-  for (auto it = summedHists.begin(); it != summedHists.end(); it++) {
-
-    std::string hsummed_name = it->first;
-    TH1* hsummed = it->second;    
-
-    if (hsummed->Integral() == 0.) continue;
-    else hsummed->SetName(hsummed_name.c_str());
-    
-    if (hsummed_name.find("+") != std::string::npos || hsummed_name.find("-") != std::string::npos)  plotfiledir->cd();              
-    else  plotfile->cd();    
-    hsummed->Write();
-  }
-
+      cout<<"Computing intensities of amplitudes"<<endl;
+      for (unsigned int i = 0; i < fullamps.size(); i++){
+	vector<string> useamp;
+	useamp.push_back(fullamps[i]);
+	outfile << "FIT FRACTION " << fullamps[i] << " = " << results.intensity(useamp).first / results.intensity().first << " +- " << results.intensity(useamp).second / results.intensity().first <<  endl;
+      }
   
-  plotfile->Close(); 
+      cout<<"Computing phase differences"<<endl;
+      for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
+	pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
+	outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
+      }
 
+      cout<<"Computing intensities of coherent sums"<<endl;
+      for(int i = 0; i < nAmps; i++){
+	if(ampPosRefl[i].empty()) continue;
+	outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = " << results.intensity(ampPosRefl[i]).first / results.intensity().first << " +- "
+		<< results.intensity(ampPosRefl[i]).second / results.intensity().first << endl;
+	outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = " << results.intensity(ampNegRefl[i]).first / results.intensity().first << " +- "
+		<< results.intensity(ampNegRefl[i]).second / results.intensity().first << endl;
+      }
 
+      for(int i = 0; i < nSums; i++){
+	if(ampsumPosRefl[i].empty()) continue;
+	outfile << "FIT FRACTION (coherent sum) PosRefl " << ampsumname[i] << " = " << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
+		<< results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
+	outfile << "FIT FRACTION (coherent sum) NegRefl " << ampsumname[i] << " = " << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
+		<< results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
+      }
 
-  // CALCULATE INTENSITY FRACTIONS AND PHASE DIFFERENCES
-  // All 'reactions' are already turned on
-  // The next calculations only need to happen one time
-  
-  // model parameters
-  // cout << "Checking Parameters" << endl;
-  
-  // parameters to check
-  vector< string > pars;  
-  //  pars.push_back("dsratio");
-  
-  //Text file for writing the parameters
-  ofstream outfile;
-  outfile.open( outparsName );
-
-  for(unsigned int i = 0; i<pars.size(); i++) {
-    double parValue = results.parValue( pars[i] );
-    double parError = results.parError( pars[i] );
-    outfile << parValue << "\t" << parError << "\t" << endl;
-  }
-
-
-  
-  //Define vector with full amplitudes
-  vector<string> fullamps = plotGen.fullAmplitudes();
-
-  //Define vectors for combining amplitudes with unique JPLMeps 
-  const int nAmps = amphistname.size();
-  vector<string> ampPosRefl[nAmps];
-  vector<string> ampNegRefl[nAmps];
-  vector< pair<string,string> > phaseDiffNames;
-
-  //Define vectors for combining amplitudes with unique JPLeps 
-  const int nSums = ampsumname.size();
-  vector<string> ampsumPosRefl[nSums];
-  vector<string> ampsumNegRefl[nSums];
-
-
-  for(unsigned int i = 0; i < fullamps.size(); i++){    
-
-    // Split by reflectivities and grab contributions for every JPLM amplitude 
-    for(int iamp=0; iamp<nAmps; iamp++) {
-	    string locampname = amphistname[iamp];
-	    
-	    if (fullamps[i].find("::" + locampname) == std::string::npos) continue;
-
-	    if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos)
-	      ampNegRefl[iamp].push_back(fullamps[i]);
-
-	    if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos)
-	      ampPosRefl[iamp].push_back(fullamps[i]);
+      outfile.close();
     }
-
-    // Split by reflectivities and grab contributions for every JPL sum 
-    for(int isum=0; isum<nSums; isum++) {
-	    string locsumname = ampsumname[isum];
-	    
-	    if (fullamps[i].find("::" + locsumname) == std::string::npos) continue;
-
-	    if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos)
-	      ampsumNegRefl[isum].push_back(fullamps[i]);
-	      
-	    if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos)
-	      ampsumPosRefl[isum].push_back(fullamps[i]);
-     }
-    
-    
-    // second loop over amplitudes to get phase difference names
-    for(unsigned int j = i+1; j < fullamps.size(); j++){
-
-      // leave only the Spring2017_PARA_0::ImagPosSign and Spring2017_PARA_0::ImagNegSign coherent sums
-      if (fullamps[i].find("Spring2017") == std::string::npos || fullamps[j].find("Spring2017") == std::string::npos) continue;      
-      if (fullamps[i].find("UniBG") != std::string::npos || fullamps[j].find("UniBG") != std::string::npos) continue;      
-      if (fullamps[i].find("Real") != std::string::npos || fullamps[j].find("Real") != std::string::npos) continue;      
-      
-      // only pair amplitudes in the same coherent sums
-      if (fullamps[i].find("ImagNegSign") != std::string::npos && fullamps[j].find("ImagNegSign") == std::string::npos) continue;
-      if (fullamps[i].find("ImagPosSign") != std::string::npos && fullamps[j].find("ImagPosSign") == std::string::npos) continue;
-	    
-      phaseDiffNames.push_back( std::make_pair(fullamps[i], fullamps[j]) );
-      //      std::cout << "PAIRED:\t" << fullamps[i] << "\t" << fullamps[j] << endl; 
-    }
-  }
-
-
-  outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
-  
-  cout<<"Computing intensities of amplitudes"<<endl;
-  for (unsigned int i = 0; i < fullamps.size(); i++){
-    vector<string> useamp;
-    useamp.push_back(fullamps[i]);
-    outfile << "FIT FRACTION " << fullamps[i] << " = " << results.intensity(useamp).first / results.intensity().first << " +- " << results.intensity(useamp).second / results.intensity().first <<  endl;
-  }
-  
-  cout<<"Computing phase differences"<<endl;
-  for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
-	  pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
-	  outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
-  }
-
-  cout<<"Computing intensities of coherent sums"<<endl;
-  for(int i = 0; i < nAmps; i++){
-    if(ampPosRefl[i].empty()) continue;
-    outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = " << results.intensity(ampPosRefl[i]).first / results.intensity().first << " +- "
-	    << results.intensity(ampPosRefl[i]).second / results.intensity().first << endl;
-     outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = " << results.intensity(ampNegRefl[i]).first / results.intensity().first << " +- "
-	     << results.intensity(ampNegRefl[i]).second / results.intensity().first << endl;
-  }
-
-  for(int i = 0; i < nSums; i++){
-    if(ampsumPosRefl[i].empty()) continue;
-    outfile << "FIT FRACTION (coherent sum) PosRefl " << ampsumname[i] << " = " << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
-	    << results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
-     outfile << "FIT FRACTION (coherent sum) NegRefl " << ampsumname[i] << " = " << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
-	     << results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
-  }
-
-
 
   
   
