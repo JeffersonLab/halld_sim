@@ -186,32 +186,25 @@ int main( int argc, char* argv[] ){
 	vector<string> amps = plotGen.uniqueAmplitudes();
 	cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-	string locampname;
   
-	// loop over defined reflectivity configurations (Uniform, PosRefl and NegRefl)
+	// loop over defined reflectivity configurations (Uniform, PosRefl, NegRefl)
 	for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
 
-	// loop over defined sums (these are JPLM amplitudes, coherently summed over M)
-	  //	  for (unsigned int isum = 0; isum <= ampsumname.size(); isum++ ) {
+	// loop over defined sums (these are JPL coherent sums)
+	  for (unsigned int isum = 0; isum <= ampsumname.size(); isum++ ) {
+	     
+	  // loop over defined amplitudes  (JPLM amplitudes)
+	    for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
 	    
-	  // loop over defined amplitudes 
-	  for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
-	    
-	    // by default, turn on all amplitudes and all sums in AmpTools  
-	    for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) plotGen.enableAmp( jamp );
-	    for (unsigned int jsum = 0; jsum < sums.size(); jsum++) plotGen.enableSum(jsum);
+	    // AmpTools default, turn on all sum::amplitude
+	      for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) plotGen.enableAmp( jamp );
+	      for (unsigned int jsum = 0; jsum < sums.size(); jsum++) plotGen.enableSum(jsum);
 
-	    
-	    // go on with only one amplitude
-	    if (iamp < amphistname.size()){
-
-	      locampname = amphistname[iamp];  	      
-	
-	      //Pick up the right reflectivity sum by excluding all nonmatching reflectivity names
+	      //Leave in certain reflectivity sums by excluding all nonmatching reflectivity names
 	      //Negative reflectivity: "ImagNegSign" & "RealPosSign", as in the config file
 	      //Positive reflectivity: "RealNegSign" & "ImagPosSign", as in the config file
 	   	
-	      if (irefl < 3) {
+	      if (irefl < reflname.size()) {
 		for (unsigned int i = 0; i < sums.size(); i++){
 		  if( reflname[irefl] == "NegRefl" ){
 		    if(sums[i].find("RealNegSign") != std::string::npos || sums[i].find("ImagPosSign") != std::string::npos || sums[i].find("UniBG") != std::string::npos){
@@ -229,16 +222,24 @@ int main( int argc, char* argv[] ){
 		      plotGen.disableSum(i);      //cout<<"disable sum "<<sums[i]<<"\n";
 		    }
 		  }
-		}	 
+		}
 	      }
-	  
-	      //Pick up the right amplitude by excluding all nonmatching amplitude names
-	      for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
-		if( amps[jamp].find(locampname.data()) == std::string::npos )  plotGen.disableAmp( jamp );
 
-	    } // close if (iamp < amphistname.size())
+	      //Leave in certain set of JPL amplitudes by excluding all nonmatching amplitude names	      
+	      if (isum < ampsumname.size()){
+		for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
+		  if( amps[jamp].find(ampsumname[isum].data()) == std::string::npos )  plotGen.disableAmp( jamp );	      
+	      }
 
+	    //Pick up the right JPLM amplitude by excluding all nonmatching amplitude names
+	      if (iamp < amphistname.size()){	      
+		for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
+		  if( amps[jamp].find(amphistname[iamp].data()) == std::string::npos )  plotGen.disableAmp( jamp );
+	      } 
 
+	      // Consider specificallly  [irefl==reflname.size, isum==ampsumname.size, iamp==amphistname.size]
+
+	      
 	
 	    // GENERATE HISTOGRAMS BY MEANS OF PLOT GENERATOR	
     
@@ -313,8 +314,9 @@ int main( int argc, char* argv[] ){
 		delete thist;
 	      }
 	    }
-	  } // end of loop over amplitudes
-	} // end of loop over sum configurations
+	    } // end of loop over amplitudes
+	  } // end of loop over coherent sums    
+	} // end of loop over reflectivities
       }// end of loop over 'reactions'
 
   
