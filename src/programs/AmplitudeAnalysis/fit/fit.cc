@@ -220,7 +220,13 @@ void summarizeFits(std::vector<std::tuple<int,bool,int,int,double>>& fitLLs, boo
 double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int maxIter, string seedfile, int eMatrixRequirement) {
   AmpToolsInterface ati( cfgInfo );
 
+    // setup timer
+    timeval tStart,tFirst,tSpan1,tEnd,tFinal,tSpan2;
+    double dTime1,dTime2;
+
+    gettimeofday( &(tStart), NULL );
   cout << "LIKELIHOOD BEFORE MINIMIZATION:  " << ati.likelihood() << endl;
+    gettimeofday( &(tFirst), NULL );
 
   MinuitMinimizationManager* fitManager = ati.minuitMinimizationManager();
   fitManager->setMaxIterations(maxIter);
@@ -248,7 +254,15 @@ double runSingleFit(ConfigurationInfo* cfgInfo, bool useMinos, bool hesse, int m
 
   cout << "LIKELIHOOD AFTER MINIMIZATION:  " << ati.likelihood() << endl;
 
-  ati.finalizeFit();
+    gettimeofday( &(tEnd), NULL );
+      ati.finalizeFit();
+    gettimeofday( &(tFinal), NULL );
+    timersub( &(tFirst), &(tStart), &tSpan1 );
+    timersub( &(tFinal), &(tEnd), &tSpan2 );
+    dTime1 = tSpan1.tv_sec + tSpan1.tv_usec/1000000.0; // 10^6 uSec per second
+    dTime2 = tSpan2.tv_sec + tSpan2.tv_usec/1000000.0; // 10^6 uSec per second
+    cout << "Time to first function call:  " << dTime1 << " s." << endl;
+    cout << "       Time to finalize fit:  " << dTime2 << " s." << endl;
 
   if( seedfile.size() != 0 && !fitFailed ){
     ati.fitResults()->writeSeed( seedfile );
