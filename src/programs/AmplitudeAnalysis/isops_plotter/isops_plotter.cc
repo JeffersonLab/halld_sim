@@ -123,13 +123,12 @@ int main( int argc, char* argv[] ){
     // ************************
     // set up the plot generator
     // ************************
-	cout << "before atisetup();"<< endl;
-	atiSetup();
-        cout << "Plotgen results"<< endl;
+    cout << "before atisetup();"<< endl;
+    atiSetup();
+    cout << "Plotgen results"<< endl;
 
-	//	IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); // 2nd argument is optional
-	IsoPsPlotGenerator plotGen( results );
-	cout << " Initialized ati and PlotGen" << endl;
+    IsoPsPlotGenerator plotGen( results, PlotGenerator::kNoGenMC ); //Take out 2nd argument if needed
+    cout << " Initialized ati and PlotGen" << endl;
 
  
     // *************************
@@ -146,7 +145,7 @@ int main( int argc, char* argv[] ){
     amphistname.insert(amphistname.end(), amphistname_rhoIso.begin(), amphistname_rhoIso.end());
     amphistname.insert(amphistname.end(), amphistname_f2Iso.begin(), amphistname_f2Iso.end());
 
-    vector<string> ampsumname = {"pipiIso_0-S","pipiIso_1+P","rhoIso_0-P","rhoIso_1+S","rhoIso_1+D","rhoIso_2+D","f2Iso_1+P","f2Iso_2+P","f2Iso_2-S","f2Iso_2-D"};
+    vector<string> ampsumname = {"pipiIso_0-S","pipiIso_1+P","rhoIso_0-P","rhoIso_1+S","rhoIso_2+D","f2Iso_2-S"};
 
     
     
@@ -158,7 +157,8 @@ int main( int argc, char* argv[] ){
     
       TFile* plotfile = new TFile( outName.c_str(), "recreate");
       TH1::AddDirectory(kFALSE);
-      TDirectory* plotfiledir = plotfile->mkdir("Contributions");  
+      TDirectory* plotfile_dir_jplm = plotfile->mkdir("Contributions_JPLM");  
+      TDirectory* plotfile_dir_jpl = plotfile->mkdir("Contributions_JPL");  
 
      
       // *************************
@@ -178,23 +178,19 @@ int main( int argc, char* argv[] ){
 	//TH1::AddDirectory(kFALSE);
 
 	//    string dirname = "Contributions_"+reactionName;
-	//    TDirectory* plotfiledir = plotfile->mkdir(dirname.c_str());  
-
+	//    TDirectory* plotfile_dir = plotfile->mkdir(dirname.c_str());  
   
 	plotGen.enableReaction( reactionName );
 	vector<string> sums = plotGen.uniqueSums();
 	vector<string> amps = plotGen.uniqueAmplitudes();
 	cout << "Reaction " << reactionName << " enabled with " << sums.size() << " sums and " << amps.size() << " amplitudes" << endl;
 
-  
-	// loop over defined reflectivity configurations (Uniform, PosRefl, NegRefl)
+	
+	// loop over defined reflectivity configurations (Uniform, PosRefl, NegRefl, and Total)
 	for (unsigned int irefl = 0; irefl <= reflname.size(); irefl++){
 
-	// loop over defined sums (these are JPL coherent sums)
-	  for (unsigned int isum = 0; isum <= ampsumname.size(); isum++ ) {
-	     
-	  // loop over defined amplitudes  (JPLM amplitudes)
-	    for (unsigned int iamp = 0; iamp <= amphistname.size(); iamp++ ) {
+	  // loop over defined amplitudes  (JPLM amplitudes, JPL coherent sums, and Total)
+	  for (unsigned int iamp = 0; iamp <= amphistname.size() + ampsumname.size(); iamp++ ) {
 	    
 	    // AmpTools default, turn on all sum::amplitude
 	      for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) plotGen.enableAmp( jamp );
@@ -224,20 +220,18 @@ int main( int argc, char* argv[] ){
 		  }
 		}
 	      }
-
-	      //Leave in certain set of JPL amplitudes by excluding all nonmatching amplitude names	      
-	      if (isum < ampsumname.size()){
-		for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
-		  if( amps[jamp].find(ampsumname[isum].data()) == std::string::npos )  plotGen.disableAmp( jamp );	      
-	      }
-
-	    //Pick up the right JPLM amplitude by excluding all nonmatching amplitude names
+	      
+	      //Pick up the right JPLM amplitude or the set of JPLM amplitudes with common JPL
+	      // Disabled are all the amplitudes with nonmatching names
 	      if (iamp < amphistname.size()){	      
 		for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
 		  if( amps[jamp].find(amphistname[iamp].data()) == std::string::npos )  plotGen.disableAmp( jamp );
 	      } 
+	      else if (iamp < amphistname.size() + ampsumname.size()){
+		for (unsigned int jamp = 0; jamp < amps.size(); jamp++ ) 
+		  if( amps[jamp].find(ampsumname[iamp-amphistname.size()].data()) == std::string::npos )  plotGen.disableAmp( jamp );	      
+	      }
 
-	      // Consider specificallly  [irefl==reflname.size, isum==ampsumname.size, iamp==amphistname.size]
 
 	      
 	
@@ -245,11 +239,15 @@ int main( int argc, char* argv[] ){
     
 	    cout << "Looping over input data" << endl;
 	    // loop over data, accMC, and genMC
+	    //We filter histograms with an assumption that "Flat" and "Uniform" are always first in amphistname and reflname, respectively
+
+	    bool singleData =  (irefl == reflname.size()) && (iamp == amphistname.size() + ampsumname.size()); 
+	    bool singleFlatWave = (irefl == 0 && iamp > 0) || (irefl > 0 && iamp == 0); 
+
+
 	    for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
-	      bool singleData =  irefl == reflname.size() && iamp == amphistname.size();
-	      bool singleFlatWave = (irefl == 0 && iamp > 0) || (irefl > 0 && iamp == 0);
 		
-	      if ( iplot == PlotGenerator::kGenMC) continue; // no acceptance correction
+	      //  if ( iplot == PlotGenerator::kGenMC) continue; // no acceptance correction
 	      if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
 	      if ( iplot == PlotGenerator::kBkgnd && !singleData ) continue; // only plot background once
 	      if ( iplot == PlotGenerator::kAccMC && singleFlatWave ) continue; // only plot Flat wave once
@@ -284,18 +282,19 @@ int main( int argc, char* argv[] ){
 		if (iplot == PlotGenerator::kGenMC) histname += "_gen";
 	  
 		if (irefl < reflname.size()){
-		  // get name of sum for naming histogram
-		  string sumName = reflname[irefl];
 		  histname += "_";
-		  histname += sumName;
+		  histname += reflname[irefl]; // reflectivity suffix
 		}
-		//	  if (iamp > 0 && iamp < amphistname.size()) {
 		if (iamp < amphistname.size()) {
-		  // get name of amp for naming histogram  
 		  histname += "_";
-		  histname += amphistname[iamp];
+		  histname += amphistname[iamp]; //individual JPLM wave suffix 
 		}
-	  
+		else if (iamp < amphistname.size() + ampsumname.size()){
+		  histname += "_";
+		  histname += ampsumname[iamp - amphistname.size()];   // coherent JPL sum suffix
+		}
+
+		
 		Histogram* hist = plotGen.projection(ivar, reactionName, iplot);
 		TH1* thist = hist->toRoot();
 		thist->SetName(histname.c_str());
@@ -307,33 +306,40 @@ int main( int argc, char* argv[] ){
 		  summedHists[histname]->Add(thist);
 
 		//write separate histogram for each reaction
-		//if (iamp > 0 && iamp < amphistname.size())  plotfiledir->cd();
-		//else  plotfile->cd();
-		//thist->Write();
+		//if (iamp==0) plotfile->cd();
+		//else if (iamp < amphistname.size()) plotfile_dir_a->cd();
+		//else if (iamp < amphistname.size() + ampsumname.size()) plofiledir2->cd();
+
+		thist->Write();
 	  
 		delete thist;
-	      }
-	    }
-	    } // end of loop over amplitudes
-	  } // end of loop over coherent sums    
+	      } 
+	    } 
+	  } // end of loop over amplitudes
 	} // end of loop over reflectivities
       }// end of loop over 'reactions'
 
-  
 
-      //Now, write (nonzero) summed up histograms to the root file
+
+      //Now, write (nonzero) summed up histograms to the root file      
       for (auto it = summedHists.begin(); it != summedHists.end(); it++) {
 
 	std::string hsummed_name = it->first;
 	TH1* hsummed = it->second;    
-
 	if (hsummed->Integral() == 0.) continue;
 	else hsummed->SetName(hsummed_name.c_str());
-    
-	if (hsummed_name.find("+") != std::string::npos || hsummed_name.find("-") != std::string::npos)  plotfiledir->cd();              
-	else  plotfile->cd();    
 
+	if (hsummed_name.back() == '+' || hsummed_name.back() == '-' || hsummed_name.back() == '0')  plotfile_dir_jplm->cd();
+	else if (hsummed_name.find('+') != std::string::npos || hsummed_name.find('-') != std::string::npos) plotfile_dir_jpl->cd();
+	else plotfile->cd();
 	hsummed->Write();
+
+	//Write '0-P', '0-S', etc. '0-L' waves second time
+	if (hsummed_name.find("0-") != std::string::npos){
+	  plotfile_dir_jplm->cd();	
+	  hsummed->Write();	
+	}	
+
 	delete hsummed;
       }
       
@@ -351,11 +357,22 @@ int main( int argc, char* argv[] ){
       outfile.open(outparsName);
 
   
-      //PRINT ALL THE MODEL PARAMETERS   
-      const vector <string> par_names = results.parNameList();  
-      for(unsigned int ii = 0; ii < par_names.size(); ii++) 
-	outfile << par_names[ii] << " = " << results.parValue(par_names[ii]) << " +- " << results.parError(par_names[ii]) << endl;
- 
+      //PRINT ONLY THE MODEL PARAMETERS   
+      const ConfigurationInfo* fit_config = results.configInfo();
+      const vector<ParameterInfo*> fit_pars = fit_config->parameterList();
+
+      for (const auto* fit_par : fit_pars) {
+	const string par_name = fit_par->parName();
+	outfile << par_name << " = " << results.parValue(par_name) << " +- " << results.parError(par_name) << endl;
+      }
+
+      
+      //PRINT ALL THE PARAMETERS THAT MINUIT OPERATES  
+      //      const vector <string> par_names = results.parNameList();  
+      //      for(unsigned int ii = 0; ii < par_names.size(); ii++) 
+      //	outfile << par_names[ii] << " = " << results.parValue(par_names[ii]) << " +- " << results.parError(par_names[ii]) << endl;
+
+      
   
       // CALCULATE INTENSITY FRACTIONS AND PHASE DIFFERENCES
       // All 'reactions' are already turned on
