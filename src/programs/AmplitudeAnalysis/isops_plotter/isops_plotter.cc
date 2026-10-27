@@ -119,7 +119,7 @@ int main( int argc, char* argv[] ){
     cout << "Invalid fit results in file:  " << resultsName << endl;
     exit( 1 );
   }
-  cout << "Fit results loaded" << endl;
+    cout << "Fit results loaded" << endl;
     // ************************
     // set up the plot generator
     // ************************
@@ -247,7 +247,7 @@ int main( int argc, char* argv[] ){
 
 	    for (unsigned int iplot = 0; iplot < PlotGenerator::kNumTypes; iplot++){
 		
-	      //  if ( iplot == PlotGenerator::kGenMC) continue; // no acceptance correction
+	      if ( iplot == PlotGenerator::kGenMC) continue; // no acceptance correction 
 	      if ( iplot == PlotGenerator::kData && !singleData ) continue; // only plot data once
 	      if ( iplot == PlotGenerator::kBkgnd && !singleData ) continue; // only plot background once
 	      if ( iplot == PlotGenerator::kAccMC && singleFlatWave ) continue; // only plot Flat wave once
@@ -355,30 +355,34 @@ int main( int argc, char* argv[] ){
 
       ofstream outfile;
       outfile.open(outparsName);
-
+      
   
       //PRINT ONLY THE MODEL PARAMETERS   
       const ConfigurationInfo* fit_config = results.configInfo();
       const vector<ParameterInfo*> fit_pars = fit_config->parameterList();
 
+      outfile << "FIT CONFIGURATION PARAMETERS" << endl;
+      
       for (const auto* fit_par : fit_pars) {
-	const string par_name = fit_par->parName();
-	outfile << par_name << " = " << results.parValue(par_name) << " +- " << results.parError(par_name) << endl;
+	const string usepar = fit_par->parName();
+	outfile << usepar << " = " << results.parValue(usepar) << " +- " << results.parError(usepar) << endl;
       }
 
       
-      //PRINT ALL THE PARAMETERS THAT MINUIT OPERATES  
-      //      const vector <string> par_names = results.parNameList();  
-      //      for(unsigned int ii = 0; ii < par_names.size(); ii++) 
-      //	outfile << par_names[ii] << " = " << results.parValue(par_names[ii]) << " +- " << results.parError(par_names[ii]) << endl;
+      //PRINT ALL THE PARAMETERS THAT MINUIT OPERATES  (MODEL PARAMETERS + PRODUCTION COEFFICIENTS)
+      //       const vector <string> par_names = results.parNameList();  
+      //       for(unsigned int ii = 0; ii < par_names.size(); ii++) 
+      //       outfile << par_names[ii] << " = " << results.parValue(par_names[ii]) << " +- " << results.parError(par_names[ii]) << endl;
 
-      
+
+       outfile << "***************************************************************************************" << endl;
+       
   
       // CALCULATE INTENSITY FRACTIONS AND PHASE DIFFERENCES
       // All 'reactions' are already turned on
       // The next calculations only need to happen one time
 
-  
+       
       //Define vector with full amplitudes
       vector<string> fullamps = plotGen.fullAmplitudes();
 
@@ -393,20 +397,38 @@ int main( int argc, char* argv[] ){
       vector<string> ampsumPosRefl[nSums];
       vector<string> ampsumNegRefl[nSums];
 
+      //Define arrays for phases
+      string ampPhaseNegRefl[nAmps];
+      string ampPhasePosRefl[nAmps];
+      
 
       for(unsigned int i = 0; i < fullamps.size(); i++){    
-
+	
 	// Split by reflectivities and grab contributions for each JPLM amplitude 
 	for(int iamp=0; iamp<nAmps; iamp++) {
 	  string locampname = amphistname[iamp];
-	    
+	  
 	  if (fullamps[i].find("::" + locampname) == std::string::npos) continue;
 
+	  if (fullamps[i].find("::Flat") != std::string::npos){ 
+            ampPosRefl[0].push_back(fullamps[i]);
+	    ampNegRefl[0].push_back(fullamps[i]);
+    	    ampPhasePosRefl[0] = fullamps[i];
+	    ampPhaseNegRefl[0] = fullamps[i];
+	  }
+	    
 	  if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("RealPosSign") != std::string::npos)
 	    ampNegRefl[iamp].push_back(fullamps[i]);
 
 	  if (fullamps[i].find("ImagPosSign") != std::string::npos || fullamps[i].find("RealNegSign") != std::string::npos)
 	    ampPosRefl[iamp].push_back(fullamps[i]);
+
+ 	  // leave only the Spring2017_PARA_0::ImagPosSign and Spring2017_PARA_0::ImagNegSign coherent sums
+	  if (fullamps[i].find("Spring2017") != std::string::npos && fullamps[i].find("ImagNegSign") != std::string::npos)
+	    ampPhaseNegRefl[iamp] = fullamps[i];
+	  if (fullamps[i].find("Spring2017") != std::string::npos && fullamps[i].find("RealNegSign") != std::string::npos)
+	    ampPhasePosRefl[iamp] = fullamps[i];
+
 	}
 
 	// Split by reflectivities and grab contributions for each JPL sum 
@@ -443,36 +465,51 @@ int main( int argc, char* argv[] ){
 
       outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
   
-      cout<<"Computing intensities of amplitudes"<<endl;
+      cout << "Computing intensities of amplitudes [each reaction]" << endl;
       for (unsigned int i = 0; i < fullamps.size(); i++){
 	vector<string> useamp;
 	useamp.push_back(fullamps[i]);
-	outfile << "FIT FRACTION " << fullamps[i] << " = " << results.intensity(useamp).first / results.intensity().first << " +- " << results.intensity(useamp).second / results.intensity().first <<  endl;
+	if (fullamps[i].find("ImagNegSign") != std::string::npos || fullamps[i].find("ImagPosSign") != std::string::npos) 
+	  outfile << "FIT FRACTION " << fullamps[i] << " = " << results.intensity(useamp).first / results.intensity().first <<" +- "<< results.intensity(useamp).second / results.intensity().first <<  endl;
       }
-  
-      cout<<"Computing phase differences"<<endl;
+
+      cout << "Computing phase differences" << endl;
       for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
 	pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
-	outfile << "PHASE DIFF " << phaseDiffNames[i].first << " " << phaseDiffNames[i].second << " " << phaseDiff.first << " " << phaseDiff.second << endl;
+	outfile << "PHASE DIFF " << phaseDiffNames[i].first << "__" << phaseDiffNames[i].second << " = " << phaseDiff.first << " +- " << phaseDiff.second << endl;
       }
+      
 
-      cout<<"Computing intensities of coherent sums"<<endl;
-      for(int i = 0; i < nAmps; i++){
-	if(ampPosRefl[i].empty()) continue;
-	outfile << "FIT FRACTION (coherent sum) PosRefl " << amphistname[i] << " = " << results.intensity(ampPosRefl[i]).first / results.intensity().first << " +- "
-		<< results.intensity(ampPosRefl[i]).second / results.intensity().first << endl;
-	outfile << "FIT FRACTION (coherent sum) NegRefl " << amphistname[i] << " = " << results.intensity(ampNegRefl[i]).first / results.intensity().first << " +- "
+      cout << "Computing intensities of amplitudes [full fit]" << endl;      
+      outfile << "FIT FRACTION (full fit) Uniform = " << results.intensity(ampPosRefl[0]).first  / results.intensity().first << " +- "
+                << results.intensity(ampPosRefl[0]).second / results.intensity().first << endl;
+
+      for(int i = 1; i < nAmps; i++){
+	if(ampPosRefl[i].empty()) continue; //amplitude not represented in the fit
+	outfile << "FIT FRACTION (full fit) NegRefl " << amphistname[i] << " = " << results.intensity(ampNegRefl[i]).first / results.intensity().first << " +- "
 		<< results.intensity(ampNegRefl[i]).second / results.intensity().first << endl;
+	outfile << "FIT FRACTION (full fit) PosRefl " << amphistname[i] << " = " << results.intensity(ampPosRefl[i]).first / results.intensity().first << " +- "
+		<< results.intensity(ampPosRefl[i]).second / results.intensity().first << endl;
       }
-
+      
+      cout << "Computing intensities of coherent sums [full fit]" << endl;                  
       for(int i = 0; i < nSums; i++){
-	if(ampsumPosRefl[i].empty()) continue;
-	outfile << "FIT FRACTION (coherent sum) PosRefl " << ampsumname[i] << " = " << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
-		<< results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
-	outfile << "FIT FRACTION (coherent sum) NegRefl " << ampsumname[i] << " = " << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
+	if(ampsumPosRefl[i].empty()) continue; //sum not represented in the fit
+	outfile << "FIT FRACTION (full fit) NegRefl " << ampsumname[i] << " = " << results.intensity(ampsumNegRefl[i]).first / results.intensity().first << " +- "
 		<< results.intensity(ampsumNegRefl[i]).second / results.intensity().first << endl;
+	outfile << "FIT FRACTION (full fit) PosRefl " << ampsumname[i] << " = " << results.intensity(ampsumPosRefl[i]).first / results.intensity().first << " +- "
+		<< results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
       }
+      
+      cout << "Computing phases of amplitudes" << endl;
+      for(int i = 1; i < nAmps; i++){
+	if(ampPhasePosRefl[i].empty()) continue; //amplitude not represented in the fit
+	outfile << "PHASE NegRefl " << amphistname[i] << " = " << std::arg(results.productionParameter(ampPhaseNegRefl[i])) << endl; 
+	outfile << "PHASE PosRefl " << amphistname[i] << " = " << std::arg(results.productionParameter(ampPhasePosRefl[i])) << endl;
+      }
+      
 
+      
       outfile.close();
     }
 
