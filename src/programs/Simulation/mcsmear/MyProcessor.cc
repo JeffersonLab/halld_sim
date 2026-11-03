@@ -45,6 +45,11 @@ static int MERGE_MIN_TAGGER_HITS(5);
 static std::atomic<long> Nmerge_read(0);
 static std::atomic<long> Nmerge_skipped(0);
 
+// Run whose start the shared merge input streams were last positioned for.
+// BeginRun runs once in every thread (the merger configuration is
+// thread_local), but the merge input streams are shared by all threads.
+static int merge_positioned_run(-1);
+
 static int CountTaggerHits(hddm_s::HDDM &rec)
 {
    int n = 0;
@@ -512,9 +517,12 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 
 #endif  // HAVE_RCDB
 
-    // fast forward any merger input files over skipped events
-    std::map<hddm_s::istream*,hddm_s::streamposition>::iterator iter;
-    for (iter = start2merge.begin(); iter != start2merge.end(); ++iter) {
+    // fast forward any merger input files over skipped events, once per
+    // run: a later thread repeating this would rewind the shared streams
+    // to the start of the file for all threads
+    if (merge_positioned_run != locRunNumber) {
+      std::map<hddm_s::istream*,hddm_s::streamposition>::iterator iter;
+      for (iter = start2merge.begin(); iter != start2merge.end(); ++iter) {
         hddm_s::HDDM record2;
 
         iter->first->setPosition(start2merge.at(iter->first));
@@ -527,6 +535,8 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 		}
 
         skip2merge[iter->first] = 0;
+      }
+      merge_positioned_run = locRunNumber;
     }
 
     hddm_s_merger::set_config_run_loaded(locRunNumber);
