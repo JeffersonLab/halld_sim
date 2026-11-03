@@ -8,6 +8,9 @@
 #include <sstream>
 
 bool fdc_config_t::FDC_EFFVSDOCA(1);
+double fdc_config_t::FDC_CATHODE_SIGMA_SET(-1.);
+double fdc_config_t::FDC_DRIFT_SMEAR_NS(0.);
+double fdc_config_t::FDC_EFFVSDOCA_PAR_SET[4] = {0.999, 3.75e-4, 0.506, 3.75e-2};
 
 //-----------
 // fdc_config_t  (constructor)
@@ -49,7 +52,10 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
    	// Calculate ped noise level based on position resolution
    	//   FDC_PED_NOISE = -0.004594 + 0.008711*FDC_CATHODE_SIGMA +
    	//                    0.000010*FDC_CATHODE_SIGMA*FDC_CATHODE_SIGMA; //pC
+	if (FDC_CATHODE_SIGMA_SET >= 0) FDC_CATHODE_SIGMA = FDC_CATHODE_SIGMA_SET;
    	FDC_PED_NOISE = -0.0938 + 0.0485*FDC_CATHODE_SIGMA;
+	jout << "FDC_DRIFT_SMEAR_NS = " << FDC_DRIFT_SMEAR_NS << endl;
+	jout << "FDC_CATHODE_SIGMA = " << FDC_CATHODE_SIGMA << " um, FDC_PED_NOISE = " << FDC_PED_NOISE << endl;
 
 
 	// load efficiency correction factors
@@ -78,10 +84,9 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
 		}
 	}
 
-    FDC_EFFVSDOCA_PAR[0] = 0.999;
-    FDC_EFFVSDOCA_PAR[1] = 3.75e-4;
-    FDC_EFFVSDOCA_PAR[2] = 0.506;
-    FDC_EFFVSDOCA_PAR[3] = 3.75e-2;
+    for (int i = 0; i < 4; i++) FDC_EFFVSDOCA_PAR[i] = FDC_EFFVSDOCA_PAR_SET[i];
+    jout << "FDC eff vs doca: use " << FDC_EFFVSDOCA << " par " << FDC_EFFVSDOCA_PAR[0] << " " << FDC_EFFVSDOCA_PAR[1]
+         << " " << FDC_EFFVSDOCA_PAR[2] << " " << FDC_EFFVSDOCA_PAR[3] << jendl;
 }
 
 
@@ -96,6 +101,17 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
    hddm_s::FdcChamberList chambers = record->getFdcChambers();
    hddm_s::FdcChamberList::iterator iter;
    for (iter = chambers.begin(); iter != chambers.end(); ++iter) {
+
+      // drift-time fluctuation common to the wire hit and the strip hits induced by the same track in this chamber
+      // (the strips see the charge induced by the wire avalanche, so the drift delay is the same for both); one shift per itrack
+      std::map<int, double> drift_shift_ns;
+      auto drift_shift = [&](int itrack) {
+         if (!config->SMEAR_HITS || fdc_config->FDC_DRIFT_SMEAR_NS <= 0) return 0.;
+         auto it = drift_shift_ns.find(itrack);
+         if (it == drift_shift_ns.end())
+            it = drift_shift_ns.emplace(itrack, gDRandom.SampleGaussian(fdc_config->FDC_DRIFT_SMEAR_NS)).first;
+         return it->second;
+      };
 
       // Add pedestal noise to strip charge data
       hddm_s::FdcCathodeStripList strips = iter->getFdcCathodeStrips();
@@ -113,7 +129,7 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
               	continue;
           
             double q = titer->getQ();
-            double t = titer->getT();
+            double t = titer->getT() + drift_shift(titer->getItrack());
           	if(config->SMEAR_HITS) {
              	q += gDRandom.SampleGaussian(fdc_config->FDC_PED_NOISE);
              	t += gDRandom.SampleGaussian(fdc_config->FDC_TDRIFT_SIGMA)*1.0e9;
@@ -152,7 +168,7 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
                     && !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyVsDOCA(doca)))
                continue;
 
-            double t = titer->getT();
+            double t = titer->getT() + drift_shift(titer->getItrack());
           	if(config->SMEAR_HITS) {
                t += gDRandom.SampleGaussian(fdc_config->FDC_TDRIFT_SIGMA)*1.0e9;
             }

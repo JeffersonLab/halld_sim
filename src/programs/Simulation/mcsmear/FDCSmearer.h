@@ -21,6 +21,9 @@ class fdc_config_t
 	double FDC_ADC_ASCALE;        // /FDC/digi_scales FDC_ADC_ASCALE; strip peakAmp = q / FDC_ADC_ASCALE, as in data (DFDCHit_factory: q = a_scale * pulse_height)
 
     static bool FDC_EFFVSDOCA;
+    static double FDC_DRIFT_SMEAR_NS;        // FDC:DRIFT_SMEAR_NS, Gaussian drift-time smear (ns) common to the wire and strip hits of one track in one chamber (0 = off)
+    static double FDC_CATHODE_SIGMA_SET;     // FDC:CATHODE_SIGMA, override of FDC_CATHODE_SIGMA in microns (< 0 = use CCDB)
+    static double FDC_EFFVSDOCA_PAR_SET[4];  // FDC:EFFVSDOCA_PAR0..3, wire efficiency vs doca (defaults = the former hard-coded values)
     double FDC_EFFVSDOCA_PAR[4];
 
 	vector< vector<double > > channel_efficiencies;
