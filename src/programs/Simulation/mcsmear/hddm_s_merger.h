@@ -23,8 +23,8 @@ namespace hddm_s_merger {
    void set_cdc_merging(bool merging_status);
    int get_cdc_max_hits();
    void set_cdc_max_hits(int maxhits);
-   double get_cdc_integration_window_ns();
-   void set_cdc_integration_window_ns(double dt_ns);
+   double get_cdc_readout_window_ns();
+   void set_cdc_readout_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the FDC
    bool get_fdc_merging();
@@ -35,8 +35,8 @@ namespace hddm_s_merger {
    void set_fdc_wires_min_delta_t_ns(double dt_ns);
    int get_fdc_strips_max_hits();
    void set_fdc_strips_max_hits(int maxhits);
-   double get_fdc_strips_integration_window_ns();
-   void set_fdc_strips_integration_window_ns(double dt_ns);
+   double get_fdc_strips_readout_window_ns();
+   void set_fdc_strips_readout_window_ns(double dt_ns);
 
    // hits merging / truncation parameters for the STC
    bool get_stc_merging();

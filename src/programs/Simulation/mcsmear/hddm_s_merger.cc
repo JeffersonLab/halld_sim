@@ -35,13 +35,13 @@ static thread_local double t_shift_ns(0);
 
 static thread_local bool   enable_cdc_merging(true);
 static thread_local int    cdc_max_hits(1);
-static thread_local double cdc_integration_window_ns(1432.);
+static thread_local double cdc_readout_window_ns(1312.);
 
 static thread_local bool   enable_fdc_merging(true);
 static thread_local int    fdc_wires_max_hits(8);
 static thread_local double fdc_wires_min_delta_t_ns(35.);
 static thread_local int    fdc_strips_max_hits(1);
-static thread_local double fdc_strips_integration_window_ns(200.);
+static thread_local double fdc_strips_readout_window_ns(352.);
 
 static thread_local bool   enable_stc_merging(true);
 static thread_local int    stc_adc_max_hits(3);
@@ -144,12 +144,12 @@ namespace hddm_s_merger {
       cdc_max_hits = maxhits;
    }
 
-   double get_cdc_integration_window_ns() {
-      return cdc_integration_window_ns;
+   double get_cdc_readout_window_ns() {
+      return cdc_readout_window_ns;
    }
 
-   void set_cdc_integration_window_ns(double dt_ns) {
-      cdc_integration_window_ns = dt_ns;
+   void set_cdc_readout_window_ns(double dt_ns) {
+      cdc_readout_window_ns = dt_ns;
    }
 
    bool get_fdc_merging() {
@@ -184,12 +184,12 @@ namespace hddm_s_merger {
       fdc_strips_max_hits = maxhits;
    }
 
-   double get_fdc_strips_integration_window_ns() {
-      return fdc_strips_integration_window_ns;
+   double get_fdc_strips_readout_window_ns() {
+      return fdc_strips_readout_window_ns;
    }
 
-   void set_fdc_strips_integration_window_ns(double dt_ns) {
-      fdc_strips_integration_window_ns = dt_ns;
+   void set_fdc_strips_readout_window_ns(double dt_ns) {
+      fdc_strips_readout_window_ns = dt_ns;
    }
 
    bool get_stc_merging() {
@@ -742,7 +742,7 @@ hddm_s::CdcStrawHitList &operator+=(hddm_s::CdcStrawHitList &dst,
      
    double t = iter_firsthit->getT() + t_shift_ns;
 
-   if (t > cdc_integration_window_ns) return dst;       // new hit is too late, don't use it.
+   if (t > cdc_readout_window_ns) return dst;       // new hit is too late, don't use it.
 
    
    double newQ = iter_firsthit->getQ();    
@@ -963,41 +963,66 @@ hddm_s::FdcCathodeStripList &operator+=(hddm_s::FdcCathodeStripList &dst,
 hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
                                       hddm_s::FdcCathodeHitList &src)
 {
-   // order by t, merge with existing hit if close enough
-   int iord = 0;
+
+   // There should be no more than one hit in dst - assume this is the case.  (otherwise, would have to pick the earliest)
+
+   // Find the earliest (random) hit in src, ignore the later ones, if any. 
+   // If it is before the original hit, replace the original hit's time and peak height. 
+   // If it is at the same time sample as the original hit, sum the pulse height.
+   // If it is after the original hit, leave the original hit's time and peak height alone. 
+
+
    hddm_s::FdcCathodeHitList::iterator iter;
+   hddm_s::FdcCathodeHitList::iterator iter_firsthit;   
+
+   iter_firsthit = src.begin();
+   double t_firsthit = iter_firsthit->getT();
+   
    for (iter = src.begin(); iter != src.end(); ++iter) {
-      double t = iter->getT() + t_shift_ns;
-      double ti = fdc_strips_integration_window_ns;
-      double dt = ti + 2*fadc125_period_ns;
-      double newQ = iter->getQ();
-      while (iord > 0 && dst(iord).getT() > t)
-         --iord;
-      while (iord < dst.size() && dst(iord).getT() < t)
-         ++iord;
-      if (iord > 0 && t - dst(iord - 1).getT() < dt) {
-         --iord;
-         double oldQ = dst(iord).getQ();
-         double pulse_fraction = 1 - (t - dst(iord).getT()) / ti;
-         if (pulse_fraction > 0)
-            dst(iord).setQ(oldQ + newQ * pulse_fraction);
-      }
-      else if (iord < dst.size() && dst(iord).getT() - t < dt) {
-         double oldQ = dst(iord).getQ();
-         double pulse_fraction = 1 - (dst(iord).getT() - t) / ti;
-         if (pulse_fraction > 0)
-            dst(iord).setQ(newQ + oldQ * pulse_fraction);
-         else
-            dst(iord).setQ(newQ);
-         dst(iord).setT(t);
-      }
-      else {
-         dst.add(1, (iord < dst.size())? iord : -1);
-         dst(iord).setQ(newQ);
-         dst(iord).setT(t);
+      double this_t = iter->getT();
+      if (this_t < t_firsthit) {
+	t_firsthit = this_t;
+	iter_firsthit = iter;
       }
    }
+
+   double t = iter_firsthit->getT() + t_shift_ns;   
+   if (t > fdc_strips_readout_window_ns) return dst; // random is too late
+   
+   double newQ = iter_firsthit->getQ();
+   
+   if (dst.size() == 0) { // no hits exist, add the random
+     dst.add(1, -1);
+     dst(0).setT(t);
+     dst(0).setQ(newQ);
+     
+   } else {
+
+      // convert time into 8ns samples to see if hits arrive in same sample
+
+      double origT = dst(0).getT();
+
+      int src_hitsample = (int)(t/fadc125_period_ns);
+      int dst_hitsample = (int)(origT/fadc125_period_ns);
+
+      double origQ = dst(0).getQ();  
+
+      if (src_hitsample == dst_hitsample) { // same sample, add pulse heights
+
+ 	 if (t < origT) dst(0).setT(t);
+	 dst(0).setQ(origQ + newQ);
+   
+      } else if (src_hitsample < dst_hitsample) { // random arrives earlier, replace hit time and pulse height 
+	
+         dst(0).setT(t);
+	 dst(0).setQ(newQ);           
+         
+      } // if the random hit is after the original one, it is too late, ignore it.
+
+   }
+   
    return dst;
+   
 }
 
 hddm_s::StartCntrList &operator+=(hddm_s::StartCntrList &dst,
