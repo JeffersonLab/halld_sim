@@ -55,6 +55,7 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
 	if (FDC_CATHODE_SIGMA_SET >= 0) FDC_CATHODE_SIGMA = FDC_CATHODE_SIGMA_SET;
    	FDC_PED_NOISE = -0.0938 + 0.0485*FDC_CATHODE_SIGMA;
 	jout << "FDC_DRIFT_SMEAR_NS = " << FDC_DRIFT_SMEAR_NS << endl;
+	jout << "FDC_THRESH_KEV = " << FDC_THRESH_KEV << " (anode wire threshold)" << endl;
 	jout << "FDC_CATHODE_SIGMA = " << FDC_CATHODE_SIGMA << " um, FDC_PED_NOISE = " << FDC_PED_NOISE << endl;
 
 
@@ -159,6 +160,10 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
          hddm_s::FdcAnodeTruthHitList thits = witer->getFdcAnodeTruthHits();
          hddm_s::FdcAnodeTruthHitList::iterator titer;
          for (titer = thits.begin(); titer != thits.end(); ++titer) {
+            // anode discriminator threshold, applied to the energy deposited on the wire
+            // (dE in GeV, summed by hdgeant4 over the track segments it combined into this hit)
+            if (titer->getDE() * 1e6 < fdc_config->FDC_THRESH_KEV)
+               continue;
              // correct simulation efficiencies 
 		     if (config->APPLY_EFFICIENCY_CORRECTIONS
              		&& !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyCorrectionFactor(witer)))
