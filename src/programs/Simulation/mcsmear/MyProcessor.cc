@@ -166,6 +166,13 @@ void MyProcessor::Init(void)
                           "Turn on/off fdc doca-dependent wire hit efficiency,"
                           " \"0\"=no efficiency correction,"
                           " \"1\"=standard efficiency correction (default)");
+   app->SetDefaultParameter("FDC:DRIFT_SMEAR_NS", fdc_config_t::FDC_DRIFT_SMEAR_NS,
+                            "Gaussian drift-time smear in ns, common to the wire and strip hits of one track in one chamber; 0 = off");
+   app->SetDefaultParameter("FDC:CATHODE_SIGMA", fdc_config_t::FDC_CATHODE_SIGMA_SET,
+                            "FDC_CATHODE_SIGMA override in microns, sets the strip pedestal noise; < 0 = CCDB");
+   for (int i = 0; i < 4; i++)
+      app->SetDefaultParameter("FDC:EFFVSDOCA_PAR" + std::to_string(i), fdc_config_t::FDC_EFFVSDOCA_PAR_SET[i],
+                               "fdc wire efficiency vs doca parameter");
 
    return; //NOERROR;
 }
