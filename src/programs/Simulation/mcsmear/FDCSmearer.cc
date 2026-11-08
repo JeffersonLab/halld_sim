@@ -10,6 +10,12 @@
 bool fdc_config_t::FDC_EFFVSDOCA(1);
 double fdc_config_t::FDC_CATHODE_SIGMA_SET(-1.);
 double fdc_config_t::FDC_DRIFT_SMEAR_NS(0.);
+double fdc_config_t::FDC_GAIN_SCALE(1.);
+double fdc_config_t::FDC_GAIN_PKG[4] = {1., 1., 1., 1.};
+double fdc_config_t::FDC_DOCA_ATTEN(0.);
+double fdc_config_t::FDC_GAIN_SIGMA(0.);
+double fdc_config_t::FDC_STRIP_THR_SET(-1.);
+double fdc_config_t::FDC_WIRE_THR_KEV_SET(-1.);
 double fdc_config_t::FDC_EFFVSDOCA_PAR_SET[4] = {0.999, 3.75e-4, 0.506, 3.75e-2};
 
 //-----------
@@ -46,6 +52,7 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
 	if (FDC_CATHODE_SIGMA_SET >= 0) FDC_CATHODE_SIGMA = FDC_CATHODE_SIGMA_SET;
    	FDC_PED_NOISE = -0.0938 + 0.0485*FDC_CATHODE_SIGMA;
 	jout << "FDC_DRIFT_SMEAR_NS = " << FDC_DRIFT_SMEAR_NS << endl;
+	jout << "FDC_GAIN_SCALE = " << FDC_GAIN_SCALE << " x package " << FDC_GAIN_PKG[0] << "/" << FDC_GAIN_PKG[1] << "/" << FDC_GAIN_PKG[2] << "/" << FDC_GAIN_PKG[3] << ", FDC_DOCA_ATTEN = " << FDC_DOCA_ATTEN << ", FDC_GAIN_SIGMA = " << FDC_GAIN_SIGMA << ", FDC_STRIP_THRESHOLD = " << FDC_STRIP_THR_SET << " pC, FDC_WIRE_THRESHOLD_KEV = " << FDC_WIRE_THR_KEV_SET << " (< 0: CCDB)" << endl;
 	jout << "FDC_THRESH_KEV = " << FDC_THRESH_KEV << " (anode wire threshold)" << endl;
 	jout << "FDC_CATHODE_SIGMA = " << FDC_CATHODE_SIGMA << " um, FDC_PED_NOISE = " << FDC_PED_NOISE << endl;
 
@@ -89,10 +96,15 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
 {
    double t_max = config->TRIGGER_LOOKBACK_TIME + fdc_config->FDC_TIME_WINDOW;
    double threshold = fdc_config->FDC_THRESHOLD_FACTOR * fdc_config->FDC_PED_NOISE; // for sparsification
+   if (fdc_config->FDC_STRIP_THR_SET >= 0) threshold = fdc_config->FDC_STRIP_THR_SET;
+   double wire_thr_kev = (fdc_config->FDC_WIRE_THR_KEV_SET >= 0) ? fdc_config->FDC_WIRE_THR_KEV_SET : fdc_config->FDC_THRESH_KEV;
+   double gain_global = fdc_config->FDC_GAIN_SCALE;   // gas gain relative to the simulation: scales the avalanche charge seen on wires and strips
 
    hddm_s::FdcChamberList chambers = record->getFdcChambers();
    hddm_s::FdcChamberList::iterator iter;
    for (iter = chambers.begin(); iter != chambers.end(); ++iter) {
+      int pkg = (iter->getModule() - 1) / 2;   // FDC package 0-3 (3 planes per module, 2 modules per package)
+      double gain = gain_global * ((pkg >= 0 && pkg < 4) ? fdc_config->FDC_GAIN_PKG[pkg] : 1.);
 
       // drift-time fluctuation common to the wire hit and the strip hits induced by the same track in this chamber
       // (the strips see the charge induced by the wire avalanche, so the drift delay is the same for both); one shift per itrack
@@ -102,6 +114,33 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
          auto it = drift_shift_ns.find(itrack);
          if (it == drift_shift_ns.end())
             it = drift_shift_ns.emplace(itrack, gDRandom.SampleGaussian(fdc_config->FDC_DRIFT_SMEAR_NS)).first;
+         return it->second;
+      };
+
+      // signal attenuation vs the track's doca to its wire in this chamber (charge lost at the cell edge), per itrack, from the anode truth hits
+      std::map<int, double> atten;
+      auto atten_of_doca = [&](double d) { return std::max(0.05, 1. - fdc_config->FDC_DOCA_ATTEN * d * d); };
+      if (fdc_config->FDC_DOCA_ATTEN > 0) {
+         hddm_s::FdcAnodeWireList awires = iter->getFdcAnodeWires();
+         for (auto aw = awires.begin(); aw != awires.end(); ++aw) {
+            hddm_s::FdcAnodeTruthHitList ath = aw->getFdcAnodeTruthHits();
+            for (auto at = ath.begin(); at != ath.end(); ++at) {
+               double a = atten_of_doca(at->getD());
+               auto it = atten.find(at->getItrack());
+               if (it == atten.end() || a > it->second) atten[at->getItrack()] = a;   // the wire with the closest approach
+            }
+         }
+      }
+      auto atten_of_track = [&](int itrack) { auto it = atten.find(itrack); return (it == atten.end()) ? 1. : it->second; };
+      // avalanche gain fluctuation, one factor per track in this chamber (the strips see the charge induced by the same wire avalanche)
+      std::map<int, double> fluct;
+      auto fluct_of_track = [&](int itrack) {
+         if (fdc_config->FDC_GAIN_SIGMA <= 0) return 1.;
+         auto it = fluct.find(itrack);
+         if (it == fluct.end()) {
+            double s = fdc_config->FDC_GAIN_SIGMA;
+            it = fluct.emplace(itrack, exp(gDRandom.SampleGaussian(s) - 0.5 * s * s)).first;
+         }
          return it->second;
       };
 
@@ -120,7 +159,7 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
                   && !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyCorrectionFactor(siter)))
               	continue;
           
-            double q = titer->getQ();
+            double q = titer->getQ() * gain * atten_of_track(titer->getItrack()) * fluct_of_track(titer->getItrack());
             double t = titer->getT() + drift_shift(titer->getItrack());
           	if(config->SMEAR_HITS) {
              	q += gDRandom.SampleGaussian(fdc_config->FDC_PED_NOISE);
@@ -148,7 +187,8 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
          for (titer = thits.begin(); titer != thits.end(); ++titer) {
             // anode discriminator threshold, applied to the energy deposited on the wire
             // (dE in GeV, summed by hdgeant4 over the track segments it combined into this hit)
-            if (titer->getDE() * 1e6 < fdc_config->FDC_THRESH_KEV)
+            double att = (fdc_config->FDC_DOCA_ATTEN > 0) ? atten_of_doca(titer->getD()) : 1.;
+            if (titer->getDE() * gain * att * fluct_of_track(titer->getItrack()) * 1e6 < wire_thr_kev)
                continue;
              // correct simulation efficiencies 
 		     if (config->APPLY_EFFICIENCY_CORRECTIONS

@@ -22,6 +22,12 @@ class fdc_config_t
     static bool FDC_EFFVSDOCA;
     static double FDC_DRIFT_SMEAR_NS;        // FDC:DRIFT_SMEAR_NS, Gaussian drift-time smear (ns) common to the wire and strip hits of one track in one chamber (0 = off)
     static double FDC_CATHODE_SIGMA_SET;     // FDC:CATHODE_SIGMA, override of FDC_CATHODE_SIGMA in microns (< 0 = use CCDB)
+    static double FDC_GAIN_SCALE;            // FDC:GAIN_SCALE, gas-gain factor applied to the strip charge q and the wire dE before the thresholds (1 = off)
+    static double FDC_GAIN_PKG[4];           // FDC:GAIN_PKG1..4, extra gain factor per FDC package (modules 1-2, 3-4, 5-6, 7-8), times FDC_GAIN_SCALE (1 = off)
+    static double FDC_STRIP_THR_SET;         // FDC:STRIP_THRESHOLD, strip charge threshold in pC (< 0 = FDC_THRESHOLD_FACTOR * FDC_PED_NOISE from CCDB)
+    static double FDC_GAIN_SIGMA;            // FDC:GAIN_SIGMA s, avalanche gain fluctuation: one log-normal factor exp(s G - s^2/2) per chamber and track, shared by its wire hit and the strips it induces (0 = off)
+    static double FDC_DOCA_ATTEN;            // FDC:DOCA_ATTEN a, signal (wire dE and the track's strip q in the chamber) scaled by max(0.05, 1 - a doca^2), doca in cm (0 = off)
+    static double FDC_WIRE_THR_KEV_SET;      // FDC:WIRE_THRESHOLD_KEV, anode threshold on the gain-scaled wire dE in keV (< 0 = FDC_THRESH_KEV from CCDB)
     static double FDC_EFFVSDOCA_PAR_SET[4];  // FDC:EFFVSDOCA_PAR0..3, wire efficiency vs doca (defaults = the former hard-coded values)
     double FDC_EFFVSDOCA_PAR[4];
 
