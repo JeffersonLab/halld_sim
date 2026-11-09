@@ -305,12 +305,11 @@ int main( int argc, char* argv[] ){
 		else 
 		  summedHists[histname]->Add(thist);
 
-		//write separate histogram for each reaction
+		//write separate histograms for each reaction
 		//if (iamp==0) plotfile->cd();
 		//else if (iamp < amphistname.size()) plotfile_dir_a->cd();
 		//else if (iamp < amphistname.size() + ampsumname.size()) plofiledir2->cd();
-
-		thist->Write();
+		//thist->Write();
 	  
 		delete thist;
 	      } 
@@ -357,25 +356,36 @@ int main( int argc, char* argv[] ){
       outfile.open(outparsName);
       
   
-      //PRINT ONLY THE MODEL PARAMETERS   
       const ConfigurationInfo* fit_config = results.configInfo();
-      const vector<ParameterInfo*> fit_pars = fit_config->parameterList();
-
-      outfile << "FIT CONFIGURATION PARAMETERS" << endl;
+      const vector<ParameterInfo*> config_pars = fit_config->parameterList();
+      const vector <string> parnames = results.parNameList();  
+      vector <string> config_parnames;
       
-      for (const auto* fit_par : fit_pars) {
-	const string usepar = fit_par->parName();
-	outfile << usepar << " = " << results.parValue(usepar) << " +- " << results.parError(usepar) << endl;
+      for (const auto* config_par : config_pars) 
+	config_parnames.push_back(config_par->parName());
+
+      
+      //PRINT ONLY THE MODEL PARAMETERS     
+      outfile << "FIT CONFIGURATION PARAMETERS" << endl;      
+      for (const auto* config_par : config_pars){
+	const string name = config_par->parName();
+	outfile << name << " = " << results.parValue(name) << " +- " << results.parError(name) << endl;
+      }	
+      outfile << "***************************************************************************************" << endl;
+
+      
+      //PRINT ALL THE PRODUCTION COEFFICIENTS THAT MINUIT OPERATES
+      outfile << "UNSCALED AMPLITUDES" << endl;
+      for(unsigned int ii = 0; ii < parnames.size(); ii++){       
+	if (std::find(config_parnames.begin(), config_parnames.end(), parnames[ii]) != config_parnames.end())
+	  continue;
+	// leave only the Spring2017_PARA_0::UniBG, Spring2017_PARA_0::RealNegSign and Spring2017_PARA_0::ImagNegSign coherent sums
+	if (parnames[ii].find("Spring2017") == std::string::npos)
+	  continue;
+	if (parnames[ii].find("UniBG") != std::string::npos || parnames[ii].find("ImagNegSign") != std::string::npos || parnames[ii].find("RealNegSign") != std::string::npos) 
+	  outfile << parnames[ii] << " = " << results.parValue(parnames[ii]) << " +- " << results.parError(parnames[ii]) << endl;
       }
-
-      
-      //PRINT ALL THE PARAMETERS THAT MINUIT OPERATES  (MODEL PARAMETERS + PRODUCTION COEFFICIENTS)
-      //       const vector <string> par_names = results.parNameList();  
-      //       for(unsigned int ii = 0; ii < par_names.size(); ii++) 
-      //       outfile << par_names[ii] << " = " << results.parValue(par_names[ii]) << " +- " << results.parError(par_names[ii]) << endl;
-
-
-       outfile << "***************************************************************************************" << endl;
+      outfile << "***************************************************************************************" << endl;
        
   
       // CALCULATE INTENSITY FRACTIONS AND PHASE DIFFERENCES
@@ -464,7 +474,8 @@ int main( int argc, char* argv[] ){
 
 
       outfile << "TOTAL EVENTS = " << results.intensity().first << " +- " << results.intensity().second << endl;
-  
+
+      /*      
       cout << "Computing intensities of amplitudes [each reaction]" << endl;
       for (unsigned int i = 0; i < fullamps.size(); i++){
 	vector<string> useamp;
@@ -473,11 +484,14 @@ int main( int argc, char* argv[] ){
 	  outfile << "FIT FRACTION " << fullamps[i] << " = " << results.intensity(useamp).first / results.intensity().first <<" +- "<< results.intensity(useamp).second / results.intensity().first <<  endl;
       }
 
-      cout << "Computing phase differences" << endl;
-      for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
-	pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
-	outfile << "PHASE DIFF " << phaseDiffNames[i].first << "__" << phaseDiffNames[i].second << " = " << phaseDiff.first << " +- " << phaseDiff.second << endl;
+
+      cout << "Computing phases of amplitudes" << endl;
+      for(int i = 1; i < nAmps; i++){
+	if(ampPhasePosRefl[i].empty()) continue; //amplitude not represented in the fit
+	outfile << "PHASE NegRefl " << amphistname[i] << " = " << std::arg(results.productionParameter(ampPhaseNegRefl[i])) << endl; 
+	outfile << "PHASE PosRefl " << amphistname[i] << " = " << std::arg(results.productionParameter(ampPhasePosRefl[i])) << endl;
       }
+      */
       
 
       cout << "Computing intensities of amplitudes [full fit]" << endl;      
@@ -501,12 +515,13 @@ int main( int argc, char* argv[] ){
 		<< results.intensity(ampsumPosRefl[i]).second / results.intensity().first << endl;
       }
       
-      cout << "Computing phases of amplitudes" << endl;
-      for(int i = 1; i < nAmps; i++){
-	if(ampPhasePosRefl[i].empty()) continue; //amplitude not represented in the fit
-	outfile << "PHASE NegRefl " << amphistname[i] << " = " << std::arg(results.productionParameter(ampPhaseNegRefl[i])) << endl; 
-	outfile << "PHASE PosRefl " << amphistname[i] << " = " << std::arg(results.productionParameter(ampPhasePosRefl[i])) << endl;
+
+      cout << "Computing phase differences" << endl;
+      for(unsigned int i = 0; i < phaseDiffNames.size(); i++) {
+	pair <double, double> phaseDiff = results.phaseDiff( phaseDiffNames[i].first, phaseDiffNames[i].second );
+	outfile << "PHASE DIFF " << phaseDiffNames[i].first << "__" << phaseDiffNames[i].second << " = " << phaseDiff.first << " +- " << phaseDiff.second << endl;
       }
+
       
 
       
