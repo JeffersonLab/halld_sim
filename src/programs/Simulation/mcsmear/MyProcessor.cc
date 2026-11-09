@@ -162,6 +162,12 @@ void MyProcessor::Init(void)
    // By default, the empirical fdc DOCA-dependent efficiency
    // is applied to fdc wire hits in FDCSmearer. This can be
    // disabled by this commandline option.
+   // FDC cathode strip readout threshold on raw_amp = q / FDC_ADC_ASCALE (ADC counts). By default the
+   // per-strip values of /FDC/packageN/strip_thresholds are used, or 50 where a table is absent.
+   app->SetDefaultParameter("FDC:RAW_AMP_THRESHOLD", fdc_config_t::FDC_RAW_AMP_THR,
+                            "FDC strip dropped if raw_amp = q / FDC_ADC_ASCALE is below this, in ADC counts;"
+                            " < 0 = per strip from CCDB /FDC/packageN/strip_thresholds, 50 where absent (default);"
+                            " >= 0 = this value for every strip (0 = no cut)");
    app->SetDefaultParameter("FDC:USE_EFFVSDOCA", fdc_config_t::FDC_EFFVSDOCA,
                           "Turn on/off fdc doca-dependent wire hit efficiency,"
                           " \"0\"=no efficiency correction,"

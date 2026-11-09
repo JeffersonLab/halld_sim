@@ -8,6 +8,8 @@
 #include <sstream>
 
 bool fdc_config_t::FDC_EFFVSDOCA(1);
+double fdc_config_t::FDC_RAW_AMP_THR(-1.);
+const double fdc_config_t::FDC_RAW_AMP_THR_DEFAULT(50.);
 
 //-----------
 // fdc_config_t  (constructor)
@@ -78,6 +80,30 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
 		}
 	}
 
+	// readout thresholds of the cathode strips on raw_amp = q / FDC_ADC_ASCALE, in ADC counts, per strip from
+	// /FDC/packageN/strip_thresholds (12 rows, as strip_mc_efficiency); FDC_RAW_AMP_THR_DEFAULT where a table is absent
+	for(int package=1; package<=4; package++) {
+		vector< vector<double> > new_thresholds;
+		char ccdb_str[100];
+		sprintf(ccdb_str, "/FDC/package%d/strip_thresholds", package);
+		bool have_table = false;
+		if (FDC_RAW_AMP_THR < 0) {
+			have_table = !DEvent::GetCalib(event, ccdb_str, new_thresholds) && new_thresholds.size() == 12;
+			if (have_table)
+				jout << "FDC strip raw-amplitude thresholds of package " << package << " from " << ccdb_str << endl;
+			else
+				jout << "FDC strip raw-amplitude thresholds of package " << package << ": no " << ccdb_str
+				     << ", default " << FDC_RAW_AMP_THR_DEFAULT << " ADC counts" << endl;
+		}
+		for(int chamber=0; chamber<6; chamber++) {
+			channel_raw_amp_thresholds.push_back( have_table? new_thresholds[2*chamber+1] : vector<double>() );
+			channel_raw_amp_thresholds.push_back( vector<double>() );
+			channel_raw_amp_thresholds.push_back( have_table? new_thresholds[2*chamber] : vector<double>() );
+		}
+	}
+	if (FDC_RAW_AMP_THR >= 0)
+		jout << "FDC strip raw-amplitude threshold FDC:RAW_AMP_THRESHOLD = " << FDC_RAW_AMP_THR << " ADC counts for every strip" << endl;
+
     FDC_EFFVSDOCA_PAR[0] = 0.999;
     FDC_EFFVSDOCA_PAR[1] = 3.75e-4;
     FDC_EFFVSDOCA_PAR[2] = 0.506;
@@ -118,6 +144,10 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
              	q += gDRandom.SampleGaussian(fdc_config->FDC_PED_NOISE);
              	t += gDRandom.SampleGaussian(fdc_config->FDC_TDRIFT_SIGMA)*1.0e9;
 			}
+            // readout threshold on the raw amplitude raw_amp = q / FDC_ADC_ASCALE, in ADC counts
+            if (fdc_config->FDC_ADC_ASCALE > 0
+                  && q / fdc_config->FDC_ADC_ASCALE < fdc_config->GetRawAmpThreshold(siter))
+               continue;
             if (q > threshold && t > config->TRIGGER_LOOKBACK_TIME && t < t_max) {
                hddm_s::FdcCathodeHitList hits = siter->addFdcCathodeHits();
                hits().setQ(q);
