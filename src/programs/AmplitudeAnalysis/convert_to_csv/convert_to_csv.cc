@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
         report(INFO, kModule) << "  -l --lower-vertex-indices:\tSpecify indices of lower vertex particles in the data 4-vectors\n";
         report(INFO, kModule) << "  -n --naming-scheme:\t\tAmp naming scheme for coherent sum groupings. Default is auto (infers scheme from the amp names)\n";
         report(INFO, kModule) << "  -p --preview:\t\t\tPrint files to be processed, but don't run\n";
-        report(INFO, kModule) << "  -v --verbose:\t\t\tPrint information from converter scripts as they run\n";
+        report(INFO, kModule) << "  -v --verbose:\t\t\tPrint information and 'WARNING' reports from converter scripts as they run\n";
         report(INFO, kModule) << "  --correlation:\t\tSave correlation matrix to separate csv file\n";
         report(INFO, kModule) << "  --covariance:\t\t\tSave covariance matrix to separate csv file\n";
         report(INFO, kModule) << "  --norm-int:\t\t\tSave normalization integral matrix to separate csv file\n";
