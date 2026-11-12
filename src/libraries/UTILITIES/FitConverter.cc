@@ -20,7 +20,6 @@ const char *FitConverter::kModule = "FitConverter";
 
 FitConverter::FitConverter(const std::string &filename, const bool &acceptance_correct, bool mute_warning, const std::string &naming_scheme) : m_fit_file(filename),
                                                                                                                                                m_fit_results(filename, mute_warning),
-                                                                                                                                               m_cfg_info(m_fit_results.configInfo()),
                                                                                                                                                m_is_acceptance_corrected(acceptance_correct),
                                                                                                                                                m_amplitude_parser(naming_scheme),
                                                                                                                                                m_error_matrix(m_fit_results.errorMatrix())
@@ -30,6 +29,9 @@ FitConverter::FitConverter(const std::string &filename, const bool &acceptance_c
         report(ERROR, kModule) << "FitConverter ERROR: Unable to read fit results from file " + m_fit_file << "\n";
         assert(false);
     }
+
+    m_amplitude_parser.m_suppress_warnings = mute_warning;
+    
     extract();
 }
 
@@ -61,7 +63,7 @@ void FitConverter::extract()
     }
 
     // Build map of unique amplitude names and their constrained amplitudes
-    m_constrained_amps = findConstrainedAmps();
+    m_constrained_amps = m_amplitude_parser.findConstrainedAmps(m_fit_results);
     for (const auto &pair : m_constrained_amps)
     {
         report(DEBUG, kModule) << "Unique amplitude: "
@@ -120,7 +122,7 @@ void FitConverter::extract()
             continue;
 
         const std::string &full_amp_name = pair.second[0];
-        m_production_coefficients[unique_amp] = m_fit_results.scaledProductionParameter(full_amp_name);
+        m_production_coefficients[unique_amp] = m_fit_results.productionParameter(full_amp_name);
     }
 
     // Calculate phase differences between all pairs of unique amplitude names that
@@ -179,37 +181,6 @@ void FitConverter::extract()
             }
         }
     }
-}
-
-std::set<std::string> FitConverter::uniqueAmpNames() const
-{
-    std::set<std::string> unique_names;
-    for (const auto &amplitude : m_fit_results.ampList())
-    {
-        size_t last_colon = amplitude.rfind("::");
-        if (last_colon != std::string::npos)
-        {
-            std::string amp_name = amplitude.substr(last_colon + 2);
-            unique_names.insert(amp_name);
-        }
-    }
-    return unique_names;
-}
-
-std::set<std::string> FitConverter::uniqueSumAmpNames() const
-{
-    std::set<std::string> unique_names;
-    for (const auto &amplitude : m_fit_results.ampList())
-    {
-        size_t first_colon = amplitude.find("::");
-        size_t last_colon = amplitude.rfind("::");
-        if (first_colon != std::string::npos && last_colon != std::string::npos && first_colon != last_colon)
-        {
-            std::string sum_amp_name = amplitude.substr(first_colon + 2);
-            unique_names.insert(sum_amp_name);
-        }
-    }
-    return unique_names;
 }
 
 std::string FitConverter::getCSVHeader() const
@@ -424,14 +395,14 @@ std::string FitConverter::getCSVNormIntMatrix() const
     for (size_t row_idx = 0; row_idx < m_fit_results.ampList().size(); row_idx++)
     {
         const std::string &row_amp = amp_list.at(row_idx);
-        std::string row_reaction = getReactionString(row_amp);
+        std::string row_reaction = m_amplitude_parser.getReactionString(row_amp);
 
         csv += m_fit_file + "," + row_amp; // write file name and this amplitude name as first two columns of this row
 
         for (size_t col_idx = 0; col_idx < m_fit_results.ampList().size(); col_idx++)
         {
             const std::string &col_amp = amp_list.at(col_idx);
-            std::string col_reaction = getReactionString(col_amp);
+            std::string col_reaction = m_amplitude_parser.getReactionString(col_amp);
 
             if (row_reaction != col_reaction)
             {
@@ -446,17 +417,21 @@ std::string FitConverter::getCSVNormIntMatrix() const
                 assert(false);
             }
 
-            std::complex<double> value = normInt->normInt(row_amp, col_amp);
+            std::complex<double> value = m_is_acceptance_corrected ? normInt->ampInt(row_amp, col_amp) : normInt->normInt(row_amp, col_amp);
 
             // Format as pandas-readable complex number e.g. 1+2j or 1-2j
             std::ostringstream oss;
             oss << std::scientific << std::setprecision(std::numeric_limits<double>::max_digits10 - 1);
             oss << value.real();
-            if (value.imag() >= 0)
+            // Avoid emitting "+-0" when the imaginary part is "negative zero".
+            double imag = value.imag();
+            if (imag == 0.0)
+                imag = 0.0;
+            if (imag >= 0.0)
             {
                 oss << "+";
             }
-            oss << value.imag() << "j";
+            oss << imag << "j";
             csv += "," + oss.str();
         } // end column loop
 
@@ -469,134 +444,6 @@ std::string FitConverter::getCSVNormIntMatrix() const
     return csv;
 }
 
-std::map<std::string, std::vector<std::string>> FitConverter::findConstrainedAmps() const
-{
-    std::map<std::string, std::vector<std::string>> constrained_amp_map;
-
-    if (ampNamesAreConstrained())
-    {
-        for (const auto &unique_amp : uniqueAmpNames())
-        {
-            // the bool assures us that all terms with this amp name are constrained to
-            // each other
-            std::vector<TermInfo *> shared_terms = m_cfg_info->termList("", "", unique_amp);
-
-            // store the full names of the constrained amplitudes
-            for (const auto &term : shared_terms)
-                constrained_amp_map[unique_amp].push_back(term->fullName());
-        }
-        return constrained_amp_map;
-    }
-
-    if (sumAmpNamesAreConstrained())
-    {
-        for (const auto &unique_sum_amp : uniqueSumAmpNames())
-        {
-            std::string sum = unique_sum_amp.substr(0, unique_sum_amp.find("::"));
-            std::string amp = unique_sum_amp.substr(unique_sum_amp.find("::") + 2);
-            // the bool assures us that all terms with this sum::amp name are
-            // constrained to each other
-            std::vector<TermInfo *> shared_terms = m_cfg_info->termList("", sum, amp);
-
-            // store the full names of the constrained amplitudes
-            for (const auto &term : shared_terms)
-                constrained_amp_map[unique_sum_amp].push_back(term->fullName());
-        }
-        return constrained_amp_map;
-    }
-
-    // if we reach here, neither assumption held, so just map full amplitude names to
-    // themselves
-    for (const auto &amplitude : m_fit_results.ampList())
-    {
-        constrained_amp_map[amplitude] = {amplitude};
-    }
-    return constrained_amp_map;
-}
-
-bool FitConverter::ampNamesAreConstrained() const
-{
-    for (const auto &unique_amp : uniqueAmpNames())
-    {
-        std::vector<TermInfo *> shared_terms = m_cfg_info->termList("", "", unique_amp);
-
-        // we assume terms with common amplitude names are all constrained to each
-        // other, so use first term to check this
-        std::vector<TermInfo *> constrained_terms = shared_terms[0]->constraints();
-
-        // filter constrained terms to only those with the same amplitude name
-        for (auto it = constrained_terms.begin(); it != constrained_terms.end();)
-        {
-            if ((*it)->fullName().find(unique_amp) == std::string::npos)
-                it = constrained_terms.erase(it);
-            else
-                ++it;
-        }
-
-        // The constrained terms does not include the self term, so add it back in for
-        // comparison
-        constrained_terms.push_back(shared_terms[0]);
-
-        // Compare the two sets of terms to ensure they are the same
-        std::sort(shared_terms.begin(), shared_terms.end());
-        std::sort(constrained_terms.begin(), constrained_terms.end());
-        if (shared_terms != constrained_terms)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool FitConverter::sumAmpNamesAreConstrained() const
-{
-    for (const auto &unique_sum_amp : uniqueSumAmpNames())
-    {
-        std::string sum = unique_sum_amp.substr(0, unique_sum_amp.find("::"));
-        std::string amp = unique_sum_amp.substr(unique_sum_amp.find("::") + 2);
-
-        std::vector<TermInfo *> shared_terms = m_cfg_info->termList("", sum, amp);
-
-        // we assume terms with common sum::amp names are all constrained to each
-        // other, so use first term to check this
-        std::vector<TermInfo *> constrained_terms = shared_terms[0]->constraints();
-
-        // filter constrained terms to only those with the same sum::amp name
-        for (auto it = constrained_terms.begin(); it != constrained_terms.end();)
-        {
-            if ((*it)->fullName().find(unique_sum_amp) == std::string::npos)
-                it = constrained_terms.erase(it);
-            else
-                ++it;
-        }
-
-        // The constrained terms does not include the self term, so add it back in for
-        // comparison
-        constrained_terms.push_back(shared_terms[0]);
-
-        // Compare the two sets of terms to ensure they are the same
-        std::sort(shared_terms.begin(), shared_terms.end());
-        std::sort(constrained_terms.begin(), constrained_terms.end());
-        if (shared_terms != constrained_terms)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-std::string FitConverter::getReactionString(const std::string &full_amplitude)
-{
-    size_t first_colon = full_amplitude.find("::");
-    size_t second_colon = full_amplitude.find("::", first_colon + 2);
-    if (first_colon == std::string::npos || second_colon == std::string::npos)
-    {
-        report(ERROR, kModule) << "Amplitude name " << full_amplitude << " does not match expected format 'reaction::sum::amp'.\n";
-        assert(false);
-    }
-    std::string reaction = full_amplitude.substr(0, first_colon);
-    return reaction;
-}
 
 std::string FitConverter::preciseDoubleToString(double value) const
 {

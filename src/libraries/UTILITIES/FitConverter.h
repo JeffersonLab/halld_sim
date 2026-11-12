@@ -14,7 +14,6 @@
 
 #include <complex>
 #include <map>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -63,7 +62,7 @@ public:
      * @brief Construct a FitConverter for a single fit file
      * @param[in] filename Path to the .fit file
      * @param[in] acceptance_correct Whether to use acceptance-corrected intensities
-     * @param[in] mute_warning Suppress warning about free parameters if true
+     * @param[in] mute_warning Suppress warnings from FitResults and AmplitudeParser
      * @param[in] naming_scheme Amplitude naming scheme: auto, JLme, eJPmL, or Lme
      * @throw ERROR If the fit file cannot be read or is invalid
      */
@@ -150,24 +149,6 @@ public:
      * "1+2j").
      */
     std::string getCSVNormIntMatrix() const;
-
-    /**
-     * @brief return set of all unique amplitude names in a fit result
-     *
-     * A "full" amplitude is a "reaction::sum::ampName" string, so this extracts all
-     * unique "ampName" strings
-     */
-    std::set<std::string> uniqueAmpNames() const;
-
-    /**
-     * @brief return set of all unique coherent sum + amp names in a fit result
-     *
-     * A "full" amplitude is a "reaction::sum::ampName" string, so this extracts all
-     * unique "sum::ampName" strings
-     *
-     * @return std::set<std::string>
-     */
-    std::set<std::string> uniqueSumAmpNames() const;
 
     bool isValid() const { return m_fit_results.valid(); }
 
@@ -273,7 +254,6 @@ public:
 private:
     const std::string m_fit_file;             ///< Path to the .fit file
     const FitResults m_fit_results;           ///< AmpTools FitResults object
-    const ConfigurationInfo *m_cfg_info;      ///< ConfigurationInfo from the fit
     const bool m_is_acceptance_corrected;     ///< Whether to use acceptance-corrected intensities
     const AmplitudeParser m_amplitude_parser; ///< Parser for amplitude labels and sums
 
@@ -288,59 +268,13 @@ private:
     std::vector<std::vector<double>> m_error_matrix;
 
     /**
-     * @brief Get map of unique amplitude groups to their constrained full amplitudes
-     *
-     * This attempts to identify the unique strings that can be a coupled to a set of
-     * constrained amplitudes. For a "full" amplitude string of the form
-     * "reaction::sum::ampName", it first assumes that amplitudes with the same ampName
-     * are constrained to each other, across reactions and sums. If not, it peels back a
-     * layer and assumes that amplitudes with the same "sum::ampName" are constrained to
-     * each other, across reactions. If that fails, it simply saves a mapping of the
-     * full amplitude to itself. The map keys are whats extracted as the unique
-     * amplitude names (ampName, sum::ampName, or full amplitude), and the values are
-     * vectors of the full amplitude strings that are constrained to each other.
-     *
-     * @note the keys are whats written to the CSV, and is why it first attempts to
-     * extract just the ampName for simplicity.
-     */
-    std::map<std::string, std::vector<std::string>> findConstrainedAmps() const;
-
-    /**
-     * @brief Checks if amplitude names are constrained to each other
-     *
-     * A "full" amplitude is a "reaction::sum::ampName" string, so this checks if all
-     * amplitudes with the same "ampName" are constrained to each other across reactions
-     * and sums.
-     */
-    bool ampNamesAreConstrained() const;
-
-    /**
-     * @brief Checks if coherent sum + amplitude names are constrained to each other
-     *
-     * A "full" amplitude is a "reaction::sum::ampName" string, so this checks if all
-     * amplitudes with the same "sum::ampName" are constrained to each other across
-     * reactions.
-     */
-    bool sumAmpNamesAreConstrained() const;
-
-    /**
-     * @brief Get the reaction string from a full amplitude name
-     *
-     * This extracts the reaction part from a "reaction::sum::ampName" string.
-     *
-     * @param full_amp_name The full amplitude name
-     * @return The reaction string
-     */
-    static std::string getReactionString(const std::string &full_amp_name);
-
-    /**
      * @brief Convert a double to string with max precision
-     * 
-     * Uses std::numeric_limits<double>::max_digits10 to ensure that the string 
-     * representation is precise enough to reconstruct the original double value. 
-     * 
-     * @param value 
-     * @return std::string 
+     *
+     * Uses std::numeric_limits<double>::max_digits10 to ensure that the string
+     * representation is precise enough to reconstruct the original double value.
+     *
+     * @param value
+     * @return std::string
      */
     std::string preciseDoubleToString(double value) const;
 
