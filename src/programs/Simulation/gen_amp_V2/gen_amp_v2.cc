@@ -369,7 +369,7 @@ int main( int argc, char* argv[] ){
   // particle, which is typically the first in the list in GlueX reaction definitions
   DataWriter* rootOut = ( fsRootFormat ?
 			  static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outName ) ) :
-			  static_cast< DataWriter* >( new ROOTDataWriter( outName ) ) );
+			  static_cast< DataWriter* >( new ROOTDataWriter( outName, "kin", true, true ) ) );
 
   TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
 
@@ -552,6 +552,8 @@ int main( int argc, char* argv[] ){
   if( hddmOut ) delete hddmOut;
   delete rootOut;
 
+  ftGen.printTSlopeCounts();
+  
   return 0;
 }// END OF MAIN()
 

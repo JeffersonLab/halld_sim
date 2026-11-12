@@ -81,17 +81,25 @@ public:
   // corresponding mass distributions then will no longer be pure phase
   // space but what one gets when phase space is weighted by e^-2*|t|
   
-  void setReweightMask( unsigned int mask );
+  void setReweightMask( unsigned int mask );  
 
+  //temporary print
+  void printTSlopeCounts() const;  
+  
 private:
 
+  //temporary
+  mutable unsigned int m_currentTSlopeIndex;
+  mutable std::vector<unsigned long long> m_tSlopeCounts;
+  mutable std::vector<unsigned long long> m_tSlopeAcceptedCounts;
+  
   void calculateLimits() const;
 
   double pcm( double ecm, double m1, double m2 ) const;
 
   pair< double, double > genUpperVertexMass() const;
   pair< double, double > genLowerVertexMass() const;
-  pair< double, double > genCosThetaCM( double uvM, double lvM, double* t ) const;
+  pair< double, double > genCosThetaCM( double uvM, double lvM, double* t, double tSlope ) const;
   
   vector< double > genPairMasses( double max, const vector< double >& masses ) const;
 
