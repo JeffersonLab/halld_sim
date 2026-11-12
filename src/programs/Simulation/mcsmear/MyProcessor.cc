@@ -187,14 +187,6 @@ void MyProcessor::Init(void)
    bzero(&input_file_mutex_last_owner, sizeof(pthread_t));
    bzero(&smearer_mutex_last_owner, sizeof(pthread_t));
    
-   // By default, the empirical fdc DOCA-dependent efficiency
-   // is applied to fdc wire hits in FDCSmearer. This can be
-   // disabled by this commandline option.
-   app->SetDefaultParameter("FDC:USE_EFFVSDOCA", fdc_config_t::FDC_EFFVSDOCA,
-                          "Turn on/off fdc doca-dependent wire hit efficiency,"
-                          " \"0\"=no efficiency correction,"
-                          " \"1\"=standard efficiency correction (default)");
-
    return; //NOERROR;
 }
 

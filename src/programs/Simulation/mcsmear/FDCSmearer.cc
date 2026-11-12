@@ -7,7 +7,6 @@
 
 #include <sstream>
 
-bool fdc_config_t::FDC_EFFVSDOCA(1);
 
 //-----------
 // fdc_config_t  (constructor)
@@ -18,23 +17,30 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
 	FDC_TDRIFT_SIGMA      = 0.0;
  	FDC_CATHODE_SIGMA     = 0.0;
  	FDC_PED_NOISE         = 0.0;
- 	FDC_THRESHOLD_FACTOR  = 0.0;
+
  	FDC_TIME_WINDOW       = 0.0;
  	FDC_THRESH_KEV        = 0.0;
-
+        FDC_ADC_ASCALE = 0.2;
+	
 	// load data from CCDB
-	cout << "Get FDC/fdc_parms parameters from CCDB..." << endl;
-    map<string, double> fdcparms;
-     if(DEvent::GetCalib(event, "FDC/fdc_parms", fdcparms)) {
-     	jerr << "Problem loading FDC/fdc_parms from CCDB!" << endl;
-     } else {
-       	FDC_TDRIFT_SIGMA      = fdcparms["FDC_TDRIFT_SIGMA"];
-       	FDC_CATHODE_SIGMA     = fdcparms["FDC_CATHODE_SIGMA"];
-       	FDC_THRESHOLD_FACTOR  = fdcparms["FDC_THRESHOLD_FACTOR"];
-     	//FDC_PED_NOISE         = fdcparms["FDC_PED_NOISE"];  // ???
-       	FDC_TIME_WINDOW       = fdcparms["FDC_TIME_WINDOW"];
-       	//FDC_HIT_DROP_FRACTION = fdcparms["FDC_HIT_DROP_FRACTION"];   // ???
-       	FDC_THRESH_KEV 		  = fdcparms["FDC_THRESH_KEV"]; 
+
+	cout << "Get FDC parameters from CCDB..." << endl;
+	
+        map<string, double> digi_scales;
+	if(DEvent::GetCalib(event, "FDC/digi_scales", digi_scales) || digi_scales.find("FDC_ADC_ASCALE") == digi_scales.end())
+	    jerr << "Problem loading FDC/digi_scales FDC_ADC_ASCALE from CCDB!" << endl;
+	else
+	    FDC_ADC_ASCALE = digi_scales["FDC_ADC_ASCALE"];
+
+        map<string, double> fdcparms;
+        if(DEvent::GetCalib(event, "FDC/fdc_parms", fdcparms)) {
+     	    jerr << "Problem loading FDC/fdc_parms from CCDB!" << endl;
+        } else {
+       	    FDC_TDRIFT_SIGMA      = fdcparms["FDC_TDRIFT_SIGMA"];
+       	    FDC_CATHODE_SIGMA     = fdcparms["FDC_CATHODE_SIGMA"];
+       	    //FDC_PED_NOISE         = fdcparms["FDC_PED_NOISE"];  // ???
+            FDC_TIME_WINDOW       = fdcparms["FDC_TIME_WINDOW"];
+       	    FDC_THRESH_KEV 		  = fdcparms["FDC_THRESH_KEV"]; 
 	}
 
    	// Calculate ped noise level based on position resolution
@@ -69,10 +75,6 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
 		}
 	}
 
-    FDC_EFFVSDOCA_PAR[0] = 0.999;
-    FDC_EFFVSDOCA_PAR[1] = 3.75e-4;
-    FDC_EFFVSDOCA_PAR[2] = 0.506;
-    FDC_EFFVSDOCA_PAR[3] = 3.75e-2;
 }
 
 
@@ -82,8 +84,10 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
 void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
 {
    double t_max = config->TRIGGER_LOOKBACK_TIME + fdc_config->FDC_TIME_WINDOW;
-   double threshold = fdc_config->FDC_THRESHOLD_FACTOR * fdc_config->FDC_PED_NOISE; // for sparsification
+   //   double threshold = fdc_config->FDC_THRESHOLD_FACTOR * fdc_config->FDC_PED_NOISE; // for sparsification
 
+   double cathode_threshold = 50; //  should be read in per channel
+   
    hddm_s::FdcChamberList chambers = record->getFdcChambers();
    hddm_s::FdcChamberList::iterator iter;
    for (iter = chambers.begin(); iter != chambers.end(); ++iter) {
@@ -98,22 +102,25 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
                                          siter->getFdcCathodeTruthHits();
           hddm_s::FdcCathodeTruthHitList::iterator titer;
           for (titer = thits.begin(); titer != thits.end(); ++titer) {
-            // correct simulation efficiencies 
-            if (config->APPLY_EFFICIENCY_CORRECTIONS
+              // correct simulation efficiencies 
+              if (config->APPLY_EFFICIENCY_CORRECTIONS
                   && !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyCorrectionFactor(siter)))
-              	continue;
+              	  continue;
           
-            double q = titer->getQ();
-            double t = titer->getT();
-          	if(config->SMEAR_HITS) {
-             	q += gDRandom.SampleGaussian(fdc_config->FDC_PED_NOISE);
-             	t += gDRandom.SampleGaussian(fdc_config->FDC_TDRIFT_SIGMA)*1.0e9;
-			}
-            if (q > threshold && t > config->TRIGGER_LOOKBACK_TIME && t < t_max) {
-               hddm_s::FdcCathodeHitList hits = siter->addFdcCathodeHits();
-               hits().setQ(q);
-               hits().setT(t);
-            }
+              double q = titer->getQ();
+              double t = titer->getT();
+
+	      double raw_amp = q/fdc_config->FDC_ADC_ASCALE;
+	    
+              if(config->SMEAR_HITS) {
+                  q += gDRandom.SampleGaussian(fdc_config->FDC_PED_NOISE);
+                  t += gDRandom.SampleGaussian(fdc_config->FDC_TDRIFT_SIGMA)*1.0e9;
+              }
+              if (raw_amp > cathode_threshold && t > config->TRIGGER_LOOKBACK_TIME && t < t_max) {
+                  hddm_s::FdcCathodeHitList hits = siter->addFdcCathodeHits();
+                  hits().setQ(q);
+                  hits().setT(t);
+              }
          }
 
          if (config->DROP_TRUTH_HITS)
@@ -133,10 +140,7 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
 		     if (config->APPLY_EFFICIENCY_CORRECTIONS
              		&& !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyCorrectionFactor(witer)))
              		continue;
-            double doca = titer->getD();
-            if (config->APPLY_EFFICIENCY_CORRECTIONS
-                    && !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyVsDOCA(doca)))
-               continue;
+		     //double doca = titer->getD();
 
             double t = titer->getT();
           	if(config->SMEAR_HITS) {
