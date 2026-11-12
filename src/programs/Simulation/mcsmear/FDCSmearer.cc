@@ -7,7 +7,6 @@
 
 #include <sstream>
 
-bool fdc_config_t::FDC_EFFVSDOCA(1);
 double fdc_config_t::FDC_CATHODE_SIGMA_SET(-1.);
 double fdc_config_t::FDC_DRIFT_SMEAR_NS(0.);
 double fdc_config_t::FDC_GAIN_SCALE(1.);
@@ -16,7 +15,6 @@ double fdc_config_t::FDC_DOCA_ATTEN(0.);
 double fdc_config_t::FDC_GAIN_SIGMA(0.);
 double fdc_config_t::FDC_STRIP_THR_SET(-1.);
 double fdc_config_t::FDC_WIRE_THR_KEV_SET(-1.);
-double fdc_config_t::FDC_EFFVSDOCA_PAR_SET[4] = {0.999, 3.75e-4, 0.506, 3.75e-2};
 
 //-----------
 // fdc_config_t  (constructor)
@@ -82,10 +80,6 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
         	channel_efficiencies.push_back( new_strip_efficiencies[2*chamber] );
 		}
 	}
-
-    for (int i = 0; i < 4; i++) FDC_EFFVSDOCA_PAR[i] = FDC_EFFVSDOCA_PAR_SET[i];
-    jout << "FDC eff vs doca: use " << FDC_EFFVSDOCA << " par " << FDC_EFFVSDOCA_PAR[0] << " " << FDC_EFFVSDOCA_PAR[1]
-         << " " << FDC_EFFVSDOCA_PAR[2] << " " << FDC_EFFVSDOCA_PAR[3] << jendl;
 }
 
 
@@ -194,10 +188,6 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
 		     if (config->APPLY_EFFICIENCY_CORRECTIONS
              		&& !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyCorrectionFactor(witer)))
              		continue;
-            double doca = titer->getD();
-            if (config->APPLY_EFFICIENCY_CORRECTIONS
-                    && !gDRandom.DecideToAcceptHit(fdc_config->GetEfficiencyVsDOCA(doca)))
-               continue;
 
             double t = titer->getT() + drift_shift(titer->getItrack());
           	if(config->SMEAR_HITS) {
