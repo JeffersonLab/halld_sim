@@ -118,6 +118,9 @@ FixedTargetGenerator::addMomentumTransfer( double tSlope, double fraction ){
 
   m_tSlopeVec.push_back( fabs( tSlope ) );
   m_tSlopeChannel.addChannel( m_tSlopeVec.size()-1, fraction );
+
+  m_tSlopeCounts.push_back(0);
+  m_tSlopeAcceptedCounts.push_back(0);
 }
 
 void
@@ -200,6 +203,9 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
   double psWeight = 1;
   double seedWeight = 1;
 
+  double tSlope = (m_tSlopeVec.size()>0) ? m_tSlopeVec[m_tSlopeChannel()] : 0;
+
+  
   do {
     do {
       
@@ -208,6 +214,7 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
       // and the scattering angle in the CM frame
       
       double t = 0;
+
       do {
         
         seedWeight = 1;
@@ -220,7 +227,7 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
         uvM = tmp.first;
         if( m_reweightMask & kUpperVtxMass ) seedWeight *= tmp.second;
       
-        tmp = genCosThetaCM( uvM, lvM, &t );
+        tmp = genCosThetaCM( uvM, lvM, &t, tSlope );
         cosThetaCM = tmp.first;
         if( m_reweightMask & kMomentumTransfer ) seedWeight *= tmp.second;
       }
@@ -278,7 +285,11 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
   if( includeBeam ) allP4.push_back( m_beam );
   allP4.insert( allP4.end(), lvP4.begin(), lvP4.end() );
   allP4.insert( allP4.end(), uvP4.begin(), uvP4.end() );
-    
+
+
+  //temporary;
+  m_tSlopeAcceptedCounts[m_currentTSlopeIndex]++;
+  
   return new Kinematics( allP4, seedWeight );
 }
 
@@ -347,13 +358,14 @@ FixedTargetGenerator::genLowerVertexMass() const {
 }
 
 pair< double, double >
-FixedTargetGenerator::genCosThetaCM( double uvMass, double lvMass, double* t ) const {
+FixedTargetGenerator::genCosThetaCM( double uvMass, double lvMass, double* t, double tSlope ) const {
 
   pair< double, double > cosThetaWeight;
 
   double eBeamCM = ( m_W*m_W + m_beam.M2() - m_target.M2() ) / ( 2*m_W );
   double puvCM = pcm( m_W, uvMass, lvMass );
   double euvCM = sqrt( puvCM*puvCM + uvMass*uvMass );
+
   
   do{
     
@@ -373,9 +385,13 @@ FixedTargetGenerator::genCosThetaCM( double uvMass, double lvMass, double* t ) c
       // cos( theta ) prior to returning
       
       // get a tSlope according to the mix of slopes specified by the user
-      double tSlope = m_tSlopeVec[m_tSlopeChannel()];
+      // double tSlope = m_tSlopeVec[m_tSlopeChannel()];
       
-      // the ROOT generator generates exponential decay so tSlope should be positive
+      //temporary increment
+      m_currentTSlopeIndex = m_tSlopeChannel();
+      m_tSlopeCounts[m_currentTSlopeIndex]++;      
+
+// the ROOT generator generates exponential decay so tSlope should be positive
       *t = -m_randGen.Exp( 1./tSlope );
       
       // ref: Martin and Spearman Eq. 4.81b
@@ -592,4 +608,26 @@ FixedTargetGenerator::decay( const TLorentzVector& p4Initial,
   
   return p4Final;
 }
+
+//temporary
+void FixedTargetGenerator::printTSlopeCounts() const
+{
+    unsigned long long count_tot = 0;
+    unsigned long long accepted_count_tot = 0;
+    double frequency, accepted_frequency;
+    
+    for (auto count : m_tSlopeCounts)            count_tot += count;
+    for (auto count : m_tSlopeAcceptedCounts)    accepted_count_tot += count;
+
+    
+    for (unsigned int i = 0; i < m_tSlopeVec.size(); ++i)  {
+
+      frequency = (count_tot > 0) ? double(m_tSlopeCounts[i])/count_tot: 0.0;
+      accepted_frequency = (accepted_count_tot > 0) ? double(m_tSlopeAcceptedCounts[i])/accepted_count_tot: 0.0;
+      
+      std::cout << "t-slope = " << m_tSlopeVec[i]  << ",\t Generated frequency = " << frequency  << ",\t Accepted frequency = " << accepted_frequency << std::endl;
+    }
+}
+
+
 
