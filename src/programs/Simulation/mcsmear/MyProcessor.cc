@@ -187,13 +187,23 @@ void MyProcessor::Init(void)
    bzero(&input_file_mutex_last_owner, sizeof(pthread_t));
    bzero(&smearer_mutex_last_owner, sizeof(pthread_t));
    
-   // By default, the empirical fdc DOCA-dependent efficiency
-   // is applied to fdc wire hits in FDCSmearer. This can be
-   // disabled by this commandline option.
-   app->SetDefaultParameter("FDC:USE_EFFVSDOCA", fdc_config_t::FDC_EFFVSDOCA,
-                          "Turn on/off fdc doca-dependent wire hit efficiency,"
-                          " \"0\"=no efficiency correction,"
-                          " \"1\"=standard efficiency correction (default)");
+   app->SetDefaultParameter("FDC:DRIFT_SMEAR_NS", fdc_config_t::FDC_DRIFT_SMEAR_NS,
+                            "Gaussian drift-time smear in ns, common to the wire and strip hits of one track in one chamber; 0 = off");
+   app->SetDefaultParameter("FDC:CATHODE_SIGMA", fdc_config_t::FDC_CATHODE_SIGMA_SET,
+                            "FDC_CATHODE_SIGMA override in microns, sets the strip pedestal noise; < 0 = CCDB");
+   app->SetDefaultParameter("FDC:GAIN_SCALE", fdc_config_t::FDC_GAIN_SCALE,
+                            "FDC gas-gain factor on the strip charge and wire dE before the thresholds; 1 = off");
+   for (int i = 0; i < 4; i++)
+      app->SetDefaultParameter("FDC:GAIN_PKG" + std::to_string(i + 1), fdc_config_t::FDC_GAIN_PKG[i],
+                               "FDC extra gain factor for package " + std::to_string(i + 1) + " (times FDC:GAIN_SCALE); 1 = off");
+   app->SetDefaultParameter("FDC:GAIN_SIGMA", fdc_config_t::FDC_GAIN_SIGMA,
+                            "FDC avalanche gain fluctuation (log-normal sigma), one factor per chamber and track for wire and strips; 0 = off");
+   app->SetDefaultParameter("FDC:DOCA_ATTEN", fdc_config_t::FDC_DOCA_ATTEN,
+                            "FDC signal attenuation a: wire dE and strip q scaled by max(0.05, 1 - a doca^2) (doca in cm); 0 = off");
+   app->SetDefaultParameter("FDC:STRIP_THRESHOLD", fdc_config_t::FDC_STRIP_THR_SET,
+                            "FDC strip charge threshold in pC; < 0 = FDC_THRESHOLD_FACTOR * FDC_PED_NOISE (CCDB)");
+   app->SetDefaultParameter("FDC:WIRE_THRESHOLD_KEV", fdc_config_t::FDC_WIRE_THR_KEV_SET,
+                            "FDC anode threshold on the gain-scaled wire dE in keV; < 0 = FDC_THRESH_KEV (CCDB)");
 
    return; //NOERROR;
 }
