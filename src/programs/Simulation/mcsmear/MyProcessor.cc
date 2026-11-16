@@ -8,6 +8,8 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include <memory>
+#include <atomic>
 #include <JANA/Geometry/JGeometryManager.h>
 
 
@@ -36,6 +38,29 @@ static pthread_mutex_t output_file_mutex;
 static pthread_t output_file_mutex_last_owner;
 static pthread_mutex_t input_file_mutex;
 static pthread_t input_file_mutex_last_owner;
+
+// Random-trigger merge: events with fewer tagger hits than this were
+// recorded with the beam off and are skipped, never merged (0 = merge all)
+static int MERGE_MIN_TAGGER_HITS(5);
+static std::atomic<long> Nmerge_read(0);
+static std::atomic<long> Nmerge_skipped(0);
+
+// Run whose start the shared merge input streams were last positioned for.
+// BeginRun runs once in every thread (the merger configuration is
+// thread_local), but the merge input streams are shared by all threads.
+static int merge_positioned_run(-1);
+
+static int CountTaggerHits(hddm_s::HDDM &rec)
+{
+   int n = 0;
+   hddm_s::HodoChannelList hodo = rec.getHodoChannels();
+   for (auto it = hodo.begin(); it != hodo.end(); ++it)
+      n += it->getTaggerHits().size();
+   hddm_s::MicroChannelList micro = rec.getMicroChannels();
+   for (auto it = micro.begin(); it != micro.end(); ++it)
+      n += it->getTaggerHits().size();
+   return n;
+}
 
 #include <JANA/Calibrations/JCalibration.h>
 //static JCalibration *jcalib=NULL;
@@ -116,6 +141,9 @@ void MyProcessor::Init(void)
                           "Turn on/off automatic integrity checking on the"
                           " output HDDM stream."
                           " Set to \"0\" to turn off (it's on by default)");
+   app->SetDefaultParameter("MERGE:MIN_TAGGER_HITS", MERGE_MIN_TAGGER_HITS,
+                            "skip random-trigger events with fewer tagger hits than this (beam off; default 5); 0 = merge all");
+   jout << "MERGE_MIN_TAGGER_HITS = " << MERGE_MIN_TAGGER_HITS << endl;
 
    // enable on-the-fly bzip2 compression on output stream
    if (HDDM_USE_COMPRESSION == 0) {
@@ -251,14 +279,16 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 		// Default parameters
 
 		int cdc_npeak     =  1;
-		double cdc_nw     =  179.;
+		double cdc_nw     =  200.;
 
-		int fdc_nhits     =  100;
+                // cathode strips fa125 readout
 		int fdc_npeak     =  1;
-		double fdc_width  =  80.;
-		double fdc_ie     =  16;
-		double fdc_pg     =  4;
+		double fdc_nw  =  80.;
 
+		// wires f1tdc readout
+		int fdc_nhits     =  100;
+		double fdc_width = 50;
+		
 		int stc_npeak     =  3;
 		int stc_nhits     =  8;
 		double stc_width  =  80;
@@ -307,28 +337,28 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 		  cdc_nw      =  config->readout["CDC"].at("NW");
 		}
 
-		double cdc_gate = (cdc_nw - 21) * fadc125_period_ns;   
+		// first 16 and last 20 samples are used for data processing
+		double cdc_gate = (cdc_nw - 36) * fadc125_period_ns;   
 
 		hddm_s_merger::set_cdc_max_hits(cdc_npeak);
-		hddm_s_merger::set_cdc_integration_window_ns(cdc_gate);
+		hddm_s_merger::set_cdc_readout_window_ns(cdc_gate);
 		
 
 
 		// hits merging / truncation parameters for the FDC
 		if(config->readout["FDC"].size() > 0){
 		  fdc_nhits  =  config->readout["FDC"].at("NHITS");
+		  fdc_width = config->readout["FDC"].at("WIDTH");
 		  fdc_npeak  =  config->readout["FDC"].at("NPEAK");
-		  fdc_width  =  config->readout["FDC"].at("WIDTH");
-		  fdc_ie     =  config->readout["FDC"].at("IE");
-		  fdc_pg     =  config->readout["FDC"].at("PG");
+		  fdc_nw  =  config->readout["FDC"].at("NW");
 		}
 
-		double fdc_gate = (fdc_ie + fdc_pg) * fadc125_period_ns;
+		double fdc_gate = (fdc_nw - 36) * fadc125_period_ns;
 
 		hddm_s_merger::set_fdc_wires_max_hits(fdc_nhits);
 		hddm_s_merger::set_fdc_wires_min_delta_t_ns(fdc_width + 5.);
 		hddm_s_merger::set_fdc_strips_max_hits(fdc_npeak);
-		hddm_s_merger::set_fdc_strips_integration_window_ns(fdc_gate);
+		hddm_s_merger::set_fdc_strips_readout_window_ns(fdc_gate);
 
 
 
@@ -487,9 +517,12 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 
 #endif  // HAVE_RCDB
 
-    // fast forward any merger input files over skipped events
-    std::map<hddm_s::istream*,hddm_s::streamposition>::iterator iter;
-    for (iter = start2merge.begin(); iter != start2merge.end(); ++iter) {
+    // fast forward any merger input files over skipped events, once per
+    // run: a later thread repeating this would rewind the shared streams
+    // to the start of the file for all threads
+    if (merge_positioned_run != locRunNumber) {
+      std::map<hddm_s::istream*,hddm_s::streamposition>::iterator iter;
+      for (iter = start2merge.begin(); iter != start2merge.end(); ++iter) {
         hddm_s::HDDM record2;
 
         iter->first->setPosition(start2merge.at(iter->first));
@@ -502,6 +535,8 @@ void MyProcessor::BeginRun(const std::shared_ptr<const JEvent>& event)
 		}
 
         skip2merge[iter->first] = 0;
+      }
+      merge_positioned_run = locRunNumber;
     }
 
     hddm_s_merger::set_config_run_loaded(locRunNumber);
@@ -555,30 +590,44 @@ void MyProcessor::Process(const std::shared_ptr<const JEvent>& event)
          count = gDRandom.Poisson(iter->second);
       }
       for (int i=0; i < count; ++i) {
-         hddm_s::HDDM record2;
-         if (!(*iter->first >> record2)) {
-            //pthread_mutex_lock(&input_file_mutex);
-            //input_file_mutex_last_owner = pthread_self();
-            iter->first->setPosition(start2merge.at(iter->first));
-            if (!(*iter->first >> record2)) {
+         std::unique_ptr<hddm_s::HDDM> record2;
+         for (long ntries = 0; ; ++ntries) {
+            record2.reset(new hddm_s::HDDM);
+            if (!(*iter->first >> *record2)) {
+               //pthread_mutex_lock(&input_file_mutex);
+               //input_file_mutex_last_owner = pthread_self();
+               iter->first->setPosition(start2merge.at(iter->first));
+               if (!(*iter->first >> *record2)) {
+                  //pthread_mutex_unlock(&input_file_mutex);
+                  std::cerr << "Trying to merge from empty input file, "
+                            << "cannot continue!" << std::endl;
+                  exit(-1);
+               }
                //pthread_mutex_unlock(&input_file_mutex);
-               std::cerr << "Trying to merge from empty input file, "
-                         << "cannot continue!" << std::endl;
+            }
+            ++Nmerge_read;
+            if (CountTaggerHits(*record2) >= MERGE_MIN_TAGGER_HITS)
+               break;
+            ++Nmerge_skipped;
+            if (ntries > 10000000) {
+               std::cerr << "No random-trigger event with at least "
+                         << MERGE_MIN_TAGGER_HITS << " tagger hits found "
+                         << "in the merge input file, cannot continue!"
+                         << std::endl;
                exit(-1);
             }
-            //pthread_mutex_unlock(&input_file_mutex);
          }
          
          if(config->MERGE_TAGGER_HITS == false) {
          	hddm_s_merger::set_tag_merging(false);
          }
          hddm_s_merger::set_t_shift_ns(0);
-         hddm_s::RFsubsystemList RFtimes = record2.getRFsubsystems();
+         hddm_s::RFsubsystemList RFtimes = record2->getRFsubsystems();
          hddm_s::RFsubsystemList::iterator RFiter;
          for (RFiter = RFtimes.begin(); RFiter != RFtimes.end(); ++RFiter)
             if (RFiter->getJtag() == "TAGH")
                hddm_s_merger::set_t_shift_ns(-RFiter->getTsync());
-         *record += record2;
+         *record += *record2;
       }
    }
 
@@ -609,6 +658,10 @@ void MyProcessor::Finish(void)
    }
    cout << " " << Nevents_written << " event written to " << OUTFILENAME
         << endl;
+   if (files2merge.size() > 0)
+      cout << " random-trigger merge: " << Nmerge_read << " events read, "
+           << Nmerge_skipped << " skipped with fewer than "
+           << MERGE_MIN_TAGGER_HITS << " tagger hits" << endl;
    
    return; //NOERROR;
 }

@@ -28,6 +28,8 @@
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/Lambda1520tdist.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
+#include "AMPTOOLS_AMPS/Iso_ps_refl.h"
+#include "AMPTOOLS_AMPS/PiPiSWaveAMPK.h"
 #include "AMPTOOLS_AMPS/Ylm.h"
 #include "AMPTOOLS_AMPS/Zlm.h"
 #include "AMPTOOLS_AMPS/DblRegge_FastEta.h"
@@ -37,6 +39,8 @@
 #include "AMPTOOLS_AMPS/Uniform.h"
 #include "AMPTOOLS_AMPS/ComplexCoeff.h"
 #include "AMPTOOLS_AMPS/OmegaDalitz.h"
+#include "AMPTOOLS_AMPS/TwoPiAngles_Delta_DoubleSDMEs.h"
+#include "AMPTOOLS_AMPS/TwoPiAngles_Delta_factorized.h"
 
 #include "AMPTOOLS_MCGEN/FixedTargetGenerator.h"
 #include "AMPTOOLS_MCGEN/BreitWignerGenerator.h"
@@ -308,6 +312,8 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
   AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
+  AmpToolsInterface::registerAmplitude( Iso_ps_refl() );
+  AmpToolsInterface::registerAmplitude( PiPiSWaveAMPK() );
   AmpToolsInterface::registerAmplitude( Ylm() );
   AmpToolsInterface::registerAmplitude( Zlm() );
   AmpToolsInterface::registerAmplitude( Hist2D() );
@@ -317,6 +323,8 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( Uniform() );
   AmpToolsInterface::registerAmplitude( ComplexCoeff() );
   AmpToolsInterface::registerAmplitude( OmegaDalitz() );
+  AmpToolsInterface::registerAmplitude( TwoPiAngles_Delta_DoubleSDMEs() );
+  AmpToolsInterface::registerAmplitude( TwoPiAngles_Delta_factorized() );
   AmpToolsInterface ati( cfgInfo, AmpToolsInterface::kMCGeneration );
 
   if(beamConfigFile.Length() == 0) {
@@ -361,7 +369,7 @@ int main( int argc, char* argv[] ){
   // particle, which is typically the first in the list in GlueX reaction definitions
   DataWriter* rootOut = ( fsRootFormat ?
 			  static_cast< DataWriter*>( new FSRootDataWriter( reaction->particleList().size()-1, outName ) ) :
-			  static_cast< DataWriter* >( new ROOTDataWriter( outName ) ) );
+			  static_cast< DataWriter* >( new ROOTDataWriter( outName, "kin", true, true ) ) );
 
   TFile* diagOut = new TFile( "gen_amp_diagnostic.root", "recreate" );
 
