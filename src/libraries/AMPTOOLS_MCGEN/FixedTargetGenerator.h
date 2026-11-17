@@ -82,16 +82,9 @@ public:
   // space but what one gets when phase space is weighted by e^-2*|t|
   
   void setReweightMask( unsigned int mask );  
-
-  //temporary print
-  void printTSlopeCounts() const;  
   
 private:
 
-  //temporary
-  mutable unsigned int m_currentTSlopeIndex;
-  mutable std::vector<unsigned long long> m_tSlopeCounts;
-  mutable std::vector<unsigned long long> m_tSlopeAcceptedCounts;
   
   void calculateLimits() const;
 

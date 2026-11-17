@@ -551,8 +551,6 @@ int main( int argc, char* argv[] ){
 
   if( hddmOut ) delete hddmOut;
   delete rootOut;
-
-  ftGen.printTSlopeCounts();
   
   return 0;
 }// END OF MAIN()

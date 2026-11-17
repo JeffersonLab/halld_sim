@@ -119,8 +119,6 @@ FixedTargetGenerator::addMomentumTransfer( double tSlope, double fraction ){
   m_tSlopeVec.push_back( fabs( tSlope ) );
   m_tSlopeChannel.addChannel( m_tSlopeVec.size()-1, fraction );
 
-  m_tSlopeCounts.push_back(0);
-  m_tSlopeAcceptedCounts.push_back(0);
 }
 
 void
@@ -203,6 +201,7 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
   double psWeight = 1;
   double seedWeight = 1;
 
+  // get a tSlope according to the mix of slopes specified by the user
   double tSlope = (m_tSlopeVec.size()>0) ? m_tSlopeVec[m_tSlopeChannel()] : 0;
 
   
@@ -286,9 +285,6 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
   allP4.insert( allP4.end(), lvP4.begin(), lvP4.end() );
   allP4.insert( allP4.end(), uvP4.begin(), uvP4.end() );
 
-
-  //temporary;
-  m_tSlopeAcceptedCounts[m_currentTSlopeIndex]++;
   
   return new Kinematics( allP4, seedWeight );
 }
@@ -382,16 +378,9 @@ FixedTargetGenerator::genCosThetaCM( double uvMass, double lvMass, double* t, do
     else{
       
       // if we get here, we're going to generate t and then use it compute
-      // cos( theta ) prior to returning
-      
-      // get a tSlope according to the mix of slopes specified by the user
-      // double tSlope = m_tSlopeVec[m_tSlopeChannel()];
-      
-      //temporary increment
-      m_currentTSlopeIndex = m_tSlopeChannel();
-      m_tSlopeCounts[m_currentTSlopeIndex]++;      
+      // cos( theta ) prior to returning            
 
-// the ROOT generator generates exponential decay so tSlope should be positive
+      // the ROOT generator generates exponential decay so tSlope should be positive
       *t = -m_randGen.Exp( 1./tSlope );
       
       // ref: Martin and Spearman Eq. 4.81b
@@ -609,24 +598,6 @@ FixedTargetGenerator::decay( const TLorentzVector& p4Initial,
   return p4Final;
 }
 
-//temporary
-void FixedTargetGenerator::printTSlopeCounts() const
-{
-    unsigned long long count_tot = 0;
-    unsigned long long accepted_count_tot = 0;
-    double frequency, accepted_frequency;
-    
-    for (auto count : m_tSlopeCounts)            count_tot += count;
-    for (auto count : m_tSlopeAcceptedCounts)    accepted_count_tot += count;
-
-    
-    for (unsigned int i = 0; i < m_tSlopeVec.size(); ++i)  {
-
-      frequency = (count_tot > 0) ? double(m_tSlopeCounts[i])/count_tot: 0.0;
-      accepted_frequency = (accepted_count_tot > 0) ? double(m_tSlopeAcceptedCounts[i])/accepted_count_tot: 0.0;
-      
-      std::cout << "t-slope = " << m_tSlopeVec[i]  << ",\t Generated frequency = " << frequency  << ",\t Accepted frequency = " << accepted_frequency << std::endl;
-    }
 }
 
 
