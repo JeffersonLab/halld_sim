@@ -137,15 +137,15 @@ int main( int argc, char* argv[] ){
 
     vector<string> reflname = {"Uniform","PosRefl", "NegRefl"};
     vector<string> amphistname = {"Flat"};    
-    vector<string> amphistname_pipiIso = {"pipiIso_0-S","pipiIso_1+P-","pipiIso_1+P0","pipiIso_1+P+"};
-    vector<string> amphistname_rhoIso = {"rhoIso_0-P", "rhoIso_1+S-", "rhoIso_1+S0", "rhoIso_1+S+", "rhoIso_2+D--", "rhoIso_2+D-", "rhoIso_2+D0", "rhoIso_2+D+", "rhoIso_2+D++"}; 
-    vector<string> amphistname_f2Iso = {"f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++"};
+    vector<string> amphistname_pipiIso = {"pipiIso_0-S","pipiIso_1+P-","pipiIso_1+P0","pipiIso_1+P+","pipiIso_2-D--","pipiIso_2-D-","pipiIso_2-D0","pipiIso_2-D+","pipiIso_2-D++"};
+    vector<string> amphistname_rhoIso = {"rhoIso_0-P","rhoIso_1+S-","rhoIso_1+S0","rhoIso_1+S+","rhoIso_1+D-","rhoIso_1+D0","rhoIso_1+D+","rhoIso_2+D--","rhoIso_2+D-","rhoIso_2+D0","rhoIso_2+D+","rhoIso_2+D++","rhoIso_2-P--","rhoIso_2-P-","rhoIso_2-P0","rhoIso_2-P+","rhoIso_2-P++"}; 
+    vector<string> amphistname_f2Iso = {"f2Iso_2-S--","f2Iso_2-S-","f2Iso_2-S0","f2Iso_2-S+","f2Iso_2-S++","f2Iso_2-D--","f2Iso_2-D-","f2Iso_2-D0","f2Iso_2-D+","f2Iso_2-D++"};
 
     amphistname.insert(amphistname.end(), amphistname_pipiIso.begin(), amphistname_pipiIso.end());
     amphistname.insert(amphistname.end(), amphistname_rhoIso.begin(), amphistname_rhoIso.end());
     amphistname.insert(amphistname.end(), amphistname_f2Iso.begin(), amphistname_f2Iso.end());
 
-    vector<string> ampsumname = {"pipiIso_0-S","pipiIso_1+P","rhoIso_0-P","rhoIso_1+S","rhoIso_2+D","f2Iso_2-S"};
+    vector<string> ampsumname = {"pipiIso_0-S","pipiIso_1+P","pipiIso_2-D","rhoIso_0-P","rhoIso_1+S","rhoIso_1+D","rhoIso_2+D","rhoIso_2-P","f2Iso_2-S","f2Iso_2-D"};
 
     
     
