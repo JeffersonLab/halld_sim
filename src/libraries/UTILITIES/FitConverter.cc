@@ -7,6 +7,7 @@
  */
 
 #include <cassert>
+#include <filesystem>
 #include <iomanip>
 #include <sstream>
 
@@ -19,6 +20,7 @@
 const char *FitConverter::kModule = "FitConverter";
 
 FitConverter::FitConverter(const std::string &filename, const bool &acceptance_correct, bool mute_warning, const std::string &naming_scheme) : m_fit_file(filename),
+                                                                                                                                               m_fit_abs_path(std::filesystem::canonical(filename)),
                                                                                                                                                m_fit_results(filename, mute_warning),
                                                                                                                                                m_is_acceptance_corrected(acceptance_correct),
                                                                                                                                                m_amplitude_parser(naming_scheme),
@@ -235,7 +237,7 @@ std::string FitConverter::getCSVHeader() const
 
 std::string FitConverter::getCSVRow() const
 {
-    std::string row = m_fit_file + ",";
+    std::string row = m_fit_abs_path + ",";
     // standard results
     for (const auto &pair : m_standard_results)
     {
@@ -295,7 +297,7 @@ std::string FitConverter::getCSVCovarianceMatrix() const
     for (long unsigned int row = 0; row < m_error_matrix.size(); row++)
     {
         const std::string row_par = m_fit_results.parNameList()[row];
-        csv += m_fit_file + "," + row_par;
+        csv += m_fit_abs_path + "," + row_par;
 
         for (long unsigned int col = 0; col < m_error_matrix[row].size(); col++)
         {
@@ -327,7 +329,7 @@ std::string FitConverter::getCSVCorrelationMatrix() const
     {
         const std::string row_par = m_fit_results.parNameList()[row];
         const double row_par_error = m_fit_results.parError(row_par);
-        csv += m_fit_file + "," + row_par;
+        csv += m_fit_abs_path + "," + row_par;
 
         for (long unsigned int col = 0; col < m_error_matrix[row].size(); col++)
         {
@@ -397,7 +399,7 @@ std::string FitConverter::getCSVNormIntMatrix() const
         const std::string &row_amp = amp_list.at(row_idx);
         std::string row_reaction = m_amplitude_parser.getReactionString(row_amp);
 
-        csv += m_fit_file + "," + row_amp; // write file name and this amplitude name as first two columns of this row
+        csv += m_fit_abs_path + "," + row_amp; // write file name and this amplitude name as first two columns of this row
 
         for (size_t col_idx = 0; col_idx < m_fit_results.ampList().size(); col_idx++)
         {

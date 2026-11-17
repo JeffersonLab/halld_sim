@@ -320,7 +320,8 @@ private:
         FinalState
     };
 
-    const std::string m_fit_file;            ///< Path to the .fit file
+    const std::string m_fit_file;            ///< Relative path to the .fit file
+    const std::string m_fit_abs_path;        ///< Absolute path to the .fit file
     const FitResults m_fit_results;          ///< AmpTools FitResults object
     const ConfigurationInfo *m_cfg_info;     ///< ConfigurationInfo from the fit
     std::vector<int> m_lower_vertex_indices; ///< Indices of lower vertex particles in the data 4-vectors

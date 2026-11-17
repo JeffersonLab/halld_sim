@@ -252,7 +252,8 @@ public:
     ~FitConverter() = default;
 
 private:
-    const std::string m_fit_file;             ///< Path to the .fit file
+    const std::string m_fit_file;             ///< Relative path to the .fit file
+    const std::string m_fit_abs_path;         ///< Absolute path to the .fit file
     const FitResults m_fit_results;           ///< AmpTools FitResults object
     const bool m_is_acceptance_corrected;     ///< Whether to use acceptance-corrected intensities
     const AmplitudeParser m_amplitude_parser; ///< Parser for amplitude labels and sums

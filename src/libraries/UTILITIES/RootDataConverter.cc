@@ -30,6 +30,7 @@ RootDataConverter::RootDataConverter(const std::string &filename, bool mute_warn
 RootDataConverter::RootDataConverter(const std::string &filename,
                                      const std::vector<int> &lower_vertex_indices,
                                      bool mute_warnings) : m_fit_file(filename),
+                                                           m_fit_abs_path(std::filesystem::canonical(filename)),
                                                            m_fit_results(filename, mute_warnings),
                                                            m_cfg_info(m_fit_results.configInfo()),
                                                            m_mute_warnings(mute_warnings),
@@ -181,7 +182,7 @@ std::string RootDataConverter::getCSVHeader() const
 
 std::string RootDataConverter::getCSVRow() const
 {
-    std::string row = m_fit_file;
+    std::string row = m_fit_abs_path;
     for (const auto &pair : m_values)
     {
         std::stringstream ss;
