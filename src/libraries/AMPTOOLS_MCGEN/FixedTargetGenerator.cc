@@ -597,8 +597,3 @@ FixedTargetGenerator::decay( const TLorentzVector& p4Initial,
   
   return p4Final;
 }
-
-}
-
-
-

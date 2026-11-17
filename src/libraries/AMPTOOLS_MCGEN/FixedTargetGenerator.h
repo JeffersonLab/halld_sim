@@ -81,8 +81,8 @@ public:
   // corresponding mass distributions then will no longer be pure phase
   // space but what one gets when phase space is weighted by e^-2*|t|
   
-  void setReweightMask( unsigned int mask );  
-  
+  void setReweightMask( unsigned int mask ); 
+ 
 private:
 
   
