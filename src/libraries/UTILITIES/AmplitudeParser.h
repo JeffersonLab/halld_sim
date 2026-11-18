@@ -32,20 +32,26 @@
 #define FIT_AMPLITUDE_PARSER_H
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
+
+#include "IUAmpTools/FitResults.h"
 
 /**
  * @class AmplitudeParser
  * @brief Parses amplitude names and builds coherent sums based on naming schemes
  *
- * This class is responsible for parsing amplitude names from AmpTools fit results and
- * grouping them into coherent sums based on shared quantum numbers. It supports
- * multiple naming schemes, which can be selected by the user or inferred from the
- * amplitude labels. The parser identifies the relevant quantum numbers from the
+ * This class is primarily responsible for parsing amplitude names from AmpTools fit
+ * results and grouping them into coherent sums based on shared quantum numbers. It
+ * supports multiple naming schemes, which can be selected by the user or inferred from
+ * the amplitude labels. The parser identifies the relevant quantum numbers from the
  * amplitude names and groups amplitudes that share those quantum numbers into sums,
  * which can then be used to calculate intensities of sums e.g. total reflectivity
  * contributions, or total spin contributions.
+ *
+ * It also contains several static methods for helping identify the unique/constrained
+ * amplitudes from a fit result.
  *
  * @note All amplitudes that match the criteria for a sum group will be included,
  * meaning amplitudes will be gathered across reactions and sums as long as they share
@@ -61,14 +67,6 @@
 class AmplitudeParser
 {
 public:
-    enum class NamingScheme
-    {
-        Auto,
-        JLme,
-        eJPmL,
-        Lme
-    };
-
     /**
      * @brief Construct a new Amplitude Parser object
      *
@@ -81,16 +79,25 @@ public:
      */
     explicit AmplitudeParser(const std::string &naming_scheme = "auto");
 
-    /**
-     * @brief
-     *
-     * @param full_amplitudes
-     * @return std::map<std::string, std::vector<std::string>>
-     */
-    std::map<std::string, std::vector<std::string>>
-    buildSumGroups(const std::vector<std::string> &full_amplitudes) const;
+    enum class NamingScheme
+    {
+        Auto,
+        JLme,
+        eJPmL,
+        Lme
+    };
 
-private:
+    /**
+     * @brief Set the naming scheme based on the input string from the user.
+     *
+     * If the input is "auto" or is an unrecognized string, we will attempt to infer the
+     * naming scheme from the amplitude labels later.
+     *
+     * @param scheme_name user string indicating the naming scheme
+     * @return NamingScheme objective naming scheme enum value
+     */
+    static NamingScheme namingSchemeFromString(const std::string &scheme_name);
+
     /**
      * @brief struct to contain the parsed quantum numbers from an amplitude name
      *
@@ -121,18 +128,99 @@ private:
         std::string L;        ///< Orbital angular momentum
     };
 
-    NamingScheme m_requested_scheme; ///< The naming scheme to use, or "Auto" to infer from amplitude labels
+    /**
+     * @brief Extract quantum numbers from the amplitude name according to the scheme
+     *
+     * @param amp_name ampName in "reaction::sum::ampName"
+     * @param scheme naming scheme to use for parsing
+     * @return ParsedAmplitude object that contains the original amp_name and the parsed quantum numbers
+     */
+    ParsedAmplitude parseAmplitudeName(const std::string &amp_name, NamingScheme scheme) const;
 
     /**
-     * @brief Set the naming scheme based on the input string from the user.
+     * @brief
      *
-     * If the input is "auto" or is an unrecognized string, we will attempt to infer the
-     * naming scheme from the amplitude labels later.
-     *
-     * @param scheme_name user string indicating the naming scheme
-     * @return NamingScheme objective naming scheme enum value
+     * @param full_amplitudes
+     * @return std::map<std::string, std::vector<std::string>>
      */
-    static NamingScheme namingSchemeFromString(const std::string &scheme_name);
+    std::map<std::string, std::vector<std::string>>
+    buildSumGroups(const std::vector<std::string> &full_amplitudes) const;
+
+    /**
+     * @brief return set of all unique amplitude names in a fit result
+     *
+     * A "full" amplitude is a "reaction::sum::ampName" string, so this extracts all
+     * unique "ampName" strings
+     */
+    static std::set<std::string> uniqueAmpNames(const FitResults &result);
+
+    /**
+     * @brief return set of all unique coherent sum + amp names in a fit result
+     *
+     * A "full" amplitude is a "reaction::sum::ampName" string, so this extracts all
+     * unique "sum::ampName" strings
+     */
+    static std::set<std::string> uniqueSumAmpNames(const FitResults &result);
+
+    /**
+     * @brief Get map of unique amplitude groups to their constrained full amplitudes
+     *
+     * This attempts to identify the unique strings that can be a coupled to a set of
+     * constrained amplitudes. For a "full" amplitude string of the form
+     * "reaction::sum::ampName", it first assumes that amplitudes with the same ampName
+     * are constrained to each other, across reactions and sums. If not, it peels back a
+     * layer and assumes that amplitudes with the same "sum::ampName" are constrained to
+     * each other, across reactions. If that fails, it simply saves a mapping of the
+     * full amplitude to itself. The map keys are whats extracted as the unique
+     * amplitude names (ampName, sum::ampName, or full amplitude), and the values are
+     * vectors of the full amplitude strings that are constrained to each other.
+     */
+    static std::map<std::string, std::vector<std::string>> findConstrainedAmps(const FitResults &results);
+
+    /**
+     * @brief Checks if amplitude names are constrained to each other
+     *
+     * A "full" amplitude is a "reaction::sum::ampName" string, so this checks if all
+     * amplitudes with the same "ampName" are constrained to each other across reactions
+     * and sums.
+     */
+    static bool ampNamesAreConstrained(const FitResults &results);
+
+    /**
+     * @brief Checks if coherent sum + amplitude names are constrained to each other
+     *
+     * A "full" amplitude is a "reaction::sum::ampName" string, so this checks if all
+     * amplitudes with the same "sum::ampName" are constrained to each other across
+     * reactions.
+     */
+    static bool sumAmpNamesAreConstrained(const FitResults &results);
+
+    /**
+     * @brief Get the reaction string from a full amplitude name
+     *
+     * This extracts the reaction part from a "reaction::sum::ampName" string.
+     *
+     * @param full_amp_name The full amplitude name
+     * @return The reaction string
+     */
+    static std::string getReactionString(const std::string &full_amp_name);
+
+    /**
+     * @brief Extract the amplitude name from the full amplitude string.
+     *
+     * For example, for "reaction::sum::amp", this would return "amp". This is the part
+     * of the amplitude label that typically contains the quantum numbers and is used
+     * for grouping into sums.
+     *
+     * @param full_name "reaction::sum::ampName" style amplitude string
+     * @return std::string ampName, the part of the full amplitude string after the last "::"
+     */
+    static std::string ampName(const std::string &full_name);
+
+    mutable bool m_suppress_warnings = false; ///< User can set to true to avoid redundant warnings for many files
+
+private:
+    NamingScheme m_requested_scheme; ///< The naming scheme to use, or "Auto" to infer from amplitude labels
 
     /**
      * @brief Infer the naming scheme from the amplitude name format if "auto" is selected.
@@ -161,27 +249,6 @@ private:
      * @return std::vector<std::string> full amplitudes that match the naming scheme
      */
     std::vector<std::string> filterAmplitudesByScheme(const std::vector<std::string> &full_amplitudes, NamingScheme scheme) const;
-
-    /**
-     * @brief Extract the amplitude name from the full amplitude string.
-     *
-     * For example, for "reaction::sum::amp", this would return "amp". This is the part
-     * of the amplitude label that typically contains the quantum numbers and is used
-     * for grouping into sums.
-     *
-     * @param full_name "reaction::sum::ampName" style amplitude string
-     * @return std::string ampName, the part of the full amplitude string after the last "::"
-     */
-    static std::string ampName(const std::string &full_name);
-
-    /**
-     * @brief Extract quantum numbers from the amplitude name according to the scheme
-     *
-     * @param amp_name ampName in "reaction::sum::ampName"
-     * @param scheme naming scheme to use for parsing
-     * @return ParsedAmplitude object that contains the original amp_name and the parsed quantum numbers
-     */
-    ParsedAmplitude parseAmplitudeName(const std::string &amp_name, NamingScheme scheme) const;
 
     /**
      * @brief Define the grouping of quantum numbers that will become a sum label

@@ -10,6 +10,7 @@
 #include <cassert>
 
 #include "AmplitudeParser.h"
+#include "IUAmpTools/ConfigurationInfo.h"
 #include "IUAmpTools/report.h"
 
 const char *AmplitudeParser::kModule = "AmplitudeParser";
@@ -62,7 +63,7 @@ AmplitudeParser::filterAmplitudesByScheme(
         const std::string amp_name = ampName(full_amp);
         if (inferNamingScheme(amp_name) == scheme)
             filtered.push_back(full_amp);
-        else
+        else if (!m_suppress_warnings)
         {
             report(WARNING, kModule) << "Amplitude '"
                                      << full_amp
@@ -83,6 +84,11 @@ AmplitudeParser::parseAmplitudeName(const std::string &amp_name, NamingScheme sc
 {
     ParsedAmplitude parsed;
     parsed.amp_name = amp_name;
+
+    if (scheme == NamingScheme::Auto)
+    {
+        scheme = inferNamingScheme(amp_name);
+    }
 
     // Parse quantum numbers according to the structure of the naming scheme
     switch (scheme)
@@ -106,7 +112,8 @@ AmplitudeParser::parseAmplitudeName(const std::string &amp_name, NamingScheme sc
         parsed.L = amp_name.substr(amp_name.size() - 1, 1);
         break;
     default:
-        report(WARNING, kModule) << "Unknown naming scheme, cannot parse amplitude name '" << amp_name << "'.\n";
+        if (!m_suppress_warnings)
+            report(WARNING, kModule) << "Unknown naming scheme, cannot parse amplitude name '" << amp_name << "'.\n";
         break;
     }
 
@@ -126,7 +133,7 @@ AmplitudeParser::sumsForScheme(NamingScheme scheme) const
         };
     }
 
-    if (scheme == NamingScheme::JLme)
+    else if (scheme == NamingScheme::JLme)
     {
         return {
             {{'e'}},
@@ -137,7 +144,7 @@ AmplitudeParser::sumsForScheme(NamingScheme scheme) const
             {{'J', 'L', 'm'}},
         };
     }
-    if (scheme == NamingScheme::eJPmL)
+    else if (scheme == NamingScheme::eJPmL)
     {
         return {
             {{'e'}},
@@ -150,7 +157,8 @@ AmplitudeParser::sumsForScheme(NamingScheme scheme) const
     }
     else
     {
-        report(WARNING, kModule) << "Unknown naming scheme, cannot determine sum groups.\n";
+        if(!m_suppress_warnings)
+            report(WARNING, kModule) << "Unknown naming scheme, cannot determine sum groups.\n";
         return {};
     }
 }
@@ -181,7 +189,8 @@ std::string AmplitudeParser::buildSumLabel(
             value = parsed.L;
             break;
         default:
-            report(WARNING, kModule) << "Unknown quantum number '" << qn << "' in sum group definition.\n";
+            if(!m_suppress_warnings)
+                report(WARNING, kModule) << "Unknown quantum number '" << qn << "' in sum group definition.\n";
             break;
         }
         label += value;
@@ -198,7 +207,8 @@ AmplitudeParser::buildSumGroups(const std::vector<std::string> &full_amplitudes)
 
     if (full_amplitudes.empty())
     {
-        report(WARNING, kModule) << "No amplitudes found in fit results, so no sums will be built.\n";
+        if(!m_suppress_warnings)
+            report(WARNING, kModule) << "No amplitudes found in fit results, so no sums will be built.\n";
         return groups;
     }
 
@@ -212,12 +222,15 @@ AmplitudeParser::buildSumGroups(const std::vector<std::string> &full_amplitudes)
     // see the header file for instructions to do so.
     if (effective_scheme == NamingScheme::Auto)
     {
-        report(WARNING, kModule) << "Amplitude naming scheme could not be inferred, and so no sums will be built.\n";
-        report(WARNING, kModule) << "This likely means your amplitude names don't follow a recognized pattern. Supported patterns include:\n";
-        report(WARNING, kModule) << "\t1) JLme: e.g. 1P-1+ \n";
-        report(WARNING, kModule) << "\t2) Lme: e.g. P1+ \n";
-        report(WARNING, kModule) << "\t3) eJPmL: e.g. p1ppS \n";
-        report(WARNING, kModule) << "You can also specify the naming scheme pattern (from the choices above) directly in the FitConverter constructor to avoid inference.\n";
+        if(!m_suppress_warnings)
+        {
+            report(WARNING, kModule) << "Amplitude naming scheme could not be inferred, and so no sums will be built.\n";
+            report(WARNING, kModule) << "This likely means your amplitude names don't follow a recognized pattern. Supported patterns include:\n";
+            report(WARNING, kModule) << "\t1) JLme: e.g. 1P-1+ \n";
+            report(WARNING, kModule) << "\t2) Lme: e.g. P1+ \n";
+            report(WARNING, kModule) << "\t3) eJPmL: e.g. p1ppS \n";
+            report(WARNING, kModule) << "You can also specify the naming scheme pattern (from the choices above) directly in the FitConverter constructor to avoid inference.\n";
+        }
         return groups;
     }
 
@@ -256,4 +269,169 @@ AmplitudeParser::buildSumGroups(const std::vector<std::string> &full_amplitudes)
     }
 
     return groups;
+}
+
+
+std::set<std::string> 
+AmplitudeParser::uniqueAmpNames(const FitResults &result)
+{
+    std::set<std::string> unique_names;
+    for (const auto &amplitude : result.ampList())
+    {
+        size_t last_colon = amplitude.rfind("::");
+        if (last_colon != std::string::npos)
+        {
+            std::string amp_name = amplitude.substr(last_colon + 2);
+            unique_names.insert(amp_name);
+        }
+    }
+    return unique_names;
+}
+
+
+std::set<std::string> 
+AmplitudeParser::uniqueSumAmpNames(const FitResults &result)
+{
+    std::set<std::string> unique_names;
+    for (const auto &amplitude : result.ampList())
+    {
+        size_t first_colon = amplitude.find("::");
+        size_t last_colon = amplitude.rfind("::");
+        if (first_colon != std::string::npos && last_colon != std::string::npos && first_colon != last_colon)
+        {
+            std::string sum_amp_name = amplitude.substr(first_colon + 2);
+            unique_names.insert(sum_amp_name);
+        }
+    }
+    return unique_names;
+}
+
+std::map<std::string, std::vector<std::string>> 
+AmplitudeParser::findConstrainedAmps(const FitResults &result)
+{
+    std::map<std::string, std::vector<std::string>> constrained_amp_map;
+
+    if (ampNamesAreConstrained(result))
+    {
+        for (const auto &unique_amp : uniqueAmpNames(result))
+        {
+            // the bool assures us that all terms with this amp name are constrained to
+            // each other
+            std::vector<TermInfo *> shared_terms = result.configInfo()->termList("", "", unique_amp);
+
+            // store the full names of the constrained amplitudes
+            for (const auto &term : shared_terms)
+                constrained_amp_map[unique_amp].push_back(term->fullName());
+        }
+        return constrained_amp_map;
+    }
+
+    if (sumAmpNamesAreConstrained(result))
+    {
+        for (const auto &unique_sum_amp : uniqueSumAmpNames(result))
+        {
+            std::string sum = unique_sum_amp.substr(0, unique_sum_amp.find("::"));
+            std::string amp = unique_sum_amp.substr(unique_sum_amp.find("::") + 2);
+            // the bool assures us that all terms with this sum::amp name are
+            // constrained to each other
+            std::vector<TermInfo *> shared_terms = result.configInfo()->termList("", sum, amp);
+
+            // store the full names of the constrained amplitudes
+            for (const auto &term : shared_terms)
+                constrained_amp_map[unique_sum_amp].push_back(term->fullName());
+        }
+        return constrained_amp_map;
+    }
+
+    // if we reach here, neither assumption held, so just map full amplitude names to
+    // themselves
+    for (const auto &amplitude : result.ampList())
+    {
+        constrained_amp_map[amplitude] = {amplitude};
+    }
+    return constrained_amp_map;
+}
+
+bool AmplitudeParser::ampNamesAreConstrained(const FitResults &result)
+{
+    for (const auto &unique_amp : uniqueAmpNames(result))
+    {
+        std::vector<TermInfo *> shared_terms = result.configInfo()->termList("", "", unique_amp);
+
+        // we assume terms with common amplitude names are all constrained to each
+        // other, so use first term to check this
+        std::vector<TermInfo *> constrained_terms = shared_terms[0]->constraints();
+
+        // filter constrained terms to only those with the same amplitude name
+        for (auto it = constrained_terms.begin(); it != constrained_terms.end();)
+        {
+            if ((*it)->fullName().find(unique_amp) == std::string::npos)
+                it = constrained_terms.erase(it);
+            else
+                ++it;
+        }
+
+        // The constrained terms does not include the self term, so add it back in for
+        // comparison
+        constrained_terms.push_back(shared_terms[0]);
+
+        // Compare the two sets of terms to ensure they are the same
+        std::sort(shared_terms.begin(), shared_terms.end());
+        std::sort(constrained_terms.begin(), constrained_terms.end());
+        if (shared_terms != constrained_terms)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool AmplitudeParser::sumAmpNamesAreConstrained(const FitResults &result)
+{
+    for (const auto &unique_sum_amp : uniqueSumAmpNames(result))
+    {
+        std::string sum = unique_sum_amp.substr(0, unique_sum_amp.find("::"));
+        std::string amp = unique_sum_amp.substr(unique_sum_amp.find("::") + 2);
+
+        std::vector<TermInfo *> shared_terms = result.configInfo()->termList("", sum, amp);
+
+        // we assume terms with common sum::amp names are all constrained to each
+        // other, so use first term to check this
+        std::vector<TermInfo *> constrained_terms = shared_terms[0]->constraints();
+
+        // filter constrained terms to only those with the same sum::amp name
+        for (auto it = constrained_terms.begin(); it != constrained_terms.end();)
+        {
+            if ((*it)->fullName().find(unique_sum_amp) == std::string::npos)
+                it = constrained_terms.erase(it);
+            else
+                ++it;
+        }
+
+        // The constrained terms does not include the self term, so add it back in for
+        // comparison
+        constrained_terms.push_back(shared_terms[0]);
+
+        // Compare the two sets of terms to ensure they are the same
+        std::sort(shared_terms.begin(), shared_terms.end());
+        std::sort(constrained_terms.begin(), constrained_terms.end());
+        if (shared_terms != constrained_terms)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string AmplitudeParser::getReactionString(const std::string &full_amplitude)
+{
+    size_t first_colon = full_amplitude.find("::");
+    size_t second_colon = full_amplitude.find("::", first_colon + 2);
+    if (first_colon == std::string::npos || second_colon == std::string::npos)
+    {
+        report(ERROR, kModule) << "Amplitude name " << full_amplitude << " does not match expected format 'reaction::sum::amp'.\n";
+        assert(false);
+    }
+    std::string reaction = full_amplitude.substr(0, first_colon);
+    return reaction;
 }
