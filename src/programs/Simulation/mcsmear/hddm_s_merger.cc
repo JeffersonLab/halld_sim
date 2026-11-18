@@ -960,9 +960,24 @@ hddm_s::FdcCathodeStripList &operator+=(hddm_s::FdcCathodeStripList &dst,
    return dst;
 }
 
+// Peak amplitude of an FDC strip hit, as the reconstruction reads it: the
+// fdcDigihit peakAmp if there is one, otherwise q. If the hit has no
+// fdcDigihit, one holding q is added so that the merged amplitude can be
+// stored in it.
+static double fdc_strip_peakamp(hddm_s::FdcCathodeHit &hit)
+{
+   if (hit.getFdcDigihits().size() > 0)
+      return hit.getFdcDigihit().getPeakAmp();
+   hddm_s::FdcDigihitList digihit = hit.addFdcDigihits();
+   digihit().setPeakAmp(hit.getQ());
+   return hit.getQ();
+}
+
 hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
                                       hddm_s::FdcCathodeHitList &src)
 {
+   if (src.size() == 0)
+      return dst;
 
    // There should be no more than one hit in dst - assume this is the case.  (otherwise, would have to pick the earliest)
 
@@ -970,6 +985,8 @@ hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
    // If it is before the original hit, replace the original hit's time and peak height. 
    // If it is at the same time sample as the original hit, sum the pulse height.
    // If it is after the original hit, leave the original hit's time and peak height alone. 
+   // The strip peak amplitude (fdcDigihit peakAmp, read by the reconstruction as the
+   // pulse height) follows the same rule as q.
 
 
    hddm_s::FdcCathodeHitList::iterator iter;
@@ -990,11 +1007,17 @@ hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
    if (t > fdc_strips_readout_window_ns) return dst; // random is too late
    
    double newQ = iter_firsthit->getQ();
+   bool newA_exists = (iter_firsthit->getFdcDigihits().size() > 0);
+   double newA = (newA_exists)? iter_firsthit->getFdcDigihit().getPeakAmp() : newQ;
    
    if (dst.size() == 0) { // no hits exist, add the random
      dst.add(1, -1);
      dst(0).setT(t);
      dst(0).setQ(newQ);
+     if (newA_exists) {
+        hddm_s::FdcDigihitList digihit = dst(0).addFdcDigihits();
+        digihit().setPeakAmp(newA);
+     }
      
    } else {
 
@@ -1009,13 +1032,17 @@ hddm_s::FdcCathodeHitList &operator+=(hddm_s::FdcCathodeHitList &dst,
 
       if (src_hitsample == dst_hitsample) { // same sample, add pulse heights
 
+         double origA = fdc_strip_peakamp(dst(0));
  	 if (t < origT) dst(0).setT(t);
 	 dst(0).setQ(origQ + newQ);
+         dst(0).getFdcDigihit().setPeakAmp(origA + newA);
    
       } else if (src_hitsample < dst_hitsample) { // random arrives earlier, replace hit time and pulse height 
 	
+         fdc_strip_peakamp(dst(0));
          dst(0).setT(t);
 	 dst(0).setQ(newQ);           
+         dst(0).getFdcDigihit().setPeakAmp(newA);
          
       } // if the random hit is after the original one, it is too late, ignore it.
 

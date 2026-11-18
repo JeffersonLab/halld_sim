@@ -18,11 +18,16 @@ class fdc_config_t
 	//double FDC_HIT_DROP_FRACTION = 0.0; // 1000.0E-9
 	double FDC_TIME_WINDOW;
 	double FDC_THRESH_KEV;        // fdc anode discriminator threshold
+	double FDC_ADC_ASCALE;        // /FDC/digi_scales FDC_ADC_ASCALE; strip peakAmp = q / FDC_ADC_ASCALE, as in data (DFDCHit_factory: q = a_scale * pulse_height)
 
     static bool FDC_EFFVSDOCA;
+    static double FDC_RAW_AMP_THR;        // FDC:RAW_AMP_THRESHOLD in ADC counts; < 0 (default): per strip from CCDB /FDC/packageN/strip_thresholds,
+                                          // FDC_RAW_AMP_THR_DEFAULT where a table is absent; >= 0: this value for every strip (0: no cut)
+    static const double FDC_RAW_AMP_THR_DEFAULT;
     double FDC_EFFVSDOCA_PAR[4];
 
 	vector< vector<double > > channel_efficiencies;
+	vector< vector<double > > channel_raw_amp_thresholds;   // same row order as channel_efficiencies; empty rows for the anode wires
 	
 	double GetEfficiencyCorrectionFactor(hddm_s::FdcCathodeStripList::iterator &siter) {
 		// cathode strips
@@ -35,6 +40,17 @@ class fdc_config_t
         //   << " strip = " << siter->getStrip() << endl;
 
 		return channel_efficiencies.at(gPlane).at(element-1);
+	}
+
+	double GetRawAmpThreshold(hddm_s::FdcCathodeStripList::iterator &siter) {
+		// readout threshold of a cathode strip on raw_amp = q / FDC_ADC_ASCALE, in ADC counts
+		if (FDC_RAW_AMP_THR >= 0)
+			return FDC_RAW_AMP_THR;
+		int gPlane = 9*(siter->getModule()-1) + 3*(siter->getLayer()-1) 
+             		+ (siter->getPlane()-1);               // starts counting at 0
+		int element = siter->getStrip();
+		const vector<double> &row = channel_raw_amp_thresholds.at(gPlane);
+		return (element >= 1 && element <= (int)row.size())? row[element-1] : FDC_RAW_AMP_THR_DEFAULT;
 	}
 
 	double GetEfficiencyCorrectionFactor(hddm_s::FdcAnodeWireList::iterator &witer) {
