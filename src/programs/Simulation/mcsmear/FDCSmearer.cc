@@ -37,6 +37,15 @@ fdc_config_t::fdc_config_t(const std::shared_ptr<const JEvent>& event)
        	FDC_THRESH_KEV 		  = fdcparms["FDC_THRESH_KEV"]; 
 	}
 
+	// scale for the strip peak amplitude written in fdcDigihit (0 = do not write fdcDigihit)
+	FDC_ADC_ASCALE = 0.;
+	map<string, double> digi_scales;
+	if(DEvent::GetCalib(event, "FDC/digi_scales", digi_scales) || digi_scales.find("FDC_ADC_ASCALE") == digi_scales.end())
+		jerr << "Problem loading FDC/digi_scales FDC_ADC_ASCALE from CCDB! fdcDigihit peakAmp will not be written." << endl;
+	else
+		FDC_ADC_ASCALE = digi_scales["FDC_ADC_ASCALE"];
+	jout << "FDC strip peakAmp = q / FDC_ADC_ASCALE, FDC_ADC_ASCALE = " << FDC_ADC_ASCALE << endl;
+
    	// Calculate ped noise level based on position resolution
    	//   FDC_PED_NOISE = -0.004594 + 0.008711*FDC_CATHODE_SIGMA +
    	//                    0.000010*FDC_CATHODE_SIGMA*FDC_CATHODE_SIGMA; //pC
@@ -113,6 +122,11 @@ void FDCSmearer::SmearEvent(hddm_s::HDDM *record)
                hddm_s::FdcCathodeHitList hits = siter->addFdcCathodeHits();
                hits().setQ(q);
                hits().setT(t);
+               // strip peak amplitude on the data scale, read by DEventSourceHDDM as DFDCHit::pulse_height
+               if (fdc_config->FDC_ADC_ASCALE > 0) {
+                  hddm_s::FdcDigihitList digihit = hits().addFdcDigihits();
+                  digihit().setPeakAmp(q / fdc_config->FDC_ADC_ASCALE);
+               }
             }
          }
 

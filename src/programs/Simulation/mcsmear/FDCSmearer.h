@@ -18,6 +18,7 @@ class fdc_config_t
 	//double FDC_HIT_DROP_FRACTION = 0.0; // 1000.0E-9
 	double FDC_TIME_WINDOW;
 	double FDC_THRESH_KEV;        // fdc anode discriminator threshold
+	double FDC_ADC_ASCALE;        // /FDC/digi_scales FDC_ADC_ASCALE; strip peakAmp = q / FDC_ADC_ASCALE, as in data (DFDCHit_factory: q = a_scale * pulse_height)
 
     static bool FDC_EFFVSDOCA;
     double FDC_EFFVSDOCA_PAR[4];
