@@ -118,6 +118,7 @@ FixedTargetGenerator::addMomentumTransfer( double tSlope, double fraction ){
 
   m_tSlopeVec.push_back( fabs( tSlope ) );
   m_tSlopeChannel.addChannel( m_tSlopeVec.size()-1, fraction );
+
 }
 
 void
@@ -200,6 +201,10 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
   double psWeight = 1;
   double seedWeight = 1;
 
+  // get a tSlope according to the mix of slopes specified by the user
+  double tSlope = (m_tSlopeVec.size()>0) ? m_tSlopeVec[m_tSlopeChannel()] : 0;
+
+  
   do {
     do {
       
@@ -208,6 +213,7 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
       // and the scattering angle in the CM frame
       
       double t = 0;
+
       do {
         
         seedWeight = 1;
@@ -220,7 +226,7 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
         uvM = tmp.first;
         if( m_reweightMask & kUpperVtxMass ) seedWeight *= tmp.second;
       
-        tmp = genCosThetaCM( uvM, lvM, &t );
+        tmp = genCosThetaCM( uvM, lvM, &t, tSlope );
         cosThetaCM = tmp.first;
         if( m_reweightMask & kMomentumTransfer ) seedWeight *= tmp.second;
       }
@@ -278,7 +284,8 @@ FixedTargetGenerator::generate( bool includeBeam ) const {
   if( includeBeam ) allP4.push_back( m_beam );
   allP4.insert( allP4.end(), lvP4.begin(), lvP4.end() );
   allP4.insert( allP4.end(), uvP4.begin(), uvP4.end() );
-    
+
+  
   return new Kinematics( allP4, seedWeight );
 }
 
@@ -347,13 +354,14 @@ FixedTargetGenerator::genLowerVertexMass() const {
 }
 
 pair< double, double >
-FixedTargetGenerator::genCosThetaCM( double uvMass, double lvMass, double* t ) const {
+FixedTargetGenerator::genCosThetaCM( double uvMass, double lvMass, double* t, double tSlope ) const {
 
   pair< double, double > cosThetaWeight;
 
   double eBeamCM = ( m_W*m_W + m_beam.M2() - m_target.M2() ) / ( 2*m_W );
   double puvCM = pcm( m_W, uvMass, lvMass );
   double euvCM = sqrt( puvCM*puvCM + uvMass*uvMass );
+
   
   do{
     
@@ -370,11 +378,8 @@ FixedTargetGenerator::genCosThetaCM( double uvMass, double lvMass, double* t ) c
     else{
       
       // if we get here, we're going to generate t and then use it compute
-      // cos( theta ) prior to returning
-      
-      // get a tSlope according to the mix of slopes specified by the user
-      double tSlope = m_tSlopeVec[m_tSlopeChannel()];
-      
+      // cos( theta ) prior to returning            
+
       // the ROOT generator generates exponential decay so tSlope should be positive
       *t = -m_randGen.Exp( 1./tSlope );
       
@@ -592,4 +597,3 @@ FixedTargetGenerator::decay( const TLorentzVector& p4Initial,
   
   return p4Final;
 }
-
