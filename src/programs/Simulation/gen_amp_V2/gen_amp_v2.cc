@@ -27,6 +27,7 @@
 #include "AMPTOOLS_AMPS/VecRadiative_SDME.h"
 #include "AMPTOOLS_AMPS/Lambda1520Angles.h"
 #include "AMPTOOLS_AMPS/Lambda1520tdist.h"
+#include "AMPTOOLS_AMPS/InvGauss.h"
 #include "AMPTOOLS_AMPS/Vec_ps_refl.h"
 #include "AMPTOOLS_AMPS/Iso_ps_refl.h"
 #include "AMPTOOLS_AMPS/PiPiSWaveAMPK.h"
@@ -311,6 +312,7 @@ int main( int argc, char* argv[] ){
   AmpToolsInterface::registerAmplitude( VecRadiative_SDME() );
   AmpToolsInterface::registerAmplitude( Lambda1520Angles() );
   AmpToolsInterface::registerAmplitude( Lambda1520tdist() );
+  AmpToolsInterface::registerAmplitude( InvGauss() );
   AmpToolsInterface::registerAmplitude( Vec_ps_refl() );
   AmpToolsInterface::registerAmplitude( Iso_ps_refl() );
   AmpToolsInterface::registerAmplitude( PiPiSWaveAMPK() );
