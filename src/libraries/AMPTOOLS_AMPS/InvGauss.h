@@ -40,7 +40,7 @@ public:
 #endif // GPU_ACCELERATION
   
 private:
-	
+  
   AmpParameter Lambda;
   AmpParameter Mu;
   
