@@ -190,10 +190,50 @@ void MyProcessor::Init(void)
    // By default, the empirical fdc DOCA-dependent efficiency
    // is applied to fdc wire hits in FDCSmearer. This can be
    // disabled by this commandline option.
+   // FDC cathode strip readout threshold on raw_amp = q / FDC_ADC_ASCALE (ADC counts). By default the
+   // per-strip values of /FDC/packageN/strip_thresholds are used, or 50 where a table is absent.
+   app->SetDefaultParameter("FDC:RAW_AMP_THRESHOLD", fdc_config_t::FDC_RAW_AMP_THR,
+                            "FDC strip dropped if raw_amp = q / FDC_ADC_ASCALE is below this, in ADC counts;"
+                            " < 0 = per strip from CCDB /FDC/packageN/strip_thresholds, 50 where absent (default);"
+                            " >= 0 = this value for every strip (0 = no cut)");
+   app->SetDefaultParameter("FDC:PEAKAMP_ASCALE", fdc_config_t::FDC_PEAKAMP_ASCALE,
+                            "> 0: FDC strip peakAmp = q / this in every run, while the readout threshold stays on"
+                            " q / FDC_ADC_ASCALE of the run; <= 0 (default): peakAmp = q / FDC_ADC_ASCALE");
+   app->SetDefaultParameter("FDC:Q4_TABLE", fdc_config_t::FDC_Q4_TABLE,
+                            "q4: text table of per-strip gain (ADC/pC) and readout threshold (ADC), per-wire plateau efficiency and"
+                            " per-plane wire turn-on vs Qw (see FDCSmearer.h); empty (default) = off");
+   app->SetDefaultParameter("FDC:STRIP_TIME_TABLE", fdc_config_t::FDC_STRIP_TIME_TABLE,
+                            "q5: text table of the strip time shift and spread (ns) vs strip ADC, measured from data (see FDCSmearer.h);"
+                            " needs FDC:Q4_TABLE; empty (default) = off");
+   for (int k = 0; k < 4; k++)
+      app->SetDefaultParameter("FDC:STRIP_T0_PKG" + std::to_string(k + 1), fdc_config_t::FDC_STRIP_T0_PKG[k],
+                               "q5: strip time residue of the data REST in this package (ns), subtracted from the strip times; needs FDC:Q4_TABLE");
+   app->SetDefaultParameter("FDC:REST_ASCALE", fdc_config_t::FDC_REST_ASCALE,
+                            "q4: > 0: FDC strip q = this x peakAmp after the random merge (a_scale of the data REST); <= 0 (default) = off");
    app->SetDefaultParameter("FDC:USE_EFFVSDOCA", fdc_config_t::FDC_EFFVSDOCA,
                           "Turn on/off fdc doca-dependent wire hit efficiency,"
                           " \"0\"=no efficiency correction,"
                           " \"1\"=standard efficiency correction (default)");
+   app->SetDefaultParameter("FDC:DRIFT_SMEAR_NS", fdc_config_t::FDC_DRIFT_SMEAR_NS,
+                            "Gaussian drift-time smear in ns, common to the wire and strip hits of one track in one chamber; 0 = off");
+   app->SetDefaultParameter("FDC:CATHODE_SIGMA", fdc_config_t::FDC_CATHODE_SIGMA_SET,
+                            "FDC_CATHODE_SIGMA override in microns, sets the strip pedestal noise; < 0 = CCDB");
+   app->SetDefaultParameter("FDC:GAIN_SCALE", fdc_config_t::FDC_GAIN_SCALE,
+                            "FDC gas-gain factor on the strip charge and wire dE before the thresholds; 1 = off");
+   for (int i = 0; i < 4; i++)
+      app->SetDefaultParameter("FDC:GAIN_PKG" + std::to_string(i + 1), fdc_config_t::FDC_GAIN_PKG[i],
+                               "FDC extra gain factor for package " + std::to_string(i + 1) + " (times FDC:GAIN_SCALE); 1 = off");
+   app->SetDefaultParameter("FDC:GAIN_SIGMA", fdc_config_t::FDC_GAIN_SIGMA,
+                            "FDC avalanche gain fluctuation (log-normal sigma), one factor per chamber and track for wire and strips; 0 = off");
+   app->SetDefaultParameter("FDC:DOCA_ATTEN", fdc_config_t::FDC_DOCA_ATTEN,
+                            "FDC signal attenuation a: wire dE and strip q scaled by max(0.05, 1 - a doca^2) (doca in cm); 0 = off");
+   app->SetDefaultParameter("FDC:STRIP_THRESHOLD", fdc_config_t::FDC_STRIP_THR_SET,
+                            "FDC strip charge threshold in pC; < 0 = FDC_THRESHOLD_FACTOR * FDC_PED_NOISE (CCDB)");
+   app->SetDefaultParameter("FDC:WIRE_THRESHOLD_KEV", fdc_config_t::FDC_WIRE_THR_KEV_SET,
+                            "FDC anode threshold on the gain-scaled wire dE in keV; < 0 = FDC_THRESH_KEV (CCDB)");
+   for (int i = 0; i < 4; i++)
+      app->SetDefaultParameter("FDC:EFFVSDOCA_PAR" + std::to_string(i), fdc_config_t::FDC_EFFVSDOCA_PAR_SET[i],
+                               "fdc wire efficiency vs doca parameter");
 
    return; //NOERROR;
 }
@@ -630,6 +670,9 @@ void MyProcessor::Process(const std::shared_ptr<const JEvent>& event)
          *record += *record2;
       }
    }
+
+   // q4: FDC strip q = FDC:REST_ASCALE x peakAmp for MC and random hits alike
+   FDCSmearer::SetRestQ(record);
 
    // Apply DAQ truncation to hit lists
    if (config->APPLY_HITS_TRUNCATION)
