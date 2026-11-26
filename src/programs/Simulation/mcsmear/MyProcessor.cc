@@ -187,9 +187,6 @@ void MyProcessor::Init(void)
    bzero(&input_file_mutex_last_owner, sizeof(pthread_t));
    bzero(&smearer_mutex_last_owner, sizeof(pthread_t));
    
-   // By default, the empirical fdc DOCA-dependent efficiency
-   // is applied to fdc wire hits in FDCSmearer. This can be
-   // disabled by this commandline option.
    // FDC cathode strip readout threshold on raw_amp = q / FDC_ADC_ASCALE (ADC counts). By default the
    // per-strip values of /FDC/packageN/strip_thresholds are used, or 50 where a table is absent.
    app->SetDefaultParameter("FDC:RAW_AMP_THRESHOLD", fdc_config_t::FDC_RAW_AMP_THR,
@@ -210,10 +207,6 @@ void MyProcessor::Init(void)
                                "q5: strip time residue of the data REST in this package (ns), subtracted from the strip times; needs FDC:Q4_TABLE");
    app->SetDefaultParameter("FDC:REST_ASCALE", fdc_config_t::FDC_REST_ASCALE,
                             "q4: > 0: FDC strip q = this x peakAmp after the random merge (a_scale of the data REST); <= 0 (default) = off");
-   app->SetDefaultParameter("FDC:USE_EFFVSDOCA", fdc_config_t::FDC_EFFVSDOCA,
-                          "Turn on/off fdc doca-dependent wire hit efficiency,"
-                          " \"0\"=no efficiency correction,"
-                          " \"1\"=standard efficiency correction (default)");
    app->SetDefaultParameter("FDC:DRIFT_SMEAR_NS", fdc_config_t::FDC_DRIFT_SMEAR_NS,
                             "Gaussian drift-time smear in ns, common to the wire and strip hits of one track in one chamber; 0 = off");
    app->SetDefaultParameter("FDC:CATHODE_SIGMA", fdc_config_t::FDC_CATHODE_SIGMA_SET,
@@ -231,9 +224,6 @@ void MyProcessor::Init(void)
                             "FDC strip charge threshold in pC; < 0 = FDC_THRESHOLD_FACTOR * FDC_PED_NOISE (CCDB)");
    app->SetDefaultParameter("FDC:WIRE_THRESHOLD_KEV", fdc_config_t::FDC_WIRE_THR_KEV_SET,
                             "FDC anode threshold on the gain-scaled wire dE in keV; < 0 = FDC_THRESH_KEV (CCDB)");
-   for (int i = 0; i < 4; i++)
-      app->SetDefaultParameter("FDC:EFFVSDOCA_PAR" + std::to_string(i), fdc_config_t::FDC_EFFVSDOCA_PAR_SET[i],
-                               "fdc wire efficiency vs doca parameter");
 
    return; //NOERROR;
 }
