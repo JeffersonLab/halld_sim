@@ -54,16 +54,13 @@ complex<GDouble> InvGauss::calcAmplitude( GDouble** pKin ) const
     tmp.SetPxPyPzE(pKin[index][1], pKin[index][2], pKin[index][3], pKin[index][0]);
     recoil_baryon += tmp;
   }
-  
-  
+    
   minust = (recoil_baryon - target).M2()*(-1.);
 
-  phsp_shape = pow(minust,1.87)*exp(-0.69*minust)*(1-exp(-12*minust)); //last exponential factor controls very low -t (roughly up to 0.2 Gev^2, exactly where our data peaks)
   
-  inverseGaussian = sqrt(Lambda/(2*TMath::Pi()*pow(minust,3)))*exp((-Lambda*(minust-Mu)*(minust-Mu))/(2.*Mu*Mu*minust));
+  phsp_shape = pow(minust,1.25)*exp(-0.26*minust)*(1-exp(-3.3*minust)); //the (1-exp(-a|t|)) factor controls very low -t (roughly up to 0.2 Gev^2, exactly where our data peaks)    
 
-
-  
+  inverseGaussian = sqrt(Lambda/(2*TMath::Pi()*pow(minust,3)))*exp((-Lambda*(minust-Mu)*(minust-Mu))/(2.*Mu*Mu*minust)); // parametrization that fits to data
 
   
   complex<GDouble> AmpRe(sqrt(inverseGaussian/phsp_shape), 0.);  
